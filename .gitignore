@@ -4,12 +4,7 @@
 .Rproj.user/
 .Ruserdata
 .Rapp.history
-
-# Quarto output
-*_files/
-*_cache/
-_render/
-_html/    # optional if you render html
+data/zenodo/
 
 # R package build artifacts
 *.tar.gz

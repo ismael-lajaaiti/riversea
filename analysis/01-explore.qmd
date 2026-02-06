@@ -1,0 +1,26 @@
+---
+title: "RIVERSEA: Preliminary explorations"
+format: html
+---
+
+# 0. Setup
+
+Load dependencies.
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+library(zen4R)
+```
+
+Download data from Zenodo.
+The data file is relatively heavy (~800Mb), this operation can take a few minutes.
+
+```{r}
+#| eval: false
+doi <- "10.5281/zenodo.17962542"
+dest_dir <- "data/zenodo/"
+if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
+download_zenodo(doi, path = dest_dir)
+```
