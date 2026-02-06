@@ -5,12 +5,6 @@
 .Ruserdata
 .Rapp.history
 
-# renv (if using renv)
-renv/library/
-renv/staging/
-renv/python/  # if using reticulate
-renv/cache/
-
 # Quarto output
 *_files/
 *_cache/
