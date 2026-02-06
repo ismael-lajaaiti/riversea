@@ -1,6 +1,9 @@
 ---
 title: "RIVERSEA: Preliminary explorations"
 format: html
+execute:
+    message: false
+    warning: false
 ---
 
 # 0. Setup
@@ -72,3 +75,33 @@ sum(duplicated(select(edges, c("from", "to"))))
 
 We see that there is no duplication for the Vilaine network.
 We can proceed to the next step.
+
+# 2. Fish abundance data
+
+```{r}
+base::load(here(dest_dir, "zenodo", "processed_data", "poissons_env_temp.RData"))
+
+catches
+```
+
+Let's rename column for clarity.
+
+```{r}
+catches <- catches |>
+    rename(
+        species = esp_code_alternatif,
+        year = annee,
+        abundance = effectif
+    )
+species_names <- unique(catches$species)
+```
+
+Next, let's add zeros where species are not found.
+
+
+```{r}
+library(tidyr)
+catches <- catches |>
+    pivot_wider(names_from = species, values_from = abundance, values_fill = list(abundance = 0))
+catches <- catches |> pivot_longer(cols = species_names, names_to = "species", values_to = "abundance")
+```
