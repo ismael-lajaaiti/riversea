@@ -7,6 +7,7 @@
 data/zenodo/
 
 # R package build artifacts
+*.zip
 *.tar.gz
 .Rcheck/
 /vignettes/*.html

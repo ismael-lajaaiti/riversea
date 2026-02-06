@@ -12,15 +12,63 @@ Load dependencies.
 library(renv)
 renv::load()
 library(zen4R)
+library(here)
 ```
 
 Download data from Zenodo.
 The data file is relatively heavy (~800Mb), this operation can take a few minutes.
 
 ```{r}
-#| eval: false
 doi <- "10.5281/zenodo.17962542"
-dest_dir <- "data/zenodo/"
+dest_dir <- here("data")
+```
+
+```{r}
+#| eval: false
 if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
 download_zenodo(doi, path = dest_dir)
+unzip(here(dest_dir, "miste_data.zip"), exdir = dest_dir)
 ```
+
+If everything went well, the data should have been downloaded in `data/zenodo/`.
+
+# 1. River data (La Vilaine)
+
+First, we focus on the river geographic data.
+Let's load it.
+
+```{r}
+base::load(here(dest_dir, "zenodo", "processed_data", "reseaux_hydrographiques.rda"))
+```
+
+For now, we will focus on the Vilaine bassin.
+We can view it using `sfnetworks`.
+
+```{r}
+library(sf)
+library(sfnetworks)
+net <- as_sfnetwork(rht_vilaine)
+plot(net, cex = 0.5)
+```
+
+We want to check that the network data is valid.
+In particular, we want to verify that there is no duplicate in the nodes, or edges data.
+
+```{r}
+nodes <- net |>
+    activate("nodes") |>
+    st_as_sf()
+sum(duplicated(nodes))
+```
+
+
+```{r}
+library(dplyr)
+edges <- net |>
+    activate("edges") |>
+    st_as_sf()
+sum(duplicated(select(edges, c("from", "to"))))
+```
+
+We see that there is no duplication for the Vilaine network.
+We can proceed to the next step.
