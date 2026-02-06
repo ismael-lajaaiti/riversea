@@ -1,0 +1,38 @@
+# R
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+.Rapp.history
+
+# renv (if using renv)
+renv/library/
+renv/staging/
+renv/python/  # if using reticulate
+renv/cache/
+
+# Quarto output
+*_files/
+*_cache/
+_render/
+_html/    # optional if you render html
+
+# R package build artifacts
+*.tar.gz
+.Rcheck/
+/vignettes/*.html
+/vignettes/*.pdf
+
+# Test artifacts
+testthat.Rout
+tests/testthat/_snaps/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Misc
+*.log

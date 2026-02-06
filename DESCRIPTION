@@ -1,0 +1,10 @@
+Package: riversea
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person("Ismael", "Lajaaiti", , "ismael.lajaaiti@gmail.com", role = c("aut", "cre"))
+Description: Package for the RIVERSEA project to model the impact of dams on fish communities.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
