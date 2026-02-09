@@ -14,6 +14,11 @@ Load dependencies.
 #| output: false
 library(renv)
 renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+```
+
+```{r}
 library(zen4R)
 library(here)
 ```

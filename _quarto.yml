@@ -1,0 +1,19 @@
+project:
+  type: website
+  render:
+    - analysis/*.qmd
+  output-dir: docs
+
+website:
+  title: "Postdoc Project Reports"
+  navbar:
+    left:
+      - text: Home
+        href: index.html
+      - text: Analyses
+        href: analysis/index.html
+
+format:
+  html:
+    toc: true
+    theme: cosmo
