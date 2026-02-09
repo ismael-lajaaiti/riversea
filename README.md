@@ -8,4 +8,4 @@ Model abundance data of multiple fish species for a single hydrographic bassin u
 
 ## TODO
 
-- [] Create github pages to host quarto reports.
+- [x] Create github pages to host quarto reports.
