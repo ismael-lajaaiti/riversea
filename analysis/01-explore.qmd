@@ -78,6 +78,8 @@ sum(duplicated(nodes))
 
 ```{r}
 library(dplyr)
+library(tidyr)
+
 edges <- net |>
     activate("edges") |>
     st_as_sf()
@@ -87,17 +89,135 @@ sum(duplicated(select(edges, c("from", "to"))))
 We see that there is no duplication for the Vilaine network.
 We can proceed to the next step.
 
-# 2. Fish abundance data
+# 2. Environmental data 
 
 ## 2.1 Load data
 
 ```{r}
 base::load(here(dest_dir, "zenodo", "processed_data", "poissons_env_temp.RData"))
 
-catches
+env
 ```
 
 Let's rename column for clarity.
+
+```{r}
+env <- env |> rename(year = annee)
+```
+
+Station geographical coordinates are stored in `points_geo_<river>`.
+We visualize them over the hydrographic network.
+
+```{r}
+plot(net, col = "black", cex = 0.5)
+plot(points_geo_vilaine, col = "red", add = TRUE, pch = 16, cex = 0.5)
+```
+
+## 2.2. Visualisation of altitude data
+
+To begin with, let's focus on a single environment variable: the altitude.
+
+```{r}
+d_env <- env |>
+    select(c("sta_id", "pop_id", "altitude")) |>
+    distinct()
+d_env |> filter(is.na(altitude))
+```
+
+We see that we have missing values for two stations: 8853 and 13994.
+Next, we want to relate altitude values to geographical coordinates.
+
+```{r}
+pts_vilaine <- points_geo_vilaine |>
+    select(c("pop_id", "geometry")) |>
+    left_join(d_env, by = "pop_id") |>
+    filter(!is.na(altitude))
+pts_vilaine
+```
+
+We see that the altitude is not measured on every sampling points, but only in 37 locations.
+Let's plot them.
+
+```{r}
+library(ggplot2)
+set_theme(theme_minimal())
+options(
+    ggplot2.continuous.colour = "viridis",
+    ggplot2.continuous.fill = "viridis"
+)
+
+ggplot() +
+    geom_sf(data = points_geo_vilaine, color = "grey80", alpha = 0.5) +
+    geom_sf(data = pts_vilaine, aes(color = altitude), size = 5) +
+    labs(
+        color = "Altitude (m)"
+    )
+```
+
+We see in grey every location were we have sample of fish abundances, and in colour where we have altitude data.
+We have to interpolate altitude data for missing locations.
+The simplest way to do it is to the "nearest neighbour" interpolation.
+
+## 2.3. Interpolation of altitude data
+
+We first build proximity polygons with the `terra::voronoi` function.
+
+```{r}
+library(terra)
+
+d_elev <- select(pts_vilaine, c("geometry", "altitude"))
+d_elev.vect <- terra::vect(d_elev)
+v <- voronoi(d_elev.vect)
+plot(v, "altitude")
+points(d_elev.vect)
+```
+
+```{r}
+v.sf <- st_as_sf(v)
+pred <- st_intersection(v.sf, points_geo_vilaine)
+d_elev.nn <- select(pred, c("altitude", "pop_id", "geometry"))
+
+ggplot() +
+    geom_sf(data = pred, aes(color = altitude)) +
+    geom_sf(data = pts_vilaine, aes(color = altitude), size = 5) +
+    labs(
+        color = "Altitude (m)"
+    )
+```
+
+Predicted altitudes seem consistent with the nearest neighbour interpolation.
+
+## 2.4. Cross-validation of altitude interpolation
+
+Now, that we have a prediction pipeline working we will estimate its performance using cross-validation.
+To do so, we will do a LOOCV (Leave-One-Out Cross-Validation).
+
+```{r}
+n <- nrow(d_elev)
+preds <- numeric(n) # Vector filled with 0s.
+for (i in 1:n) {
+    train <- d_elev[-i, ]
+    test <- d_elev[i, ]
+    v_train <- voronoi(terra::vect(train))
+    preds[i] <- st_intersection(st_as_sf(v_train), test)$altitude
+}
+d_elev$altitude.loo <- preds
+
+ggplot(d_elev, aes(x = altitude, y = altitude.loo)) +
+    geom_point() +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    labs(
+        x = "Observed altitude (m)",
+        y = "Predicted altitude (m)"
+    )
+
+rmse <- sqrt(mean((d_elev$altitude - d_elev$altitude.loo)^2))
+rmse
+```
+
+# 3. Abundance data
+
+## 3.1. Load data
 
 ```{r}
 catches <- catches |>
@@ -106,13 +226,14 @@ catches <- catches |>
         year = annee,
         abundance = effectif
     )
+catches
+
 species_names <- unique(catches$species)
 ```
 
 Next, let's add zeros where species are not found.
 
 ```{r}
-library(tidyr)
 catches <- catches |>
     pivot_wider(
         names_from = species,
@@ -124,9 +245,11 @@ catches <- catches |>
         names_to = "species",
         values_to = "abundance"
     )
+
+catches
 ```
 
-## 2.2. Preliminary plots
+## 3.2. Preliminary plots
 
 Let's plot abundance histogram for each species.
 As most species abundance are dominated by zeros, because of absence data,
@@ -135,7 +258,6 @@ This also implies that we will need to use **zero-inflated** distributions in
 our statistical model to account for this absence data.
 
 ```{r}
-library(ggplot2)
 catches |>
     ggplot(aes(x = abundance + 1)) + # add 1 to avoid log(0)
     geom_histogram(binwidth = 0.5) +
@@ -165,76 +287,65 @@ catches |>
 There is no clear trend, but we can't say much at this point because
 trend may be masked by sampling efforts and environmental covariates.
 
-## 2.3. Environmental data
-
-Next, let's focus on environmental variable that is available,
-so we can build a statistical model relating environment and fish abundances.
+::: {.callout-note}
+Here it would be interesting to plot the number of operations per year to see the evolution of the sampling effort.
+:::
 
 ```{r}
-env <- env |> rename(year = annee)
-data <- left_join(catches, env, by = c("sta_id", "pop_id", "year", "ope_id"))
+d_eel <- catches |> filter(species == "ANG")
+d_eel.avg <- d_eel |>
+    group_by(pop_id) |>
+    summarise(abundance_mean = mean(abundance))
+data <- inner_join(d_elev.nn, d_eel.avg, by = "pop_id")
+
+ggplot(data, aes(x = altitude, y = abundance_mean)) +
+    geom_point() +
+    labs(
+        x = "Altitude (m)",
+        y = "Eel abundance"
+    )
 ```
 
-Station geographical coordinates are stored in `points_geo_<river>`.
-We visualize them over the hydrographic network.
+We clearly observe the expected trend of eel abundance with altitude.
+
+Next, we want to model the effect of altitude, while accounting for time using `INLA`.
+
+## 3.3. First model
 
 ```{r}
-plot(net, col = "black", cex = 0.5)
-plot(points_geo_vilaine, col = "red", add = TRUE, pch = 16, cex = 0.5)
-```
+library(INLA)
 
-## 2.4. Eel and altitude
+data <- inner_join(d_eel, d_elev.nn, by = "pop_id")
+data$altitude_s <- scale(data$altitude)
 
-To begin with, let's focus on a single species, Eel (ANG), and environmental variable, altitude (in meter).
-
-```{r}
-env |>
-    group_by(sta_id) |>
-    summarise(alt_avg = mean(altitude)) |>
-    filter(is.na(alt_avg))
-```
-
-```{r}
-d <- inner_join(env, points_geo_vilaine) |>
-    select(c("pop_id", "altitude", "geometry")) |>
-    distinct()
-
-plot(st_as_sf(d)[2])
-```
-
-```{r}
-library(terra)
-library(tmap)
-stations <- st_as_sf(d)
-grid <- terra::rast(stations, nrows = 20, ncols = 20)
-xy <- terra::xyFromCell(grid, 1:ncell(grid))
-coop <- st_as_sf(as.data.frame(xy),
-    coords = c("x", "y"),
-    crs = st_crs(stations)
+m1 <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "ar1") +
+        f(pop_id, model = "iid"),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(config = TRUE)
 )
-tm_shape(coop) + tm_dots(fill = "gray") +
-    tm_shape(st_as_sf(d)) + tm_dots("altitude", size = 1)
+summary(m1)
 ```
 
 ```{r}
-library(gstat)
-res <- gstat(
-    formula = altitude ~ 1, locations = stations,
-    nmax = nrow(stations), set = list(idp = 1)
-)
-resp <- predict(res, coop)
-resp$x <- st_coordinates(resp)[, 1]
-resp$y <- st_coordinates(resp)[, 2]
-resp$pred <- resp$var1.pred
+#| eval: false
+y_rep <- inla.posterior.sample(1000, m1)
 
-pred <- terra::rasterize(resp, grid, field = "pred", fun = "mean")
-tm_shape(pred) +
-    tm_raster(col.scale = tm_scale_continuous(limits = c(0, 150), values = "viridis")) +
-    tm_shape(stations) +
-    tm_dots("altitude", col.scale = "viridis")
+var_sim <- sapply(y_rep, function(s) var(s$latent))
+var_obs <- var(data$abundance)
+
+c(observed = var_obs, simulated_mean = mean(var_sim))
 ```
 
-TODO:
-- Plot stations on top of hydrographic bassin.
-- Estimate missing values in environmental data.
-- Model fish abundances depending on environmental variables.
+# TODO
+
+- [ ] Model fish abundances depending on environmental variables.
+- [ ] Check model overdispersion with negative binomial.
+- [ ] Visualise simulated data v. true data (on a map maybe).
+- [ ] Visualise the temporal trend through the AR1 effect.
+- [x] Re-organize notebook.
+- [x] Cross-validation for estimated elevation data.
+- [x] Estimate missing values in environmental data.
+- [x] Plot stations on top of hydrographic bassin.

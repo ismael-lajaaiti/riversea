@@ -58,6 +58,87 @@
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
       "Repository": "CRAN"
     },
+    "INLA": {
+      "Package": "INLA",
+      "Version": "25.10.19",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Full Bayesian Analysis of Latent Gaussian Models using Integrated Nested Laplace Approximations",
+      "Authors@R": "c( person(\"Havard\", \"Rue\", email = \"hrue@r-inla.org\", role = c(\"cre\",\"aut\")), person(\"Finn\", \"Lindgren\", email = \"finn.lindgren@gmail.com\", role = \"aut\"), person(\"Elias\", \"Teixeira Krainski\", email = \"elias@r-inla.org\", role = \"aut\"),  person(\"Sara\", \"Martino\", email = \"saramartino0@gmail.com\", role = \"ctb\"), person(\"Haakon\", \"Bakka\", email = \"bakka@r-inla.org\", role = \"ctb\"), person(\"Daniel\", \"Simpson\", email = \"dp.simpson@gmail.com\", role = \"ctb\"), person(\"Andrea\", \"Riebler\", email = \"andrea.riebler@math.ntnu.no\", role = \"ctb\"), person(\"Geir-Arne\", \"Fuglstad\", email = \"geirarne.fulgstad@gmail.com\", role = \"ctb\"), person(\"Cristian\", \"Chiuchiolo\", email = \"cristian.chiuchiolo@kaust.edu.sa\", role = \"ctb\"))",
+      "Description": "Full Bayesian analysis of latent Gaussian models using Integrated Nested Laplace Approximaxion. It is a front-end to the inla-program.",
+      "Additional_repositories": "http://inlabru-org.r-universe.dev/",
+      "Depends": [
+        "R (>= 3.5)",
+        "Matrix (>= 1.3-0)"
+      ],
+      "Imports": [
+        "graphics",
+        "grDevices",
+        "fmesher (>= 0.5.0)",
+        "lifecycle",
+        "methods",
+        "parallel",
+        "rlang",
+        "splines",
+        "stats",
+        "utils",
+        "withr",
+        "MatrixModels"
+      ],
+      "Suggests": [
+        "compositions",
+        "Deriv",
+        "Ecdat",
+        "Rgraphviz",
+        "deldir",
+        "devtools",
+        "doParallel",
+        "dplyr",
+        "evd",
+        "fastGHQuad",
+        "fields",
+        "ggplot2",
+        "ggpubr",
+        "gsl",
+        "graph",
+        "gridExtra",
+        "knitr",
+        "markdown",
+        "MASS",
+        "matrixStats",
+        "mlogit",
+        "mvtnorm",
+        "numDeriv",
+        "pixmap",
+        "rgl",
+        "rmarkdown",
+        "runjags",
+        "sf",
+        "shiny",
+        "sn",
+        "sp (>= 1.6-0)",
+        "spdep",
+        "splancs",
+        "terra",
+        "tidyterra",
+        "testthat",
+        "tools",
+        "INLAspacetime"
+      ],
+      "VignetteBuilder": "knitr",
+      "BuildVignettes": "true",
+      "LazyData": "true",
+      "License": "MIT + file LICENSE",
+      "RoxygenNote": "7.3.3",
+      "Encoding": "UTF-8",
+      "StagedInstall": "no",
+      "Collate": "'00000.R' 'INLA-package.R' 'agaussian.R' 'ar.R' 'barrier.R' 'binary.R' 'binary.install.R' 'cgeneric.R' 'changelog.R' 'cloglike.R' 'collect.results.R' 'compare.results.R' 'control.R' 'coxph.R' 'cpo.R' 'create.data.file.R' 'cut.R' 'debug.graph.R' 'dev.new.R' 'display.matrix.R' 'doc.R' 'dryrun.R' 'expand.dataframe.R' 'export-class.R' 'external-package.R' 'f.R' 'fgn.R' 'finn.R' 'fmesher-io.R' 'fmesher-transition.R' 'fmesher.R' 'graph.convert.R' 'graph.matrix.R' 'group.R' 'group.cv.R' 'hyper.R' 'hyperpar.R' 'idx.R' 'iidkd.R' 'inla.R' 'inla.call.R' 'inlaEnv.R' 'interpret.formula.R' 'jmarginal.R' 'jp.R' 'knmodels.R' 'knmodels.sample.R' 'lattice2node.R' 'lincomb.R' 'link-functions.R' 'list-models.R' 'load.R' 'marginal.R' 'mdata.R' 'merge.R' 'mesh.R' 'mesh.components.R' 'meshassessment.R' 'meshbuilder.R' 'model-wrapper.R' 'models-generate.R' 'models.R' 'models_documentation.R' 'nmix.lambda.fitted.R' 'obsolete.R' 'options.R' 'os.R' 'over_sp_mesh.R' 'pardiso.R' 'pc-alphaw.R' 'pc-ar.R' 'pc-bym.R' 'pc-cor0.R' 'pc-cor1.R' 'pc-cormat.R' 'pc-gamma.R' 'pc-gammacount.R' 'pc-gev.R' 'pc-multvar.R' 'pc-prec.R' 'pc-prw2-range.R' 'pc-sn.R' 'pc-t.R' 'pc-vm0.R' 'pc-vminf.R' 'pin.R' 'plot.R' 'posterior.sample.R' 'print.R' 'priors.used.R' 'prune.R' 'q.R' 'qinv.R' 'qreordering.R' 'qsample.R' 'qsolve.R' 'quantile-regression.R' 'read.graph.R' 'remote.R' 'reorderings.R' 'rerun.R' 'residuals.R' 'rgeneric.R' 'rprior.R' 'sampler.R' 'sandbox.R' 'scale.model.R' 'scopy.define.R' 'scopy.summary.R' 'sections.R' 'set.default.arguments.R' 'sm.R' 'spde.common.R' 'spde1.R' 'spde2.R' 'spde3.R' 'spmesh.R' 'stack.R' 'startup.R' 'summary.R' 'surv.R' 'upgrade.R' 'utils.R' 'version.R'",
+      "Roxygen": "list(markdown = TRUE)",
+      "NeedsCompilation": "no",
+      "Author": "Havard Rue [cre, aut], Finn Lindgren [aut], Elias Teixeira Krainski [aut], Sara Martino [ctb], Haakon Bakka [ctb], Daniel Simpson [ctb], Andrea Riebler [ctb], Geir-Arne Fuglstad [ctb], Cristian Chiuchiolo [ctb]",
+      "Maintainer": "Havard Rue <hrue@r-inla.org>",
+      "Repository": "https://inla.r-inla-download.org/R/stable"
+    },
     "KernSmooth": {
       "Package": "KernSmooth",
       "Version": "2.23-26",
@@ -161,6 +242,36 @@
       "Encoding": "UTF-8",
       "NeedsCompilation": "yes",
       "Author": "Douglas Bates [aut] (ORCID: <https://orcid.org/0000-0001-8316-9503>), Martin Maechler [aut, cre] (ORCID: <https://orcid.org/0000-0002-8685-9910>), Mikael Jagan [aut] (ORCID: <https://orcid.org/0000-0002-3542-2938>), Timothy A. Davis [ctb] (ORCID: <https://orcid.org/0000-0001-7614-6899>, SuiteSparse libraries, collaborators listed in dir(system.file(\"doc\", \"SuiteSparse\", package=\"Matrix\"), pattern=\"License\", full.names=TRUE, recursive=TRUE)), George Karypis [ctb] (ORCID: <https://orcid.org/0000-0003-2753-1437>, METIS library, Copyright: Regents of the University of Minnesota), Jason Riedy [ctb] (ORCID: <https://orcid.org/0000-0002-4345-4200>, GNU Octave's condest() and onenormest(), Copyright: Regents of the University of California), Jens Oehlschlägel [ctb] (initial nearPD()), R Core Team [ctb] (ROR: <https://ror.org/02zz1nj61>, base R's matrix implementation)",
+      "Maintainer": "Martin Maechler <mmaechler+Matrix@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "MatrixModels": {
+      "Package": "MatrixModels",
+      "Version": "0.5-4",
+      "Source": "Repository",
+      "VersionNote": "Released 0.5-3 on 2023-11-06",
+      "Date": "2025-03-25",
+      "Title": "Modelling with Sparse and Dense Matrices",
+      "Contact": "Matrix-authors@R-project.org",
+      "Authors@R": "c( person(\"Douglas\", \"Bates\", role = \"aut\", email = \"bates@stat.wisc.edu\", comment = c(ORCID = \"0000-0001-8316-9503\")), person(\"Martin\", \"Maechler\", role = c(\"aut\", \"cre\"), email = \"mmaechler+Matrix@gmail.com\", comment = c(ORCID = \"0000-0002-8685-9910\")))",
+      "Description": "Generalized Linear Modelling with sparse and dense 'Matrix' matrices, using modular prediction and response module classes.",
+      "Depends": [
+        "R (>= 3.6.0)"
+      ],
+      "Imports": [
+        "stats",
+        "methods",
+        "Matrix (>= 1.6-0)",
+        "Matrix(< 1.8-0)"
+      ],
+      "ImportsNote": "_not_yet_stats4",
+      "Encoding": "UTF-8",
+      "LazyLoad": "yes",
+      "License": "GPL (>= 2)",
+      "URL": "https://Matrix.R-forge.R-project.org/, https://r-forge.r-project.org/R/?group_id=61",
+      "BugReports": "https://R-forge.R-project.org/tracker/?func=add&atid=294&group_id=61",
+      "NeedsCompilation": "no",
+      "Author": "Douglas Bates [aut] (<https://orcid.org/0000-0001-8316-9503>), Martin Maechler [aut, cre] (<https://orcid.org/0000-0002-8685-9910>)",
       "Maintainer": "Martin Maechler <mmaechler+Matrix@gmail.com>",
       "Repository": "CRAN"
     },
@@ -884,6 +995,66 @@
       "NeedsCompilation": "yes",
       "Author": "Gábor Csárdi [aut, cre], Posit Software, PBC [cph, fnd]",
       "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "fmesher": {
+      "Package": "fmesher",
+      "Version": "0.6.1",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Triangle Meshes and Related Geometry Tools",
+      "Authors@R": "c( person(\"Finn\", \"Lindgren\", email = \"finn.lindgren@gmail.com\", role = c(\"aut\", \"cre\", \"cph\"), comment = c(ORCID = \"0000-0002-5833-2011\", \"Finn Lindgren wrote the main code\")), person(\"Seaton\", \"Andy\", email = \"andy.e.seaton@gmail.com\", role = c(\"ctb\"), comment = \"Andy Seaton constributed features to the sf support\"), person(\"Suen\", \"Man Ho\", email = \"M.H.Suen@sms.ed.ac.uk\", role = c(\"ctb\"), comment = \"Man Ho Suen contributed features and code structure design for the integration methods\"), person(\"Fabian E.\", \"Bachl\", email = \"bachlfab@gmail.com\", role = c(\"ctb\"), comment = \"Fabian Bachl co-developed precursors of fm_pixels and fm_split_lines in inlabru\") )",
+      "Description": "Generate planar and spherical triangle meshes, compute finite element calculations for 1-, 2-, and 3-dimensional flat and curved manifolds with associated basis function spaces, methods for lines and polygons, and transparent handling of coordinate reference systems and coordinate transformation, including 'sf' and 'sp' geometries. The core 'fmesher' library code was originally part of the 'INLA' package, and implements parts of \"Triangulations and Applications\" by Hjelle and Daehlen (2006) <doi:10.1007/3-540-33261-8>.",
+      "Depends": [
+        "R (>= 4.1.0)",
+        "methods"
+      ],
+      "Imports": [
+        "dplyr",
+        "graphics",
+        "grDevices",
+        "lifecycle",
+        "Matrix",
+        "Rcpp",
+        "rlang",
+        "sf",
+        "splancs",
+        "stats",
+        "tibble",
+        "utils",
+        "withr"
+      ],
+      "Suggests": [
+        "geometry",
+        "ggplot2",
+        "knitr",
+        "patchwork",
+        "testthat (>= 3.0.0)",
+        "terra",
+        "tidyterra",
+        "rgl",
+        "rmarkdown",
+        "sp (>= 1.6-1)"
+      ],
+      "URL": "https://inlabru-org.github.io/fmesher/, https://github.com/inlabru-org/fmesher",
+      "BugReports": "https://github.com/inlabru-org/fmesher/issues",
+      "License": "MPL-2.0",
+      "Copyright": "2010-2025 Finn Lindgren, except src/predicates.cc by Jonathan Richard Shewchuk, 1996",
+      "NeedsCompilation": "yes",
+      "RoxygenNote": "7.3.3",
+      "Encoding": "UTF-8",
+      "Config/testthat/edition": "3",
+      "Config/testthat/parallel": "true",
+      "SystemRequirements": "C++17",
+      "LinkingTo": [
+        "Rcpp"
+      ],
+      "VignetteBuilder": "knitr",
+      "BuildVignettes": "true",
+      "Collate": "'RcppExports.R' 'deprecated.R' 'bary.R' 'basis.R' 'bbox.R' 'collect.R' 'components.R' 'print.R' 'crs.R' 'data-fmexample.R' 'diameter.R' 'evaluator.R' 'fem.R' 'fm.R' 'fmesher-package.R' 'fmesher.R' 'ggplot.R' 'integration.R' 'lattice_2d.R' 'lattice_Nd.R' 'list.R' 'local.R' 'manifold.R' 'mapping.R' 'matern.R' 'mesh.R' 'mesh_1d.R' 'mesh_2d.R' 'mesh_3d.R' 'mesh_assessment.R' 'nonconvex_hull.R' 'onload.R' 'plot.R' 'segm.R' 'sf_mesh.R' 'sf_utils.R' 'simplify.R' 'sp_mesh.R' 'split_lines.R' 'tensor.R' 'utils.R'",
+      "LazyData": "true",
+      "Author": "Finn Lindgren [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-5833-2011>, Finn Lindgren wrote the main code), Seaton Andy [ctb] (Andy Seaton constributed features to the sf support), Suen Man Ho [ctb] (Man Ho Suen contributed features and code structure design for the integration methods), Fabian E. Bachl [ctb] (Fabian Bachl co-developed precursors of fm_pixels and fm_split_lines in inlabru)",
+      "Maintainer": "Finn Lindgren <finn.lindgren@gmail.com>",
       "Repository": "CRAN"
     },
     "fontawesome": {
@@ -2548,6 +2719,73 @@
       "Author": "Lucas van der Meer [aut, cre] (<https://orcid.org/0000-0001-6336-8628>), Lorena Abad [aut] (<https://orcid.org/0000-0003-0554-734X>), Andrea Gilardi [aut] (<https://orcid.org/0000-0002-9424-7439>), Robin Lovelace [aut] (<https://orcid.org/0000-0001-5679-6536>)",
       "Repository": "CRAN"
     },
+    "sp": {
+      "Package": "sp",
+      "Version": "2.2-0",
+      "Source": "Repository",
+      "Title": "Classes and Methods for Spatial Data",
+      "Authors@R": "c(person(\"Edzer\", \"Pebesma\", role = c(\"aut\", \"cre\"), email = \"edzer.pebesma@uni-muenster.de\"), person(\"Roger\", \"Bivand\", role = \"aut\", email = \"Roger.Bivand@nhh.no\"), person(\"Barry\", \"Rowlingson\", role = \"ctb\"), person(\"Virgilio\", \"Gomez-Rubio\", role = \"ctb\"), person(\"Robert\", \"Hijmans\", role = \"ctb\"), person(\"Michael\", \"Sumner\", role = \"ctb\"), person(\"Don\", \"MacQueen\", role = \"ctb\"), person(\"Jim\", \"Lemon\", role = \"ctb\"), person(\"Finn\", \"Lindgren\", role = \"ctb\"), person(\"Josh\", \"O'Brien\", role = \"ctb\"), person(\"Joseph\", \"O'Rourke\", role = \"ctb\"), person(\"Patrick\", \"Hausmann\", role = \"ctb\"))",
+      "Depends": [
+        "R (>= 3.5.0)",
+        "methods"
+      ],
+      "Imports": [
+        "utils",
+        "stats",
+        "graphics",
+        "grDevices",
+        "lattice",
+        "grid"
+      ],
+      "Suggests": [
+        "RColorBrewer",
+        "gstat",
+        "deldir",
+        "knitr",
+        "maps",
+        "mapview",
+        "rmarkdown",
+        "sf",
+        "terra",
+        "raster"
+      ],
+      "Description": "Classes and methods for spatial data; the classes document where the spatial location information resides, for 2D or 3D data. Utility functions are provided, e.g. for plotting data as maps, spatial selection, as well as methods for retrieving coordinates, for subsetting, print, summary, etc. From this version, 'rgdal', 'maptools', and 'rgeos' are no longer used at all, see <https://r-spatial.org/r/2023/05/15/evolution4.html> for details.",
+      "License": "GPL (>= 2)",
+      "URL": "https://github.com/edzer/sp/ https://edzer.github.io/sp/",
+      "BugReports": "https://github.com/edzer/sp/issues",
+      "Collate": "bpy.colors.R AAA.R Class-CRS.R CRS-methods.R Class-Spatial.R Spatial-methods.R projected.R Class-SpatialPoints.R SpatialPoints-methods.R Class-SpatialPointsDataFrame.R SpatialPointsDataFrame-methods.R Class-SpatialMultiPoints.R SpatialMultiPoints-methods.R Class-SpatialMultiPointsDataFrame.R SpatialMultiPointsDataFrame-methods.R Class-GridTopology.R Class-SpatialGrid.R Class-SpatialGridDataFrame.R Class-SpatialLines.R SpatialLines-methods.R Class-SpatialLinesDataFrame.R SpatialLinesDataFrame-methods.R Class-SpatialPolygons.R Class-SpatialPolygonsDataFrame.R SpatialPolygons-methods.R SpatialPolygonsDataFrame-methods.R GridTopology-methods.R SpatialGrid-methods.R SpatialGridDataFrame-methods.R SpatialPolygons-internals.R point.in.polygon.R SpatialPolygons-displayMethods.R zerodist.R image.R stack.R bubble.R mapasp.R select.spatial.R gridded.R asciigrid.R spplot.R over.R spsample.R recenter.R dms.R gridlines.R spdists.R rbind.R flipSGDF.R chfids.R loadmeuse.R compassRose.R surfaceArea.R spOptions.R subset.R disaggregate.R sp_spat1.R merge.R aggregate.R elide.R sp2Mondrian.R",
+      "VignetteBuilder": "knitr",
+      "NeedsCompilation": "yes",
+      "Author": "Edzer Pebesma [aut, cre], Roger Bivand [aut], Barry Rowlingson [ctb], Virgilio Gomez-Rubio [ctb], Robert Hijmans [ctb], Michael Sumner [ctb], Don MacQueen [ctb], Jim Lemon [ctb], Finn Lindgren [ctb], Josh O'Brien [ctb], Joseph O'Rourke [ctb], Patrick Hausmann [ctb]",
+      "Maintainer": "Edzer Pebesma <edzer.pebesma@uni-muenster.de>",
+      "Repository": "CRAN"
+    },
+    "splancs": {
+      "Package": "splancs",
+      "Version": "2.01-45",
+      "Source": "Repository",
+      "Date": "2024-05-13",
+      "Title": "Spatial and Space-Time Point Pattern Analysis",
+      "Authors@R": "c( person(\"Roger\", \"Bivand\", role = c(\"cre\"), email = \"Roger.Bivand@nhh.no\"), person(\"Barry\", \"Rowlingson\", role = \"aut\"), person(\"Peter\", \"Diggle\", role = \"aut\"), person(\"Giovanni\", \"Petris\", role = \"ctb\"), person(\"Stephen\", \"Eglen\", role = \"ctb\"))",
+      "Depends": [
+        "R (>= 2.10.0)",
+        "sp (>= 0.9)"
+      ],
+      "Imports": [
+        "stats",
+        "graphics",
+        "grDevices",
+        "methods"
+      ],
+      "Description": "The Splancs package was written as an enhancement to S-Plus for display and analysis of spatial point pattern data; it has been ported to R and is in \"maintenance mode\".",
+      "License": "GPL (>= 2)",
+      "URL": "https://www.maths.lancs.ac.uk/~rowlings/Splancs/, https://rsbivand.github.io/splancs/, https://github.com/rsbivand/splancs",
+      "BugReports": "https://github.com/rsbivand/splancs/issues",
+      "NeedsCompilation": "yes",
+      "Author": "Roger Bivand [cre], Barry Rowlingson [aut], Peter Diggle [aut], Giovanni Petris [ctb], Stephen Eglen [ctb]",
+      "Maintainer": "Roger Bivand <Roger.Bivand@nhh.no>",
+      "Repository": "CRAN"
+    },
     "stringi": {
       "Package": "stringi",
       "Version": "1.8.7",
@@ -2645,6 +2883,47 @@
       "NeedsCompilation": "yes",
       "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>), Gábor Csárdi [ctb]",
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "terra": {
+      "Package": "terra",
+      "Version": "1.8-93",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Spatial Data Analysis",
+      "Date": "2026-01-11",
+      "Depends": [
+        "R (>= 3.5.0)",
+        "methods"
+      ],
+      "Suggests": [
+        "parallel",
+        "tinytest",
+        "ncdf4",
+        "sf (>= 0.9-8)",
+        "deldir",
+        "XML",
+        "leaflet (>= 2.2.1)",
+        "htmlwidgets"
+      ],
+      "LinkingTo": [
+        "Rcpp"
+      ],
+      "Imports": [
+        "Rcpp (>= 1.0-10)"
+      ],
+      "SystemRequirements": "C++17, GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3), TBB, sqlite3",
+      "Encoding": "UTF-8",
+      "Language": "en-US",
+      "Maintainer": "Robert J. Hijmans <r.hijmans@gmail.com>",
+      "Description": "Methods for spatial data analysis with vector (points, lines, polygons) and raster (grid) data. Methods for vector data include geometric operations such as intersect and buffer. Raster methods include local, focal, global, zonal and geometric operations. The predict and interpolate methods facilitate the use of regression type (interpolation, machine learning) models for spatial prediction, including with satellite remote sensing data. Processing of very large files is supported. See the manual and tutorials on <https://rspatial.org/> to get started.",
+      "License": "GPL (>= 3)",
+      "URL": "https://rspatial.org/, https://rspatial.github.io/terra/",
+      "BugReports": "https://github.com/rspatial/terra/issues",
+      "LazyLoad": "yes",
+      "Authors@R": "c( person(\"Robert J.\", \"Hijmans\", role=c(\"cre\", \"aut\"),   email=\"r.hijmans@gmail.com\", comment=c(ORCID=\"0000-0001-5872-2872\")),\t\t\t person(\"Márcia\", \"Barbosa\", role=\"ctb\", comment=c(ORCID=\"0000-0001-8972-7713\")), person(\"Roger\", \"Bivand\", role=\"ctb\", comment=c(ORCID=\"0000-0003-2392-6140\")), person(\"Andrew\", \"Brown\", role=\"ctb\", comment=c(ORCID=\"0000-0002-4565-533X\")), person(\"Michael\", \"Chirico\", role=\"ctb\", comment=c(ORCID=\"0000-0003-0787-087X\")), person(\"Emanuele\", \"Cordano\", role=\"ctb\",comment=c(ORCID=\"0000-0002-3508-5898\")), person(\"Krzysztof\", \"Dyba\", role=\"ctb\", comment=c(ORCID=\"0000-0002-8614-3816\")), person(\"Edzer\", \"Pebesma\", role=\"ctb\", comment=c(ORCID=\"0000-0001-8049-7069\")), person(\"Barry\", \"Rowlingson\", role=\"ctb\", comment=c(ORCID=\"0000-0002-8586-6625\")), person(\"Michael D.\", \"Sumner\", role=\"ctb\", comment=c(ORCID=\"0000-0002-2471-7511\")))",
+      "NeedsCompilation": "yes",
+      "Author": "Robert J. Hijmans [cre, aut] (ORCID: <https://orcid.org/0000-0001-5872-2872>), Márcia Barbosa [ctb] (ORCID: <https://orcid.org/0000-0001-8972-7713>), Roger Bivand [ctb] (ORCID: <https://orcid.org/0000-0003-2392-6140>), Andrew Brown [ctb] (ORCID: <https://orcid.org/0000-0002-4565-533X>), Michael Chirico [ctb] (ORCID: <https://orcid.org/0000-0003-0787-087X>), Emanuele Cordano [ctb] (ORCID: <https://orcid.org/0000-0002-3508-5898>), Krzysztof Dyba [ctb] (ORCID: <https://orcid.org/0000-0002-8614-3816>), Edzer Pebesma [ctb] (ORCID: <https://orcid.org/0000-0001-8049-7069>), Barry Rowlingson [ctb] (ORCID: <https://orcid.org/0000-0002-8586-6625>), Michael D. Sumner [ctb] (ORCID: <https://orcid.org/0000-0002-2471-7511>)",
       "Repository": "CRAN"
     },
     "tibble": {
