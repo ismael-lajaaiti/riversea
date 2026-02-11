@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>RIVERSEA: Preliminary explorations – Postdoc Project Reports</title>
+<title>Modelling eel abundance in the Vilaine bassin – Postdoc Project Reports</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -3907,7 +3907,7 @@ vertical-align: -.125em;
    
   <ul>
   <li><a href="#setup" id="toc-setup" class="nav-link active" data-scroll-target="#setup">0. Setup</a></li>
-  <li><a href="#river-data-la-vilaine" id="toc-river-data-la-vilaine" class="nav-link" data-scroll-target="#river-data-la-vilaine">1. River data (La Vilaine)</a></li>
+  <li><a href="#river-data" id="toc-river-data" class="nav-link" data-scroll-target="#river-data">1. River data</a></li>
   <li><a href="#environmental-data" id="toc-environmental-data" class="nav-link" data-scroll-target="#environmental-data">2. Environmental data</a>
   <ul class="collapse">
   <li><a href="#load-data" id="toc-load-data" class="nav-link" data-scroll-target="#load-data">2.1 Load data</a></li>
@@ -3919,7 +3919,19 @@ vertical-align: -.125em;
   <ul class="collapse">
   <li><a href="#load-data-1" id="toc-load-data-1" class="nav-link" data-scroll-target="#load-data-1">3.1. Load data</a></li>
   <li><a href="#preliminary-plots" id="toc-preliminary-plots" class="nav-link" data-scroll-target="#preliminary-plots">3.2. Preliminary plots</a></li>
-  <li><a href="#first-model" id="toc-first-model" class="nav-link" data-scroll-target="#first-model">3.3. First model</a></li>
+  </ul></li>
+  <li><a href="#statistical-models" id="toc-statistical-models" class="nav-link" data-scroll-target="#statistical-models">4. Statistical models</a>
+  <ul class="collapse">
+  <li><a href="#abundance-distribution-and-overdisperion" id="toc-abundance-distribution-and-overdisperion" class="nav-link" data-scroll-target="#abundance-distribution-and-overdisperion">4.1. Abundance distribution and overdisperion</a>
+  <ul class="collapse">
+  <li><a href="#poisson-model" id="toc-poisson-model" class="nav-link" data-scroll-target="#poisson-model">4.1.1. Poisson model</a></li>
+  </ul></li>
+  <li><a href="#negative-binomial-model" id="toc-negative-binomial-model" class="nav-link" data-scroll-target="#negative-binomial-model">4.1.2. Negative binomial model</a>
+  <ul class="collapse">
+  <li><a href="#model-comparisons-and-checking-overdispersion" id="toc-model-comparisons-and-checking-overdispersion" class="nav-link" data-scroll-target="#model-comparisons-and-checking-overdispersion">4.1.3. Model comparisons and checking overdispersion</a></li>
+  </ul></li>
+  <li><a href="#modelling-time" id="toc-modelling-time" class="nav-link" data-scroll-target="#modelling-time">4.2. Modelling time</a></li>
+  <li><a href="#modelling-space" id="toc-modelling-space" class="nav-link" data-scroll-target="#modelling-space">4.3. Modelling space</a></li>
   </ul></li>
   <li><a href="#todo" id="toc-todo" class="nav-link" data-scroll-target="#todo">TODO</a></li>
   </ul>
@@ -3930,7 +3942,7 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">RIVERSEA: Preliminary explorations</h1>
+<h1 class="title">Modelling eel abundance in the Vilaine bassin</h1>
 </div>
 
 
@@ -3972,8 +3984,8 @@ vertical-align: -.125em;
 </div>
 <p>If everything went well, the data should have been downloaded in <code>data/zenodo/</code>.</p>
 </section>
-<section id="river-data-la-vilaine" class="level1">
-<h1>1. River data (La Vilaine)</h1>
+<section id="river-data" class="level1">
+<h1>1. River data</h1>
 <p>First, we focus on the river geographic data. Let’s load it.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>base<span class="sc">::</span><span class="fu">load</span>(<span class="fu">here</span>(dest_dir, <span class="st">&quot;zenodo&quot;</span>, <span class="st">&quot;processed_data&quot;</span>, <span class="st">&quot;reseaux_hydrographiques.rda&quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -4359,8 +4371,16 @@ Note
 <p>We clearly observe the expected trend of eel abundance with altitude.</p>
 <p>Next, we want to model the effect of altitude, while accounting for time using <code>INLA</code>.</p>
 </section>
-<section id="first-model" class="level2">
-<h2 class="anchored" data-anchor-id="first-model">3.3. First model</h2>
+</section>
+<section id="statistical-models" class="level1">
+<h1>4. Statistical models</h1>
+<p>Data is ready to model eel abundances in space, time and with altitude. In this section, we will build increasingly complex models.</p>
+<section id="abundance-distribution-and-overdisperion" class="level2">
+<h2 class="anchored" data-anchor-id="abundance-distribution-and-overdisperion">4.1. Abundance distribution and overdisperion</h2>
+<p>Here, we focus on the choice of the distribution of our target variable - eel abundance. We will focus particularly on overdispersion, as we know that eel distribution is zero-inflated due to absence data. For the following model, we add a random effect for stations and year. We will discuss in further details these points in following sections.</p>
+<section id="poisson-model" class="level3">
+<h3 class="anchored" data-anchor-id="poisson-model">4.1.1. Poisson model</h3>
+<p>We begin with a poisson GLMM.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(INLA)</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -4378,11 +4398,11 @@ Note
 <span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(m1)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 2.31, Running = 0.726, Post = 0.146, Total = 3.18 
+    Pre = 1.32, Running = 1.12, Post = 0.669, Total = 3.11 
 Fixed effects:
               mean    sd 0.025quant 0.5quant 0.975quant   mode kld
-(Intercept)  2.068 0.216      1.646    2.066      2.508  2.066   0
-altitude_s  -1.414 0.164     -1.738   -1.413     -1.093 -1.413   0
+(Intercept)  2.069 0.217      1.645    2.066      2.510  2.067   0
+altitude_s  -1.413 0.164     -1.738   -1.413     -1.093 -1.413   0
 
 Random effects:
   Name    Model
@@ -4391,27 +4411,31 @@ Random effects:
 
 Model hyperparameters:
                                                          mean    sd 0.025quant
-size for the nbinomial observations (1/overdispersion)  2.215 0.185      1.869
-Precision for year                                     14.451 7.406      4.441
-Rho for year                                            0.766 0.117      0.487
-Precision for pop_id                                    1.457 0.412      0.805
+size for the nbinomial observations (1/overdispersion)  2.216 0.186      1.872
+Precision for year                                     14.345 7.452      4.413
+Rho for year                                            0.766 0.119      0.480
+Precision for pop_id                                    1.456 0.409      0.802
                                                        0.5quant 0.975quant
-size for the nbinomial observations (1/overdispersion)    2.208      2.599
-Precision for year                                       12.987     32.795
-Rho for year                                              0.786      0.936
-Precision for pop_id                                      1.405      2.413
+size for the nbinomial observations (1/overdispersion)    2.208      2.602
+Precision for year                                       12.839     32.919
+Rho for year                                              0.787      0.937
+Precision for pop_id                                      1.405      2.400
                                                          mode
-size for the nbinomial observations (1/overdispersion)  2.197
-Precision for year                                     10.233
-Rho for year                                            0.831
-Precision for pop_id                                    1.307
+size for the nbinomial observations (1/overdispersion)  2.194
+Precision for year                                     10.059
+Rho for year                                            0.834
+Precision for pop_id                                    1.313
 
-Marginal log-Likelihood:  -1777.69 
+Marginal log-Likelihood:  -1777.67 
  is computed 
 Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also &#39;control.compute=list(return.marginals.predictor=TRUE)&#39;)</code></pre>
 </div>
 </div>
+</section>
+</section>
+<section id="negative-binomial-model" class="level2">
+<h2 class="anchored" data-anchor-id="negative-binomial-model">4.1.2. Negative binomial model</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>y_rep <span class="ot">&lt;-</span> <span class="fu">inla.posterior.sample</span>(<span class="dv">1000</span>, m1)</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -4420,19 +4444,27 @@ Posterior summaries for the linear predictor and the fitted values are computed
 <span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">observed =</span> var_obs, <span class="at">simulated_mean =</span> <span class="fu">mean</span>(var_sim))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<section id="model-comparisons-and-checking-overdispersion" class="level3">
+<h3 class="anchored" data-anchor-id="model-comparisons-and-checking-overdispersion">4.1.3. Model comparisons and checking overdispersion</h3>
+</section>
+</section>
+<section id="modelling-time" class="level2">
+<h2 class="anchored" data-anchor-id="modelling-time">4.2. Modelling time</h2>
+</section>
+<section id="modelling-space" class="level2">
+<h2 class="anchored" data-anchor-id="modelling-space">4.3. Modelling space</h2>
 </section>
 </section>
 <section id="todo" class="level1">
 <h1>TODO</h1>
 <ul class="task-list">
-<li><label><input type="checkbox">Model fish abundances depending on environmental variables.</label></li>
 <li><label><input type="checkbox">Check model overdispersion with negative binomial.</label></li>
 <li><label><input type="checkbox">Visualise simulated data v. true data (on a map maybe).</label></li>
+<li><label><input type="checkbox">Try different time random effects (iid, ar1, rw1) and compare models.</label></li>
 <li><label><input type="checkbox">Visualise the temporal trend through the AR1 effect.</label></li>
-<li><label><input type="checkbox" checked>Re-organize notebook.</label></li>
-<li><label><input type="checkbox" checked>Cross-validation for estimated elevation data.</label></li>
-<li><label><input type="checkbox" checked>Estimate missing values in environmental data.</label></li>
-<li><label><input type="checkbox" checked>Plot stations on top of hydrographic bassin.</label></li>
+<li><label><input type="checkbox">Try different space random effects (iid, besag, spde) and compare models.</label></li>
+<li><label><input type="checkbox">Sample prior distribution.</label></li>
+<li><label><input type="checkbox">Sample posterior distribution and plot against actual data.</label></li>
 </ul>
 
 

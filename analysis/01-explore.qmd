@@ -1,5 +1,5 @@
 ---
-title: "RIVERSEA: Preliminary explorations"
+title: "Modelling eel abundance in the Vilaine bassin"
 format: html
 execute:
     message: false
@@ -40,7 +40,7 @@ unzip(here(dest_dir, "miste_data.zip"), exdir = dest_dir)
 
 If everything went well, the data should have been downloaded in `data/zenodo/`.
 
-# 1. River data (La Vilaine)
+# 1. River data 
 
 First, we focus on the river geographic data.
 Let's load it.
@@ -310,7 +310,21 @@ We clearly observe the expected trend of eel abundance with altitude.
 
 Next, we want to model the effect of altitude, while accounting for time using `INLA`.
 
-## 3.3. First model
+# 4. Statistical models
+
+Data is ready to model eel abundances in space, time and with altitude.
+In this section, we will build increasingly complex models.
+
+## 4.1. Abundance distribution and overdisperion
+
+Here, we focus on the choice of the distribution of our target variable - eel abundance.
+We will focus particularly on overdispersion, as we know that eel distribution is zero-inflated due to absence data.
+For the following model, we add a random effect for stations and year.
+We will discuss in further details these points in following sections.
+
+### 4.1.1. Poisson model
+
+We begin with a poisson GLMM.
 
 ```{r}
 library(INLA)
@@ -329,6 +343,8 @@ m1 <- inla(
 summary(m1)
 ```
 
+## 4.1.2. Negative binomial model
+
 ```{r}
 #| eval: false
 y_rep <- inla.posterior.sample(1000, m1)
@@ -339,13 +355,18 @@ var_obs <- var(data$abundance)
 c(observed = var_obs, simulated_mean = mean(var_sim))
 ```
 
+### 4.1.3. Model comparisons and checking overdispersion
+
+## 4.2. Modelling time
+
+## 4.3. Modelling space
+
 # TODO
 
-- [ ] Model fish abundances depending on environmental variables.
 - [ ] Check model overdispersion with negative binomial.
 - [ ] Visualise simulated data v. true data (on a map maybe).
+- [ ] Try different time random effects (iid, ar1, rw1) and compare models.
 - [ ] Visualise the temporal trend through the AR1 effect.
-- [x] Re-organize notebook.
-- [x] Cross-validation for estimated elevation data.
-- [x] Estimate missing values in environmental data.
-- [x] Plot stations on top of hydrographic bassin.
+- [ ] Try different space random effects (iid, besag, spde) and compare models.
+- [ ] Sample prior distribution.
+- [ ] Sample posterior distribution and plot against actual data.
