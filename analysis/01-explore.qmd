@@ -315,44 +315,171 @@ Next, we want to model the effect of altitude, while accounting for time using `
 Data is ready to model eel abundances in space, time and with altitude.
 In this section, we will build increasingly complex models.
 
-## 4.1. Abundance distribution and overdisperion
-
-Here, we focus on the choice of the distribution of our target variable - eel abundance.
-We will focus particularly on overdispersion, as we know that eel distribution is zero-inflated due to absence data.
-For the following model, we add a random effect for stations and year.
-We will discuss in further details these points in following sections.
-
-### 4.1.1. Poisson model
-
-We begin with a poisson GLMM.
+Before doing anything fancy, let's load `INLA`, and scale our predictor variable (altitude) as it is good practice.
 
 ```{r}
 library(INLA)
 
 data <- inner_join(d_eel, d_elev.nn, by = "pop_id")
 data$altitude_s <- scale(data$altitude)
+```
 
-m1 <- inla(
+## 4.1. Abundance distribution and overdisperion
+
+Here, we focus on the choice of the distribution of our target variable: eel abundance.
+We will focus particularly on overdispersion, as we know that eel distribution is zero-inflated due to absence data.
+For the following model, we add a random effect for stations and year.
+We will discuss in further details these points in following sections.
+
+### 4.1.1. Poisson model
+
+We begin with a poisson GLM.
+
+```{r}
+m.poisson <- inla(
     abundance ~ 1 + altitude_s +
-        f(year, model = "ar1") +
+        f(year, model = "iid") +
         f(pop_id, model = "iid"),
-    family = "nbinomial",
+    family = "poisson",
     data = data,
     control.compute = list(config = TRUE)
 )
-summary(m1)
+summary(m.poisson)
 ```
 
-## 4.1.2. Negative binomial model
+We can plot the distribution of the fixed effect (altitude).
 
 ```{r}
-#| eval: false
-y_rep <- inla.posterior.sample(1000, m1)
+marginal.altitude <- m.poisson$marginals.fixed$altitude_s
+ggplot(as.data.frame(marginal.altitude)) +
+    geom_line(aes(x = x, y = y)) +
+    labs(
+        x = "Altitude effect size",
+        y = "Probability"
+    )
+```
 
-var_sim <- sapply(y_rep, function(s) var(s$latent))
-var_obs <- var(data$abundance)
+We can compute the highest posterior density (HDP) credible interval.
 
-c(observed = var_obs, simulated_mean = mean(var_sim))
+```{r}
+inla.hpdmarginal(0.97, m.poisson$marginals.fixed$altitude_s)
+```
+
+We can also sample from the posterior distribution.
+
+```{r}
+m.poisson.samples <- inla.posterior.sample(100, m.poisson)
+```
+
+We represent the sampled effect size of altitude against the marginal distribution obtained before.
+
+```{r}
+fun <- function(...) {
+    altitude_s
+}
+altitude.sample <- inla.posterior.sample.eval(fun, m.poisson.samples)
+tab <- data.frame(altitude = altitude.sample[1, ])
+ggplot(tab, aes(x = altitude)) +
+    geom_histogram(aes(y = after_stat(density)), bins = 18) +
+    geom_line(data = as.data.frame(marginal.altitude), aes(x = x, y = y)) +
+    labs(
+        x = "Altitude effect size",
+        y = "Density"
+    )
+```
+
+Next, we want to simulate data from the model.
+This step is important as it allows us to see if our model makes sense or not.
+In particular, we identify where our model fails and improve it.
+
+```{r}
+alt_vals <- seq(-1, 3, length.out = 100)
+y.sample <- inla.posterior.sample.eval(
+    fun = function(...) {
+        mu <- exp(Intercept + altitude_s * alt_vals)
+        abundance <- rpois(length(mu), mu)
+    },
+    samples = m.poisson.samples
+)
+
+library(bayestestR)
+y.sum <- apply(y.sample, 1, function(x) {
+    y.hdi <- hdi(x, ci = 0.89)
+    c(mean = mean(x), hdi_low = y.hdi$CI_low, hdi_high = y.hdi$CI_high)
+})
+data.sim <- data.frame(
+    altitude_s = alt_vals,
+    t(y.sum)
+)
+
+ggplot(data.sim, aes(x = altitude_s, y = mean)) +
+    # geom_point(data = data, aes(x = altitude_s, y = abundance), colour = "grey80") +
+    geom_ribbon(aes(ymin = hdi_low, ymax = hdi_high), fill = "steelblue", alpha = 0.3) +
+    geom_line(colour = "steelblue") +
+    labs(
+        x = "Scaled altitude",
+        y = "Eel abundance"
+    )
+```
+
+Next, we want to plot actual data against this prediction.
+Because we have not included spatial and temporal random effects while sampling the posterior, we are making predictions for an average site and year.
+Therefore, we want to average abundance data over site and year.
+
+```{r}
+data.avg <- data |>
+    group_by(altitude_s) |>
+    summarise(
+        abundance_avg = mean(abundance),
+        abundance_var = var(abundance)
+    )
+data.avg
+
+ggplot(data.sim, aes(x = altitude_s, y = mean)) +
+    geom_point(data = data.avg, aes(x = altitude_s, y = abundance_avg), colour = "grey80") +
+    geom_ribbon(aes(ymin = hdi_low, ymax = hdi_high), fill = "steelblue", alpha = 0.3) +
+    geom_line(colour = "steelblue") +
+    labs(
+        x = "Scaled altitude",
+        y = "Eel abundance"
+    )
+```
+
+We see that our model capture the clear decreasing trend of eel abundances with altitude.
+
+Let's investigate overdispersion with a posterior predictive check.
+
+```{r}
+y_pred_avg <- apply(y.sample, 1, mean)
+y_pred_var <- apply(y.sample, 1, var)
+pred_df <- data.frame(
+    abundance_avg = y_pred_avg,
+    abundance_var = y_pred_var
+)
+pred_df$type <- "Posterior predictive"
+pred_df$altitude_s <- alt_vals
+data.avg$type <- "Observed"
+plot_df <- rbind(pred_df, data.avg)
+
+ggplot(plot_df, aes(x = abundance_avg, y = abundance_var, colour = type)) +
+    geom_point() +
+    geom_abline(slope = 1, intercept = 1) +
+    labs(
+        x = "Observed mean abundance",
+        y = "Observed variance in abundace"
+    )
+```
+
+We see clearly that observed data is overdispersed (variance >> mean) compared to the data generated by our model.
+This suggest that the poisson distribution is not suited for this task.
+
+### 4.1.2. Negative binomial model
+
+To account for overdispersion, we will test the negative binomial distribution.
+Basically, we will repeat the previous section but with a model where poisson distribution is replaced with a negative binomial one.
+
+```{r}
+
 ```
 
 ### 4.1.3. Model comparisons and checking overdispersion
