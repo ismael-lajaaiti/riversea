@@ -342,7 +342,7 @@ m.poisson <- inla(
         f(pop_id, model = "iid"),
     family = "poisson",
     data = data,
-    control.compute = list(config = TRUE)
+    control.compute = list(config = TRUE, waic = TRUE, dic = TRUE)
 )
 summary(m.poisson)
 ```
@@ -479,14 +479,100 @@ To account for overdispersion, we will test the negative binomial distribution.
 Basically, we will repeat the previous section but with a model where poisson distribution is replaced with a negative binomial one.
 
 ```{r}
-
+m.nbinom <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "iid") +
+        f(pop_id, model = "iid"),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(config = TRUE, waic = TRUE, dic = TRUE)
+)
+summary(m.nbinom)
 ```
 
-### 4.1.3. Model comparisons and checking overdispersion
+Let's plot the model prediction against actual data.
 
-## 4.2. Modelling time
+```{r}
+m.nbinom.samples <- inla.posterior.sample(1000, m.nbinom)
 
-## 4.3. Modelling space
+alt_vals <- seq(-1, 3, length.out = 100)
+y.sample <- inla.posterior.sample.eval(
+    fun = function(...) {
+        mu <- exp(Intercept + altitude_s * alt_vals)
+        abundance <- rnbinom(length(mu), mu = mu, size = theta[1])
+    },
+    samples = m.nbinom.samples
+)
+
+y.sum <- apply(y.sample, 1, function(x) {
+    y.hdi <- hdi(x, ci = 0.89)
+    c(mean = mean(x), hdi_low = y.hdi$CI_low, hdi_high = y.hdi$CI_high)
+})
+data.sim <- data.frame(
+    altitude_s = alt_vals,
+    t(y.sum)
+)
+
+ggplot(data.sim, aes(x = altitude_s, y = mean)) +
+    geom_point(data = data.avg, aes(x = altitude_s, y = abundance_avg), colour = "grey80") +
+    geom_ribbon(aes(ymin = hdi_low, ymax = hdi_high), fill = "steelblue", alpha = 0.3) +
+    geom_line(colour = "steelblue") +
+    labs(
+        x = "Scaled altitude",
+        y = "Eel abundance"
+    )
+```
+
+We see that the negative binomial distribution better account for the variance.
+We will stick to this distribution for now, although we could have tried other distributions.
+Notably, the ZIP-poisson could be useful when we have many 0s.
+
+## 4.2. Modeling time
+
+Let's now focus on modelling the effect of time.
+To begin with, let's inspect the raw data.
+
+```{r}
+ggplot(data, aes(x = year, y = abundance, color = altitude_s)) +
+    geom_jitter(width = 0.2) +
+    stat_summary(fun = mean, geom = "line", colour = "grey", size = 1) +
+    labs(x = "Year", ylab = "Eel abundance", color = "Altitude (scaled)")
+```
+
+The plain line indicates the trend of the mean abundance over all sites. 
+This trend is decreasing, we expect to retrieve this trend in our temporal random effects.
+
+### 4.2.1. IID random effect
+
+We begin by assuming that year random effects are independent from one another.
+We expect this assumption to be wrong, but let's start from there and then explore more realistic modeling choices.
+
+```{r}
+m.iid <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "iid") +
+        f(pop_id, model = "iid"),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(config = TRUE)
+)
+re.year <- m.iid$summary.random$year
+
+ggplot(re.year, aes(x = ID, y = mean)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+    geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`),
+        alpha = 0.3, fill = "steelblue"
+    ) +
+    geom_line(color = "steelblue") +
+    geom_point() +
+    labs(
+        x = "Year",
+        y = "Year random effect",
+    )
+```
+
+
+## 4.3. Modeling space
 
 # TODO
 
