@@ -554,16 +554,62 @@ m.iid <- inla(
         f(pop_id, model = "iid"),
     family = "nbinomial",
     data = data,
-    control.compute = list(config = TRUE)
+    control.compute = list(config = TRUE, waic = TRUE)
 )
-re.year <- m.iid$summary.random$year
+re.year.iid <- m.iid$summary.random$year
+```
 
-ggplot(re.year, aes(x = ID, y = mean)) +
+Here was our first try, yet we expect some correlation from one year to another.
+For this reason, time random effect are often modelled with autoregressive model (AR1 if lag 1).
+
+### 4.2.2. AR1 Random effect
+
+We modify the previous model changing the year random effect from IID to AR1.
+
+```{r}
+m.ar <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "ar1") +
+        f(pop_id, model = "iid"),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(config = TRUE, waic = TRUE)
+)
+re.year.ar <- m.ar$summary.random$year
+```
+
+### 4.2.3. RW1 random effect
+
+Same with RW1 random effect.
+
+```{r}
+m.rw <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "rw1") +
+        f(pop_id, model = "iid"),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(config = TRUE, waic = TRUE)
+)
+re.year.rw <- m.rw$summary.random$year
+```
+
+### 4.2.4. Model comparisons
+
+Now that we have the three models, we can compare them.
+
+First, we can plot random effect vs year.
+
+```{r}
+re.year.iid$type <- "iid"
+re.year.ar$type <- "ar"
+re.year.rw$type <- "rw"
+re.year.all <- rbind(re.year.iid, re.year.ar, re.year.rw)
+
+ggplot(re.year.all, aes(x = ID, y = mean, color = type)) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`),
-        alpha = 0.3, fill = "steelblue"
-    ) +
-    geom_line(color = "steelblue") +
+    geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), alpha = 0.1) +
+    geom_line() +
     geom_point() +
     labs(
         x = "Year",
@@ -571,15 +617,62 @@ ggplot(re.year, aes(x = ID, y = mean)) +
     )
 ```
 
+We see that AR1 and RW1 produce random effects with a smooth trend.
+By contrast, IID random effects produces 'chaotic' random effects due to their independence.
+Second, we can inspect model WAIC, where lower values implies better out-of-sample predictive performance.
+
+```{r}
+m.iid$waic$waic
+
+m.ar$waic$waic
+
+m.rw$waic$waic
+```
+
+We see that AR1 and RW1 have lower WAIC signaling better predictive ability, as we could have expected.
+
+We can also do a predictive check by plotting predicted trends against the observed one.
+
+```{r}
+pred_iid <- tapply(m.iid$summary.fitted.values$mean, data$year, mean)
+pred_ar1 <- tapply(m.ar$summary.fitted.values$mean, data$year, mean)
+pred_rw1 <- tapply(m.rw$summary.fitted.values$mean, data$year, mean)
+
+obs <- tapply(data$abundance, data$year, mean)
+
+df <- data.frame(
+    year = sort(unique(data$year)),
+    obs = obs,
+    iid = pred_iid,
+    ar1 = pred_ar1,
+    rw1 = pred_rw1
+)
+df <- df |> pivot_longer(
+    cols = c("obs", "iid", "ar1", "rw1"),
+    names_to = "type",
+    values_to = "mean_abundance"
+)
+
+ggplot(df, aes(x = year, y = mean_abundance, color = type)) +
+    geom_line() +
+    labs(
+        y = "Mean abundance",
+        x = "Year"
+    )
+```
+
+Here, we see that there is no strong differences: all three models track well the observed trend.
+The IID model might be a bit overfitting the trend at the beginning, but otherwise there is not much to say.
 
 ## 4.3. Modeling space
 
+Now that we have seen the different option to model time dynamics, we will focus on space.
+
+
+
 # TODO
 
-- [ ] Check model overdispersion with negative binomial.
+- [ ] How can we visualise local spatial trends.
 - [ ] Visualise simulated data v. true data (on a map maybe).
-- [ ] Try different time random effects (iid, ar1, rw1) and compare models.
-- [ ] Visualise the temporal trend through the AR1 effect.
 - [ ] Try different space random effects (iid, besag, spde) and compare models.
 - [ ] Sample prior distribution.
-- [ ] Sample posterior distribution and plot against actual data.
