@@ -668,10 +668,90 @@ The IID model might be a bit overfitting the trend at the beginning, but otherwi
 
 Now that we have seen the different option to model time dynamics, we will focus on space.
 
+### 4.3.1. IID random effect
+
+First, we begin with IID random effects, assuming site are independent from one another.
+This assumption is probably unrealistic but still provide a useful baseline.
+
+We fit the model, extract spatial random effects and join them to the dataframe containing their geographical positions.
+
+```{r}
+m.iid <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "ar1") +
+        f(pop_id, model = "iid"),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(config = TRUE, waic = TRUE)
+)
+
+re.site.iid <- m.iid$summary.random$pop_id
+
+pts.re.iid <- pts_vilaine |> left_join(
+    re.site.iid |> rename(pop_id = "ID"),
+    by = "pop_id"
+)
+```
+
+Next, we can plot the random effect on a map, to check for spatial correlation.
+
+```{r}
+ggplot(pts.re.iid) +
+    geom_sf(aes(color = mean), size = 2) +
+    scale_color_gradient2(
+        low = "blue",
+        mid = "white",
+        high = "red",
+        midpoint = 0
+    ) +
+    labs(
+        color = "RE site",
+    )
+```
+
+We do see a clear spatial correlation, from west to east going from negative to positive random effects.
+This spatial correlation in the residuals motivates the use of spatially structured residuals.
+We explore the different options to do so in the following subsections.
+
+### 4.3.2. SPDE random effect
+
+First step is to get site coordinates in meters.
+
+```{r}
+pts_vilaine.proj <- st_transform(pts_vilaine, 2154) # Coordinates in meters.
+coords <- st_coordinates(pts_vilaine.proj)
+```
+
+Then we can build the mesh and visualise it.
+
+```{r}
+mesh <- inla.mesh.2d(loc = coords)
+plot(mesh)
+points(coords, col = "red", pch = 16, cex = 2)
+```
+
+Next, we define the SPDE model.
+
+```{r}
+spde <- inla.spde2.matern(mesh)
+A <- inla.spde.make.A(mesh = mesh, loc = coords)
+spatial_index <- inla.spde.make.index(
+    name = "spatial.field",
+    n.spde = spde$n.spde
+)
+```
+
+
+
+
+### 4.3.1. Besag random effect
+
 
 
 # TODO
 
+- [ ] Fit SPDE model and visualise RE on the map.
+- [ ] Fit BESAG model and visualise RE on the map.
 - [ ] How can we visualise local spatial trends.
 - [ ] Visualise simulated data v. true data (on a map maybe).
 - [ ] Try different space random effects (iid, besag, spde) and compare models.
