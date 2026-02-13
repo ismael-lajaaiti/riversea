@@ -901,7 +901,50 @@ However, we know that eel do not live on land and therefore that their abundane 
 Yet, this method doesn't seem suited for river networks as we would have mostly barrier with a very complex topology.
 So let's try something else.
 
-### 4.3.3. Besag random effect
+### 4.3.3. Variograms
+
+We can visualise the spatial correlation between sites with variograms.
+Variograms represent the spatial dependence between pair of points dependending on their distance.
+
+For a spatial variable $z(s)$, the semivariaogram $\gamma(h)$ is
+
+$$ 
+\gamma(h) = \frac{1}{2} \mathbb{E}[(z(s) - z(s + h))^2]
+$$
+
+where $h$ is the distance between points.
+For our case study, we can compare semivariograms where we use the euclidian distance and the hydrographic distance.
+This comparison may allow us to identify which of the distances is more relevant to model spatial dependence.
+
+```{r}
+site_vals <- data |>
+    group_by(pop_id) |>
+    summarise(mean_abundance = mean(abundance), .groups = "drop")
+pts_sites <- pts_vilaine.proj %>% left_join(site_vals, by = "pop_id")
+```
+
+```{r}
+coords <- st_coordinates(pts_sites)
+z <- pts_sites$mean_abundance
+D.euclidian <- as.matrix(dist(coords))
+n <- length(z)
+# get upper triangle pairs
+idx_pairs <- which(upper.tri(D.euclidian), arr.ind = TRUE)
+dists <- D_euc[idx_pairs]
+semivar_vals <- 0.5 * (z[idx_pairs[,1]] - z[idx_pairs[,2]])^2
+
+# bin distances
+nbins <- 15
+breaks <- seq(0, max(dists), length.out = nbins+1)
+bins <- cut(dists, breaks = breaks, include.lowest = TRUE)
+gamma <- tapply(semivar_vals, bins, mean)
+bin_mid <- (head(breaks,-1) + tail(breaks,-1))/2
+
+plot(bin_mid, gamma, type="b", xlab="Euclidean distance (m)", ylab="Semivariance",
+     main="Empirical semivariogram (Euclidean)")
+```
+
+### 4.3.4. Besag random effect
 
 
 # TODO
