@@ -715,22 +715,29 @@ We explore the different options to do so in the following subsections.
 
 ### 4.3.2. SPDE random effect
 
-First step is to get site coordinates in meters.
+First step is to get site coordinates in meters, because angles distort distances between sites, which is going to bias our spatial model.
 
 ```{r}
 pts_vilaine.proj <- st_transform(pts_vilaine, 2154) # Coordinates in meters.
 coords <- st_coordinates(pts_vilaine.proj)
 ```
 
-Then we can build the mesh and visualise it.
+From these coordinates we can build the mesh using `fmesher` and visualise it.
 
 ```{r}
-mesh <- inla.mesh.2d(loc = coords)
+library(fmesher)
+mesh <- fm_mesh_2d_inla(loc = coords)
 plot(mesh)
 points(coords, col = "red", pch = 16, cex = 2)
 ```
 
-Next, we define the SPDE model.
+::: {.callout-note}
+The mesh can be customised to increase or decrease its resolution using additional parameters.
+For our simple case study, we won't focus on these details.
+:::
+
+Next, we define the SPDE model and the projection matrix $A$.
+$A$ projects the spatial random field to actual observation locations.
 
 ```{r}
 spde <- inla.spde2.matern(mesh)
@@ -739,18 +746,168 @@ spatial_index <- inla.spde.make.index(
     name = "spatial.field",
     n.spde = spde$n.spde
 )
+dim(A)
+
+nrow(mesh$loc)
 ```
 
+We see that $A$ is of dimension (number of sites x number of mesh knots).
 
+Because we have multiple observations per sites we have to expand A so the spatial random field is projected for each observations (and not locations).
+To do so, we have to match each observation to its location.
 
+```{r}
+site_idx <- match(data$pop_id, pts_vilaine$pop_id)
+A_expanded <- A[site_idx, ]
+dim(A_expanded)
 
-### 4.3.1. Besag random effect
+nrow(data)
+```
 
+Next, we can build the data stack which combines: data, effects (i.e. predictors) and observation matrices.
+
+```{r}
+data_stack <- inla.stack(
+    data = list(y = data$abundance),
+    A = list(A_expanded, 1),
+    effects = list(
+        spatial.field = spatial_index,
+        data.frame(
+            intercept = rep(1, nrow(data)),
+            altitude_s = data$altitude_s,
+            year = data$year,
+            pop_id = data$pop_id
+        )
+    ),
+    tag = "est"
+)
+
+data_stack
+```
+
+Now everything is (finally) ready to fit the model.
+
+```{r}
+m.spde <- inla(
+    y ~ -1 + intercept + altitude_s +
+        f(year, model = "ar1") +
+        f(spatial.field, model = spde),
+    family = "nbinomial",
+    data = inla.stack.data(data_stack),
+    control.predictor = list(A = inla.stack.A(data_stack)),
+    control.compute = list(config = TRUE, waic = TRUE)
+)
+
+summary(m.spde)
+```
+
+First, let's compare the WAIC of the SPDE model with the IID one.
+
+```{r}
+m.iid$waic$waic
+
+m.spde$waic$waic
+```
+
+We see that they perform similarly in terms of predictive performance.
+This inspection doesn't indicate that a model is clearly better than another.
+
+::: {.callout-important}
+WAIC is a measure of out-of-sample predictive performance.
+A model can be wrong (in the sense of causal structure) and predict well, while a model can be right and predict poorly.
+It is important to keep this fact in mind while comparing modelling performance with WAIC.
+:::
+
+To go further, we extract spatial random effects and want to visual them.
+
+```{r}
+re.site.spde <- m.spde$summary.random$spatial.field
+proj <- fm_evaluator(mesh)
+
+# Get spatial field.
+spatial_mean <- proj$proj$A %*% re.site.spde$mean
+spatial_sd <- proj$proj$A %*% re.site.spde$sd
+
+# Put it in a dataframe for ggplot.
+spatial_proj <- data.frame(
+    x = rep(proj$x, length(proj$y)),
+    y = rep(proj$y, each = length(proj$x)),
+    mean = as.vector(spatial_mean),
+    sd = as.vector(spatial_sd)
+)
+```
+
+We also extract the edges of the river network to plot it on the subsequent figure.
+
+```{r}
+edges_sf <- net %>%
+    activate("edges") %>%
+    st_as_sf()
+edges_sf <- st_transform(edges_sf, st_crs(pts_vilaine.proj))
+```
+
+Visualize the spatial random effects on a map.
+
+```{r}
+ggplot(spatial_proj, aes(x = x, y = y, fill = mean)) +
+    geom_raster() +
+    scale_fill_gradient2(
+        low = "blue",
+        mid = "white",
+        high = "red",
+        midpoint = 0
+    ) +
+    geom_sf(
+        data = edges_sf,
+        inherit.aes = FALSE,
+        size = 0.3,
+        alpha = 0.3
+    ) +
+    geom_sf(
+        data = pts_vilaine.proj,
+        aes(geometry = geometry),
+        inherit.aes = FALSE
+    ) +
+    labs(
+        fill = "SPDE RE",
+        x = "",
+        y = ""
+    )
+```
+
+As well as their uncertainty.
+
+```{r}
+ggplot(spatial_proj, aes(x = x, y = y, fill = sd)) +
+    geom_raster() +
+    geom_sf(data = edges_sf, inherit.aes = FALSE, alpha = 0.3, size = 0.3) +
+    geom_sf(
+        data = pts_vilaine.proj,
+        aes(geometry = geometry),
+        inherit.aes = FALSE
+    ) +
+    labs(
+        fill = "SD RE",
+        x = "",
+        y = ""
+    )
+```
+
+As expected we see that uncertainty is lower near sites, and increases as we go further from them.
+
+We see from plot above that SPDE makes sense for continuous process in space, as it can interpolate anywhere in the plane based on some assumed correlation structure.
+However, we know that eel do not live on land and therefore that their abundane is highly discontinuous.
+[Some methods](https://eliaskrainski.github.io/INLAspacetime/articles/web/barrierExample.html#references) have adpated the SPDE framework to account for spatial barriers.
+Yet, this method doesn't seem suited for river networks as we would have mostly barrier with a very complex topology.
+So let's try something else.
+
+### 4.3.3. Besag random effect
 
 
 # TODO
 
-- [ ] Fit SPDE model and visualise RE on the map.
+- [ ] Spatial effects that change in time?
+- [ ] Semivariogram, hydrolic v euclidian distance.
 - [ ] Fit BESAG model and visualise RE on the map.
 - [ ] How can we visualise local spatial trends.
 - [ ] Visualise simulated data v. true data (on a map maybe).
