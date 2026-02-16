@@ -901,7 +901,7 @@ However, we know that eel do not live on land and therefore that their abundane 
 Yet, this method doesn't seem suited for river networks as we would have mostly barrier with a very complex topology.
 So let's try something else.
 
-### 4.3.3. Variograms
+### 4.3.3. Variograms (euclidian distance)
 
 We can visualise the spatial correlation between sites with variograms.
 Variograms represent the spatial dependence between pair of points dependending on their distance.
@@ -916,35 +916,278 @@ where $h$ is the distance between points.
 For our case study, we can compare semivariograms where we use the euclidian distance and the hydrographic distance.
 This comparison may allow us to identify which of the distances is more relevant to model spatial dependence.
 
+Prepare data for variogram analysis.
+
 ```{r}
+library(gstat)
+
 site_vals <- data |>
     group_by(pop_id) |>
     summarise(mean_abundance = mean(abundance), .groups = "drop")
-pts_sites <- pts_vilaine.proj %>% left_join(site_vals, by = "pop_id")
+
+pts_sites <- pts_vilaine.proj %>%
+    left_join(site_vals, by = "pop_id") %>%
+    as_Spatial() # gstat works with Spatial* objects
+```
+
+Compute and plot empirical semivariogram using Euclidean distance.
+
+```{r}
+vg_euclidian <- variogram(mean_abundance ~ 1, locations = pts_sites)
+plot(vg_euclidian, xlab = "Euclidian distance (m)", ylab = "Semivariance")
+```
+
+### 4.3.4. Fixing river network
+
+First, let's check the connectivity of the network. 
+Disconnected nodes will break the path calculation.
+
+```{r}
+library(tidygraph)
+library(igraph)
+
+net_proj <- st_transform(net, st_crs(pts_vilaine.proj))
+net_proj <- net_proj %>% to_undirected()
+
+components <- components(net_proj)
+components$no
+```
+
+We see that we have more than one connected components.
+Let's extract the largest one.
+
+```{r}
+comp_sizes <- table(components$membership)
+largest_comp <- as.numeric(names(sort(comp_sizes, decreasing = TRUE)[1]))
+
+net_largest <- net_proj |>
+    activate("nodes") |>
+    filter(components$membership == largest_comp) |>
+    activate("edges")
+
+plot(net_largest, cex = 0.5)
+```
+
+OK, so we see that there is probably in issue with the edges because a large part of the Vilaine bassin is removed.
+
+Let's identify which edges are broken by finding edges that connect nodes from different components.
+
+After visual inspection, I've identified that there are two nodes very close (1504 and 1167) but not connected, although they are the same point.
+I'll simply add a new edge to connect them.
+
+```{r}
+link_nodes <- function(net) {
+    n1 <- 1167
+    n2 <- 1504
+    nodes_sf <- net |>
+        activate("nodes") |>
+        st_as_sf()
+    edges_sf <- net |>
+        activate("edges") |>
+        st_as_sf()
+    coords <- rbind(
+        st_coordinates(nodes_sf[n1, ]),
+        st_coordinates(nodes_sf[n2, ])
+    )
+    crs <- st_crs(nodes_sf)
+    line <- st_sfc(st_linestring(coords), crs = crs)
+    new_edge <- edges_sf[1, ]
+    for (col in names(new_edge)) new_edge[[col]] <- NA
+    new_edge$from <- n1
+    new_edge$to <- n2
+    st_geometry(new_edge) <- line
+    edges_sf2 <- bind_rows(edges_sf, new_edge)
+    net_fixed <- sfnetwork(nodes_sf, edges_sf2, directed = FALSE)
+    net_fixed
+}
+
+net_fixed <- link_nodes(net)
+```
+
+Let's check the connected components.
+
+```{r}
+net_proj <- st_transform(net_fixed, st_crs(pts_vilaine.proj))
+
+largest_component <- function(net) {
+    components <- components(net)
+
+    comp_sizes <- table(components$membership)
+    largest_comp <- as.numeric(names(sort(comp_sizes, decreasing = TRUE)[1]))
+
+    net_largest <- net |>
+        activate("nodes") |>
+        filter(components$membership == largest_comp) |>
+        activate("edges")
+    net_largest
+}
+
+net_largest <- largest_component(net_proj)
+plot(net_largest, cex = 0.5)
+```
+
+OK it seems that we have fixed the disconnection issues.
+Let's try to compute hydrographic distances.
+First, we have to snap the stations nodes to the network.
+
+```{r}
+net_with_sites <- net_largest %>%
+    st_network_blend(pts_vilaine.proj)
+
+nodes <- net_with_sites |>
+    activate("nodes") |>
+    st_as_sf()
+site_node_ids <- which(!is.na(nodes$pop_id))
+
+plot(net_with_sites, cex = 0.3)
+plot(pts_vilaine.proj, add = TRUE, col = "red", pch = 16, cex = 1.5)
+text(nodes[site_node_ids, ]$geometry, labels = site_node_ids)
+```
+
+We see that a station is away from the remaining connected component.
+After another inspection with `mapview`, we can see that the points in the estuary are disconnected.
+So I suggest to create a new point, representing the estuary which connects all of these points.
+
+This involves multiple steps.
+First, create the estuary point.
+Second, connect the new node the the one in the estuary.
+Third, check the new network with visual inspection.
+
+```{r}
+estuary_nodes <- c(1664, 1661, 1365) # Do not keep branch with only a few points.
+
+nodes_all <- net |>
+    activate("nodes") |>
+    st_as_sf()
+
+centroid <- nodes_all |>
+    slice(estuary_nodes) |>
+    st_union() |>
+    st_centroid()
+
+nodes_all_up <- rbind(nodes_all, centroid)
+n_centroid <- nrow(nodes_all_up)
+
+edges_all <- net |>
+    activate("edges") |>
+    st_as_sf()
+crs <- st_crs(net)
+edges_all_up <- edges_all
+
+for (n in estuary_nodes) {
+    coords <- rbind(
+        st_coordinates(nodes_all_up[n_centroid, ]),
+        st_coordinates(nodes_all_up[n, ])
+    )
+    geom <- st_sfc(st_linestring(coords), crs = crs)
+    new_edge <- edges_all[1, ]
+    for (col in names(new_edge)) new_edge[[col]] <- NA
+    new_edge$to <- n_centroid
+    new_edge$from <- n
+    st_geometry(new_edge) <- geom
+    edges_all_up <- bind_rows(edges_all_up, new_edge)
+}
+
+net_up <- sfnetwork(nodes_all_up, edges_all_up, directed = FALSE)
 ```
 
 ```{r}
-coords <- st_coordinates(pts_sites)
-z <- pts_sites$mean_abundance
-D.euclidian <- as.matrix(dist(coords))
-n <- length(z)
-# get upper triangle pairs
-idx_pairs <- which(upper.tri(D.euclidian), arr.ind = TRUE)
-dists <- D_euc[idx_pairs]
-semivar_vals <- 0.5 * (z[idx_pairs[,1]] - z[idx_pairs[,2]])^2
-
-# bin distances
-nbins <- 15
-breaks <- seq(0, max(dists), length.out = nbins+1)
-bins <- cut(dists, breaks = breaks, include.lowest = TRUE)
-gamma <- tapply(semivar_vals, bins, mean)
-bin_mid <- (head(breaks,-1) + tail(breaks,-1))/2
-
-plot(bin_mid, gamma, type="b", xlab="Euclidean distance (m)", ylab="Semivariance",
-     main="Empirical semivariogram (Euclidean)")
+net_up <- link_nodes(net_up)
 ```
 
-### 4.3.4. Besag random effect
+```{r}
+#| eval: false
+
+library(mapview)
+
+# Extract nodes and edges as sf
+nodes_sf <- net_up %>%
+    activate("nodes") %>%
+    st_as_sf()
+edges_sf <- net_up %>%
+    activate("edges") %>%
+    st_as_sf()
+
+nodes_sf$label <- as.character(seq_len(nrow(nodes_sf)))
+edges_sf$label <- paste(edges_sf$from, edges_sf$to, sep = "-")
+
+# Basic map: nodes (with labels) over edges
+mapview(edges_sf, color = "steelblue", alpha.regions = 0.5, legend = FALSE) +
+    mapview(nodes_sf, zcol = NULL, popup = nodes_sf$label, label = nodes_sf$label, col.region = "orange")
+```
+
+```{r}
+net_largest <- largest_component(net_up)
+net_largest <- st_transform(net_largest, st_crs(pts_vilaine.proj))
+
+net_with_sites <- net_largest |>
+    st_network_blend(pts_vilaine.proj)
+
+nodes <- net_with_sites |>
+    activate("nodes") |>
+    st_as_sf()
+site_node_ids <- which(!is.na(nodes$pop_id))
+
+plot(net_with_sites, cex = 0.3)
+plot(pts_vilaine.proj, add = TRUE, col = "red", pch = 16, cex = 1.5)
+text(nodes[site_node_ids, ]$geometry, labels = site_node_ids)
+```
+
+OK, so now all of our stations are on the hydrographic network.
+We can now compute hydrographic distances.
+
+### 4.3.5. Variograms (hydrographic distance)
+
+```{r}
+net_with_sites <- net_with_sites |>
+    activate("edges") |>
+    mutate(weight = edge_length())
+
+n1 <- 2453
+n2 <- 2454
+paths <- st_network_paths(net_with_sites, from = n1, to = n2)
+paths
+node_path <- paths |>
+    slice(1) |>
+    pull(node_paths) |>
+    unlist()
+node_path
+
+plot(net_with_sites, col = "grey", cex = 0.3)
+plot(slice(activate(net_with_sites, "nodes"), node_path), col = "red", add = TRUE)
+```
+
+The path calculated seems right.
+We can further proceed and compute the distance.
+We begin by defining a function between a pair of points, and then we will loop between all possible pairs.
+
+```{r}
+get_distance <- function(net, i, j) {
+    paths <- st_network_paths(net, from = i, to = j)
+    edges <- net |> activate("edges") |> st_as_sf()
+    edge_path <- paths |> slice(1) |> pull(edge_paths) |> unlist()
+    edges |> slice(edge_path) |> pull(weight) |> sum()
+}
+
+get_distance(net_with_sites, n1, n2)
+```
+
+The pairwise function appears to work, let's loop now.
+
+```{r}
+n_sites <- length(site_node_ids)
+D_hydro <- matrix(NA, n_sites, n_sites)
+for (i in 1:n_sites) {
+    node_i <- site_node_ids[i]
+    for (j in i:n_sites){ 
+        node_j <- site_node_ids[j]
+        D_hydro[i, j] <- get_distance(net_with_sites, node_i, node_j)
+    }
+}
+D_hydro
+```
+
+### 4.3.6. Besag random effect
 
 
 # TODO
