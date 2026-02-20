@@ -1,0 +1,59 @@
+---
+title: "Exploring coastal data"
+format: html
+execute:
+    message: false
+    warning: false
+---
+
+# 0. Setup
+
+Load dependencies.
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+```
+
+```{r}
+library(here)
+```
+
+```{r}
+data_folder <- here("data", "coast")
+list.files(data_folder)
+```
+
+We see that we have multiple csv files.
+We have abundance and biomass data for the Atlantic (Nurse, Solper), Atlantic and Manche (POMET).
+
+
+```{r}
+library(dyplr)
+library(readr)
+
+d <- read.csv(here(data_folder, "captures_SOLPER_2005_2011.csv"), sep = ";")
+head(d)
+```
+
+
+```{r}
+d.traits <- d |>
+    group_by(Annee) |>
+    summarise(n_trait = n_distinct(Trait))
+
+d.poids <- d |> 
+    filter(Espece == "SOLESOL") |>
+    group_by(Annee) |>
+    summarise(mean_weight = mean(Poids))
+```
+
+
+```{r}
+library(ggplot2)
+
+ggplot(d.traits, aes(A))
+```

@@ -5,12 +5,10 @@ project:
   output-dir: docs
 
 website:
-  title: "Postdoc Project Reports"
+  title: "Riversea Project Reports"
   navbar:
     left:
       - text: Home
-        href: index.html
-      - text: Analyses
         href: analysis/index.html
 
 format:

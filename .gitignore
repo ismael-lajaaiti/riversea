@@ -4,7 +4,7 @@
 .Rproj.user/
 .Ruserdata
 .Rapp.history
-data/zenodo/
+data/
 
 # R package build artifacts
 *.zip

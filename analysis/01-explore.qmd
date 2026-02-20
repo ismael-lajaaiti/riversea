@@ -685,6 +685,10 @@ m.iid <- inla(
     control.compute = list(config = TRUE, waic = TRUE)
 )
 
+summary(m.iid)
+```
+
+```{r}
 re.site.iid <- m.iid$summary.random$pop_id
 
 pts.re.iid <- pts_vilaine |> left_join(
@@ -1164,9 +1168,17 @@ We begin by defining a function between a pair of points, and then we will loop 
 ```{r}
 get_distance <- function(net, i, j) {
     paths <- st_network_paths(net, from = i, to = j)
-    edges <- net |> activate("edges") |> st_as_sf()
-    edge_path <- paths |> slice(1) |> pull(edge_paths) |> unlist()
-    edges |> slice(edge_path) |> pull(weight) |> sum()
+    edges <- net |>
+        activate("edges") |>
+        st_as_sf()
+    edge_path <- paths |>
+        slice(1) |>
+        pull(edge_paths) |>
+        unlist()
+    edges |>
+        slice(edge_path) |>
+        pull(weight) |>
+        sum()
 }
 
 get_distance(net_with_sites, n1, n2)
@@ -1179,23 +1191,217 @@ n_sites <- length(site_node_ids)
 D_hydro <- matrix(NA, n_sites, n_sites)
 for (i in 1:n_sites) {
     node_i <- site_node_ids[i]
-    for (j in i:n_sites){ 
-        node_j <- site_node_ids[j]
-        D_hydro[i, j] <- get_distance(net_with_sites, node_i, node_j)
+    for (j in i:n_sites) {
+        if (i != j) {
+            node_j <- site_node_ids[j]
+            D_hydro[i, j] <- get_distance(net_with_sites, node_i, node_j)
+            D_hydro[j, i] <- D_hydro[i, j]
+        }
     }
 }
-D_hydro
 ```
+
+Now that we have pairwise hydrographic distance between sites, we can build a new statistical model that account for this spatial dependency.
 
 ### 4.3.6. Besag random effect
 
+Build adjacency matrix connecting each site to its nearest neighbors along the river.
+
+```{r}
+k <- 2 # Connect to 2 nearest neighbors (typically upstream/downstream)
+adj_list <- vector("list", n_sites)
+for (i in seq_len(n_sites)) {
+    drow <- D_hydro[i, ]
+    drow[i] <- NA # Exclude self-link.
+    nn <- order(drow, na.last = NA)[1:k]
+    nn <- nn[!is.na(nn)]
+    adj_list[[i]] <- unique(nn)
+}
+
+# Make adjacency symmetric (if i~j then j~i).
+for (i in seq_len(n_sites)) {
+    for (j in adj_list[[i]]) {
+        adj_list[[j]] <- unique(c(adj_list[[j]], i))
+    }
+}
+```
+
+Let's check the resulting graph.
+
+```{r}
+library(igraph)
+g <- make_empty_graph(n_sites, directed = FALSE)
+for (i in seq_len(n_sites)) {
+    if (length(adj_list[[i]]) > 0) {
+        for (j in adj_list[[i]]) g <- add_edges(g, c(i, j))
+    }
+}
+n_components <- components(g)$no
+cat("Number of connected components:", n_components, "\n")
+```
+
+Now we visualize the adjacency structure on a map.
+
+```{r}
+# Create edges sf object from adjacency list.
+edges_adj <- data.frame()
+for (i in seq_len(n_sites)) {
+    for (j in adj_list[[i]]) {
+        if (i < j) { # avoid duplicate edges
+            edges_adj <- rbind(edges_adj, data.frame(from = i, to = j))
+        }
+    }
+}
+
+nodes_sf <- net_with_sites |>
+    activate("nodes") |>
+    st_as_sf()
+
+# Get coordinates for each site.
+coords_sites <- st_coordinates(nodes_sf[site_node_ids, ])
+coords_sites <- data.frame(site_idx = 1:n_sites, coords_sites)
+
+# Create line geometries between neighbors.
+edges_geom <- list()
+for (k_edge in 1:nrow(edges_adj)) {
+    i <- edges_adj$from[k_edge]
+    j <- edges_adj$to[k_edge]
+    coords <- rbind(
+        coords_sites[i, c("X", "Y")],
+        coords_sites[j, c("X", "Y")]
+    )
+    line <- st_linestring(as.matrix(coords))
+    edges_geom[[k_edge]] <- line
+}
+edges_geom <- st_sfc(edges_geom, crs = st_crs(nodes_sf))
+
+edges_sf <- st_sf(
+    data = edges_adj,
+    geometry = edges_geom
+)
+
+edges_river <- net_with_sites %>%
+    activate("edges") %>%
+    st_as_sf()
+
+# Plot: sites with adjacency edges.
+ggplot() +
+    geom_sf(data = edges_sf, color = "steelblue", size = 0.8, alpha = 0.6) +
+    geom_sf(data = nodes_sf[site_node_ids, ], color = "darkred", size = 2) +
+    geom_sf(
+        data = edges_river,
+        inherit.aes = FALSE,
+        size = 0.3,
+        alpha = 0.3
+    ) +
+    labs(
+        x = "",
+        y = ""
+    )
+```
+
+Edges are really ruled by hydrographic and not euclidian distance.
+For example, the two sites in the North-West are very close according to the euclidian distance, but are not connected because they belong to two different branch arms.
+
+::: {.callout-caution}
+We have several connected components.
+This is probably an issue because it means that part of our river are independent from another, although belonging to the hydrographic bassin.
+A solution might be to connect components by their closest sites.
+:::
+
+To give the graph to `inla` let's create a sparse adjacency matrix.
+
+```{r}
+library(Matrix)
+
+# 1. Build sparse adjacency matrix from adj_list
+adj_matrix <- matrix(0, nrow = n_sites, ncol = n_sites)
+for (i in seq_len(n_sites)) {
+    for (j in adj_list[[i]]) {
+        adj_matrix[i, j] <- 1
+    }
+}
+adj_matrix_sparse <- as(adj_matrix, "dgCMatrix")
+
+node_sites <- nodes_sf[site_node_ids, ]
+data$node_id <- match(data$pop_id, node_sites$pop_id)
+
+m.besag <- inla(
+    abundance ~ 1 + altitude_s +
+        f(year, model = "ar1") +
+        f(node_id, model = "besagproper", graph = adj_matrix_sparse),
+    family = "nbinomial",
+    data = data,
+    control.compute = list(waic = TRUE, config = TRUE)
+)
+
+summary(m.besag)
+```
+
+Plot spatial RE.
+
+```{r}
+re.site.besag <- m.besag$summary.random$node_id
+
+# Create sf for plotting
+pts_besag <- node_sites %>%
+    bind_cols(re.site.besag)
+
+# Plot Besag RE on map
+ggplot(pts_besag) +
+    geom_sf(
+        data = edges_river,
+        inherit.aes = FALSE,
+        size = 0.3,
+        alpha = 0.3
+    ) +
+    geom_sf(aes(color = mean), size = 3) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    labs(
+        color = "Mean RE"
+    )
+```
+
+```{r}
+pred_df <- data.frame(
+    pop_id = data$pop_id,
+    year = data$year,
+    true_abundance = data$abundance,
+    pred_abundance = m.besag$summary.fitted.values$mean
+) %>%
+    left_join(pts_vilaine %>% st_drop_geometry() %>% select(pop_id), by = "pop_id")
+
+d_plot <- pred_df %>%
+    filter(year %in% seq(min(year), max(year), by = 6)) %>% # every 5 years
+    left_join(pts_vilaine, by = "pop_id") %>%
+    st_as_sf()
+
+d_plot$res <- log(abs(d_plot$true_abundance - d_plot$pred_abundance))
+
+ggplot() +
+    geom_sf(data = edges_river, color = "lightgrey", size = 0.3, inherit.aes = FALSE) +
+    geom_sf(data = d_plot, aes(color = true_abundance), size = 3) +
+    facet_wrap(~year) +
+    labs(color = "Obs. abund.")
+
+ggplot() +
+    geom_sf(data = edges_river, color = "lightgrey", size = 0.3, inherit.aes = FALSE) +
+    geom_sf(data = d_plot, aes(color = pred_abundance), size = 3) +
+    facet_wrap(~year) +
+    labs(color = "Pred. abund.")
+
+
+ggplot() +
+    geom_sf(data = edges_river, color = "lightgrey", size = 0.3, inherit.aes = FALSE) +
+    geom_sf(data = d_plot, aes(color = res), size = 3) +
+    facet_wrap(~year) +
+    labs(color = "Res.")
+```
 
 # TODO
 
 - [ ] Spatial effects that change in time?
-- [ ] Semivariogram, hydrolic v euclidian distance.
 - [ ] Fit BESAG model and visualise RE on the map.
 - [ ] How can we visualise local spatial trends.
 - [ ] Visualise simulated data v. true data (on a map maybe).
-- [ ] Try different space random effects (iid, besag, spde) and compare models.
 - [ ] Sample prior distribution.

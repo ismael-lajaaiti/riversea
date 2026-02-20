@@ -1,0 +1,15 @@
+{
+  "hash": "3f85675e2535b047fc34e19aa359b1ef",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Exploring coastal data\"\nformat: html\nexecute:\n    message: false\n    warning: false\n---\n\n# 0. Setup\n\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\na <- 1\n```\n:::\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -1,8 +1,8 @@
 ---
-title: "Analyses"
+title: "Reports"
 ---
 
-This page lists all available analyses for the project.
+This page lists all analyses for the project.
 
-- [Analysis 1](01-explore.html)
-- [Analysis 2](analysis2.html)
+1. [Modeling eel abundance using INLA](01-explore.html)
+2. [Exploring coastal data](02-coast-data.html)
