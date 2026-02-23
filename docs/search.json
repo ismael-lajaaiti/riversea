@@ -130,6 +130,13 @@
     "href": "analysis/02-coast-data.html",
     "title": "Exploring coastal data",
     "section": "",
-    "text": "0. Setup\n\na &lt;- 1"
+    "text": "Load dependencies.\n\nlibrary(renv)\nrenv::load()\nrenv::restore() # Install missing librairies.\nrenv::status() # Check the project state.\n\n\nlibrary(here)\nlibrary(dplyr)\nlibrary(ggplot2)\nset_theme(theme_minimal())\noptions(\n    ggplot2.continuous.colour = \"viridis\",\n    ggplot2.continuous.fill = \"viridis\"\n)\n\n\ndata_folder &lt;- here(\"data\", \"coast\")\nlist.files(data_folder)\n\n [1] \"Captures_Nurse_1980_2023.csv\"                         \n [2] \"captures_SOLPER_2005_2011.csv\"                        \n [3] \"poisson_pomet.csv\"                                    \n [4] \"poisson_tailles_pomet.csv\"                            \n [5] \"POMET_RefTax_Sp.csv\"                                  \n [6] \"Reftax_Captures_NURSE_DCE_SUIVINOUR_SOLPER_2024.RData\"\n [7] \"Strates_Nurse_1980_2023.csv\"                          \n [8] \"strates_SOLPER_2005_2011.csv\"                         \n [9] \"Tailles_Nurse_1980_2023.csv\"                          \n[10] \"tailles_SOLPER_2005_2011.csv\"                         \n[11] \"Traits_Nurse_1980_2023.csv\"                           \n[12] \"traits_SOLPER_2005_2011.csv\"                          \n\n\nWe see that we have multiple csv files. We have abundance and biomass data for the Atlantic (Nurse, Solper), Atlantic and Manche (POMET)."
+  },
+  {
+    "objectID": "analysis/02-coast-data.html#todo",
+    "href": "analysis/02-coast-data.html#todo",
+    "title": "Exploring coastal data",
+    "section": "TODO",
+    "text": "TODO\n\nSeasonality effect\nPlot traits on a map\nInvestigate whether size measures are complete or not (per trait and species)."
   }
 ]

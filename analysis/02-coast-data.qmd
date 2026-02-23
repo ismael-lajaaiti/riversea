@@ -20,6 +20,13 @@ renv::status() # Check the project state.
 
 ```{r}
 library(here)
+library(dplyr)
+library(ggplot2)
+set_theme(theme_minimal())
+options(
+    ggplot2.continuous.colour = "viridis",
+    ggplot2.continuous.fill = "viridis"
+)
 ```
 
 ```{r}
@@ -30,11 +37,160 @@ list.files(data_folder)
 We see that we have multiple csv files.
 We have abundance and biomass data for the Atlantic (Nurse, Solper), Atlantic and Manche (POMET).
 
+# 1. Pomet campagne
+
+## 1.1. Data cleaning
+
+First let's load files.
 
 ```{r}
-library(dyplr)
-library(readr)
+d.poisson <- read.csv(here(data_folder, "poisson_pomet.csv"), sep = ";")
+head(d.poisson)
 
+d.size <- read.csv(here(data_folder, "poisson_tailles_pomet.csv"), sep = ";")
+head(d.size)
+```
+
+Let's do a bit of cleaning.
+Remove irrelevant columns.
+
+```{r}
+d.poisson <- d.poisson |> select(-c(Commentaire, Ecologique, Trophique, Engin_peche, Zone))
+names(d.poisson)
+```
+
+Rename columns for clarity.
+
+```{r}
+d.poisson <- d.poisson |> rename(
+    zone = ID_Zone,
+    year = Annee,
+    month = Mois,
+    hour = Heure,
+    date = Date,
+    trait = Trait,
+    start_x = Coord_Deb_xmin,
+    start_y = Coord_Deb_ymin,
+    end_x = Coord_Fin_xmin,
+    end_y = Coord_Fin_ymin,
+    depth = Prof,
+    species = NomScient,
+    position = Position,
+    abundance = Nind_esp,
+    weight_batch = Pds_esp
+)
+head(d.poisson)
+```
+
+We see that the zone ID column also contains zone names which is not necessary.
+
+```{r}
+unique(d.poisson$zone)
+```
+
+We want to keep only the ID.
+
+```{r}
+d.poisson$zone <- substr(d.poisson$zone, 1, 6)
+unique(d.poisson$zone)
+```
+
+Now let's look at which species are more abundant on average.
+
+```{r}
+n <- 10
+d <- d.poisson |>
+    group_by(species) |>
+    summarise(abundance_avg = mean(abundance)) |>
+    arrange(desc(abundance_avg)) |>
+    slice(1:n)
+d
+```
+
+Let's pull these species and plot their time series.
+
+::: {.callout-note}
+Is it expected that "Spratus" and "Spratus spratus" are two distinct species?
+This may be an error when species name was written.
+If so species names should be cleaned up.
+:::
+
+```{r}
+common_sp <- d |> pull(species)
+
+d <- d.poisson |>
+    filter(species %in% common_sp) |>
+    group_by(species, year) |>
+    summarise(abundance_avg = mean(abundance), .groups = "drop")
+d$log_abundance <- log(d$abundance_avg)
+
+ggplot(d, aes(x = year, y = log_abundance, color = species)) +
+    geom_point() +
+    geom_line() + 
+    labs(x = "Year", y = "Log abundance")
+```
+
+
+## 1.2. Plotting traits
+
+First coordinates need to be formatted.
+They are given as strings and should be converted to numeric values.
+
+```{r}
+library(stringr)
+d.poisson <- d.poisson |>
+    mutate(
+        start_x = start_x |> str_replace(",", ".") |> as.numeric(),
+        start_y = start_y |> str_replace(",", ".") |> as.numeric(),
+        end_x = end_x |> str_replace(",", ".") |> as.numeric(),
+        end_y = end_y |> str_replace(",", ".") |> as.numeric(),
+    )
+
+summary(d.poisson[, c("start_x", "start_y", "end_x", "end_y")])
+```
+
+```{r}
+ggplot(d.poisson, aes(x = start_x, y = start_y)) +
+    geom_segment(aes(xend = end_x, yend = end_y))+
+    coord_equal() +
+    labs(x = "Longitutde", y = "Latitude")
+```
+
+```{r}
+library(leaflet)
+
+traits_df <- d.poisson |>
+    distinct(trait, .keep_all = TRUE)
+
+leaflet() |>
+    addTiles() |>
+    addPolylines(
+        data = d.poisson |> distinct(trait, .keep_all = TRUE),
+        lng0 = ~start_x,
+        lat0 = ~start_y,
+        lng1 = ~end_x,
+        lat1 = ~end_y,
+        color = "steelblue",
+        opacity = 0.7,
+    ) |>
+    setView(lng = -2, lat = 47, zoom = 8)
+
+leaflet() |>
+    addTiles() |>
+    addSegments(
+        data = traits_df,
+        lng0 = ~start_x, lat0 = ~start_y,
+        lng1 = ~end_x, lat1 = ~end_y,
+        color = "steelblue",
+        opacity = 0.7,
+        popup = ~paste("Trait:", trait, "Zone:", zone, "Year:", year)
+    ) |>
+    setView(lng = -2, lat = 47, zoom = 8)
+```
+
+# Solper campagne
+
+```{r}
 d <- read.csv(here(data_folder, "captures_SOLPER_2005_2011.csv"), sep = ";")
 head(d)
 ```
@@ -45,7 +201,7 @@ d.traits <- d |>
     group_by(Annee) |>
     summarise(n_trait = n_distinct(Trait))
 
-d.poids <- d |> 
+d.poids <- d |>
     filter(Espece == "SOLESOL") |>
     group_by(Annee) |>
     summarise(mean_weight = mean(Poids))
@@ -53,7 +209,18 @@ d.poids <- d |>
 
 
 ```{r}
-library(ggplot2)
+ggplot(d.traits, aes(x = Annee, y = n_trait)) +
+    geom_point() +
+    labs(x = "Year", y = "Number of traits")
 
-ggplot(d.traits, aes(A))
+
+ggplot(d.poids, aes(x = Annee, y = mean_weight)) +
+    geom_point() +
+    labs(x = "Year", y = "Mean weight")
 ```
+
+## TODO
+
+- [ ] Seasonality effect
+- [ ] Plot traits on a map
+- [ ] Investigate whether size measures are complete or not (per trait and species).
