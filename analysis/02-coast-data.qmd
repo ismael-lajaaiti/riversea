@@ -126,7 +126,7 @@ d$log_abundance <- log(d$abundance_avg)
 
 ggplot(d, aes(x = year, y = log_abundance, color = species)) +
     geom_point() +
-    geom_line() + 
+    geom_line() +
     labs(x = "Year", y = "Log abundance")
 ```
 
@@ -151,42 +151,60 @@ summary(d.poisson[, c("start_x", "start_y", "end_x", "end_y")])
 
 ```{r}
 ggplot(d.poisson, aes(x = start_x, y = start_y)) +
-    geom_segment(aes(xend = end_x, yend = end_y))+
+    geom_segment(aes(xend = end_x, yend = end_y, color = zone)) +
     coord_equal() +
     labs(x = "Longitutde", y = "Latitude")
 ```
 
+Now let's add a map in the background with `leaflet`.
+Because we have many traits, we will focus on a single zone.
+First, we need to convert traits to sf object.
+
 ```{r}
+library(sf)
 library(leaflet)
 
-traits_df <- d.poisson |>
-    distinct(trait, .keep_all = TRUE)
+zone_plot <- first(d.poisson$zone)
 
-leaflet() |>
-    addTiles() |>
-    addPolylines(
-        data = d.poisson |> distinct(trait, .keep_all = TRUE),
-        lng0 = ~start_x,
-        lat0 = ~start_y,
-        lng1 = ~end_x,
-        lat1 = ~end_y,
-        color = "steelblue",
-        opacity = 0.7,
+traits_sf <- d.poisson |>
+    filter(zone == zone_plot) |>
+    rowwise() |>
+    mutate(
+        geometry = st_sfc(st_linestring(
+            matrix(c(start_x, end_x, start_y, end_y), ncol = 2, byrow = FALSE)
+        ), crs = 4326)
     ) |>
-    setView(lng = -2, lat = 47, zoom = 8)
-
-leaflet() |>
-    addTiles() |>
-    addSegments(
-        data = traits_df,
-        lng0 = ~start_x, lat0 = ~start_y,
-        lng1 = ~end_x, lat1 = ~end_y,
-        color = "steelblue",
-        opacity = 0.7,
-        popup = ~paste("Trait:", trait, "Zone:", zone, "Year:", year)
-    ) |>
-    setView(lng = -2, lat = 47, zoom = 8)
+    st_as_sf()
 ```
+
+Then, we can plot them, using year for the color gradient.
+
+```{r}
+pal <- colorNumeric(
+    palette = "viridis",
+    domain = traits_sf$year
+)
+
+leaflet(traits_sf) |>
+    addTiles() |>
+    addPolygons(
+        data = traits_sf,
+        color = ~ pal(year),
+        opacity = 0.7,
+        popup = ~ paste("Year: ", year)
+    ) |>
+    addLegend("bottomright",
+        pal = pal, values = ~year,
+        title = "Year",
+        labFormat = labelFormat(big.mark = ""),
+        opacity = 1
+    )
+
+```
+
+Most traits follow the river suggesting that we have processed the data correctly.
+
+Now let's focus on how fish sizes is measured.
 
 # Solper campagne
 
