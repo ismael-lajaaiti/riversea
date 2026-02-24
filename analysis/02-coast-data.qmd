@@ -46,9 +46,6 @@ First let's load files.
 ```{r}
 d.poisson <- read.csv(here(data_folder, "poisson_pomet.csv"), sep = ";")
 head(d.poisson)
-
-d.size <- read.csv(here(data_folder, "poisson_tailles_pomet.csv"), sep = ";")
-head(d.size)
 ```
 
 Let's do a bit of cleaning.
@@ -206,39 +203,164 @@ Most traits follow the river suggesting that we have processed the data correctl
 
 Now let's focus on how fish sizes is measured.
 
-# Solper campagne
+## 1.3. Fish sizes
+
+### 1.3.1. Preparing size data
+
+First let's read the file containing fish size information.
 
 ```{r}
-d <- read.csv(here(data_folder, "captures_SOLPER_2005_2011.csv"), sep = ";")
-head(d)
+d.size <- read.csv(here(data_folder, "poisson_tailles_pomet.csv"), sep = ";")
+head(d.size)
 ```
 
+As before let's do a bit of cleaning before anything else.
 
 ```{r}
-d.traits <- d |>
-    group_by(Annee) |>
-    summarise(n_trait = n_distinct(Trait))
+d.size <- d.size |> select(-c(
+    Commentaire,
+    Ecologique,
+    Trophique,
+    Engin_peche,
+    Zone
+))
 
-d.poids <- d |>
-    filter(Espece == "SOLESOL") |>
-    group_by(Annee) |>
-    summarise(mean_weight = mean(Poids))
+head(d.size)
 ```
 
+Then let's rename columns.
 
 ```{r}
-ggplot(d.traits, aes(x = Annee, y = n_trait)) +
-    geom_point() +
-    labs(x = "Year", y = "Number of traits")
-
-
-ggplot(d.poids, aes(x = Annee, y = mean_weight)) +
-    geom_point() +
-    labs(x = "Year", y = "Mean weight")
+d.size <- d.size |> rename(
+    zone = ID_Zone,
+    year = Annee,
+    month = Mois,
+    hour = Heure,
+    date = Date,
+    trait = Trait,
+    start_x = Coord_Deb_xmin,
+    start_y = Coord_Deb_ymin,
+    end_x = Coord_Fin_xmin,
+    end_y = Coord_Fin_ymin,
+    depth = Prof,
+    species = NomScient,
+    position = Position,
+    abundance = Nind_esp,
+    weight_batch = Pds_esp,
+    batch_size = Nind_esp_taille,
+    oxygen = Pour_satO2,
+    salinity = Salinite,
+    length_cm = Longueur_fourche_cm,
+    length_mm = Longueur_fourche_mm,
+    temperature = Temperature_eau
+)
+head(d.size)
 ```
 
-## TODO
+And cleaning zone ID.
 
-- [ ] Seasonality effect
-- [ ] Plot traits on a map
-- [ ] Investigate whether size measures are complete or not (per trait and species).
+```{r}
+d.size$zone <- substr(d.size$zone, 1, 6)
+head(d.size)
+```
+
+Furthermore, we can notice that length in mm are specified as caracters instead of numerics.
+
+```{r}
+class(d.size$length_mm)
+```
+
+```{r}
+d.size$length_mm <- as.numeric(d.size$length_mm)
+```
+
+We can check on a subset of our dataframe that length in mm is ten times the length in cm.
+
+```{r}
+d <- d.size |>
+    filter(zone == zone_plot) |>
+    filter(!is.na(length_mm), year == 2014)
+
+ggplot(d, aes(x = length_mm, y = length_cm)) +
+    geom_point()
+```
+
+So let's remove the length in cm, which is a duplicate and less precise than the length in mm.
+
+```{r}
+d.size <- d.size |> select(-length_cm)
+head(d.size)
+```
+
+### 1.3.2. Full size sampling
+
+Now that the data is ready, we want to see at why frequency all individual fish sizes are measured.
+
+We will begin with rough estimates, then refine these at the species and year levels.
+
+```{r}
+d <- d.size |>
+    group_by(ID_interne_prelevement, species) |>
+    summarise(n_measured = sum(batch_size), .groups = "drop")
+
+d.join <- left_join(d.poisson, d, by = c("ID_interne_prelevement", "species"))
+head(d.join)
+```
+
+To check that we did well, we verify that for a fishing event for which we know that all fish sizes have been measured that `abundance` = `n_measured`.
+
+```{r}
+d.join |> filter(ID_interne_prelevement == 61836630, species == "Abramis brama")
+```
+
+First, let's look at rough estimates.
+
+```{r}
+n_tot <- nrow(d.join) # 1 row: 1 species & 1 fishing event.
+n_full <- nrow(d.join |> filter(abundance == n_measured))
+n_full / n_tot
+```
+
+When filtering for full size sampling, we keep 83% of the rows of the original dataframe.
+This means that most of the time all individual sizes are measured.
+But, let's go in further details and how full size sampling depends on year, zone and species.
+
+```{r}
+d.sampling <- d.join |>
+    filter(!is.na(n_measured)) |>
+    group_by(species) |> 
+    summarise(measurement_rate = mean(n_measured == abundance)) |>
+    arrange(measurement_rate)
+head(d.sampling)
+```
+
+We have only few species with low full measurement rate.
+Even the species with worst full size sampling rate hase a rate of 0.5.
+One reason that can explain why some species are more often fully measured than other is because of their abundance.
+Measuring many individuals is cumbersome, so we expect a decreasing trend between full measurement rate and average abundance.
+
+```{r}
+d.abundance.avg <- d.poisson |>
+    filter(!is.na(abundance)) |>
+    group_by(species) |>
+    summarise(abundance_avg = mean(abundance))
+
+d.sampling <- left_join(d.sampling, d.abundance.avg, by = "species")
+
+ggplot(d.sampling, aes(x = abundance_avg, y = measurement_rate)) +
+geom_point() + 
+labs(x = "Average abundance", y = "Full measurement rate")
+```
+
+Let's look if we have trends per zone.
+
+```{r}
+d.sampling <- d.join |>
+    filter(!is.na(n_measured)) |>
+    group_by(zone) |> 
+    summarise(measurement_rate = mean(n_measured == abundance)) |>
+    arrange(measurement_rate)
+head(d.sampling)
+```
+
+There is also high variability between zone, with few zones where the measurement rate is low.

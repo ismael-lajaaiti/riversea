@@ -5,6 +5,7 @@
 .Ruserdata
 .Rapp.history
 data/
+docs/site_libs/
 
 # R package build artifacts
 *.zip
