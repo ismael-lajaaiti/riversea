@@ -6,6 +6,14 @@ execute:
     warning: false
 ---
 
+# Summary
+
+In this notebook we
+
+- explore the coastal data of fish catches from different campagnes (Nurse, Pomet and Solper)
+- extract general information about each campagne (sampling effort, trait location)
+- compute the how often each fish size is measured
+
 # 0. Setup
 
 Load dependencies.
@@ -39,7 +47,7 @@ We have abundance and biomass data for the Atlantic (Nurse, Solper), Atlantic an
 
 # 1. Pomet campagne
 
-## 1.1. Data cleaning
+## 1.1. Clean the data
 
 First let's load files.
 
@@ -128,7 +136,7 @@ ggplot(d, aes(x = year, y = log_abundance, color = species)) +
 ```
 
 
-## 1.2. Plotting traits
+## 1.2. Plot traits
 
 First coordinates need to be formatted.
 They are given as strings and should be converted to numeric values.
@@ -203,9 +211,9 @@ Most traits follow the river suggesting that we have processed the data correctl
 
 Now let's focus on how fish sizes is measured.
 
-## 1.3. Fish sizes
+## 1.3. Get fish size measurement rates
 
-### 1.3.1. Preparing size data
+### 1.3.1. Prepare size data
 
 First let's read the file containing fish size information.
 
@@ -328,7 +336,7 @@ But, let's go in further details and how full size sampling depends on year, zon
 ```{r}
 d.sampling <- d.join |>
     filter(!is.na(n_measured)) |>
-    group_by(species) |> 
+    group_by(species) |>
     summarise(measurement_rate = mean(n_measured == abundance)) |>
     arrange(measurement_rate)
 head(d.sampling)
@@ -348,8 +356,8 @@ d.abundance.avg <- d.poisson |>
 d.sampling <- left_join(d.sampling, d.abundance.avg, by = "species")
 
 ggplot(d.sampling, aes(x = abundance_avg, y = measurement_rate)) +
-geom_point() + 
-labs(x = "Average abundance", y = "Full measurement rate")
+    geom_point() +
+    labs(x = "Average abundance", y = "Full measurement rate")
 ```
 
 Let's look if we have trends per zone.
@@ -357,10 +365,266 @@ Let's look if we have trends per zone.
 ```{r}
 d.sampling <- d.join |>
     filter(!is.na(n_measured)) |>
-    group_by(zone) |> 
+    group_by(zone) |>
     summarise(measurement_rate = mean(n_measured == abundance)) |>
     arrange(measurement_rate)
 head(d.sampling)
 ```
 
 There is also high variability between zone, with few zones where the measurement rate is low.
+
+For now, we have seen what we wanted.
+Overall, fish sizes are most of the time all measured.
+This will help food web reconstruction.
+
+# 2. Nurse campagne
+
+Now let's focus on another campagne: Nurse.
+
+## 2.1. Clean the data
+
+Let's load the data.
+
+```{r}
+d.nurse.catch <- read.csv(here(data_folder, "Captures_Nurse_1980_2023.csv"), sep = ";")
+head(d.nurse.catch)
+```
+
+```{r}
+d.nurse.size <- read.csv(here(data_folder, "Tailles_Nurse_1980_2023.csv"), sep = ";")
+head(d.nurse.size)
+```
+
+```{r}
+d.nurse.trait <- read.csv(here(data_folder, "Traits_Nurse_1980_2023.csv"), sep = ";")
+head(d.nurse.trait)
+```
+
+```{r}
+d.nurse.strate <- read.csv(here(data_folder, "Strates_Nurse_1980_2023.csv"), sep = ";")
+head(d.nurse.strate)
+```
+
+We see that we have four files.
+The first file contains information about the catches: what, when, where.
+The second file contains information about the individual sizes.
+The third file contains geographical information about the trait.
+I don't kow what contains the fourth file. Should ask Anik.
+
+Let's rename column for consistency with other campagnes.
+
+```{r}
+d.nurse.catch <- d.nurse.catch |>
+    select(-Campagne) |>
+    rename(
+        year = Annee,
+        trait = Trait,
+        species = Espece,
+        abundance = Nombre,
+        weight_batch = Poids
+    )
+head(d.nurse.catch)
+```
+
+```{r}
+d.nurse.size <- d.nurse.size |>
+    select(-c(Campagne, Poids, Age, Maturite)) |>
+    rename(
+        year = Annee,
+        trait = Trait,
+        species = Espece,
+        sex = Sexe,
+        length = Longueur,
+        batch_size = Nombre
+    )
+head(d.nurse.size)
+```
+
+```{r}
+d.nurse.trait <- d.nurse.trait |>
+    select(-c(Campagne, ProfMoy)) |>
+    rename(
+        year = Annee,
+        trait = Trait,
+        month = Mois,
+        strate = Strate,
+        surface = SurfaceBalayee,
+        lat = Lat,
+        long = Long
+    )
+head(d.nurse.trait)
+```
+
+## 2.2. Get general information about the campagne
+
+### 2.2.1. Evolution of the sampling effort
+
+```{r}
+trait_counts <- d.nurse.trait |>
+    group_by(year) |>
+    summarise(n_trait = length(unique(trait)))
+
+ggplot(trait_counts, aes(x = year, y = n_trait)) +
+    geom_line() +
+    geom_point() +
+    labs(x = "Year", y = "Number of traits")
+```
+
+
+```{r}
+surface_year <- d.nurse.trait |>
+    group_by(year) |>
+    summarise(surface_tot = sum(surface))
+
+ggplot(surface_year, aes(x = year, y = surface_tot)) +
+    geom_line() +
+    geom_point() +
+    labs(x = "Year", y = "Surface sampled")
+```
+
+We see high variability in the sampling effort across the year.
+
+### 2.2.2. Plot geographical position of traits
+
+```{r}
+trait_sf <- st_as_sf(d.nurse.trait, coords = c("long", "lat"), crs = 4326, remove = FALSE)
+
+leaflet(trait_sf) |>
+    addTiles() |>
+    addCircleMarkers(
+        radius = 2, fillOpacity = 0.7, stroke = FALSE,
+        popup = ~ paste("Trait:", trait, "Year:", year)
+    )
+```
+
+### 2.2.3. Fish size measurement rate
+
+```{r}
+d.nurse.batch <- d.nurse.size |>
+    group_by(trait, species) |>
+    summarise(n_measured = sum(batch_size), .groups = "drop")
+head(d.nurse.batch)
+
+d.nurse.batch <- left_join(d.nurse.batch, d.nurse.catch, by = c("species", "trait"))
+head(d.nurse.batch)
+```
+
+```{r}
+n_tot <- nrow(d.nurse.batch)
+n_full <- nrow(d.nurse.batch |> filter(n_measured == abundance))
+n_full / n_tot
+```
+
+For the Nurse campagne, we also have a very high size measurement rate.
+Let's investigate the last campagne: SOLPER.
+
+# 3. Solper campagne
+
+## 3.1. Clean the data
+
+Let's load the data.
+
+```{r}
+d.solper.catch <- read.csv(here(data_folder, "captures_SOLPER_2005_2011.csv"), sep = ";")
+head(d.solper.catch)
+
+d.solper.size <- read.csv(here(data_folder, "tailles_SOLPER_2005_2011.csv"), sep = ";")
+head(d.solper.size)
+
+d.solper.trait <- read.csv(here(data_folder, "traits_SOLPER_2005_2011.csv"), sep = ";")
+head(d.solper.trait)
+```
+
+As for the Nurse campagne, we have one file for the catches, one for the individual sizes, and one for the trait positions.
+
+As before, we will just rename the column for consistency.
+
+```{r}
+d.solper.catch <- d.solper.catch |>
+    select(-Campagne) |>
+    rename(
+        year = Annee,
+        trait = Trait,
+        species = Espece,
+        abundance = Nombre,
+        weight_batch = Poids
+    )
+head(d.solper.catch)
+
+d.solper.size <- d.solper.size |>
+    select(-c(Campagne, Age, Maturite)) |>
+    rename(
+        year = Annee,
+        trait = Trait,
+        species = Espece,
+        batch_size = Nombre,
+        sex = Sexe,
+        length = Longueur,
+        weight = Poids
+    )
+head(d.solper.size)
+
+d.solper.trait <- d.solper.trait |>
+    select(-Campagne) |>
+    rename(
+        year = Annee,
+        trait = Trait,
+        month = Mois,
+        strate = Strate,
+        surface = SurfaceBalayee,
+        lat = Lat,
+        long = Long,
+        depth = ProfMoy
+    )
+head(d.solper.trait)
+```
+
+Now that the data is cleaned let's look at general information about the campagne.
+
+## 3.2. Get general information about the campagne
+
+### 3.2.1. Evolution of sampling effort
+
+```{r}
+trait_year <- d.solper.trait |>
+    group_by(year) |>
+    summarise(n_trait = length(unique(trait)), surf_tot = sum(surface))
+
+ggplot(trait_year, aes(x = year, y = n_trait, color = surf_tot)) +
+    geom_line(color = "grey") +
+    geom_point() +
+    labs(x = "Year", y = "Number of traits", color = "Total surface")
+```
+
+The see that the sampling effort has been relatively constant, although decreasing with years.
+Furthermore, as expected, the surface sampled is positively correlated with the number of traits.
+
+### 3.2.3. Plot trait locations
+
+```{r}
+trait_sf <- st_as_sf(d.solper.trait, coords = c("long", "lat"), crs = 4326, remove = FALSE)
+
+leaflet(trait_sf) |>
+    addTiles() |>
+    addCircleMarkers(
+        radius = 2, fillOpacity = 0.7, stroke = FALSE,
+        popup = ~ paste("Trait:", trait, "Year:", year)
+    )
+```
+
+### 3.2.3. Full size sampling
+
+```{r}
+d.solper.batch <- d.solper.size |>
+    group_by(species, trait, year) |>
+    summarise(n_measured = sum(batch_size), .groups = "drop")
+
+d.solper.batch <- left_join(d.solper.batch, d.solper.catch, by = c("species", "trait", "year"))
+
+n_tot <- nrow(d.solper.batch)
+n_full <- nrow(d.solper.batch |> filter(n_measured == abundance))
+n_full / n_tot
+```
+
+Wow, it seems that for the Solper campagne every single fish has been measured.
+It probably means that there has been some filtering about sampled species.

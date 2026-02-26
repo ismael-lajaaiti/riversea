@@ -6,6 +6,14 @@ execute:
     warning: false
 ---
 
+# Summary
+
+In this notebook, using ASPE data about eel abundance in the Vilaine bassin, I explore
+
+- the package INLA to fit bayesian spatio-temporal models
+- how to model temporal autocorrelation (AR, RW)
+- how to model spatial autocorrelation (spde, besag)
+
 # 0. Setup
 
 Load dependencies.
