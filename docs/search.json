@@ -4,7 +4,7 @@
     "href": "analysis/index.html",
     "title": "Reports",
     "section": "",
-    "text": "This page lists all analyses for the project.\n\nModeling eel abundance using INLA\nExploring coastal data"
+    "text": "This page lists all analyses for the project. It also contains a todo list of analyses to be done next."
   },
   {
     "objectID": "analysis/01-explore.html",
@@ -215,5 +215,47 @@
     "title": "Exploring coastal data",
     "section": "3.1. Clean the data",
     "text": "3.1. Clean the data\nLet’s load the data.\n\nd.solper.catch &lt;- read.csv(here(data_folder, \"captures_SOLPER_2005_2011.csv\"), sep = \";\")\nhead(d.solper.catch)\n\n  Campagne Annee Trait  Espece Nombre Poids\n1   SOLPER  2005 SPA01 CALMLYR      1   2.9\n2   SOLPER  2005 SPA01 ENGRENC    526 575.5\n3   SOLPER  2005 SPA01 GOBINIG      1   1.9\n4   SOLPER  2005 SPA01 POMOMIN     10  13.4\n5   SOLPER  2005 SPA01 SOLESOL      1  31.0\n6   SOLPER  2005 SPA01 SPRASPR      7  19.1\n\nd.solper.size &lt;- read.csv(here(data_folder, \"tailles_SOLPER_2005_2011.csv\"), sep = \";\")\nhead(d.solper.size)\n\n  Campagne Annee Trait  Espece Sexe Maturite Longueur Nombre Poids Age\n1   SOLPER  2005 SPA01 SOLESOL    I       NA       16      1    31  NA\n2   SOLPER  2005 SPA02 SOLESOL    I       NA        6      1     2  NA\n3   SOLPER  2005 SPA02 SOLESOL    I       NA        7      2     8  NA\n4   SOLPER  2005 SPA02 SOLESOL    I       NA        8      6    26  NA\n5   SOLPER  2005 SPA02 SOLESOL    I       NA        9      3    20  NA\n6   SOLPER  2005 SPA02 SOLESOL    I       NA       10      1    10  NA\n\nd.solper.trait &lt;- read.csv(here(data_folder, \"traits_SOLPER_2005_2011.csv\"), sep = \";\")\nhead(d.solper.trait)\n\n  Campagne Annee Trait Mois Strate SurfaceBalayee      Lat     Long ProfMoy\n1   SOLPER  2005 SPA01    8     PA       0.001421 46.14030 -1.22043       6\n2   SOLPER  2005 SPA02    8     PA       0.001654 46.14084 -1.18852       6\n3   SOLPER  2005 SPA03    8     PA       0.001936 45.81676 -1.20102       6\n4   SOLPER  2005 SPA04    8     PA       0.001684 45.79853 -1.19984       7\n5   SOLPER  2005 SPA05    8     PA       0.002203 45.79681 -1.23134       8\n6   SOLPER  2005 SPA06    9     PA       0.002522 46.13919 -1.25329      13\n\n\nAs for the Nurse campagne, we have one file for the catches, one for the individual sizes, and one for the trait positions.\nAs before, we will just rename the column for consistency.\n\nd.solper.catch &lt;- d.solper.catch |&gt;\n    select(-Campagne) |&gt;\n    rename(\n        year = Annee,\n        trait = Trait,\n        species = Espece,\n        abundance = Nombre,\n        weight_batch = Poids\n    )\nhead(d.solper.catch)\n\n  year trait species abundance weight_batch\n1 2005 SPA01 CALMLYR         1          2.9\n2 2005 SPA01 ENGRENC       526        575.5\n3 2005 SPA01 GOBINIG         1          1.9\n4 2005 SPA01 POMOMIN        10         13.4\n5 2005 SPA01 SOLESOL         1         31.0\n6 2005 SPA01 SPRASPR         7         19.1\n\nd.solper.size &lt;- d.solper.size |&gt;\n    select(-c(Campagne, Age, Maturite)) |&gt;\n    rename(\n        year = Annee,\n        trait = Trait,\n        species = Espece,\n        batch_size = Nombre,\n        sex = Sexe,\n        length = Longueur,\n        weight = Poids\n    )\nhead(d.solper.size)\n\n  year trait species sex length batch_size weight\n1 2005 SPA01 SOLESOL   I     16          1     31\n2 2005 SPA02 SOLESOL   I      6          1      2\n3 2005 SPA02 SOLESOL   I      7          2      8\n4 2005 SPA02 SOLESOL   I      8          6     26\n5 2005 SPA02 SOLESOL   I      9          3     20\n6 2005 SPA02 SOLESOL   I     10          1     10\n\nd.solper.trait &lt;- d.solper.trait |&gt;\n    select(-Campagne) |&gt;\n    rename(\n        year = Annee,\n        trait = Trait,\n        month = Mois,\n        strate = Strate,\n        surface = SurfaceBalayee,\n        lat = Lat,\n        long = Long,\n        depth = ProfMoy\n    )\nhead(d.solper.trait)\n\n  year trait month strate  surface      lat     long depth\n1 2005 SPA01     8     PA 0.001421 46.14030 -1.22043     6\n2 2005 SPA02     8     PA 0.001654 46.14084 -1.18852     6\n3 2005 SPA03     8     PA 0.001936 45.81676 -1.20102     6\n4 2005 SPA04     8     PA 0.001684 45.79853 -1.19984     7\n5 2005 SPA05     8     PA 0.002203 45.79681 -1.23134     8\n6 2005 SPA06     9     PA 0.002522 46.13919 -1.25329    13\n\n\nNow that the data is cleaned let’s look at general information about the campagne."
+  },
+  {
+    "objectID": "analysis/index.html#a.-data-integration-preparation",
+    "href": "analysis/index.html#a.-data-integration-preparation",
+    "title": "Reports",
+    "section": "A. Data-integration preparation",
+    "text": "A. Data-integration preparation\n\nWrite a pipeline for preprocessing and merging coastal data in form of a function within the riversea package.\nDraft conceptual figure (e.g. river-sea continuum)."
+  },
+  {
+    "objectID": "analysis/index.html#c.-river-only-food-web-structure-analysis",
+    "href": "analysis/index.html#c.-river-only-food-web-structure-analysis",
+    "title": "Reports",
+    "section": "C. River-only food web structure analysis",
+    "text": "C. River-only food web structure analysis\n\nCompute food web metrics (connectance, trophic level, etc.).\nPlot metrics against environmental variable (upstream/downstream, basin identity).\nRun EOF / PCA on food web metrics across sites to identify dominant patterns and redundancy among metrics.\nPlot correlation vs. euclidian/hydrographic distance."
+  },
+  {
+    "objectID": "analysis/index.html#d.-abundance-only-analysis",
+    "href": "analysis/index.html#d.-abundance-only-analysis",
+    "title": "Reports",
+    "section": "D. Abundance-only analysis",
+    "text": "D. Abundance-only analysis\n\nMap abundance by species: temporal trends, spatial variance (moran index), temporal autocorrelation.\nFit a baseline (that is, minimal) model."
+  },
+  {
+    "objectID": "analysis/index.html#b.-method-and-model-selection",
+    "href": "analysis/index.html#b.-method-and-model-selection",
+    "title": "Reports",
+    "section": "B. Method and model selection",
+    "text": "B. Method and model selection\n\nDefine statistical model (fixed and random effects), and write the DAG.\nSimulate data experiments to validate the planned model.\nDecide how we will compare model later (WAIC, posterior predictive checks).\nApply the comparison pipeline to abundance data or food web structure in river."
+  },
+  {
+    "objectID": "analysis/index.html#preliminary-exploration",
+    "href": "analysis/index.html#preliminary-exploration",
+    "title": "Reports",
+    "section": "Preliminary exploration",
+    "text": "Preliminary exploration\n\nModeling eel abundance using INLA\nExploring coastal data"
+  },
+  {
+    "objectID": "analysis/index.html#a.-preliminary-explorations",
+    "href": "analysis/index.html#a.-preliminary-explorations",
+    "title": "Reports",
+    "section": "A. Preliminary explorations",
+    "text": "A. Preliminary explorations\n\nModeling eel abundance using INLA\nExploring coastal data"
   }
 ]

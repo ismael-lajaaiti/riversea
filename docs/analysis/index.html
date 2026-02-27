@@ -3862,8 +3862,21 @@ vertical-align: -.125em;
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#a.-preliminary-explorations" id="toc-a.-preliminary-explorations" class="nav-link active" data-scroll-target="#a.-preliminary-explorations">A. Preliminary explorations</a></li>
+  <li><a href="#todo" id="toc-todo" class="nav-link" data-scroll-target="#todo">TODO</a>
+  <ul class="collapse">
+  <li><a href="#a.-data-integration-preparation" id="toc-a.-data-integration-preparation" class="nav-link" data-scroll-target="#a.-data-integration-preparation">A. Data-integration preparation</a></li>
+  <li><a href="#b.-method-and-model-selection" id="toc-b.-method-and-model-selection" class="nav-link" data-scroll-target="#b.-method-and-model-selection">B. Method and model selection</a></li>
+  <li><a href="#c.-river-only-food-web-structure-analysis" id="toc-c.-river-only-food-web-structure-analysis" class="nav-link" data-scroll-target="#c.-river-only-food-web-structure-analysis">C. River-only food web structure analysis</a></li>
+  <li><a href="#d.-abundance-only-analysis" id="toc-d.-abundance-only-analysis" class="nav-link" data-scroll-target="#d.-abundance-only-analysis">D. Abundance-only analysis</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -3887,13 +3900,51 @@ vertical-align: -.125em;
 </header>
 
 
-<p>This page lists all analyses for the project.</p>
+<p>This page lists all analyses for the project. It also contains a todo list of analyses to be done next.</p>
+<section id="a.-preliminary-explorations" class="level2">
+<h2 class="anchored" data-anchor-id="a.-preliminary-explorations">A. Preliminary explorations</h2>
 <ol type="1">
 <li><a href="01-explore.html">Modeling eel abundance using INLA</a></li>
 <li><a href="02-coast-data.html">Exploring coastal data</a></li>
 </ol>
+</section>
+<section id="todo" class="level1">
+<h1>TODO</h1>
+<section id="a.-data-integration-preparation" class="level2">
+<h2 class="anchored" data-anchor-id="a.-data-integration-preparation">A. Data-integration preparation</h2>
+<ol type="1">
+<li>Write a pipeline for preprocessing and merging coastal data in form of a function within the <code>riversea</code> package.</li>
+<li>Draft conceptual figure (e.g. river-sea continuum).</li>
+</ol>
+</section>
+<section id="b.-method-and-model-selection" class="level2">
+<h2 class="anchored" data-anchor-id="b.-method-and-model-selection">B. Method and model selection</h2>
+<ol type="1">
+<li>Define statistical model (fixed and random effects), and write the DAG.</li>
+<li>Simulate data experiments to validate the planned model.</li>
+<li>Decide how we will compare model later (WAIC, posterior predictive checks).</li>
+<li>Apply the comparison pipeline to abundance data or food web structure in river.</li>
+</ol>
+</section>
+<section id="c.-river-only-food-web-structure-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="c.-river-only-food-web-structure-analysis">C. River-only food web structure analysis</h2>
+<ol type="1">
+<li>Compute food web metrics (connectance, trophic level, etc.).</li>
+<li>Plot metrics against environmental variable (upstream/downstream, basin identity).</li>
+<li>Run EOF / PCA on food web metrics across sites to identify dominant patterns and redundancy among metrics.</li>
+<li>Plot correlation vs. euclidian/hydrographic distance.</li>
+</ol>
+</section>
+<section id="d.-abundance-only-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="d.-abundance-only-analysis">D. Abundance-only analysis</h2>
+<ol type="1">
+<li>Map abundance by species: temporal trends, spatial variance (moran index), temporal autocorrelation.</li>
+<li>Fit a baseline (that is, minimal) model.</li>
+</ol>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

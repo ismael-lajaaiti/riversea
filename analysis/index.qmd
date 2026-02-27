@@ -3,6 +3,36 @@ title: "Reports"
 ---
 
 This page lists all analyses for the project.
+It also contains a todo list of analyses to be done next.
+
+## A. Preliminary explorations
 
 1. [Modeling eel abundance using INLA](01-explore.html)
 2. [Exploring coastal data](02-coast-data.html)
+
+# TODO
+
+## A. Data-integration preparation
+
+1. Write a pipeline for preprocessing and merging coastal data in form of a function within the `riversea` package.
+2. Draft conceptual figure (e.g. river-sea continuum).
+
+## B. Method and model selection
+
+1. Define statistical model (fixed and random effects), and write the DAG.
+2. Simulate data experiments to validate the planned model.
+3. Decide how we will compare model later (WAIC, posterior predictive checks).
+4. Apply the comparison pipeline to abundance data or food web structure in river. 
+
+## C. River-only food web structure analysis
+
+1. Compute food web metrics (connectance, trophic level, etc.).
+2. Plot metrics against environmental variable (upstream/downstream, basin identity).
+3. Run EOF / PCA on food web metrics across sites to identify dominant patterns and redundancy among metrics.
+4. Plot correlation vs. euclidian/hydrographic distance.
+
+## D. Abundance-only analysis
+
+1. Map abundance by species: temporal trends, spatial variance (moran index), temporal autocorrelation.
+2. Fit a baseline (that is, minimal) model.
+
