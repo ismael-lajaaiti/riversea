@@ -1,0 +1,19 @@
+---
+title: "Define the statistical model"
+format: html
+execute:
+    message: false
+    warning: false
+---
+
+# Summary
+
+This notebook contains
+
+- the reasonning underlying the model definition that we intend to use in our study
+- the list of causal relationships that we assume, illustrated with a DAG
+- ecological interpretations relating these causal relationships to ecological processes.
+
+# 1. The DAG
+
+Directed Acyclic Graph are a common and graphical way to write the causal relationships assumed between the set of variables of interest.

@@ -1,5 +1,5 @@
 ---
-title: "Exploring coastal data"
+title: "Explore coastal data"
 format: html
 execute:
     message: false

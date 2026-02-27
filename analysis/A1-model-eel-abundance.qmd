@@ -1,5 +1,5 @@
 ---
-title: "Modelling eel abundance in the Vilaine bassin"
+title: "Model eel abundance in the Vilaine bassin"
 format: html
 execute:
     message: false
