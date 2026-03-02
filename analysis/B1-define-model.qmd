@@ -21,9 +21,74 @@ For now, we will forget about details of how to capture best dam impact with sum
 Instead, we focus here on the overall causal relationships among our variables.
 Directed Acyclic Graph are a common and graphical way to write the causal relationships assumed between the set of variables of interest.
 
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+```
+
+```{r}
+library(dagitty)
+library(ggdag)
+library(ggplot2)
+theme_set(theme_dag())
+```
+
+```{r}
+dagify(C ~ S + T) |>
+    ggdag()
+```
+
 # 2. Capture dam impacts
 
 Next, let's focus on how to best capture dam impact.
 We begin with an illustration of how dams can impact a given community at a local scale in @fig-dam.
 
 ![Sketch of upstream and downstream dam impacts on a given community. The impact of a upstream dam reflects the decrease of migration (upstream-downstream), and other hydrographic effects of dams such as reduction of flow and sedimentation. The impact of downstream dam reflects the decrease of migration (downstream-upstream), and the transition from lotic to lentic environment.](sketch-dam-impact.png){#fig-dam}
+
+A dam can impact a local community varied ways.
+First, depending on whether it is upstream or downstream compared to the site of interest.
+A dam downstream can create a reservoir, transitionning the system from lotic to lentic.
+It can also prevent fish from migrating upstream.
+A dam upstream can interrupt the river flow, change the sedimentation, and overall the hydrogeomorpholical conditions of the system.
+It can also prevent migration of fish downstream (although we can expect this effect to be weaker than for the upstream migration).
+
+Furthermore, dams can act at different scale.
+There is an obvious local effect of dams, but dams can also have an effect at larger scale ('heritage'). For example, crossing a dam is harder if the fish had to already cross few dams before.
+That said, we still can assume that the closest the dam is from a site, the stronger its impact is.
+
+## 2.1. Design metrics
+
+To summarise, we want metrics to capture an upstream and downstream impact of dams, as well as, the scale these impacts operate.
+
+One way to do so, is to design two metrics - one upstream, one downstream - and incorporate the scale within these metrics (fixed for a given model).
+Then, we can vary these scale, and assess the scale of dam impacts by comparing model performances (e.g. WAIC).
+
+
+### 2.1.1. Impact of dam upstream
+
+Here, we assume the impact of dams is proportional to their height ($h_i$). So we want to weight dams impact by their height ($w(h_i)$), as well as accounting for their distance to the site ($d_i$).
+Here is the first metric we can think of
+
+$$
+\text{Dam}_\text{up} = \sum_i w(h_i) e^{-\frac{d_i}{L}},
+$$
+
+where $w(h_i)$ is the scaled dam height (e.g. dam height divided by mean dam height).
+$L$ captures the distance at which dam impacts operate.
+If $L$ is small only dams close to the site are assumed to have an impact.
+On te contrary, if $L$ is large, even far dams can have an impact on the site.
+
+Our idea is to try different $L$, such as, 10km, 50km, 100km. Then, we compare model performances, and from that we can infer the scale of dam impacts.
+
+### 2.1.2. Impact of dam downstream
+
+For downstream dam impact, we could use the very same measure, but instead of summing on dam upstream we could sum on downstream dams.
+However, because we assume that one of the main effect of downstream dams is their reservoir effect we can also use their reservoir volume ($v_i$)
+
+
+$$
+\text{Dam}_\text{down} = \sum_i w(v_i) e^{-\frac{d_i}{L}}.
+$$
