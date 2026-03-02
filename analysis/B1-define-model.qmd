@@ -16,6 +16,8 @@ This notebook contains
 
 # 1. Write the DAG
 
+## 1.1. Causal dependence and check for bias
+
 First, let's think about the causal relationship between our covariables and the metric we want to predict, that is, food web structure.
 For now, we will forget about details of how to capture best dam impact with summary metrics.
 Instead, we focus here on the overall causal relationships among our variables.
@@ -36,10 +38,77 @@ library(ggplot2)
 theme_set(theme_dag())
 ```
 
+To begin with, we consider the following general relationships, where environmental variables are aggregated within a single node ("Env."), these includes: water temperature, nutrient concentrations, salinity, etc.
+
 ```{r}
-dagify(C ~ S + T) |>
-    ggdag()
+dag <- dagify(
+    C ~ S + Comp. + Env.,
+    S ~ Env.,
+    Comp. ~ Env.,
+    latent = "Comp.",
+    exposure = "Env.",
+    outcome = "C"
+    ) 
+ggdag(dag)
 ```
+
+Environmental variables can have an impact on species richness (e.g. nutrients overload can simplify community due to turbidifcation), species composition (e.g. some species may not be suited for a given set of environmental conditions), and directly food web structure (here "C", which can be for example connectance)by affecting species behaviour, density or size.
+Moreover, we also assume that richness and composition jointly shape food web structure.
+
+```{r}
+ggdag_paths(dag)
+```
+
+We see that we have 3 paths from environmental drivers and food web structure. Two of them are mediated by an intermediate variables, respectively composition and richness.
+However, as we are not observing species comosition we cannot disantengly between these two paths: Env. -> C and Env. -> Comp. -> C.
+That said, we can still interpret the direct effect Env. -> C in our model, as a total effect.
+
+In brief, species composition is treated as a latent variable. As a result, estimated environmental effects on food-web structure should be interpreted as total effects or as effects conditional on species richness, but not as fully direct effects
+
+## 1.2. Write a first model
+
+Now that we have ensure that our model doesn't include statistical bias, we can write down the statistical model.
+We will also try to think about the environmental variables that we want to include.
+Let's do our list of environmental variables:
+
+- temperature
+- nutrient proxy (e.g. BOD)
+- distance to the river mouth
+
+For simplicity, we assume no interactions between our environmental variables (for now).
+
+We also let for later the random effects.
+
+### 1.2.1. Model food web connectance
+
+If we are interested in connectance, we write the following model
+
+$$
+C_i \sim \text{Beta}(\mu_i, \phi_i),
+$$
+
+where we use a beta distribution as a link function to ensure that connectance values are bounded between 0 and 1.
+Further, the mean of the distribution is given by
+
+$$
+\mu_i = \beta_0 + \beta_T T_i + \beta_N N_i + \beta_D D_i,
+$$
+
+where weakly informative prior have to be selected for regularization.
+
+### 1.2.2. Model trophic length
+
+Because trophic length is unbounded we can simply use a gaussian distribution and no link function.
+
+$$
+\text{TL}_i \sim \text{Normal}(\mu_i, \sigma_i),
+$$
+
+with the mean given by
+
+$$
+\mu_i = \beta_0 + \beta_T T_i + \beta_N N_i + \beta_D D_i.
+$$
 
 # 2. Capture dam impacts
 
@@ -66,7 +135,6 @@ To summarise, we want metrics to capture an upstream and downstream impact of da
 One way to do so, is to design two metrics - one upstream, one downstream - and incorporate the scale within these metrics (fixed for a given model).
 Then, we can vary these scale, and assess the scale of dam impacts by comparing model performances (e.g. WAIC).
 
-
 ### 2.1.1. Impact of dam upstream
 
 Here, we assume the impact of dams is proportional to their height ($h_i$). So we want to weight dams impact by their height ($w(h_i)$), as well as accounting for their distance to the site ($d_i$).
@@ -92,3 +160,53 @@ However, because we assume that one of the main effect of downstream dams is the
 $$
 \text{Dam}_\text{down} = \sum_i w(v_i) e^{-\frac{d_i}{L}}.
 $$
+
+# 3. Finalise the model
+
+## 3.1. Interactions between covariables
+
+First, let's discuss the potential interactions between our covariables that we want to include in our model.
+Because interactions are hard to interpret and identify, we want to be as conservative as possible.
+The probably most important interactions to include is between nutrient concentrations and $\text{Dam}_\text{down}$ and $\text{Dam}_\text{up}$.
+That is because, a downstream dam can increase nutrient impact by preventing water from flowing.
+Secondly, an upstream dam can mitigate the impact of nutrient overload by blocking the flux.
+
+::: {.callout-note}
+These interactions are to be discussed dependending on the scale at which nutrients concentration is measured.
+If it is very local (measured exactly at the site), there are probably no interaction to consider.
+However, if the measure is an undirect average around the area of the site, interactions may be relevant.
+:::
+
+## 3.2. Add random effects
+
+### 3.2.1. Temporal
+
+We expect food web to be correlated in my time. 
+Because of legacy effects, species present one year have a higher chance of being present the next year.
+This kind of temporal autocorrelation can be captured by AR model.
+
+::: {.callout-note}
+The temporal effect sould in any case be compared with and independent random effect.
+:::
+
+### 3.2.2. Spatial
+
+For the spatial random effect, we want to account for the fact that site closer to each other looks more alike.
+This can be use using the BYM model in INLA, in which we specify which sites are dependent under the form of an adjacency matrix.
+An alternative, that can also be model on top, is to use euclidian distance with the "SPDE" method.
+
+### 3.2.3. Measurement
+
+Lastly, we have to add random effects to correct for potential differences between campagne.
+Notably, not all compagne use the fishing techniques.
+
+## 3.3. Write the final model
+
+### 3.3.1. Food web connectance
+
+$$
+\mu_i = \beta_0 + \beta_T T_i + \beta_N N_i + \beta_D D_i + \beta_\text{up} \text{Dam}_\text{up} + \beta_\text{down} \text{Dam}_\text{down} + \beta_\text{int, up} \text{Dam}_\text{up} + \beta_\text{int, down} \text{Dam}_\text{down} + \text{AR}(1) + u_i + v_i
+$$
+
+where  $u_i$ is the spatial structured effect, and $v_i$ the unstructured one.
+
