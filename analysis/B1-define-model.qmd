@@ -177,6 +177,8 @@ If it is very local (measured exactly at the site), there are probably no intera
 However, if the measure is an undirect average around the area of the site, interactions may be relevant.
 :::
 
+Lastly, we consider a potential interaction between nutrients and temperature. For example, with increased temperature the metabolic demand of fish increases which could magnify nutrient impacts.
+
 ## 3.2. Add random effects
 
 ### 3.2.1. Temporal
@@ -202,11 +204,47 @@ Notably, not all compagne use the fishing techniques.
 
 ## 3.3. Write the final model
 
+Using everything we have built until there, we can build a first draft of our model.
+
 ### 3.3.1. Food web connectance
 
+For connectance, the model writes
+
 $$
-\mu_i = \beta_0 + \beta_T T_i + \beta_N N_i + \beta_D D_i + \beta_\text{up} \text{Dam}_\text{up} + \beta_\text{down} \text{Dam}_\text{down} + \beta_\text{int, up} \text{Dam}_\text{up} + \beta_\text{int, down} \text{Dam}_\text{down} + \text{AR}(1) + u_i + v_i
+C_i \sim \text{Beta}(\mu_i, \phi_i)
+$$
+
+where the mean is given by
+
+$$
+\begin{align}
+\text{logit} (\mu_i) = &\beta_0 + \beta_1 T_i + \beta_2 N_i + \beta_3 D_i + \beta_4 \text{Dam}_\text{up} + \beta_5 \text{Dam}_\text{down} + &\text{[fixed effects]} \\
+&\beta_6 (\text{Dam}_\text{up} \times N_i) + \beta_7 (\text{Dam}_\text{down} \times N_i) + \beta_8 (T_i \times N_i) + &\text{[interactions]} \\ 
+&\text{AR}(1) + u_i + v_i + \text{Campagne}_i. &\text{[random effects]}
+\end{align}
 $$
 
 where  $u_i$ is the spatial structured effect, and $v_i$ the unstructured one.
 
+::: {.callout-note}
+We begin by assuming that $\phi_i$ is constant and do not dependend on other variables, for sake of simplicity.
+:::
+
+### 3.3.2. Trophic length
+
+For trophic length, the model has the same structure.
+We simply replace the beta distribution with a gaussian distribution and remove the link function.
+
+$$
+\text{TL}_i \sim \text{Normal}(\mu_i, \sigma_i)
+$$
+
+where the mean is given by
+
+$$
+\begin{align}
+\mu_i = &\beta_0 + \beta_1 T_i + \beta_2 N_i + \beta_3 D_i + \beta_4 \text{Dam}_\text{up} + \beta_5 \text{Dam}_\text{down} + &\text{[fixed effects]} \\
+&\beta_6 (\text{Dam}_\text{up} \times N_i) + \beta_7 (\text{Dam}_\text{down} \times N_i) + \beta_8 (T_i \times N_i) + &\text{[interactions]} \\ 
+&\text{AR}(1) + u_i + v_i + \text{Campagne}_i. &\text{[random effects]}
+\end{align}
+$$
