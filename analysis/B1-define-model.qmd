@@ -248,3 +248,80 @@ $$
 &\text{AR}(1) + u_i + v_i + \text{Campagne}_i. &\text{[random effects]}
 \end{align}
 $$
+
+# 4. Identify ecological mecanisms at different scale
+
+Ecological mecanisms operate at different spatial and temporal scales.
+The same environmental driver may affect food-web structure through distinct mecanisms dependending on the scale consider.
+
+## 4.1. Temperature
+
+### 4.1.1 Local scale
+
+At local scales, temperature mainly affect individual physiology through metabolic rates, growth and consumption.
+These effects can modify interaction strengths, for example, by increasing predator attack rate and as a consequence reshape the food web.
+
+### 4.1.2. Regional scale
+
+At broader scale, temperature shape species distribution and as a result community composition.
+These compositional change in turn affect food web structure.
+
+### 4.1.3. Temporal scale
+
+Interannual variability in temperature can induce population turnover which result in change in food web structure.
+
+## 4.2. Nutrients
+
+### 4.2.1. Local scale
+ 
+Nutrient enrichment can affect primary productivity which propagate throughout the food web. Overall, nutrient concentration affects how energy flows within the community.
+
+### 4.2.2. Intermediate scale
+
+Sustained nutrient inputs can promote community simplification, resulting in decrease of trophic length, and potentially increase in connectance through the loss of specialist species.
+
+### 4.2.3. Long-term scale
+
+Ultimately, sustained high nutrient inputs can induce regime shifts.
+
+## 4.3. Dams
+
+### 4.3.1. Local downstream scale
+
+Immediately downstream of dams, the habitat is altered because of flow regulation, sedimentation retention, and temperature modification.
+Reservoirs act as lentic environment modifying the lotic environment, species composition and in turn food web structure.
+
+### 4.3.2. Upstream network scale
+
+At larger spatial scale, dams reduce migration and recolonisation process and alter species composition upstream.
+
+### 4.3.3. Bassin scale
+
+At the scale of the entire river network, the accumulation of dams can modify energy fluxes between the land and the sea, through the loss of connectivity which hinders flows of inorganic and organic matter.
+These effects can induce a reorganisation of food web structure from freshwater system to coastal systems.
+
+### 4.3.4. Directionality 
+
+From the perspective of a focal site, dams located downstream can generate backwater effects and act as strong barriers to upstream recolonisation, whereas upstream dams primarily regulate hydrological, sediment, and nutrient fluxes reaching the site.
+Because downstream movement across dams is generally less constrained than upstream movement, downstream dams are expected to have a stronger impact on connectivity and recovery processes
+
+For that reason, upstream and downstream dam could act at different scale.
+If recolonisation is important, downstream dams may act at intermediate or large scale.
+On the other hand, upstream dam may act at more local scale, because the interruption of migration is weaker, but their effect might be more dominated by change in hydrographic condition.
+
+## 4.4. Interaction between nutrients and temperature
+
+Nutrient and warming have been reported to interact in varied ways.
+Warming increase metabolic demand of consumers.
+This increase can be compensated by an enrichment of the environment, reflecting an antagonistic interaction between nutrients and warming.
+However, they are evidence that warming can exacerbate eutrophication symptoms. It is therefore important to assess this interaction.
+
+## 4.5. Interaction between nutrients and dam
+
+Dams can strongly mediate the effects of nutrient inputs by altering nutrient retention, transformation, and transport. 
+Reservoirs may trap nutrients and promote primary production locally, while reducing nutrient delivery downstream. 
+At larger scales, the interaction between dam-induced fragmentation and nutrient enrichment may lead to spatially heterogeneous food-web responses, with enriched but simplified webs in impounded areas and nutrient-limited systems downstream.
+
+
+
+
