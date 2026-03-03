@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>index – Riversea Project Reports</title>
+<title>Identify missing diet information – Riversea Project Reports</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -18,6 +18,41 @@ ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
 width: 0.8em;
 margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+}
+pre.numberSource { margin-left: 3em; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -3848,7 +3883,7 @@ vertical-align: -.125em;
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="../analysis/index.html" aria-current="page"> 
+    <a class="nav-link" href="../analysis/index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
 </ul>
@@ -3867,36 +3902,612 @@ vertical-align: -.125em;
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#reports" id="toc-reports" class="nav-link active" data-scroll-target="#reports">Reports</a>
+  <li><a href="#summary" id="toc-summary" class="nav-link active" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">0. Setup</a></li>
+  <li><a href="#identify-species-with-no-diet-information" id="toc-identify-species-with-no-diet-information" class="nav-link" data-scroll-target="#identify-species-with-no-diet-information">1. Identify species with no diet information</a>
   <ul class="collapse">
-  <li><a href="#a.-preliminary-explorations" id="toc-a.-preliminary-explorations" class="nav-link" data-scroll-target="#a.-preliminary-explorations">A. Preliminary explorations</a></li>
-  <li><a href="#b.-method-and-model-selection" id="toc-b.-method-and-model-selection" class="nav-link" data-scroll-target="#b.-method-and-model-selection">B. Method and model selection</a></li>
+  <li><a href="#todo" id="toc-todo" class="nav-link" data-scroll-target="#todo">TODO</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Identify missing diet information</h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
 
-<p>This page lists all analyses for the project.</p>
-<section id="reports" class="level1">
-<h1>Reports</h1>
-<section id="a.-preliminary-explorations" class="level2">
-<h2 class="anchored" data-anchor-id="a.-preliminary-explorations">A. Preliminary explorations</h2>
-<ol type="1">
-<li><a href="A1-model-eel-abundance.html">Model eel abundance using INLA</a></li>
-<li><a href="A2-explore-coast-data.html">Explore coastal data</a></li>
-</ol>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="summary" class="level1">
+<h1>Summary</h1>
+<p>In this notebook we want to</p>
+<ul>
+<li>identify the species for which we have no prior information on their diet</li>
+<li>check for potential taxonomic issues that we will have to deal with</li>
+</ul>
 </section>
-<section id="b.-method-and-model-selection" class="level2">
-<h2 class="anchored" data-anchor-id="b.-method-and-model-selection">B. Method and model selection</h2>
-<ol type="1">
-<li><a href="B1-define-model.html">Define the statistical model</a></li>
-<li><a href="B2-identify-diet.html">Identify missing feeding information</a></li>
-</ol>
+<section id="setup" class="level1">
+<h1>0. Setup</h1>
+<p>We load the environment.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(renv)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">load</span>()</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>() <span class="co"># Install missing librairies.</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">status</span>() <span class="co"># Check the project state.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Previous information on fish diet can be find on the dataframe hosted at the following address.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">&quot;https://raw.githubusercontent.com/CamilleLeclerc/FoodWebsLakeStream/refs/tags/v3.0/data/raw-data/fish_diet_shift.csv&quot;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We download it and convert it to a dataframe.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>here() starts at /home/ilajaaiti/Documents/riversea</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>data_folder <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">&quot;data&quot;</span>, <span class="st">&quot;coast&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>file_name <span class="ot">&lt;-</span> <span class="st">&quot;fish_diet.csv&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url, <span class="at">destfile =</span> <span class="fu">here</span>(data_folder, file_name))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We can check that the file has been downloaded.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list.files</span>(data_folder, <span class="at">pattern =</span> file_name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] &quot;fish_diet.csv&quot;</code></pre>
+</div>
+</div>
+<p>We then read the file as a dataframe.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>d.diet <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(data_folder, file_name))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>sp_list.diet <span class="ot">&lt;-</span> <span class="fu">unique</span>(d.diet<span class="sc">$</span>species_name)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>sp_list.diet</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] &quot;Anguilla_anguilla&quot;           &quot;Salaria_fluviatilis&quot;        
+ [3] &quot;Cobitis_taenia&quot;              &quot;Cottus_petiti&quot;              
+ [5] &quot;Misgurnus_fossilis&quot;          &quot;Barbatula_barbatula&quot;        
+ [7] &quot;Cottus_gobio&quot;                &quot;Abramis_brama&quot;              
+ [9] &quot;Alburnoides_bipunctatus&quot;     &quot;Alburnus_alburnus&quot;          
+[11] &quot;Aspius_aspius&quot;               &quot;Barbus_barbus&quot;              
+[13] &quot;Barbus_meridionalis&quot;         &quot;Blicca_bjoerkna&quot;            
+[15] &quot;Carassius_carassius&quot;         &quot;Chondrostoma_nasus&quot;         
+[17] &quot;Chondrostoma_toxostoma&quot;      &quot;Cyprinus_carpio&quot;            
+[19] &quot;Gobio_gobio&quot;                 &quot;Leucaspius_delineatus&quot;      
+[21] &quot;Leuciscus_burdigalensis&quot;     &quot;Leuciscus_cephalus&quot;         
+[23] &quot;Leuciscus_idus&quot;              &quot;Leuciscus_leuciscus&quot;        
+[25] &quot;Pachychilon_pictus&quot;          &quot;Phoxinus_phoxinus&quot;          
+[27] &quot;Pseudorasbora_parva&quot;         &quot;Rhodeus_amarus&quot;             
+[29] &quot;Rutilus_rutilus&quot;             &quot;Scardinius_erythrophtalmus&quot; 
+[31] &quot;Telestes_souffia&quot;            &quot;Tinca_tinca&quot;                
+[33] &quot;Esox_lucius&quot;                 &quot;Gasterosteus_aculeatus&quot;     
+[35] &quot;Pungitius_pungitius&quot;         &quot;Ameiurus_melas&quot;             
+[37] &quot;Lota_lota&quot;                   &quot;Gymnocephalus_cernua&quot;       
+[39] &quot;Lepomis_gibbosus&quot;            &quot;Micropterus_salmoides&quot;      
+[41] &quot;Perca_fluviatilis&quot;           &quot;Stizostedion_lucioperca&quot;    
+[43] &quot;Zingel_asper&quot;                &quot;Gambusia_affinis&quot;           
+[45] &quot;Oncorhynchus_mykiss&quot;         &quot;Salvelinus_alpinus&quot;         
+[47] &quot;Salvelinus_fontinalis&quot;       &quot;Thymallus_thymallus&quot;        
+[49] &quot;Trutta_fario&quot;                &quot;Silurus_glanis&quot;             
+[51] &quot;Acipenser_ruthenus&quot;          &quot;Carassius_auratus&quot;          
+[53] &quot;Carassius_gibelio&quot;           &quot;Chelon_auratus&quot;             
+[55] &quot;Chelon_ramada&quot;               &quot;Coregonus_lavaretus&quot;        
+[57] &quot;Hypophthalmichthys_molitrix&quot; &quot;Neogobius_melanostomus&quot;     
+[59] &quot;Ponticola_kessleri&quot;          &quot;Salvelinus_namaycush&quot;       
+[61] &quot;Scardinius_hesperidicus&quot;    </code></pre>
+</div>
+</div>
+</section>
+<section id="identify-species-with-no-diet-information" class="level1">
+<h1>1. Identify species with no diet information</h1>
+<p>To identify missing species in this dataframe, we have to load dataframes from sea campagne (solper, pomet, nurse).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>d.pomet <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(data_folder, <span class="st">&quot;poisson_pomet.csv&quot;</span>), <span class="at">sep =</span> <span class="st">&quot;;&quot;</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>sp_list.pomet <span class="ot">&lt;-</span> <span class="fu">unique</span>(d.pomet<span class="sc">$</span>NomScient)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>sp_list.pomet <span class="ot">&lt;-</span> <span class="fu">str_replace</span>(sp_list.pomet, <span class="st">&quot; &quot;</span>, <span class="st">&quot;_&quot;</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(sp_list.pomet)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  [1] &quot;Abramis&quot;                            
+  [2] &quot;Abramis_brama&quot;                      
+  [3] &quot;Abramis_brama + Blicca bjoerkna&quot;    
+  [4] &quot;Acipenser_sturio&quot;                   
+  [5] &quot;Agonus_cataphractus&quot;                
+  [6] &quot;Alburnoides_bipunctatus&quot;            
+  [7] &quot;Alburnus_alburnus&quot;                  
+  [8] &quot;Alosa&quot;                              
+  [9] &quot;Alosa_alosa&quot;                        
+ [10] &quot;Alosa_fallax&quot;                       
+ [11] &quot;Ameiurus_melas&quot;                     
+ [12] &quot;Ammodytes_marinus&quot;                  
+ [13] &quot;Ammodytes_tobianus&quot;                 
+ [14] &quot;Anguilla&quot;                           
+ [15] &quot;Anguilla_anguilla&quot;                  
+ [16] &quot;Aphia_minuta&quot;                       
+ [17] &quot;Apletodon_dentatus&quot;                 
+ [18] &quot;Argyrosomus_regius&quot;                 
+ [19] &quot;Arnoglossus_imperialis&quot;             
+ [20] &quot;Arnoglossus_laterna&quot;                
+ [21] &quot;Arnoglossus_thori&quot;                  
+ [22] &quot;Atherina&quot;                           
+ [23] &quot;Atherina_boyeri&quot;                    
+ [24] &quot;Atherina_presbyter&quot;                 
+ [25] &quot;Balistes_capriscus&quot;                 
+ [26] &quot;Barbatula_barbatulus&quot;               
+ [27] &quot;Barbus_barbus&quot;                      
+ [28] &quot;Belone_belone&quot;                      
+ [29] &quot;Blennius_ocellaris&quot;                 
+ [30] &quot;Blicca_bjoerkna&quot;                    
+ [31] &quot;Buglossidium_luteum&quot;                
+ [32] &quot;Callionymus&quot;                        
+ [33] &quot;Callionymus_lyra&quot;                   
+ [34] &quot;Callionymus_reticulatus&quot;            
+ [35] &quot;Carassius_carassius&quot;                
+ [36] &quot;Carassius_gibelio&quot;                  
+ [37] &quot;Centrolabrus_exoletus&quot;              
+ [38] &quot;Chelidonichthys_lucerna&quot;            
+ [39] &quot;Chelon_labrosus&quot;                    
+ [40] &quot;Chondrostoma_nasus&quot;                 
+ [41] &quot;Ciliata&quot;                            
+ [42] &quot;Ciliata_mustela&quot;                    
+ [43] &quot;Clupea&quot;                             
+ [44] &quot;Clupea_harengus&quot;                    
+ [45] &quot;Clupeidae&quot;                          
+ [46] &quot;Conger_conger&quot;                      
+ [47] &quot;Cottus_gobio&quot;                       
+ [48] &quot;Crystallogobius_linearis&quot;           
+ [49] &quot;Ctenolabrus_rupestris&quot;              
+ [50] &quot;Cyclopterus_lumpus&quot;                 
+ [51] &quot;Cyprinidae&quot;                         
+ [52] &quot;Cyprinus_carpio&quot;                    
+ [53] &quot;Dicentrarchus&quot;                      
+ [54] &quot;Dicentrarchus_labrax&quot;               
+ [55] &quot;Dicentrarchus_punctatus&quot;            
+ [56] &quot;Dicologlossa_cuneata&quot;               
+ [57] &quot;Diplecogaster_bimaculata bimaculata&quot;
+ [58] &quot;Diplodus_annularis&quot;                 
+ [59] &quot;Diplodus_sargus sargus&quot;             
+ [60] &quot;Diplodus_vulgaris&quot;                  
+ [61] &quot;Echiichthys_vipera&quot;                 
+ [62] &quot;Engraulis_encrasicolus&quot;             
+ [63] &quot;Entelurus_aequoreus&quot;                
+ [64] &quot;Esox_lucius&quot;                        
+ [65] &quot;Eutrigla_gurnardus&quot;                 
+ [66] &quot;Gadidae&quot;                            
+ [67] &quot;Gadus_morhua&quot;                       
+ [68] &quot;Gaidropsarus_mediterraneus&quot;         
+ [69] &quot;Gaidropsarus_vulgaris&quot;              
+ [70] &quot;Gasterosteus&quot;                       
+ [71] &quot;Gasterosteus_aculeatus aculeatus&quot;   
+ [72] &quot;Gobiidae&quot;                           
+ [73] &quot;Gobio_gobio&quot;                        
+ [74] &quot;Gobius_cobitis&quot;                     
+ [75] &quot;Gobius_niger&quot;                       
+ [76] &quot;Gobius_paganellus&quot;                  
+ [77] &quot;Gobiusculus_flavescens&quot;             
+ [78] &quot;Gymnocephalus_cernuus&quot;              
+ [79] &quot;Hippocampus_guttulatus&quot;             
+ [80] &quot;Hippocampus_hippocampus&quot;            
+ [81] &quot;Hyperoplus&quot;                         
+ [82] &quot;Hyperoplus_immaculatus&quot;             
+ [83] &quot;Hyperoplus_lanceolatus&quot;             
+ [84] &quot;Labrus_bergylta&quot;                    
+ [85] &quot;Labrus_mixtus&quot;                      
+ [86] &quot;Labrus_viridis&quot;                     
+ [87] &quot;Lepadogaster_candolii&quot;              
+ [88] &quot;Lepadogaster_lepadogaster&quot;          
+ [89] &quot;Lepomis_gibbosus&quot;                   
+ [90] &quot;Leucaspius_delineatus&quot;              
+ [91] &quot;Leuciscus_idus&quot;                     
+ [92] &quot;Leuciscus_leuciscus&quot;                
+ [93] &quot;Limanda_limanda&quot;                    
+ [94] &quot;Liparis_liparis liparis&quot;            
+ [95] &quot;Liparis_montagui&quot;                   
+ [96] &quot;Lipophrys_pholis&quot;                   
+ [97] &quot;Liza&quot;                               
+ [98] &quot;Liza_aurata&quot;                        
+ [99] &quot;Liza_ramada&quot;                        
+[100] &quot;Merlangius_merlangus&quot;               
+[101] &quot;Merluccius_merluccius&quot;              
+[102] &quot;Microchirus_variegatus&quot;             
+[103] &quot;Mugil&quot;                              
+[104] &quot;Mugilidae&quot;                          
+[105] &quot;Mullus_barbatus barbatus&quot;           
+[106] &quot;Mullus_surmuletus&quot;                  
+[107] &quot;Mustelus_asterias&quot;                  
+[108] &quot;Myoxocephalus_scorpius&quot;             
+[109] &quot;Neogobius_melanostomus&quot;             
+[110] &quot;Nerophis_lumbriciformis&quot;            
+[111] &quot;Nerophis_maculatus&quot;                 
+[112] &quot;Nerophis_ophidion&quot;                  
+[113] &quot;Osmerus_eperlanus&quot;                  
+[114] &quot;Pagellus_bogaraveo&quot;                 
+[115] &quot;Pagellus_erythrinus&quot;                
+[116] &quot;Parablennius_gattorugine&quot;           
+[117] &quot;Pegusa_lascaris&quot;                    
+[118] &quot;Perca_fluviatilis&quot;                  
+[119] &quot;Petromyzontidae&quot;                    
+[120] &quot;Pholis_gunnellus&quot;                   
+[121] &quot;Phoxinus_phoxinus&quot;                  
+[122] &quot;Phrynorhombus_norvegicus&quot;           
+[123] &quot;Platichthys_flesus&quot;                 
+[124] &quot;Pleuronectes_platessa&quot;              
+[125] &quot;Pleuronectidae&quot;                     
+[126] &quot;Pollachius_pollachius&quot;              
+[127] &quot;Pomatoschistus&quot;                     
+[128] &quot;Pomatoschistus_lozanoi&quot;             
+[129] &quot;Pomatoschistus_marmoratus&quot;          
+[130] &quot;Pomatoschistus_microps&quot;             
+[131] &quot;Pomatoschistus_minutus&quot;             
+[132] &quot;Pomatoschistus_pictus&quot;              
+[133] &quot;Pseudorasbora_parva&quot;                
+[134] &quot;Pungitius_pungitius&quot;                
+[135] &quot;Raja&quot;                               
+[136] &quot;Raja_clavata&quot;                       
+[137] &quot;Raja_montagui&quot;                      
+[138] &quot;Raja_undulata&quot;                      
+[139] &quot;Rajella_fyllae&quot;                     
+[140] &quot;Rhodeus_amarus&quot;                     
+[141] &quot;Rutilus_rutilus&quot;                    
+[142] &quot;Salaria_pavo&quot;                       
+[143] &quot;Salmo_salar&quot;                        
+[144] &quot;Salmo_trutta fario&quot;                 
+[145] &quot;Salmo_trutta trutta&quot;                
+[146] &quot;Sander&quot;                             
+[147] &quot;Sander_lucioperca&quot;                  
+[148] &quot;Sardina_pilchardus&quot;                 
+[149] &quot;Scardinius_erythrophthalmus&quot;        
+[150] &quot;Scomber_scombrus&quot;                   
+[151] &quot;Scophthalmus_maximus&quot;               
+[152] &quot;Scophthalmus_rhombus&quot;               
+[153] &quot;Scyliorhinus_canicula&quot;              
+[154] &quot;Silurus_glanis&quot;                     
+[155] &quot;Solea&quot;                              
+[156] &quot;Solea_senegalensis&quot;                 
+[157] &quot;Solea_solea&quot;                        
+[158] &quot;Sparidae&quot;                           
+[159] &quot;Sparus_aurata&quot;                      
+[160] &quot;Spinachia_spinachia&quot;                
+[161] &quot;Spondyliosoma_cantharus&quot;            
+[162] &quot;Sprattus&quot;                           
+[163] &quot;Sprattus_sprattus&quot;                  
+[164] &quot;Squalius_cephalus&quot;                  
+[165] &quot;Symphodus_bailloni&quot;                 
+[166] &quot;Symphodus_melops&quot;                   
+[167] &quot;Symphodus_ocellatus&quot;                
+[168] &quot;Symphodus_roissali&quot;                 
+[169] &quot;Syngnathus&quot;                         
+[170] &quot;Syngnathus_abaster&quot;                 
+[171] &quot;Syngnathus_acus&quot;                    
+[172] &quot;Syngnathus_rostellatus&quot;             
+[173] &quot;Syngnathus_typhle&quot;                  
+[174] &quot;Taurulus_bubalis&quot;                   
+[175] &quot;Tinca_tinca&quot;                        
+[176] &quot;Torpedo_marmorata&quot;                  
+[177] &quot;Torpedo_torpedo&quot;                    
+[178] &quot;Trachurus_trachurus&quot;                
+[179] &quot;Trigla&quot;                             
+[180] &quot;Trigla_lyra&quot;                        
+[181] &quot;Trigloporus_lastoviza&quot;              
+[182] &quot;Tripterygion_delaisi&quot;               
+[183] &quot;Trisopterus&quot;                        
+[184] &quot;Trisopterus_luscus&quot;                 
+[185] &quot;Trisopterus_minutus&quot;                
+[186] &quot;Umbrina_canariensis&quot;                
+[187] &quot;Umbrina_cirrosa&quot;                    
+[188] &quot;Zeugopterus_punctatus&quot;              
+[189] &quot;Zeus_faber&quot;                         
+[190] &quot;Zoarces_viviparus&quot;                  </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>reftax_file <span class="ot">&lt;-</span> <span class="fu">list.files</span>(data_folder, <span class="at">pattern =</span> <span class="st">&quot;Reftax&quot;</span>)[<span class="dv">1</span>]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="fu">here</span>(data_folder, reftax_file))</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(ESPECE_MAJ)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     Nom_Scientifique          SOURCEtaxa AphiaID
+1 Acrocnida brachiata Acrocnida brachiata  236130
+2         Alloteuthis         Alloteuthis  138138
+3             Antalis             Antalis  150531
+4  Aphrodita aculeata  Aphrodita aculeata  129840
+5 Buglossidium luteum Buglossidium luteum  127153
+6    Callionymus lyra    Callionymus lyra  126792
+                                                             url
+1 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=236130
+2 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=138138
+3 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=150531
+4 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=129840
+5 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=127153
+6 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=126792
+       scientificname                 authority   status unacceptreason
+1 Acrocnida brachiata           (Montagu, 1804) accepted           &lt;NA&gt;
+2         Alloteuthis              Wülker, 1920 accepted           &lt;NA&gt;
+3             Antalis H. Adams &amp; A. Adams, 1854 accepted           &lt;NA&gt;
+4  Aphrodita aculeata            Linnaeus, 1758 accepted           &lt;NA&gt;
+5 Buglossidium luteum             (Risso, 1810) accepted           &lt;NA&gt;
+6    Callionymus lyra            Linnaeus, 1758 accepted           &lt;NA&gt;
+  taxonRankID    rank valid_AphiaID          valid_name
+1         220 Species        236130 Acrocnida brachiata
+2         180   Genus        138138         Alloteuthis
+3         180   Genus        150531             Antalis
+4         220 Species        129840  Aphrodita aculeata
+5         220 Species        127153 Buglossidium luteum
+6         220 Species        126792    Callionymus lyra
+            valid_authority parentNameUsageID  kingdom        phylum
+1           (Montagu, 1804)            236129 Animalia Echinodermata
+2              Wülker, 1920             11734 Animalia      Mollusca
+3 H. Adams &amp; A. Adams, 1854               202 Animalia      Mollusca
+4            Linnaeus, 1758            129194 Animalia      Annelida
+5             (Risso, 1810)            126127 Animalia      Chordata
+6            Linnaeus, 1758            125930 Animalia      Chordata
+        class             order        family        genus
+1 Ophiuroidea     Amphilepidida   Amphiuridae    Acrocnida
+2 Cephalopoda          Myopsida   Loliginidae  Alloteuthis
+3  Scaphopoda        Dentaliida   Dentaliidae      Antalis
+4  Polychaeta      Phyllodocida  Aphroditidae    Aphrodita
+5   Teleostei Pleuronectiformes      Soleidae Buglossidium
+6   Teleostei  Callionymiformes Callionymidae  Callionymus
+                                                                                                                                                                                                                                            citation
+1 Stöhr, S.; O’Hara, T.; Thuy, B. (Eds) (2024). World Ophiuroidea Database. Acrocnida brachiata (Montagu, 1804). Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=236130 on 2024-09-17
+2                                              MolluscaBase eds. (2024). MolluscaBase. Alloteuthis Wülker, 1920. Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=138138 on 2024-09-17
+3                                     MolluscaBase eds. (2024). MolluscaBase. Antalis H. Adams &amp; A. Adams, 1854. Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=150531 on 2024-09-17
+4             Read, G.; Fauchald, K. (Ed.) (2024). World Polychaeta Database. Aphrodita aculeata Linnaeus, 1758. Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=129840 on 2024-09-17
+5                         Froese, R. and D. Pauly. Editors. (2024). FishBase. Buglossidium luteum (Risso, 1810). Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=127153 on 2024-09-17
+6                           Froese, R. and D. Pauly. Editors. (2024). FishBase. Callionymus lyra Linnaeus, 1758. Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=126792 on 2024-09-17
+                                       lsid isMarine isBrackish isFreshwater
+1 urn:lsid:marinespecies.org:taxname:236130        1          0            0
+2 urn:lsid:marinespecies.org:taxname:138138        1         NA            0
+3 urn:lsid:marinespecies.org:taxname:150531        1          0            0
+4 urn:lsid:marinespecies.org:taxname:129840        1          0            0
+5 urn:lsid:marinespecies.org:taxname:127153        1          0            0
+6 urn:lsid:marinespecies.org:taxname:126792        1          0            0
+  isTerrestrial isExtinct match_type                 modified Kingdom Phylum
+1             0        NA      exact 2007-07-18T12:17:12.423Z    &lt;NA&gt;   &lt;NA&gt;
+2             0        NA      exact 2016-06-03T01:23:43.653Z    &lt;NA&gt;   &lt;NA&gt;
+3             0         0      exact 2023-03-28T08:46:54.300Z    &lt;NA&gt;   &lt;NA&gt;
+4             0         0      exact 2008-03-26T11:36:43.420Z    &lt;NA&gt;   &lt;NA&gt;
+5             0        NA      exact 2008-01-15T17:27:08.177Z    &lt;NA&gt;   &lt;NA&gt;
+6             0        NA      exact 2008-01-15T17:27:08.177Z    &lt;NA&gt;   &lt;NA&gt;
+  Subphylum Class Subclass Infraclass Superorder Order Suborder Superfamily
+1      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+2      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+3      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+4      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+5      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+6      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+  Family Genus Species Infraphylum Parvphylum Gigaclass Superclass Infraorder
+1   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+2   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+3   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+4   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+5   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+6   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+  Section Subsection Subfamily Subterclass Tribe Subspecies Subgenus Parvorder
+1    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+2    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+3    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+4    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+5    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+6    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+  Subkingdom
+1       &lt;NA&gt;
+2       &lt;NA&gt;
+3       &lt;NA&gt;
+4       &lt;NA&gt;
+5       &lt;NA&gt;
+6       &lt;NA&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: &#39;dplyr&#39;</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from &#39;package:stats&#39;:
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from &#39;package:base&#39;:
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>d.reftax <span class="ot">&lt;-</span> ESPECE_MAJ</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>d.reftax <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">grepl</span>(<span class="st">&quot;Anguilla&quot;</span>, scientificname))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    Nom_Scientifique        SOURCEtaxa AphiaID
+78 Anguilla anguilla Anguilla anguilla  126281
+                                                              url
+78 https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=126281
+      scientificname        authority   status unacceptreason taxonRankID
+78 Anguilla anguilla (Linnaeus, 1758) accepted           &lt;NA&gt;         220
+      rank valid_AphiaID        valid_name  valid_authority parentNameUsageID
+78 Species        126281 Anguilla anguilla (Linnaeus, 1758)            125620
+    kingdom   phylum     class          order      family    genus
+78 Animalia Chordata Teleostei Anguilliformes Anguillidae Anguilla
+                                                                                                                                                                                                                      citation
+78 Froese, R. and D. Pauly. Editors. (2024). FishBase. Anguilla anguilla (Linnaeus, 1758). Accessed through: World Register of Marine Species at: https://www.marinespecies.org/aphia.php?p=taxdetails&amp;id=126281 on 2024-09-17
+                                        lsid isMarine isBrackish isFreshwater
+78 urn:lsid:marinespecies.org:taxname:126281        1          1            1
+   isTerrestrial isExtinct match_type                 modified Kingdom Phylum
+78             0        NA      exact 2008-01-15T17:27:08.177Z    &lt;NA&gt;   &lt;NA&gt;
+   Subphylum Class Subclass Infraclass Superorder Order Suborder Superfamily
+78      &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;  &lt;NA&gt;     &lt;NA&gt;        &lt;NA&gt;
+   Family Genus Species Infraphylum Parvphylum Gigaclass Superclass Infraorder
+78   &lt;NA&gt;  &lt;NA&gt;    &lt;NA&gt;        &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;       &lt;NA&gt;       &lt;NA&gt;
+   Section Subsection Subfamily Subterclass Tribe Subspecies Subgenus Parvorder
+78    &lt;NA&gt;       &lt;NA&gt;      &lt;NA&gt;        &lt;NA&gt;  &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;      &lt;NA&gt;
+   Subkingdom
+78       &lt;NA&gt;</code></pre>
+</div>
+</div>
+<p>To begin with, we remove species that do not have an underscore as it seems to often indicate the name is not resolved at scale of the species.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>sp_list.pomet <span class="ot">&lt;-</span> sp_list.pomet[<span class="fu">grepl</span>(<span class="st">&quot;_&quot;</span>, sp_list.pomet)]</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>sp_list.pomet <span class="ot">&lt;-</span> sp_list.pomet[<span class="sc">-</span><span class="dv">3</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>sp_list.pomet[<span class="sc">!</span>(sp_list.pomet <span class="sc">%in%</span> sp_list.diet)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  [1] &quot;Abramis_brama + Blicca bjoerkna&quot;    
+  [2] &quot;Agonus_cataphractus&quot;                
+  [3] &quot;Alosa_alosa&quot;                        
+  [4] &quot;Alosa_fallax&quot;                       
+  [5] &quot;Ammodytes_marinus&quot;                  
+  [6] &quot;Ammodytes_tobianus&quot;                 
+  [7] &quot;Aphia_minuta&quot;                       
+  [8] &quot;Apletodon_dentatus&quot;                 
+  [9] &quot;Argyrosomus_regius&quot;                 
+ [10] &quot;Arnoglossus_imperialis&quot;             
+ [11] &quot;Arnoglossus_laterna&quot;                
+ [12] &quot;Arnoglossus_thori&quot;                  
+ [13] &quot;Atherina_boyeri&quot;                    
+ [14] &quot;Atherina_presbyter&quot;                 
+ [15] &quot;Balistes_capriscus&quot;                 
+ [16] &quot;Barbatula_barbatulus&quot;               
+ [17] &quot;Belone_belone&quot;                      
+ [18] &quot;Blennius_ocellaris&quot;                 
+ [19] &quot;Buglossidium_luteum&quot;                
+ [20] &quot;Callionymus_lyra&quot;                   
+ [21] &quot;Callionymus_reticulatus&quot;            
+ [22] &quot;Centrolabrus_exoletus&quot;              
+ [23] &quot;Chelidonichthys_lucerna&quot;            
+ [24] &quot;Chelon_labrosus&quot;                    
+ [25] &quot;Ciliata_mustela&quot;                    
+ [26] &quot;Clupea_harengus&quot;                    
+ [27] &quot;Conger_conger&quot;                      
+ [28] &quot;Crystallogobius_linearis&quot;           
+ [29] &quot;Ctenolabrus_rupestris&quot;              
+ [30] &quot;Cyclopterus_lumpus&quot;                 
+ [31] &quot;Dicentrarchus_labrax&quot;               
+ [32] &quot;Dicentrarchus_punctatus&quot;            
+ [33] &quot;Dicologlossa_cuneata&quot;               
+ [34] &quot;Diplecogaster_bimaculata bimaculata&quot;
+ [35] &quot;Diplodus_annularis&quot;                 
+ [36] &quot;Diplodus_sargus sargus&quot;             
+ [37] &quot;Diplodus_vulgaris&quot;                  
+ [38] &quot;Echiichthys_vipera&quot;                 
+ [39] &quot;Engraulis_encrasicolus&quot;             
+ [40] &quot;Entelurus_aequoreus&quot;                
+ [41] &quot;Eutrigla_gurnardus&quot;                 
+ [42] &quot;Gadus_morhua&quot;                       
+ [43] &quot;Gaidropsarus_mediterraneus&quot;         
+ [44] &quot;Gaidropsarus_vulgaris&quot;              
+ [45] &quot;Gasterosteus_aculeatus aculeatus&quot;   
+ [46] &quot;Gobius_cobitis&quot;                     
+ [47] &quot;Gobius_niger&quot;                       
+ [48] &quot;Gobius_paganellus&quot;                  
+ [49] &quot;Gobiusculus_flavescens&quot;             
+ [50] &quot;Gymnocephalus_cernuus&quot;              
+ [51] &quot;Hippocampus_guttulatus&quot;             
+ [52] &quot;Hippocampus_hippocampus&quot;            
+ [53] &quot;Hyperoplus_immaculatus&quot;             
+ [54] &quot;Hyperoplus_lanceolatus&quot;             
+ [55] &quot;Labrus_bergylta&quot;                    
+ [56] &quot;Labrus_mixtus&quot;                      
+ [57] &quot;Labrus_viridis&quot;                     
+ [58] &quot;Lepadogaster_candolii&quot;              
+ [59] &quot;Lepadogaster_lepadogaster&quot;          
+ [60] &quot;Limanda_limanda&quot;                    
+ [61] &quot;Liparis_liparis liparis&quot;            
+ [62] &quot;Liparis_montagui&quot;                   
+ [63] &quot;Lipophrys_pholis&quot;                   
+ [64] &quot;Liza_aurata&quot;                        
+ [65] &quot;Liza_ramada&quot;                        
+ [66] &quot;Merlangius_merlangus&quot;               
+ [67] &quot;Merluccius_merluccius&quot;              
+ [68] &quot;Microchirus_variegatus&quot;             
+ [69] &quot;Mullus_barbatus barbatus&quot;           
+ [70] &quot;Mullus_surmuletus&quot;                  
+ [71] &quot;Mustelus_asterias&quot;                  
+ [72] &quot;Myoxocephalus_scorpius&quot;             
+ [73] &quot;Nerophis_lumbriciformis&quot;            
+ [74] &quot;Nerophis_maculatus&quot;                 
+ [75] &quot;Nerophis_ophidion&quot;                  
+ [76] &quot;Osmerus_eperlanus&quot;                  
+ [77] &quot;Pagellus_bogaraveo&quot;                 
+ [78] &quot;Pagellus_erythrinus&quot;                
+ [79] &quot;Parablennius_gattorugine&quot;           
+ [80] &quot;Pegusa_lascaris&quot;                    
+ [81] &quot;Pholis_gunnellus&quot;                   
+ [82] &quot;Phrynorhombus_norvegicus&quot;           
+ [83] &quot;Platichthys_flesus&quot;                 
+ [84] &quot;Pleuronectes_platessa&quot;              
+ [85] &quot;Pollachius_pollachius&quot;              
+ [86] &quot;Pomatoschistus_lozanoi&quot;             
+ [87] &quot;Pomatoschistus_marmoratus&quot;          
+ [88] &quot;Pomatoschistus_microps&quot;             
+ [89] &quot;Pomatoschistus_minutus&quot;             
+ [90] &quot;Pomatoschistus_pictus&quot;              
+ [91] &quot;Raja_clavata&quot;                       
+ [92] &quot;Raja_montagui&quot;                      
+ [93] &quot;Raja_undulata&quot;                      
+ [94] &quot;Rajella_fyllae&quot;                     
+ [95] &quot;Salaria_pavo&quot;                       
+ [96] &quot;Salmo_salar&quot;                        
+ [97] &quot;Salmo_trutta fario&quot;                 
+ [98] &quot;Salmo_trutta trutta&quot;                
+ [99] &quot;Sander_lucioperca&quot;                  
+[100] &quot;Sardina_pilchardus&quot;                 
+[101] &quot;Scardinius_erythrophthalmus&quot;        
+[102] &quot;Scomber_scombrus&quot;                   
+[103] &quot;Scophthalmus_maximus&quot;               
+[104] &quot;Scophthalmus_rhombus&quot;               
+[105] &quot;Scyliorhinus_canicula&quot;              
+[106] &quot;Solea_senegalensis&quot;                 
+[107] &quot;Solea_solea&quot;                        
+[108] &quot;Sparus_aurata&quot;                      
+[109] &quot;Spinachia_spinachia&quot;                
+[110] &quot;Spondyliosoma_cantharus&quot;            
+[111] &quot;Sprattus_sprattus&quot;                  
+[112] &quot;Squalius_cephalus&quot;                  
+[113] &quot;Symphodus_bailloni&quot;                 
+[114] &quot;Symphodus_melops&quot;                   
+[115] &quot;Symphodus_ocellatus&quot;                
+[116] &quot;Symphodus_roissali&quot;                 
+[117] &quot;Syngnathus_abaster&quot;                 
+[118] &quot;Syngnathus_acus&quot;                    
+[119] &quot;Syngnathus_rostellatus&quot;             
+[120] &quot;Syngnathus_typhle&quot;                  
+[121] &quot;Taurulus_bubalis&quot;                   
+[122] &quot;Torpedo_marmorata&quot;                  
+[123] &quot;Torpedo_torpedo&quot;                    
+[124] &quot;Trachurus_trachurus&quot;                
+[125] &quot;Trigla_lyra&quot;                        
+[126] &quot;Trigloporus_lastoviza&quot;              
+[127] &quot;Tripterygion_delaisi&quot;               
+[128] &quot;Trisopterus_luscus&quot;                 
+[129] &quot;Trisopterus_minutus&quot;                
+[130] &quot;Umbrina_canariensis&quot;                
+[131] &quot;Umbrina_cirrosa&quot;                    
+[132] &quot;Zeugopterus_punctatus&quot;              
+[133] &quot;Zeus_faber&quot;                         
+[134] &quot;Zoarces_viviparus&quot;                  </code></pre>
+</div>
+</div>
+<section id="todo" class="level2">
+<h2 class="anchored" data-anchor-id="todo">TODO</h2>
+<ul>
+<li>Handle name resolution (family, genus)</li>
+<li>Remove non-fish species</li>
+<li>Merge species from three campagnes</li>
+</ul>
 
 
 </section>

@@ -242,7 +242,7 @@
     "href": "analysis/index.html#b.-method-and-model-selection",
     "title": "Reports",
     "section": "B. Method and model selection",
-    "text": "B. Method and model selection\n\nDefine the statistical model"
+    "text": "B. Method and model selection\n\nDefine the statistical model\nIdentify missing feeding information"
   },
   {
     "objectID": "analysis/index.html#preliminary-exploration",
@@ -474,5 +474,19 @@
     "title": "Define the statistical model",
     "section": "4.5. Interaction between nutrients and dam",
     "text": "4.5. Interaction between nutrients and dam\nDams can strongly mediate the effects of nutrient inputs by altering nutrient retention, transformation, and transport. Reservoirs may trap nutrients and promote primary production locally, while reducing nutrient delivery downstream. At larger scales, the interaction between dam-induced fragmentation and nutrient enrichment may lead to spatially heterogeneous food-web responses, with enriched but simplified webs in impounded areas and nutrient-limited systems downstream."
+  },
+  {
+    "objectID": "analysis/B2-identify-diet.html",
+    "href": "analysis/B2-identify-diet.html",
+    "title": "Identify missing diet information",
+    "section": "",
+    "text": "In this notebook we want to\n\nidentify the species for which we have no prior information on their diet\ncheck for potential taxonomic issues that we will have to deal with"
+  },
+  {
+    "objectID": "analysis/B2-identify-diet.html#todo",
+    "href": "analysis/B2-identify-diet.html#todo",
+    "title": "Identify missing diet information",
+    "section": "TODO",
+    "text": "TODO\n\nHandle name resolution (family, genus)\nRemove non-fish species\nMerge species from three campagnes"
   }
 ]

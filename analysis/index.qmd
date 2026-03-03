@@ -14,3 +14,4 @@ This page lists all analyses for the project.
 ## B. Method and model selection
 
 1. [Define the statistical model](B1-define-model.html)
+2. [Identify missing feeding information](B2-identify-diet.html)

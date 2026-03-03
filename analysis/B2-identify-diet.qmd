@@ -1,0 +1,94 @@
+---
+title: "Identify missing diet information"
+format: html
+---
+
+# Summary
+
+In this notebook we want to
+
+- identify the species for which we have no prior information on their diet
+- check for potential taxonomic issues that we will have to deal with
+
+# 0. Setup
+
+We load the environment.
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+```
+
+Previous information on fish diet can be find on the dataframe hosted at the following address.
+
+```{r}
+url <- "https://raw.githubusercontent.com/CamilleLeclerc/FoodWebsLakeStream/refs/tags/v3.0/data/raw-data/fish_diet_shift.csv"
+```
+
+We download it and convert it to a dataframe.
+
+```{r}
+library(here)
+data_folder <- here("data", "coast")
+file_name <- "fish_diet.csv"
+download.file(url, destfile = here(data_folder, file_name))
+```
+
+We can check that the file has been downloaded.
+
+```{r}
+list.files(data_folder, pattern = file_name)
+```
+
+We then read the file as a dataframe.
+
+```{r}
+d.diet <- read.csv(here(data_folder, file_name))
+sp_list.diet <- unique(d.diet$species_name)
+sp_list.diet
+```
+
+# 1. Identify species with no diet information
+
+To identify missing species in this dataframe, we have to load dataframes from sea campagne (solper, pomet, nurse).
+
+```{r}
+library(stringr)
+
+d.pomet <- read.csv(here(data_folder, "poisson_pomet.csv"), sep = ";")
+sp_list.pomet <- unique(d.pomet$NomScient)
+sp_list.pomet <- str_replace(sp_list.pomet, " ", "_")
+```
+
+```{r}
+reftax_file <- list.files(data_folder, pattern = "Reftax")[1]
+load(here(data_folder, reftax_file))
+head(ESPECE_MAJ)
+```
+
+
+```{r}
+library(dplyr)
+d.reftax <- ESPECE_MAJ
+d.reftax |> filter(grepl("Anguilla", scientificname))
+```
+
+To begin with, we remove species that do not have an underscore as it seems to often indicate the name is not resolved at scale of the species.
+
+```{r}
+sp_list.pomet <- sp_list.pomet[grepl("_", sp_list.pomet)]
+sp_list.pomet <- sp_list.pomet[-3]
+```
+
+```{r}
+sp_list.pomet[!(sp_list.pomet %in% sp_list.diet)]
+```
+
+## TODO
+
+- Handle name resolution (family, genus)
+- Remove non-fish species
+- Merge species from three campagnes
