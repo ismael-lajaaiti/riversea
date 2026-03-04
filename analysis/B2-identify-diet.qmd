@@ -1,6 +1,9 @@
 ---
 title: "Identify missing diet information"
 format: html
+execute:
+    message: false
+    warning: false
 ---
 
 # Summary
@@ -46,49 +49,172 @@ list.files(data_folder, pattern = file_name)
 We then read the file as a dataframe.
 
 ```{r}
+library(stringr)
+
 d.diet <- read.csv(here(data_folder, file_name))
-sp_list.diet <- unique(d.diet$species_name)
+sp_list.diet <- sort(unique(d.diet$species_name))
+sp_list.diet <- str_replace(sp_list.diet, "_", " ")
 sp_list.diet
 ```
 
-# 1. Identify species with no diet information
+# 1. Pomet
 
 To identify missing species in this dataframe, we have to load dataframes from sea campagne (solper, pomet, nurse).
 
 ```{r}
-library(stringr)
+pomet <- read.csv(here(data_folder, "poisson_pomet.csv"), sep = ";")
+solper <- read.csv(here(data_folder, "captures_SOLPER_2005_2011.csv"), sep = ";")
+nurse <- read.csv(here(data_folder, "Captures_Nurse_1980_2023.csv"), sep = ";")
 
-d.pomet <- read.csv(here(data_folder, "poisson_pomet.csv"), sep = ";")
-sp_list.pomet <- unique(d.pomet$NomScient)
-sp_list.pomet <- str_replace(sp_list.pomet, " ", "_")
+sp_pomet <- unique(pomet$NomScient)
+head(sp_pomet)
+
+sp_solper <- unique(solper$Espece)
+head(sp_solper)
+
+sp_nurse <- unique(nurse$Espece)
+head(sp_nurse)
 ```
-
-```{r}
-reftax_file <- list.files(data_folder, pattern = "Reftax")[1]
-load(here(data_folder, reftax_file))
-head(ESPECE_MAJ)
-```
-
 
 ```{r}
 library(dplyr)
-d.reftax <- ESPECE_MAJ
-d.reftax |> filter(grepl("Anguilla", scientificname))
+
+reftax_file <- "POMET_RefTax_Sp.csv"
+reftax <- read.csv(here(data_folder, reftax_file), sep = ";")
 ```
 
-To begin with, we remove species that do not have an underscore as it seems to often indicate the name is not resolved at scale of the species.
-
-```{r}
-sp_list.pomet <- sp_list.pomet[grepl("_", sp_list.pomet)]
-sp_list.pomet <- sp_list.pomet[-3]
-```
+## 1.1. Handle taxonomic resolutions: keep only species
 
 ```{r}
-sp_list.pomet[!(sp_list.pomet %in% sp_list.diet)]
+is_species <- function(name) grepl(" ", name)
+species_only <- sp_pomet[is_species(sp_pomet)]
 ```
+
+## 1.2. Handle different genres: keep only fish
+
+```{r}
+remove_non_fish <- function(species_list, reftax) {
+    sp_df <- data.frame(nom = species_list)
+    sp_df <- left_join(sp_df, reftax, by = "nom")
+    sp_df <- sp_df |> filter(phylum == "Chordata" | is.na(phylum))
+    sp_df$nom
+}
+
+fish_only <- remove_non_fish(species_only, reftax)
+species_missing <- setdiff(fish_only, sp_list.diet)
+species_missing
+```
+
+## 1.3. Handle taxonomic typos
+
+Next, we want to check for mismatch because of typos or alternative taxonomic names.
+To do so, we compute a string distance to find species with most similar names between our two lists.
+By doing so, we will be able to quickly identify erroneous mismatch.
+
+```{r}
+library(stringdist)
+
+similar_name <- lapply(species_missing, function(name) {
+    distances <- stringdist(name, sp_list.diet, method = "jw")
+    closest <- sp_list.diet[which.min(distances)]
+    data.frame(name = name, closest = closest, distance = min(distances))
+    })
+
+df_strdist <- do.call(rbind, similar_name) |>
+    arrange(distance)
+df_strdist
+```
+
+We see that there are few issues 
+
+- Typo for the Scardinius erythro. in the diet species list.
+- Outdated taxonomic name for Gymnocephalus cernua.
+- Subspecies resolution for Gasterosteus aculeatus.
+- Two species in one for Abramis brama + Blicca bjoerkna.
+- Outdated taxonomic name for Trutta fario.
+
+```{r}
+species_to_remove <- c(
+    "Abramis brama + Blicca bjoerkna",
+    "Gasterosteus aculeatus aculeatus",
+    "Salmo trutta fario",
+    "Salmo trutta trutta",
+    "Gymnocephalus cernuus"
+)
+missing_pomet <- species_missing[!(species_missing %in% species_to_remove)]
+```
+
+# 2. Nurse
+
+```{r}
+length(sp_nurse)
+```
+
+We see that we have many species.
+This probably means that we have many non-fish species that we will have to remove.
+First, we remove genus to only keep species names.
+
+```{r}
+species_only <- sp_nurse[is_species(sp_nurse)]
+length(species_only)
+```
+
+Next, we want to remove non-fish species.
+We load the corresponding reftax table.
+
+```{r}
+list.files(data_folder)
+reftax_file <- list.files(data_folder, pattern = "RData")[1]
+load(here(data_folder, reftax_file))
+reftax <- ESPECE_MAJ
+```
+
+```{r}
+sp_df <- data.frame(scientificname = species_only)
+sp_df <- sp_df |> 
+    left_join(reftax, by = "scientificname") |>
+    filter(phylum == "Chordata" | is.na(phylum)) |>
+    filter(class == "Teleostei" | class == "Elasmobranchii" | is.na(class))
+fish_only <- sp_df$scientificname
+
+missing_nurse <- setdiff(fish_only, sp_list.diet)
+```
+
+```{r}
+similar_name <- lapply(missing_nurse, function(name) {
+    distances <- stringdist(name, sp_list.diet, method = "jw")
+    closest <- sp_list.diet[which.min(distances)]
+    data.frame(name = name, closest = closest, distance = min(distances))
+    })
+
+df_strdist <- do.call(rbind, similar_name) |>
+    arrange(distance)
+df_strdist
+```
+
+```{r}
+missing_all <- sort(unique(c(missing_nurse, missing_pomet)))
+missing_all
+```
+
+# 3. Solper
+
+```{r}
+length(sp_solper)
+```
+
+For Solper, we have code instead of species names.
+
+```{r}
+head(sp_solper)
+```
+
+::: {.callout-warning}
+I cannot find the relation between species code and their scientific name.
+:::
+
 
 ## TODO
 
-- Handle name resolution (family, genus)
-- Remove non-fish species
+- Find reference table for species codes in Solper campagne.
 - Merge species from three campagnes
