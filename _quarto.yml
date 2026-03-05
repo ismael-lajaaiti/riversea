@@ -1,15 +1,16 @@
 project:
   type: website
   render:
+    - index.qmd
     - analysis/*.qmd
   output-dir: docs
 
 website:
   title: "Riversea Project Reports"
-  navbar:
-    left:
+  navbar: 
+    left: 
       - text: Home
-        href: analysis/index.html
+        href: index.qmd
 
 format:
   html:

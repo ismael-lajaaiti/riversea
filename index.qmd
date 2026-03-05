@@ -1,0 +1,17 @@
+---
+title: "Home"
+---
+
+This page lists all analyses for the project.
+
+# Reports
+
+## A. Preliminary explorations
+
+1. [Model eel abundance using INLA](analysis/A1-model-eel-abundance.html)
+2. [Explore coastal data](analysis/A2-explore-coast-data.html)
+
+## B. Method and model selection
+
+1. [Define the statistical model](analysis/B1-define-model.html)
+2. [Identify missing feeding information](analysis/B2-identify-diet.html)
