@@ -144,6 +144,41 @@ species_to_remove <- c(
 missing_pomet <- species_missing[!(species_missing %in% species_to_remove)]
 ```
 
+## 1.4. Rare species
+
+Next, we want to compute average abundance for these species to identify potential rare species that wouldn't be interesting to include.
+
+```{r}
+abundance_pomet <- pomet |> 
+    filter(NomScient %in% missing_pomet) |>
+    group_by(NomScient) |>
+    summarise(n = sum(Nind_esp)) |>
+    arrange(n)
+head(abundance_pomet)
+
+abundance_rank <- abundance_pomet |> group_by(n) |> summarise(count = n())
+head(abundance_rank)
+```
+
+```{r}
+n_min <- 20 # Minimal abundance to be included.
+rare_pomet <- abundance_pomet |>
+    filter(n <= n_min) |>
+    pull(NomScient)
+length(rare_pomet)
+
+missing_pomet <- missing_pomet[!(missing_pomet %in% rare_pomet)]
+```
+
+```{r}
+library(ggplot2)
+set_theme(theme_minimal())
+ggplot(abundance_rank, aes(x = log(1+n), y = count)) + 
+    geom_line() + 
+    geom_point() + 
+    labs(x = "Log(1 + total abundance)", y = "Number of species")
+```
+
 # 2. Nurse
 
 ```{r}
@@ -190,6 +225,24 @@ similar_name <- lapply(missing_nurse, function(name) {
 df_strdist <- do.call(rbind, similar_name) |>
     arrange(distance)
 df_strdist
+```
+
+```{r}
+names(nurse)
+abundance_nurse <- nurse |>
+    filter(Espece %in% missing_nurse) |>
+    group_by(Espece) |>
+    summarise(n = sum(Nombre, na.rm = TRUE)) |>
+    arrange(n)
+head(abundance_nurse)
+
+rare_nurse <- abundance_nurse |>
+    filter(n <= n_min) |>
+    pull(Espece)
+length(rare_nurse)
+
+missing_nurse <- missing_nurse[!(missing_nurse %in% rare_nurse)]
+length(missing_nurse)
 ```
 
 ```{r}
