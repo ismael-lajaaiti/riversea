@@ -234,7 +234,7 @@ where  $u_i$ is the spatial structured effect, and $v_i$ the unstructured one.
 We begin by assuming that $\phi_i$ is constant and do not dependend on other variables, for sake of simplicity.
 :::
 
-### 3.3.2. Ecological interpretation of the model coefficients 
+## 3.4. Ecological interpretation of the model coefficients 
 
 | Coefficient | Ecological driver  | Hypothesis / mechanism | Expected effect | References |
 | ----------- | ------------------ | ---------------------- | --------------- | ---------- |
@@ -254,7 +254,7 @@ We begin by assuming that $\phi_i$ is constant and do not dependend on other var
 Add references.
 :::
 
-### 3.3.3. Check beta distribution behaviour
+## 3.5. Check beta distribution behaviour
 
 Finally, we want to check that the beta distribution is suited to capture the empirical distribution of food web connectance.
 We expect the connectance values to be concentrated around 0.2, and to do not go beyond 0.4.
