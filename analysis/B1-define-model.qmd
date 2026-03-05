@@ -84,14 +84,14 @@ We also let for later the random effects.
 If we are interested in connectance, we write the following model
 
 $$
-C_i \sim \text{Beta}(\mu_i, \phi_i),
+C_i \sim \text{Beta}(\mu_i \phi, (1 - \mu_i) \phi_i),
 $$
 
-where we use a beta distribution as a link function to ensure that connectance values are bounded between 0 and 1.
+where we use a beta distribution of mean $\mu_i$ and precision $\phi_i$, and a logit link function to ensure that connectance values are bounded between 0 and 1.
 Further, the mean of the distribution is given by
 
 $$
-\mu_i = \beta_0 + \beta_T T_i + \beta_N N_i + \beta_D D_i,
+\text{logit}(\mu_i) = \beta_0 + \beta_T T_i + \beta_N N_i + \beta_D D_i,
 $$
 
 where weakly informative prior have to be selected for regularization.
@@ -177,6 +177,9 @@ If it is very local (measured exactly at the site), there are probably no intera
 However, if the measure is an undirect average around the area of the site, interactions may be relevant.
 :::
 
+We also consider interactions between dam impact and position in the river-sea continuum.
+This interaction will allow us to learn about how dam impacts propagate throughout the bassin.
+
 Lastly, we consider a potential interaction between nutrients and temperature. For example, with increased temperature the metabolic demand of fish increases which could magnify nutrient impacts.
 
 ## 3.2. Add random effects
@@ -211,7 +214,7 @@ Using everything we have built until there, we can build a first draft of our mo
 For connectance, the model writes
 
 $$
-C_i \sim \text{Beta}(\mu_i, \phi_i)
+C_i \sim \text{Beta}(\mu_i\phi_i, (1 - \mu_i)\phi_i)
 $$
 
 where the mean is given by
@@ -220,6 +223,7 @@ $$
 \begin{align}
 \text{logit} (\mu_i) = &\beta_0 + \beta_1 T_i + \beta_2 N_i + \beta_3 D_i + \beta_4 \text{Dam}_\text{up} + \beta_5 \text{Dam}_\text{down} + &\text{[fixed effects]} \\
 &\beta_6 (\text{Dam}_\text{up} \times N_i) + \beta_7 (\text{Dam}_\text{down} \times N_i) + \beta_8 (T_i \times N_i) + &\text{[interactions]} \\ 
+&\beta_9 (\text{Dam}_\text{up} \times D_i) + \beta_{10} (\text{Dam}_\text{down} \times D_i) + &\text{[interactions]} \\ 
 &\text{AR}(1) + u_i + v_i + \text{Campagne}_i. &\text{[random effects]}
 \end{align}
 $$
@@ -230,98 +234,56 @@ where  $u_i$ is the spatial structured effect, and $v_i$ the unstructured one.
 We begin by assuming that $\phi_i$ is constant and do not dependend on other variables, for sake of simplicity.
 :::
 
-### 3.3.2. Trophic length
+### 3.3.2. Ecological interpretation of the model coefficients 
 
-For trophic length, the model has the same structure.
-We simply replace the beta distribution with a gaussian distribution and remove the link function.
+| Coefficient | Ecological driver  | Hypothesis / mechanism | Expected effect | References |
+| ----------- | ------------------ | ---------------------- | --------------- | ---------- |
+| $\beta_0$   | — | Baseline food web structure when environmental covariates are at their reference values | — |  |
+| $\beta_1$   | Temperature | Warming alters metabolic rates, sizes and species composition |  |  |
+| $\beta_2$   | Nutrients   | Nutrient enrichment increases productivity and may simplify food webs through eutrophication and dominance of opportunistic species | + C / - TL |  |
+| $\beta_3$   | Distance to river mouth | Food web structure varies along the river–sea continuum due to changes in productivity, species richness, and habitat conditions | + |  |
+| $\beta_4$   | Upstream dam impact | Dams alter hydrology, connectivity for migratory species, and material fluxes | − |  |
+| $\beta_5$   | Downstream dam impact | Lotic to lentic, connectivity for migratory species, and material fluxes | − |  |
+| $\beta_6$, $\beta_7$   | Dam impact x nutrient | Dam effects interact with nutrient concentration: at a local scale by modifying the hydrological conditions (e.g. reservoir), or a global scale by smoothing nutrient pulses | context-dependent |  |
+| $\beta_8$   | Temperature x nutrient | Warming and nutrients both impact productivity, and metabolic demand, potentially reshaping how energy flows within the community | context-dependent |  |
+| $\beta_9$, $\beta_{10}$  | Dam impact x continuum | Dam impact may differ within the river-sea continnum | context-dependent |  |
 
-$$
-\text{TL}_i \sim \text{Normal}(\mu_i, \sigma_i)
-$$
+: Interpretation of model coefficients.
 
-where the mean is given by
+::: {.callout-important}
+Add references.
+:::
 
-$$
-\begin{align}
-\mu_i = &\beta_0 + \beta_1 T_i + \beta_2 N_i + \beta_3 D_i + \beta_4 \text{Dam}_\text{up} + \beta_5 \text{Dam}_\text{down} + &\text{[fixed effects]} \\
-&\beta_6 (\text{Dam}_\text{up} \times N_i) + \beta_7 (\text{Dam}_\text{down} \times N_i) + \beta_8 (T_i \times N_i) + &\text{[interactions]} \\ 
-&\text{AR}(1) + u_i + v_i + \text{Campagne}_i. &\text{[random effects]}
-\end{align}
-$$
+### 3.3.3. Check beta distribution behaviour
 
-# 4. Identify ecological mecanisms at different scale
-
-Ecological mecanisms operate at different spatial and temporal scales.
-The same environmental driver may affect food-web structure through distinct mecanisms dependending on the scale consider.
-
-## 4.1. Temperature
-
-### 4.1.1 Local scale
-
-At local scales, temperature mainly affect individual physiology through metabolic rates, growth and consumption.
-These effects can modify interaction strengths, for example, by increasing predator attack rate and as a consequence reshape the food web.
-
-### 4.1.2. Regional scale
-
-At broader scale, temperature shape species distribution and as a result community composition.
-These compositional change in turn affect food web structure.
-
-### 4.1.3. Temporal scale
-
-Interannual variability in temperature can induce population turnover which result in change in food web structure.
-
-## 4.2. Nutrients
-
-### 4.2.1. Local scale
- 
-Nutrient enrichment can affect primary productivity which propagate throughout the food web. Overall, nutrient concentration affects how energy flows within the community.
-
-### 4.2.2. Intermediate scale
-
-Sustained nutrient inputs can promote community simplification, resulting in decrease of trophic length, and potentially increase in connectance through the loss of specialist species.
-
-### 4.2.3. Long-term scale
-
-Ultimately, sustained high nutrient inputs can induce regime shifts.
-
-## 4.3. Dams
-
-### 4.3.1. Local downstream scale
-
-Immediately downstream of dams, the habitat is altered because of flow regulation, sedimentation retention, and temperature modification.
-Reservoirs act as lentic environment modifying the lotic environment, species composition and in turn food web structure.
-
-### 4.3.2. Upstream network scale
-
-At larger spatial scale, dams reduce migration and recolonisation process and alter species composition upstream.
-
-### 4.3.3. Bassin scale
-
-At the scale of the entire river network, the accumulation of dams can modify energy fluxes between the land and the sea, through the loss of connectivity which hinders flows of inorganic and organic matter.
-These effects can induce a reorganisation of food web structure from freshwater system to coastal systems.
-
-### 4.3.4. Directionality 
-
-From the perspective of a focal site, dams located downstream can generate backwater effects and act as strong barriers to upstream recolonisation, whereas upstream dams primarily regulate hydrological, sediment, and nutrient fluxes reaching the site.
-Because downstream movement across dams is generally less constrained than upstream movement, downstream dams are expected to have a stronger impact on connectivity and recovery processes
-
-For that reason, upstream and downstream dam could act at different scale.
-If recolonisation is important, downstream dams may act at intermediate or large scale.
-On the other hand, upstream dam may act at more local scale, because the interruption of migration is weaker, but their effect might be more dominated by change in hydrographic condition.
-
-## 4.4. Interaction between nutrients and temperature
-
-Nutrient and warming have been reported to interact in varied ways.
-Warming increase metabolic demand of consumers.
-This increase can be compensated by an enrichment of the environment, reflecting an antagonistic interaction between nutrients and warming.
-However, they are evidence that warming can exacerbate eutrophication symptoms. It is therefore important to assess this interaction.
-
-## 4.5. Interaction between nutrients and dam
-
-Dams can strongly mediate the effects of nutrient inputs by altering nutrient retention, transformation, and transport. 
-Reservoirs may trap nutrients and promote primary production locally, while reducing nutrient delivery downstream. 
-At larger scales, the interaction between dam-induced fragmentation and nutrient enrichment may lead to spatially heterogeneous food-web responses, with enriched but simplified webs in impounded areas and nutrient-limited systems downstream.
+Finally, we want to check that the beta distribution is suited to capture the empirical distribution of food web connectance.
+We expect the connectance values to be concentrated around 0.2, and to do not go beyond 0.4.
+Let's see for what parameters of the beta distribution we can generate such shapes.
 
 
+```{r}
+library(tidyr)
+library(dplyr)
 
+mu  <- 0.2
+phi_vals <- c(20, 40, 60, 80)
 
+x <- seq(0, 1, length = 1000)
+
+df <- expand_grid(
+    x = x,
+    phi = phi_vals
+) |> mutate(
+    alpha = mu * phi,
+    beta = (1 - mu) * phi,
+    density = dbeta(x, alpha, beta)
+)
+
+theme_set(theme_minimal())
+ggplot(df, aes(x = x, y = density, colour = factor(phi))) +
+    geom_line() +
+    labs(x = "Connectance", y = "Density", colour = expression(phi))
+```
+
+We see that the beta distribution can surely capture the emprical distribution food web connectance.
+Later, we will have to find good priors to ensure that explore plausible distributions.
