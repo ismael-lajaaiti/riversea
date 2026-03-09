@@ -158,7 +158,7 @@ summary(d.poisson[, c("start_x", "start_y", "end_x", "end_y")])
 ggplot(d.poisson, aes(x = start_x, y = start_y)) +
     geom_segment(aes(xend = end_x, yend = end_y, color = zone)) +
     coord_equal() +
-    labs(x = "Longitutde", y = "Latitude")
+    labs(x = "Longitude", y = "Latitude")
 ```
 
 Now let's add a map in the background with `leaflet`.

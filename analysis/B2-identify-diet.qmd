@@ -118,7 +118,7 @@ similar_name <- lapply(species_missing, function(name) {
     distances <- stringdist(name, sp_list.diet, method = "jw")
     closest <- sp_list.diet[which.min(distances)]
     data.frame(name = name, closest = closest, distance = min(distances))
-    })
+})
 
 df_strdist <- do.call(rbind, similar_name) |>
     arrange(distance)
@@ -135,28 +135,51 @@ We see that there are few issues
 
 ```{r}
 species_to_remove <- c(
-    "Abramis brama + Blicca bjoerkna",
-    "Gasterosteus aculeatus aculeatus",
-    "Salmo trutta fario",
-    "Salmo trutta trutta",
-    "Gymnocephalus cernuus"
+    "Abramis brama + Blicca bjoerkna"
 )
-missing_pomet <- species_missing[!(species_missing %in% species_to_remove)]
+species_missing <- species_missing[!(species_missing %in% species_to_remove)]
 ```
+
+Actually, we can use fishbase for taxonomic issues.
+Instead of working with raw names, we can ensure that we have validated names, using fishbase functions.
+
+```{r}
+library(rfishbase)
+
+name_diet <- data.frame(original = sp_list.diet)
+name_diet$validated <- validate_names(sp_list.diet)
+
+name_diet |> filter(original != validated)
+```
+
+```{r}
+name_missing <- data.frame(original = species_missing)
+name_missing$validated <- validate_names(name_missing$original)
+
+name_missing |> filter(original != validated)
+```
+
+```{r}
+missing_pomet <- setdiff(name_missing$validated, name_diet$validated)
+length(missing_pomet)
+```
+
 
 ## 1.4. Rare species
 
 Next, we want to compute average abundance for these species to identify potential rare species that wouldn't be interesting to include.
 
 ```{r}
-abundance_pomet <- pomet |> 
+abundance_pomet <- pomet |>
     filter(NomScient %in% missing_pomet) |>
     group_by(NomScient) |>
     summarise(n = sum(Nind_esp)) |>
     arrange(n)
 head(abundance_pomet)
 
-abundance_rank <- abundance_pomet |> group_by(n) |> summarise(count = n())
+abundance_rank <- abundance_pomet |>
+    group_by(n) |>
+    summarise(count = n())
 head(abundance_rank)
 ```
 
@@ -167,15 +190,18 @@ rare_pomet <- abundance_pomet |>
     pull(NomScient)
 length(rare_pomet)
 
-missing_pomet <- missing_pomet[!(missing_pomet %in% rare_pomet)]
+missing_pomet <- name_missing |>
+    filter(validated %in% missing_pomet) |>
+    filter(!original %in% rare_pomet) |>
+    pull(validated)
 ```
 
 ```{r}
 library(ggplot2)
 set_theme(theme_minimal())
-ggplot(abundance_rank, aes(x = log(1+n), y = count)) + 
-    geom_line() + 
-    geom_point() + 
+ggplot(abundance_rank, aes(x = log(1 + n), y = count)) +
+    geom_line() +
+    geom_point() +
     labs(x = "Log(1 + total abundance)", y = "Number of species")
 ```
 
@@ -206,29 +232,21 @@ reftax <- ESPECE_MAJ
 
 ```{r}
 sp_df <- data.frame(scientificname = species_only)
-sp_df <- sp_df |> 
+sp_df <- sp_df |>
     left_join(reftax, by = "scientificname") |>
     filter(phylum == "Chordata" | is.na(phylum)) |>
     filter(class == "Teleostei" | class == "Elasmobranchii" | is.na(class))
 fish_only <- sp_df$scientificname
 
-missing_nurse <- setdiff(fish_only, sp_list.diet)
+name_nurse <- data.frame(original = fish_only)
+name_nurse$validated <- validate_names(name_nurse$original)
+name_nurse |> filter(original != validated)
+
+missing_nurse <- setdiff(name_nurse$validated, name_diet$validated)
+length(missing_nurse)
 ```
 
 ```{r}
-similar_name <- lapply(missing_nurse, function(name) {
-    distances <- stringdist(name, sp_list.diet, method = "jw")
-    closest <- sp_list.diet[which.min(distances)]
-    data.frame(name = name, closest = closest, distance = min(distances))
-    })
-
-df_strdist <- do.call(rbind, similar_name) |>
-    arrange(distance)
-df_strdist
-```
-
-```{r}
-names(nurse)
 abundance_nurse <- nurse |>
     filter(Espece %in% missing_nurse) |>
     group_by(Espece) |>
@@ -241,7 +259,10 @@ rare_nurse <- abundance_nurse |>
     pull(Espece)
 length(rare_nurse)
 
-missing_nurse <- missing_nurse[!(missing_nurse %in% rare_nurse)]
+missing_nurse <- name_nurse |>
+    filter(original %in% missing_nurse) |>
+    filter(!validated %in% rare_nurse) |>
+    pull(validated)
 length(missing_nurse)
 ```
 
@@ -265,6 +286,15 @@ head(sp_solper)
 ::: {.callout-warning}
 I cannot find the relation between species code and their scientific name.
 :::
+
+# 4. Get diet data from fishbase
+
+```{r}
+library(rfishbase)
+
+sp_test <- first(missing_all)
+diet_sp <- diet_items(sp_test)
+```
 
 
 ## TODO
