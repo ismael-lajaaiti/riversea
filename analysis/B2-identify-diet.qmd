@@ -287,17 +287,69 @@ head(sp_solper)
 I cannot find the relation between species code and their scientific name.
 :::
 
-# 4. Get diet data from fishbase
+# 4. Get diet data from fishbase
+
+Now that we have a species list for which we want to get their diet we can scrap fishbase.
+
+Let's start with a single species for illustration.
 
 ```{r}
-library(rfishbase)
+sp_test <- "Alosa alosa"
+sp_test
 
-sp_test <- first(missing_all)
-diet_sp <- diet_items(sp_test)
+diet_sp <- fooditems(sp_test)
+diet_sp
+```
+
+```{r}
+diet_sum <- diet_sp |> 
+    group_by(PredatorStage) |> 
+    select(Species, FoodI) |>
+    distinct(Species, FoodI, PredatorStage) |>
+    arrange(PredatorStage)
+diet_sum
+```
+
+Let's do the same but for all species, all at once.
+
+```{r}
+diet_all <- fooditems(missing_all)
+diet_sum <- diet_all |>
+    group_by(Species, PredatorStage, PreyStage) |> 
+    select(FoodI, FoodII) |>
+    mutate(
+        FoodI = case_when(
+            FoodII == "phytoplankton" ~ "phytoplankton",
+            FoodII == "other plants" & PreyStage == "leaves/blades" ~ "macrophyte",
+            FoodII == "other plants" & PreyStage != "leaves/blades" ~ "biofilm",
+            FoodI == "nekton" ~ "fish",
+            TRUE ~ FoodI
+        )
+    ) |>
+    ungroup() |>
+    select(-PreyStage) |>
+    distinct(Species, PredatorStage, FoodI) |>
+    arrange(Species, PredatorStage)
+diet_sum
+```
+
+Next, to obtain something similar as the table for riverine fish, we can pivot wider.
+
+```{r}
+library(tidyr)
+
+diet_wide <- diet_sum |>
+    mutate(eat = 1) |>
+    pivot_wider(
+        names_from = FoodI, 
+        values_from = eat,
+        values_fill = list(eat = 0)
+        ) |>
+    select(-others)
+diet_wide
 ```
 
 
 ## TODO
 
-- Find reference table for species codes in Solper campagne.
-- Merge species from three campagnes
+- Do the diet table for fish already documented and compare diet.
