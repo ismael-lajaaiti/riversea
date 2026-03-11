@@ -289,66 +289,73 @@ I cannot find the relation between species code and their scientific name.
 
 # 4. Get diet data from fishbase
 
+## 4.1. Missing species from sea campagnes
+
 Now that we have a species list for which we want to get their diet we can scrap fishbase.
 
-Let's start with a single species for illustration.
+Because this step is crucial and is expected to be repeated we implement it directly in our package `riversea`.
+
+So we can directly obtain diet for all species with a single function call.
 
 ```{r}
-sp_test <- "Alosa alosa"
-sp_test
+library(riversea)
 
-diet_sp <- fooditems(sp_test)
-diet_sp
+diet_category <- get_diet_category(missing_all)
+head(diet_category)
+```
+
+Next, to obtain something similar as the table for riverine fish, we can also extract a wide table.
+
+```{r}
+diet_category_wide <- get_diet_category_wide(missing_all)
+head(diet_category_wide)
+```
+
+## 4.2. Fishbase diet for riverine fish
+
+```{r}
+diet_category <- get_diet_category(name_diet$validated)
+head(diet_category)
 ```
 
 ```{r}
-diet_sum <- diet_sp |> 
-    group_by(PredatorStage) |> 
-    select(Species, FoodI) |>
-    distinct(Species, FoodI, PredatorStage) |>
-    arrange(PredatorStage)
-diet_sum
+diet_category_wide <- widen_diet_category(diet_category)
+head(diet_category_wide)
 ```
-
-Let's do the same but for all species, all at once.
 
 ```{r}
-diet_all <- fooditems(missing_all)
-diet_sum <- diet_all |>
-    group_by(Species, PredatorStage, PreyStage) |> 
-    select(FoodI, FoodII) |>
-    mutate(
-        FoodI = case_when(
-            FoodII == "phytoplankton" ~ "phytoplankton",
-            FoodII == "other plants" & PreyStage == "leaves/blades" ~ "macrophyte",
-            FoodII == "other plants" & PreyStage != "leaves/blades" ~ "biofilm",
-            FoodI == "nekton" ~ "fish",
-            TRUE ~ FoodI
-        )
-    ) |>
-    ungroup() |>
-    select(-PreyStage) |>
-    distinct(Species, PredatorStage, FoodI) |>
-    arrange(Species, PredatorStage)
-diet_sum
+write.csv(diet_category_wide, here("data", "fishbase_diet_river.csv"))
 ```
 
-Next, to obtain something similar as the table for riverine fish, we can pivot wider.
+Let's focus on a single species *Abramis brama*
 
 ```{r}
-library(tidyr)
-
-diet_wide <- diet_sum |>
-    mutate(eat = 1) |>
-    pivot_wider(
-        names_from = FoodI, 
-        values_from = eat,
-        values_fill = list(eat = 0)
-        ) |>
-    select(-others)
-diet_wide
+diet_category_wide |> filter(species == "Abramis brama")
 ```
 
+and compare with the original table that we have downloaded.
+
+```{r}
+d.diet |> filter(species_name == "Abramis_brama")
+```
+
+## 4.3. All species
+
+```{r}
+name_diet$validated
+
+validate_names("Abramis brama")
+
+name_all <- data.frame(original = name_diet$original, validated = name_diet$validated, campagne = "river")
+
+n_nurse <- unique(nurse$Espece)
+name_nurse <- data.frame(original = n_nurse, validate_names(n_nurse), campagne = "nurse")
+
+n_pomet <- unique(pomet$NomScient)
+name_pomet <- data.frame(original = n_pomet, validate_names(n_pomet), campagne = "pomet")
+
+unique(nurse$Espece)
+```
 
 ## TODO
 

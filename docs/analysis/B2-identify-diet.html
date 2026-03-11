@@ -3915,6 +3915,8 @@ vertical-align: -.125em;
   <li><a href="#solper" id="toc-solper" class="nav-link" data-scroll-target="#solper">3. Solper</a></li>
   <li><a href="#get-diet-data-from-fishbase" id="toc-get-diet-data-from-fishbase" class="nav-link" data-scroll-target="#get-diet-data-from-fishbase">4. Get diet data from fishbase</a>
   <ul class="collapse">
+  <li><a href="#missing-species-from-sea-campagnes" id="toc-missing-species-from-sea-campagnes" class="nav-link" data-scroll-target="#missing-species-from-sea-campagnes">4.1. Missing species from sea campagnes</a></li>
+  <li><a href="#fishbase-diet-for-riverine-fish" id="toc-fishbase-diet-for-riverine-fish" class="nav-link" data-scroll-target="#fishbase-diet-for-riverine-fish">4.2. Fishbase diet for riverine fish</a></li>
   <li><a href="#todo" id="toc-todo" class="nav-link" data-scroll-target="#todo">TODO</a></li>
   </ul></li>
   </ul>
@@ -4678,137 +4680,118 @@ Warning
 </section>
 <section id="get-diet-data-from-fishbase" class="level1">
 <h1>4. Get diet data from fishbase</h1>
+<section id="missing-species-from-sea-campagnes" class="level2">
+<h2 class="anchored" data-anchor-id="missing-species-from-sea-campagnes">4.1. Missing species from sea campagnes</h2>
 <p>Now that we have a species list for which we want to get their diet we can scrap fishbase.</p>
-<p>Let’s start with a single species for illustration.</p>
+<p>Because this step is crucial and is expected to be repeated we implement it directly in our package <code>riversea</code>.</p>
+<p>So we can directly obtain diet for all species with a single function call.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>sp_test <span class="ot">&lt;-</span> <span class="st">&quot;Alosa alosa&quot;</span></span>
-<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>sp_test</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] &quot;Alosa alosa&quot;</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>diet_sp <span class="ot">&lt;-</span> <span class="fu">fooditems</span>(sp_test)</span>
-<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>diet_sp</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 16 × 30
-   Species SpecCode autoctr StockCode Locality C_Code FoodsRefNo FoodI PreyStage
-   &lt;chr&gt;      &lt;int&gt;   &lt;int&gt;     &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;       &lt;int&gt; &lt;chr&gt; &lt;chr&gt;    
- 1 Alosa …      101   49670       115 &lt;NA&gt;     826B        83392 nekt… juv./adu…
- 2 Alosa …      101   51751       115 &lt;NA&gt;     &lt;NA&gt;          188 nekt… juv./adu…
- 3 Alosa …      101     919       115 &lt;NA&gt;     250         30578 nekt… juv./adu…
- 4 Alosa …      101     920       115 &lt;NA&gt;     250         30578 zoob… adults   
- 5 Alosa …      101   51754       115 &lt;NA&gt;     &lt;NA&gt;           40 zoob… juv./adu…
- 6 Alosa …      101   51745       115 &lt;NA&gt;     &lt;NA&gt;        10536 zoob… larvae   
- 7 Alosa …      101   51746       115 &lt;NA&gt;     &lt;NA&gt;        10536 zoop… juv./adu…
- 8 Alosa …      101   51748       115 &lt;NA&gt;     &lt;NA&gt;        10536 zoop… juv./adu…
- 9 Alosa …      101   51753       115 &lt;NA&gt;     &lt;NA&gt;           40 zoop… juv./adu…
-10 Alosa …      101   49671       115 &lt;NA&gt;     826B        83392 zoop… juv./adu…
-11 Alosa …      101   51749       115 &lt;NA&gt;     &lt;NA&gt;           40 zoop… juv./adu…
-12 Alosa …      101     921       115 &lt;NA&gt;     250         30578 zoop… juv./adu…
-13 Alosa …      101   49672       115 &lt;NA&gt;     826B        83392 zoop… juv./adu…
-14 Alosa …      101   51752       115 &lt;NA&gt;     &lt;NA&gt;           40 zoop… juv./adu…
-15 Alosa …      101   51747       115 &lt;NA&gt;     &lt;NA&gt;        10536 zoop… juv./adu…
-16 Alosa …      101   51750       115 &lt;NA&gt;     &lt;NA&gt;           40 zoop… larvae   
-# ℹ 21 more variables: FoodII &lt;chr&gt;, FoodIII &lt;chr&gt;, Commoness &lt;dbl&gt;,
-#   CommonessII &lt;chr&gt;, Foodgroup &lt;chr&gt;, Foodname &lt;chr&gt;, PreySpecCode &lt;int&gt;,
-#   PreySpecCodeSLB &lt;int&gt;, AlphaCode &lt;chr&gt;, PreyTroph &lt;dbl&gt;, PreySeTroph &lt;dbl&gt;,
-#   TrophRefNo &lt;int&gt;, PredatorStage &lt;chr&gt;, Locality2 &lt;chr&gt;, Entered &lt;int&gt;,
-#   Dateentered &lt;dttm&gt;, Modified &lt;int&gt;, Datemodified &lt;dttm&gt;, Expert &lt;int&gt;,
-#   Datechecked &lt;dttm&gt;, TS &lt;dttm&gt;</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>diet_sum <span class="ot">&lt;-</span> diet_sp <span class="sc">|&gt;</span> </span>
-<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(PredatorStage) <span class="sc">|&gt;</span> </span>
-<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Species, FoodI) <span class="sc">|&gt;</span></span>
-<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>(Species, FoodI, PredatorStage) <span class="sc">|&gt;</span></span>
-<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(PredatorStage)</span>
-<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>diet_sum</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(riversea)</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>diet_category <span class="ot">&lt;-</span> <span class="fu">get_diet_category</span>(missing_all)</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_category)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 3
-# Groups:   PredatorStage [3]
-  Species     FoodI       PredatorStage
-  &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;        
-1 Alosa alosa nekton      adults       
-2 Alosa alosa nekton      juv./adults  
-3 Alosa alosa zoobenthos  juv./adults  
-4 Alosa alosa zooplankton juv./adults  
-5 Alosa alosa zoobenthos  recruits/juv.
-6 Alosa alosa zooplankton recruits/juv.</code></pre>
+  species             stage       prey_category
+  &lt;chr&gt;               &lt;chr&gt;       &lt;chr&gt;        
+1 Agonus cataphractus juv./adults zoobenthos   
+2 Alosa alosa         juv./adults fish         
+3 Alosa alosa         juv./adults plants       
+4 Alosa alosa         juv./adults zooplankton  
+5 Alosa alosa         juv./adults biofilm      
+6 Alosa alosa         juv./adults others       </code></pre>
 </div>
 </div>
-<p>Let’s do the same but for all species, all at once.</p>
+<p>Next, to obtain something similar as the table for riverine fish, we can also extract a wide table.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>diet_all <span class="ot">&lt;-</span> <span class="fu">fooditems</span>(missing_all)</span>
-<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>diet_sum <span class="ot">&lt;-</span> diet_all <span class="sc">|&gt;</span></span>
-<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Species, PredatorStage, PreyStage) <span class="sc">|&gt;</span> </span>
-<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(FoodI, FoodII) <span class="sc">|&gt;</span></span>
-<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
-<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">FoodI =</span> <span class="fu">case_when</span>(</span>
-<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a>            FoodII <span class="sc">==</span> <span class="st">&quot;phytoplankton&quot;</span> <span class="sc">~</span> <span class="st">&quot;phytoplankton&quot;</span>,</span>
-<span id="cb64-8"><a href="#cb64-8" aria-hidden="true" tabindex="-1"></a>            FoodII <span class="sc">==</span> <span class="st">&quot;other plants&quot;</span> <span class="sc">&amp;</span> PreyStage <span class="sc">==</span> <span class="st">&quot;leaves/blades&quot;</span> <span class="sc">~</span> <span class="st">&quot;macrophyte&quot;</span>,</span>
-<span id="cb64-9"><a href="#cb64-9" aria-hidden="true" tabindex="-1"></a>            FoodII <span class="sc">==</span> <span class="st">&quot;other plants&quot;</span> <span class="sc">&amp;</span> PreyStage <span class="sc">!=</span> <span class="st">&quot;leaves/blades&quot;</span> <span class="sc">~</span> <span class="st">&quot;biofilm&quot;</span>,</span>
-<span id="cb64-10"><a href="#cb64-10" aria-hidden="true" tabindex="-1"></a>            FoodI <span class="sc">==</span> <span class="st">&quot;nekton&quot;</span> <span class="sc">~</span> <span class="st">&quot;fish&quot;</span>,</span>
-<span id="cb64-11"><a href="#cb64-11" aria-hidden="true" tabindex="-1"></a>            <span class="cn">TRUE</span> <span class="sc">~</span> FoodI</span>
-<span id="cb64-12"><a href="#cb64-12" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb64-13"><a href="#cb64-13" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb64-14"><a href="#cb64-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
-<span id="cb64-15"><a href="#cb64-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>PreyStage) <span class="sc">|&gt;</span></span>
-<span id="cb64-16"><a href="#cb64-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>(Species, PredatorStage, FoodI) <span class="sc">|&gt;</span></span>
-<span id="cb64-17"><a href="#cb64-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(Species, PredatorStage)</span>
-<span id="cb64-18"><a href="#cb64-18" aria-hidden="true" tabindex="-1"></a>diet_sum</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>diet_category_wide <span class="ot">&lt;-</span> <span class="fu">get_diet_category_wide</span>(missing_all)</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_category_wide)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 344 × 3
-   Species             PredatorStage FoodI      
-   &lt;chr&gt;               &lt;chr&gt;         &lt;chr&gt;      
- 1 Agonus cataphractus adults        zoobenthos 
- 2 Alosa alosa         adults        fish       
- 3 Alosa alosa         juv./adults   fish       
- 4 Alosa alosa         juv./adults   zoobenthos 
- 5 Alosa alosa         juv./adults   zooplankton
- 6 Alosa alosa         recruits/juv. zoobenthos 
- 7 Alosa alosa         recruits/juv. zooplankton
- 8 Alosa fallax        juv./adults   detritus   
- 9 Alosa fallax        juv./adults   fish       
-10 Alosa fallax        juv./adults   zoobenthos 
-# ℹ 334 more rows</code></pre>
+<pre><code># A tibble: 6 × 10
+  species             stage zoobenthos  fish plants zooplankton biofilm detritus
+  &lt;chr&gt;               &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;       &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;
+1 Agonus cataphractus juv.…          1     0      0           0       0        0
+2 Alosa alosa         juv.…          0     1      1           1       1        0
+3 Alosa fallax        recr…          0     0      0           1       0        0
+4 Alosa fallax        juv.…          0     1      0           1       0        0
+5 Ammodytes tobianus  recr…          0     0      0           1       0        0
+6 Ammodytes tobianus  juv.…          1     0      0           1       0        0
+# ℹ 2 more variables: phytoplankton &lt;dbl&gt;, macrophyte &lt;dbl&gt;</code></pre>
 </div>
 </div>
-<p>Next, to obtain something similar as the table for riverine fish, we can pivot wider.</p>
+</section>
+<section id="fishbase-diet-for-riverine-fish" class="level2">
+<h2 class="anchored" data-anchor-id="fishbase-diet-for-riverine-fish">4.2. Fishbase diet for riverine fish</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>diet_wide <span class="ot">&lt;-</span> diet_sum <span class="sc">|&gt;</span></span>
-<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">eat =</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
-<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(</span>
-<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">names_from =</span> FoodI, </span>
-<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">values_from =</span> eat,</span>
-<span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">values_fill =</span> <span class="fu">list</span>(<span class="at">eat =</span> <span class="dv">0</span>)</span>
-<span id="cb66-9"><a href="#cb66-9" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">|&gt;</span></span>
-<span id="cb66-10"><a href="#cb66-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>others)</span>
-<span id="cb66-11"><a href="#cb66-11" aria-hidden="true" tabindex="-1"></a>diet_wide</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>diet_category <span class="ot">&lt;-</span> <span class="fu">get_diet_category</span>(name_diet<span class="sc">$</span>validated)</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_category)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 141 × 9
-   Species     PredatorStage zoobenthos  fish zooplankton detritus phytoplankton
-   &lt;chr&gt;       &lt;chr&gt;              &lt;dbl&gt; &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;
- 1 Agonus cat… adults                 1     0           0        0             0
- 2 Alosa alosa adults                 0     1           0        0             0
- 3 Alosa alosa juv./adults            1     1           1        0             0
- 4 Alosa alosa recruits/juv.          1     0           1        0             0
- 5 Alosa fall… juv./adults            1     1           1        1             0
- 6 Alosa fall… recruits/juv.          0     0           1        0             0
- 7 Ammodytes … juv./adults            0     0           1        0             1
- 8 Aphia minu… juv./adults            1     0           1        0             0
- 9 Argyrosomu… juv./adults            1     1           0        0             0
-10 Arnoglossu… adults                 1     1           0        0             0
-# ℹ 131 more rows
-# ℹ 2 more variables: macrophyte &lt;dbl&gt;, biofilm &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 6 × 3
+  species       stage         prey_category
+  &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;        
+1 Abramis brama recruits/juv. zooplankton  
+2 Abramis brama recruits/juv. zoobenthos   
+3 Abramis brama recruits/juv. detritus     
+4 Abramis brama juv./adults   zoobenthos   
+5 Abramis brama juv./adults   detritus     
+6 Abramis brama adults        zoobenthos   </code></pre>
 </div>
 </div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>diet_category_wide <span class="ot">&lt;-</span> <span class="fu">widen_diet_category</span>(diet_category)</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_category_wide)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 9
+  species         stage zooplankton zoobenthos detritus  fish macrophyte biofilm
+  &lt;chr&gt;           &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;   &lt;dbl&gt;
+1 Abramis brama   recr…           1          1        1     0          0       0
+2 Abramis brama   juv.…           0          1        1     0          0       0
+3 Abramis brama   adul…           0          1        1     0          0       0
+4 Acipenser ruth… recr…           1          1        0     0          0       0
+5 Acipenser ruth… larv…           0          1        0     0          0       0
+6 Acipenser ruth… juv.…           1          1        0     0          0       0
+# ℹ 1 more variable: phytoplankton &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>Let’s focus on a single species <em>Abramis brama</em></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>diet_category_wide <span class="sc">|&gt;</span> <span class="fu">filter</span>(species <span class="sc">==</span> <span class="st">&quot;Abramis brama&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 9
+  species       stage   zooplankton zoobenthos detritus  fish macrophyte biofilm
+  &lt;chr&gt;         &lt;chr&gt;         &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;   &lt;dbl&gt;
+1 Abramis brama recrui…           1          1        1     0          0       0
+2 Abramis brama juv./a…           0          1        1     0          0       0
+3 Abramis brama adults            0          1        1     0          0       0
+# ℹ 1 more variable: phytoplankton &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>and compare with the original table that we have downloaded.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>d.diet <span class="sc">|&gt;</span> <span class="fu">filter</span>(species_name <span class="sc">==</span> <span class="st">&quot;Abramis_brama&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  species  species_name size_min size_max stage light det biof phytob macroph
+1     BRE Abramis_brama      0.0      9.7     1     0   0    0      0       0
+2     BRE Abramis_brama      9.8     17.0     2     0   0    0      0       0
+3     BRE Abramis_brama     17.1    120.0     3     0   0    1      1       0
+4     BRE Abramis_brama    120.1      Inf     4     0   0    1      1       0
+  phytopl zoopl zoob fish                 ref_diet                  ref_ods
+1       1     1    0    0                 Nunn2012               Garner1996
+2       0     1    0    0                 Nunn2012               Garner1996
+3       0     1    0    0               Garner1996 Persson1998/Specziar2009
+4       0     0    1    0 Persson1998/Specziar2009                     &lt;NA&gt;
+           hypoth_ods                           remark
+1 maximum size hypoth ! Bream eats chironomids = zoob_
+2 minimum size hypoth ! Bream eats chironomids = zoob_
+3         litterature ! Bream eats chironomids = zoob_
+4         litterature             eats benthic daphnia</code></pre>
+</div>
+</div>
+</section>
 <section id="todo" class="level2">
 <h2 class="anchored" data-anchor-id="todo">TODO</h2>
 <ul>
-<li>Find reference table for species codes in Solper campagne.</li>
-<li>Merge species from three campagnes</li>
+<li>Do the diet table for fish already documented and compare diet.</li>
 </ul>
 
 

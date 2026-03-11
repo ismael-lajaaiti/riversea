@@ -1,3 +1,7 @@
 ^renv$
 ^renv\.lock$
 ^LICENSE\.md$
+^\.lintr$
+^\.quarto/
+^docs/
+^data/

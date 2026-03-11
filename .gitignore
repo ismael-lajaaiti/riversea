@@ -4,7 +4,9 @@
 .Rproj.user/
 .Ruserdata
 .Rapp.history
-data/
+data/zenodo/
+data/coast/
+data/*.zip
 docs/site_libs/
 
 # R package build artifacts
