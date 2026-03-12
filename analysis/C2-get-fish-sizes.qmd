@@ -1,0 +1,36 @@
+---
+title: "Infer missing fish sizes"
+format: html
+execute:
+    message: false
+    warning: false
+---
+
+# Summary
+
+In this notebook, we 
+
+- we infer missing fish sizes for sea campagnes assuming a normal distribution
+- validate our inference using cross-validation
+
+# 0. Setup
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+```
+
+# 1. Illustrate the inference with synthetic data
+
+The idea of the inference is quite simple.
+We observe a given distribution of values, representing fish sizes.
+We assume that the underlying distribution is a normal distribution.
+This choice can be seen as a choice toward simplicity.
+We say that we only know about the mean and the variance of the distribution, and in this case the most probable distribution is a normal distribution.
+
+```{r}
+
+```

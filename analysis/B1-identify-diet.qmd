@@ -1,5 +1,5 @@
 ---
-title: "Identify missing diet information"
+title: "Identify and get missing diet information"
 format: html
 execute:
     message: false
@@ -8,10 +8,11 @@ execute:
 
 # Summary
 
-In this notebook we want to
+In this notebook we
 
 - identify the species for which we have no prior information on their diet
 - check for potential taxonomic issues that we will have to deal with
+- use fishbase to get diet information
 
 # 0. Setup
 
