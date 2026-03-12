@@ -21,6 +21,12 @@ library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
+
+library(ggplot2)
+library(tidyr)
+library(riversea)
+library(purrr)
+library(here)
 ```
 
 # 1. Illustrate the inference with synthetic data
@@ -31,6 +37,56 @@ We assume that the underlying distribution is a normal distribution.
 This choice can be seen as a choice toward simplicity.
 We say that we only know about the mean and the variance of the distribution, and in this case the most probable distribution is a normal distribution.
 
-```{r}
+To begin with, we illustrate the procedure on synthetic data.
+So let's simulate values from a normal distribution.
 
+```{r}
+n <- 1000 # Sample size.
+obs <- rnorm(n)
+n_missing <- 100
+obs_missing <- data.frame(true = rnorm(n_missing))
+
+infer_missing_sizes <- function(obs, n_missing) {
+    mu <- mean(obs)
+    sigma <- sd(obs)
+    return(rnorm(n_missing, mu, sigma))
+}
+
+obs_missing$pred <- infer_missing_sizes(obs, n_missing)
+
+ggplot(obs_missing, aes(x = true, y = pred)) +
+    geom_point() +
+    geom_abline(intercept = 0, slope = 1)
 ```
+
+We see that this method is quite bad at predicting fish size at the individual level.
+But what really matters is whether the infered distribution of missing sizes corresponds to the true one.
+
+```{r}
+obs_missing_long <- obs_missing |>
+    pivot_longer(
+        cols = c(true, pred),
+        names_to = "type",
+        values_to = "value"
+    )
+
+ggplot(obs_missing_long, aes(x = value, fill = type)) +
+    geom_histogram(alpha = 0.5, position = "identity")
+```
+
+We see that here it works quite well, because the sample size is large, and we are sampling missing values from a normal distribution, which won't be the case for real data.
+
+# 2. Apply the methods to campagne data
+
+First, we load our data set.
+
+```{r}
+res <- load_raw_sea_data(here("data", "coast")) |>
+    clean_sea_data()
+head(res$pomet$size)
+```
+
+TODO:
+
+- Infer missing sizes in the different survey.
+- Validate the inference by simulating missing data.
