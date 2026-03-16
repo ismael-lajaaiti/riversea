@@ -28,7 +28,7 @@ load_raw_sea_data <- function(data_folder) {
 #' Download sea survey data.
 #'
 #' @param data_folder Where to store data files.
-#' @return
+#' @return Nothing.
 #' @export
 download_sea_data <- function(data_folder) {} # TODO: Write the function.
 
@@ -45,49 +45,129 @@ clean_sea_data <- function(raw_data) {
         solper = list()
     )
 
+    # Pomet - Catch.
     clean_data$pomet$catch <- raw_data$pomet$catch |>
-        select(-c(
-            Ecologique,
-            Trophique,
-            Position,
-            Commentaire,
-            Date,
-            Heure,
-            Prof,
-            Engin_peche,
-            Zone
+        select(c(
+            ID_interne_prelevement,
+            Annee,
+            NomScient,
+            Nind_esp
         )) |>
         rename(
-            id_passage = ID_interne_passage,
-            id_prelevement = ID_interne_prelevement,
-            zone = ID_Zone,
+            trait = ID_interne_prelevement,
             year = Annee,
-            month = Mois,
-            trait = Trait,
-            x_start = Coord_Deb_xmin,
-            x_end = Coord_Fin_xmin,
-            y_start = Coord_Deb_ymin,
-            y_end = Coord_Fin_ymin,
             species = NomScient,
             abundance = Nind_esp,
-            weight = Pds_esp
         )
 
+    # Pomet - Size.
     clean_data$pomet$size <- raw_data$pomet$size |>
         select(c(
-            ID_interne_passage,
             ID_interne_prelevement,
             NomScient,
             Longueur_fourche_mm,
-            Nind_esp_taille
+            Nind_esp_taille,
+            Annee
         )) |>
         rename(
-            id_passage = ID_interne_passage,
-            id_prelevement = ID_interne_prelevement,
+            trait = ID_interne_prelevement,
+            year = Annee,
             species = NomScient,
-            size = Longueur_fourche_mm,
+            length = Longueur_fourche_mm,
             batch_size = Nind_esp_taille
         )
 
+    # Nurse - Catch.
+    clean_data$nurse$catch <- raw_data$nurse$catch |>
+        select(-c(
+            Campagne,
+            Poids
+        )) |>
+        rename(
+            trait = Trait,
+            year = Annee,
+            species = Espece,
+            abundance = Nombre
+        )
+
+    # Nurse - Size.
+    clean_data$nurse$size <- raw_data$nurse$size |>
+        select(-c(
+            Campagne,
+            Sexe,
+            Maturite,
+            Poids,
+            Age
+        )) |>
+        rename(
+            trait = Trait,
+            year = Annee,
+            species = Espece,
+            length = Longueur,
+            batch_size = Nombre
+        )
+
+    # Solper - Catch.
+    clean_data$solper$catch <- raw_data$solper$catch |>
+        select(-c(
+            Campagne,
+            Poids
+        )) |>
+        rename(
+            trait = Trait,
+            year = Annee,
+            species = Espece,
+            abundance = Nombre
+        )
+
+    # Solper - Size.
+    clean_data$solper$size <- raw_data$solper$size |>
+        select(-c(
+            Campagne,
+            Poids,
+            Sexe,
+            Maturite,
+            Age
+        )) |>
+        rename(
+            trait = Trait,
+            year = Annee,
+            species = Espece,
+            length = Longueur,
+            batch_size = Nombre
+        )
+
     clean_data
+}
+
+#' Combine data frames of different surveys.
+#'
+#' @param clean_data that is the output of `clean_sea_data`.
+#' @return combined a list of combined data frame for $catch and $size.
+#' @export
+download_sea_data <- function(data_folder) {} # TODO: Write the function.
+
+#' Clean sea data.
+#'
+#' @param raw_data output of `load_raw_sea_data`.
+#'
+#' @return List containing cleaned data frames for each sea campagne.
+#' @export
+combine_sea_data <- function(clean_data) {
+
+    combined <- list(catch = c(), size = c())
+
+    combined$catch <- rbind(
+        clean_data$pomet$catch |> mutate(survey = "pomet"),
+        clean_data$nurse$catch |> mutate(survey = "nurse"),
+        clean_data$solper$catch |> mutate(survey = "solper")
+    )
+
+    combined$size <- rbind(
+        clean_data$pomet$size |> mutate(survey = "pomet"),
+        clean_data$nurse$size |> mutate(survey = "nurse"),
+        clean_data$solper$size |> mutate(survey = "solper")
+    )
+
+    combined
 }

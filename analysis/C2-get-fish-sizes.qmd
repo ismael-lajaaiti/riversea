@@ -23,6 +23,7 @@ renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
 
 library(ggplot2)
+library(dplyr)
 library(tidyr)
 library(riversea)
 library(purrr)
@@ -78,15 +79,23 @@ We see that here it works quite well, because the sample size is large, and we a
 
 # 2. Apply the methods to campagne data
 
-First, we load our data set.
+First, we load our data set and summarise the different surveys.
 
 ```{r}
-res <- load_raw_sea_data(here("data", "coast")) |>
-    clean_sea_data()
-head(res$pomet$size)
+tidy_data <- load_raw_sea_data(here("data", "coast")) |>
+    clean_sea_data() |>
+    combine_sea_data()
+
+tidy_data$catch |>
+    group_by(survey) |>
+    summarise(
+        n_tot = n(),
+        year_min = min(year),
+        year_max = max(year),
+    )
 ```
 
-TODO:
+## TODO
 
 - Infer missing sizes in the different survey.
 - Validate the inference by simulating missing data.

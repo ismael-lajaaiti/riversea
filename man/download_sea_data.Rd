@@ -5,10 +5,21 @@
 \title{Download sea survey data.}
 \usage{
 download_sea_data(data_folder)
+
+download_sea_data(data_folder)
 }
 \arguments{
 \item{data_folder}{Where to store data files.}
+
+\item{clean_data}{that is the output of \code{clean_sea_data}.}
+}
+\value{
+Nothing.
+
+combined a list of combined data frame for $catch and $size.
 }
 \description{
 Download sea survey data.
+
+Combine data frames of different surveys.
 }

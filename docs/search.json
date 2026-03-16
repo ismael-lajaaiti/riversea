@@ -718,7 +718,7 @@
     "href": "analysis/C2-get-fish-sizes.html",
     "title": "Infer missing fish sizes",
     "section": "",
-    "text": "Summary\nIn this notebook, we\n\nwe infer missing fish sizes for sea campagnes assuming a normal distribution\nvalidate our inference using cross-validation\n\n\n\n0. Setup\n\nlibrary(renv)\nrenv::load()\nrenv::restore() # Install missing librairies.\nrenv::status() # Check the project state.\n\nlibrary(ggplot2)\nlibrary(tidyr)\nlibrary(riversea)\nlibrary(purrr)\nlibrary(here)\n\n\n\n1. Illustrate the inference with synthetic data\nThe idea of the inference is quite simple. We observe a given distribution of values, representing fish sizes. We assume that the underlying distribution is a normal distribution. This choice can be seen as a choice toward simplicity. We say that we only know about the mean and the variance of the distribution, and in this case the most probable distribution is a normal distribution.\nTo begin with, we illustrate the procedure on synthetic data. So let’s simulate values from a normal distribution.\n\nn &lt;- 1000 # Sample size.\nobs &lt;- rnorm(n)\nn_missing &lt;- 100\nobs_missing &lt;- data.frame(true = rnorm(n_missing))\n\ninfer_missing_sizes &lt;- function(obs, n_missing) {\n    mu &lt;- mean(obs)\n    sigma &lt;- sd(obs)\n    return(rnorm(n_missing, mu, sigma))\n}\n\nobs_missing$pred &lt;- infer_missing_sizes(obs, n_missing)\n\nggplot(obs_missing, aes(x = true, y = pred)) +\n    geom_point() +\n    geom_abline(intercept = 0, slope = 1)\n\n\n\n\n\n\n\n\nWe see that this method is quite bad at predicting fish size at the individual level. But what really matters is whether the infered distribution of missing sizes corresponds to the true one.\n\nobs_missing_long &lt;- obs_missing |&gt;\n    pivot_longer(\n        cols = c(true, pred),\n        names_to = \"type\",\n        values_to = \"value\"\n    )\n\nggplot(obs_missing_long, aes(x = value, fill = type)) +\n    geom_histogram(alpha = 0.5, position = \"identity\")\n\n\n\n\n\n\n\n\nWe see that here it works quite well, because the sample size is large, and we are sampling missing values from a normal distribution, which won’t be the case for real data.\n\n\n2. Apply the methods to campagne data\nFirst, we load our data set.\n\nres &lt;- load_raw_sea_data(here(\"data\", \"coast\")) |&gt;\n    clean_sea_data()\nhead(res$pomet$size)\n\n  id_passage id_prelevement       species size batch_size\n1   60733591       61839708       Abramis   52          1\n2   60728092       61836630 Abramis brama   63          1\n3   60728092       61836630 Abramis brama   55          1\n4   60728092       61836630 Abramis brama   70          1\n5   60728092       61836630 Abramis brama   65          1\n6   60728092       61836630 Abramis brama  193          1\n\n\nTODO:\n\nInfer missing sizes in the different survey.\nValidate the inference by simulating missing data."
+    "text": "In this notebook, we\n\nwe infer missing fish sizes for sea campagnes assuming a normal distribution\nvalidate our inference using cross-validation"
   },
   {
     "objectID": "analysis/B1-identify-diet.html",
@@ -782,5 +782,12 @@
     "title": "Identify and get missing diet information",
     "section": "TODO",
     "text": "TODO\n\nDo the diet table for fish already documented and compare diet."
+  },
+  {
+    "objectID": "analysis/C2-get-fish-sizes.html#todo",
+    "href": "analysis/C2-get-fish-sizes.html#todo",
+    "title": "Infer missing fish sizes",
+    "section": "TODO",
+    "text": "TODO\n\nInfer missing sizes in the different survey.\nValidate the inference by simulating missing data."
   }
 ]
