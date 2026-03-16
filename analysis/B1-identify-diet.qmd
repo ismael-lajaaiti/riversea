@@ -24,6 +24,14 @@ library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
+
+library(here)
+library(stringr)
+library(stringdist)
+library(dplyr)
+library(riversea)
+library(rfishbase)
+library(ggplot2)
 ```
 
 Previous information on fish diet can be find on the dataframe hosted at the following address.
@@ -35,7 +43,6 @@ url <- "https://raw.githubusercontent.com/CamilleLeclerc/FoodWebsLakeStream/refs
 We download it and convert it to a dataframe.
 
 ```{r}
-library(here)
 data_folder <- here("data", "coast")
 file_name <- "fish_diet.csv"
 download.file(url, destfile = here(data_folder, file_name))
@@ -50,8 +57,6 @@ list.files(data_folder, pattern = file_name)
 We then read the file as a dataframe.
 
 ```{r}
-library(stringr)
-
 d.diet <- read.csv(here(data_folder, file_name))
 sp_list.diet <- sort(unique(d.diet$species_name))
 sp_list.diet <- str_replace(sp_list.diet, "_", " ")
@@ -78,8 +83,6 @@ head(sp_nurse)
 ```
 
 ```{r}
-library(dplyr)
-
 reftax_file <- "POMET_RefTax_Sp.csv"
 reftax <- read.csv(here(data_folder, reftax_file), sep = ";")
 ```
@@ -113,7 +116,6 @@ To do so, we compute a string distance to find species with most similar names b
 By doing so, we will be able to quickly identify erroneous mismatch.
 
 ```{r}
-library(stringdist)
 
 similar_name <- lapply(species_missing, function(name) {
     distances <- stringdist(name, sp_list.diet, method = "jw")
@@ -145,7 +147,6 @@ Actually, we can use fishbase for taxonomic issues.
 Instead of working with raw names, we can ensure that we have validated names, using fishbase functions.
 
 ```{r}
-library(rfishbase)
 
 name_diet <- data.frame(original = sp_list.diet)
 name_diet$validated <- validate_names(sp_list.diet)
@@ -198,7 +199,6 @@ missing_pomet <- name_missing |>
 ```
 
 ```{r}
-library(ggplot2)
 set_theme(theme_minimal())
 ggplot(abundance_rank, aes(x = log(1 + n), y = count)) +
     geom_line() +
@@ -299,8 +299,6 @@ Because this step is crucial and is expected to be repeated we implement it dire
 So we can directly obtain diet for all species with a single function call.
 
 ```{r}
-library(riversea)
-
 diet_category <- get_diet_category(missing_all)
 head(diet_category)
 ```
@@ -356,6 +354,45 @@ n_pomet <- unique(pomet$NomScient)
 name_pomet <- data.frame(original = n_pomet, validate_names(n_pomet), campagne = "pomet")
 
 unique(nurse$Espece)
+```
+
+# 5. AquaticWeb
+
+Let's load the combined dataset.
+
+```{r}
+tidy_data <- load_raw_sea_data(here("data", "coast")) |>
+    clean_sea_data() |>
+    combine_sea_data()
+
+species_names <- tidy_data$catch |>
+    pull(species) |>
+    unique()
+species <- data.frame(name = species_names)
+
+species$name_validated <- validate_names(species$name)
+
+head(species)
+```
+
+```{r}
+aquatic_web <- read.csv(here("data", "aquatic-web-extraction-eric.csv"))
+head(aquatic_web)
+
+names_aquatic_web <- aquatic_web |>
+    pull(predateur) |>
+    unique() |>
+    validate_names() |>
+    na.omit()
+
+species <- species |>
+    mutate(in_aquatic_web = name_validated %in% names_aquatic_web)
+
+species |> summarise(
+    unique_entry = n(),
+    valid_entry = sum(!is.na(name_validated)),
+    aquatic_web_entry = sum(in_aquatic_web)
+)
 ```
 
 ## TODO
