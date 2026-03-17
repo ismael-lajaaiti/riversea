@@ -3,14 +3,17 @@ project:
   render:
     - index.qmd
     - analysis/*.qmd
+    - presentations/*.qmd
   output-dir: docs
 
 website:
-  title: "Riversea Project Reports"
+  title: "Riversea Project"
   navbar: 
     left: 
-      - text: Home
+      - text: Analysis
         href: index.qmd
+      - text: Presentations
+        href: presentations/index.qmd
 
 format:
   html:

@@ -1,8 +1,8 @@
 ---
-title: "Home"
+title: "Analysis"
 ---
 
-This page lists all analyses for the project.
+This page lists all the analyses of the RIVERSEA project.
 
 # Reports
 

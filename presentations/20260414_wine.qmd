@@ -1,0 +1,28 @@
+---
+title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
+author: "Ismaël Lajaaiti, Alain Danet, Anik Brindamour, Eric Edeline"
+format: 
+    revealjs:
+        theme: simple
+        incremental: true
+        slide-number: true
+        embed-resources: true
+
+---
+
+## Introduction
+
+- RIVERSEA project
+
+## Data
+
+- Sea data
+- River data
+
+## Statistical model
+
+- Equation of the model
+
+## Measuring the impact of dams
+
+- Equation of the metric
