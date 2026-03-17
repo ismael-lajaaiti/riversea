@@ -43,5 +43,11 @@ list(
         presentation_wine,
         "presentations/2026-04-14_wine.qmd",
         quarto_args = c("--embed-resources")
+    ),
+    tar_quarto(
+        manuscript,
+        "manuscript/manuscript.qmd",
+        quarto_args = c("--embed-resources"),
+        quiet = FALSE
     )
 )

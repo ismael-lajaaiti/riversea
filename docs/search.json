@@ -474,5 +474,26 @@
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "Statistical model",
     "text": "Statistical model\n\n\nEquation of the model"
+  },
+  {
+    "objectID": "manuscript/manuscript.html",
+    "href": "manuscript/manuscript.html",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "",
+    "text": "This is some text."
+  },
+  {
+    "objectID": "manuscript/manuscript.html#introduction",
+    "href": "manuscript/manuscript.html#introduction",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Introduction",
+    "text": "Introduction\nThis is some text."
+  },
+  {
+    "objectID": "manuscript/manuscript.html#model-dag",
+    "href": "manuscript/manuscript.html#model-dag",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Model DAG",
+    "text": "Model DAG\nPut model DAG here using targets."
   }
 ]

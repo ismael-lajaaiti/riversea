@@ -4,6 +4,7 @@ project:
     - index.qmd
     - analysis/*.qmd
     - presentations/*.qmd
+    - manuscript/manuscript.qmd
   output-dir: docs
 
 website:
@@ -14,6 +15,8 @@ website:
         href: index.qmd
       - text: Presentations
         href: presentations/index.qmd
+      - text: Manuscript
+        href: manuscript/manuscript.qmd
 
 format:
   html:
