@@ -16,7 +16,7 @@ In this notebook, using ASPE data about eel abundance in the Vilaine bassin, I e
 
 # 0. Setup
 
-Load dependencies.
+Load dependencies and targets.
 
 ```{r}
 #| output: false
@@ -24,29 +24,32 @@ library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
-```
 
-```{r}
-library(zen4R)
+library(targets)
 library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(sf)
+library(sfnetworks)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+set_theme(theme_minimal())
+options(
+    ggplot2.continuous.colour = "viridis",
+    ggplot2.continuous.fill = "viridis"
+)
+library(terra)
+library(INLA)
+library(bayestestR)
+library(fmesher)
+library(gstat)
+library(tidygraph)
+library(igraph)
+library(mapview)
+library(Matrix)
 ```
-
-Download data from Zenodo.
-The data file is relatively heavy (~800Mb), this operation can take a few minutes.
-
-```{r}
-doi <- "10.5281/zenodo.17962542"
-dest_dir <- here("data")
-```
-
-```{r}
-#| eval: false
-if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
-download_zenodo(doi, path = dest_dir)
-unzip(here(dest_dir, "miste_data.zip"), exdir = dest_dir)
-```
-
-If everything went well, the data should have been downloaded in `data/zenodo/`.
 
 # 1. River data 
 
@@ -54,15 +57,14 @@ First, we focus on the river geographic data.
 Let's load it.
 
 ```{r}
-base::load(here(dest_dir, "zenodo", "processed_data", "reseaux_hydrographiques.rda"))
+dir <- tar_read(workshop_unzipped)
+base::load(here(dir, "processed_data", "reseaux_hydrographiques.rda"))
 ```
 
 For now, we will focus on the Vilaine bassin.
 We can view it using `sfnetworks`.
 
 ```{r}
-library(sf)
-library(sfnetworks)
 net <- as_sfnetwork(rht_vilaine)
 plot(net, cex = 0.5)
 ```
@@ -83,11 +85,7 @@ nodes <- net |>
 sum(duplicated(nodes))
 ```
 
-
 ```{r}
-library(dplyr)
-library(tidyr)
-
 edges <- net |>
     activate("edges") |>
     st_as_sf()
@@ -102,7 +100,7 @@ We can proceed to the next step.
 ## 2.1 Load data
 
 ```{r}
-base::load(here(dest_dir, "zenodo", "processed_data", "poissons_env_temp.RData"))
+base::load(here(dir, "processed_data", "poissons_env_temp.RData"))
 
 env
 ```
@@ -147,13 +145,6 @@ We see that the altitude is not measured on every sampling points, but only in 3
 Let's plot them.
 
 ```{r}
-library(ggplot2)
-set_theme(theme_minimal())
-options(
-    ggplot2.continuous.colour = "viridis",
-    ggplot2.continuous.fill = "viridis"
-)
-
 ggplot() +
     geom_sf(data = points_geo_vilaine, color = "grey80", alpha = 0.5) +
     geom_sf(data = pts_vilaine, aes(color = altitude), size = 5) +
@@ -171,8 +162,6 @@ The simplest way to do it is to the "nearest neighbour" interpolation.
 We first build proximity polygons with the `terra::voronoi` function.
 
 ```{r}
-library(terra)
-
 d_elev <- select(pts_vilaine, c("geometry", "altitude"))
 d_elev.vect <- terra::vect(d_elev)
 v <- voronoi(d_elev.vect)
@@ -326,7 +315,6 @@ In this section, we will build increasingly complex models.
 Before doing anything fancy, let's load `INLA`, and scale our predictor variable (altitude) as it is good practice.
 
 ```{r}
-library(INLA)
 
 data <- inner_join(d_eel, d_elev.nn, by = "pop_id")
 data$altitude_s <- scale(data$altitude)
@@ -410,7 +398,6 @@ y.sample <- inla.posterior.sample.eval(
     samples = m.poisson.samples
 )
 
-library(bayestestR)
 y.sum <- apply(y.sample, 1, function(x) {
     y.hdi <- hdi(x, ci = 0.89)
     c(mean = mean(x), hdi_low = y.hdi$CI_low, hdi_high = y.hdi$CI_high)
@@ -737,7 +724,6 @@ coords <- st_coordinates(pts_vilaine.proj)
 From these coordinates we can build the mesh using `fmesher` and visualise it.
 
 ```{r}
-library(fmesher)
 mesh <- fm_mesh_2d_inla(loc = coords)
 plot(mesh)
 points(coords, col = "red", pch = 16, cex = 2)
@@ -931,8 +917,6 @@ This comparison may allow us to identify which of the distances is more relevant
 Prepare data for variogram analysis.
 
 ```{r}
-library(gstat)
-
 site_vals <- data |>
     group_by(pop_id) |>
     summarise(mean_abundance = mean(abundance), .groups = "drop")
@@ -955,8 +939,6 @@ First, let's check the connectivity of the network.
 Disconnected nodes will break the path calculation.
 
 ```{r}
-library(tidygraph)
-library(igraph)
 
 net_proj <- st_transform(net, st_crs(pts_vilaine.proj))
 net_proj <- net_proj %>% to_undirected()
@@ -1110,7 +1092,6 @@ net_up <- link_nodes(net_up)
 ```{r}
 #| eval: false
 
-library(mapview)
 
 # Extract nodes and edges as sf
 nodes_sf <- net_up %>%
@@ -1237,7 +1218,6 @@ for (i in seq_len(n_sites)) {
 Let's check the resulting graph.
 
 ```{r}
-library(igraph)
 g <- make_empty_graph(n_sites, directed = FALSE)
 for (i in seq_len(n_sites)) {
     if (length(adj_list[[i]]) > 0) {
@@ -1320,8 +1300,6 @@ A solution might be to connect components by their closest sites.
 To give the graph to `inla` let's create a sparse adjacency matrix.
 
 ```{r}
-library(Matrix)
-
 # 1. Build sparse adjacency matrix from adj_list
 adj_matrix <- matrix(0, nrow = n_sites, ncol = n_sites)
 for (i in seq_len(n_sites)) {

@@ -4,10 +4,13 @@
 .Rproj.user/
 .Ruserdata
 .Rapp.history
-data/zenodo/
-data/coast/
+data/river_workshop/
+data/sea/
 data/*.zip
 docs/site_libs/
+
+_targets/
+*targets.yaml
 
 # R package build artifacts
 *.zip

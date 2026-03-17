@@ -31,35 +31,27 @@ library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
-```
 
-```{r}
-library(dagitty)
-library(ggdag)
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(tidyr)
+library(dplyr)
 library(ggplot2)
-theme_set(theme_dag())
+theme_set(theme_minimal())
 ```
 
 To begin with, we consider the following general relationships, where environmental variables are aggregated within a single node ("Env."), these includes: water temperature, nutrient concentrations, salinity, etc.
 
 ```{r}
-dag <- dagify(
-    C ~ S + Comp. + Env.,
-    S ~ Env.,
-    Comp. ~ Env.,
-    latent = "Comp.",
-    exposure = "Env.",
-    outcome = "C"
-    ) 
-ggdag(dag)
+plot_dag <- tar_read(plot_dag)
+plot_dag
 ```
 
 Environmental variables can have an impact on species richness (e.g. nutrients overload can simplify community due to turbidifcation), species composition (e.g. some species may not be suited for a given set of environmental conditions), and directly food web structure (here "C", which can be for example connectance)by affecting species behaviour, density or size.
 Moreover, we also assume that richness and composition jointly shape food web structure.
-
-```{r}
-ggdag_paths(dag)
-```
 
 We see that we have 3 paths from environmental drivers and food web structure. Two of them are mediated by an intermediate variables, respectively composition and richness.
 However, as we are not observing species comosition we cannot disantengly between these two paths: Env. -> C and Env. -> Comp. -> C.
@@ -264,9 +256,6 @@ Let's see for what parameters of the beta distribution we can generate such shap
 
 
 ```{r}
-library(tidyr)
-library(dplyr)
-
 mu  <- 0.2
 phi_vals <- c(20, 40, 60, 80)
 
@@ -281,7 +270,6 @@ df <- expand_grid(
     density = dbeta(x, alpha, beta)
 )
 
-theme_set(theme_minimal())
 ggplot(df, aes(x = x, y = density, colour = factor(phi))) +
     geom_line() +
     labs(x = "Connectance", y = "Density", colour = expression(phi))
