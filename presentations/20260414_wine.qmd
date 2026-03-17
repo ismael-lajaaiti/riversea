@@ -1,28 +1,72 @@
 ---
 title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
 author: "Ismaël Lajaaiti, Alain Danet, Anik Brindamour, Eric Edeline"
+date: "04/14/2026"
+date-format: long
+include-in-header:
+  - text: |
+      <style>
+      #title-slide .title {
+        font-size: 2em;
+      }
+      </style>
 format: 
     revealjs:
-        theme: simple
         incremental: true
         slide-number: true
         embed-resources: true
-
 ---
+
+# Context
 
 ## Introduction
 
 - RIVERSEA project
 
-## Data
+# Data
 
-- Sea data
-- River data
+## Data: river
 
-## Statistical model
+## Data: sea
 
-- Equation of the model
+## Data: dams
+
+## Data: other environmental variables
+
+# Methods
+
+## Infering food web structure: base
+
+- Define 4 broad categories at the base of the food web
+    - phytoplankton
+    - zooplankton
+    - zoobenthos
+    - biofilm
+
+## Infering food web structure: base
+
+```{dot}
+digraph G {
+    node [shape = box]; fish;
+    node [shape = ellipse];
+    fish -> zooplankton;
+    fish -> zoobenthos;
+    fish -> biofilm;
+    zooplankton -> phytoplankton
+}
+```
+
+
+- Extract fish diet with fishbase
+
+## Measuring the impact of dams
+
+![](../figures/sketch-dam-impact.png)
 
 ## Measuring the impact of dams
 
 - Equation of the metric
+
+## Statistical model
+
+- Equation of the model

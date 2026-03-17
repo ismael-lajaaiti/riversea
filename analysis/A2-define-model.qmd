@@ -1,6 +1,8 @@
 ---
 title: "Define the statistical model"
 format: html
+resources: 
+    - figures/
 execute:
     message: false
     warning: false
@@ -115,7 +117,7 @@ $$
 Next, let's focus on how to best capture dam impact.
 We begin with an illustration of how dams can impact a given community at a local scale in @fig-dam.
 
-![Sketch of upstream and downstream dam impacts on a given community. The impact of a upstream dam reflects the decrease of migration (upstream-downstream), and other hydrographic effects of dams such as reduction of flow and sedimentation. The impact of downstream dam reflects the decrease of migration (downstream-upstream), and the transition from lotic to lentic environment.](sketch-dam-impact.png){#fig-dam}
+![Sketch of upstream and downstream dam impacts on a given community. The impact of a upstream dam reflects the decrease of migration (upstream-downstream), and other hydrographic effects of dams such as reduction of flow and sedimentation. The impact of downstream dam reflects the decrease of migration (downstream-upstream), and the transition from lotic to lentic environment.](../figures/sketch-dam-impact.png){#fig-dam}
 
 A dam can impact a local community varied ways.
 First, depending on whether it is upstream or downstream compared to the site of interest.
