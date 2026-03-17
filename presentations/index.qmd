@@ -5,4 +5,4 @@ format: html
 
 This page lists all the presentations of the RIVERSEA project.
 
-- [WINE webinar *2026/04/14*](20260414_wine.qmd)
+- [WINE webinar *2026/04/14*](2026-04-14_wine.qmd)
