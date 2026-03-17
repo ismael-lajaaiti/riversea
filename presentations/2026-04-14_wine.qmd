@@ -17,6 +17,16 @@ format:
         embed-resources: true
 ---
 
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+```
+
 # Context
 
 ## Introduction
@@ -56,7 +66,6 @@ digraph G {
 }
 ```
 
-
 - Extract fish diet with fishbase
 
 ## Measuring the impact of dams
@@ -68,5 +77,10 @@ digraph G {
 - Equation of the metric
 
 ## Statistical model
+
+```{r}
+plot_dag <- tar_read(plot_dag)
+plot_dag
+```
 
 - Equation of the model

@@ -326,7 +326,7 @@
     "href": "presentations/20260414_wine.html#statistical-model",
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "Statistical model",
-    "text": "Statistical model\n\nEquation of the model"
+    "text": "Statistical model\n\n\nEquation of the model"
   },
   {
     "objectID": "presentations/20260414_wine.html#measuring-the-impact-of-dams",
@@ -404,5 +404,75 @@
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "Test",
     "text": "Test\n\n\n\n\n\nflowchart TD\n    fish --&gt; zooplankton\n    fish --&gt; zoobenthos\n    fish --&gt; biofilm\n    zooplankton --&gt; phytoplankton\n\n\n\n\n\n\n\nExtract fish diet with fishbase"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#introduction",
+    "href": "presentations/2026-04-14_wine.html#introduction",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Introduction",
+    "text": "Introduction\n\nRIVERSEA project"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-river",
+    "href": "presentations/2026-04-14_wine.html#data-river",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Data: river",
+    "text": "Data: river"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-sea",
+    "href": "presentations/2026-04-14_wine.html#data-sea",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Data: sea",
+    "text": "Data: sea"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-dams",
+    "href": "presentations/2026-04-14_wine.html#data-dams",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Data: dams",
+    "text": "Data: dams"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-other-environmental-variables",
+    "href": "presentations/2026-04-14_wine.html#data-other-environmental-variables",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Data: other environmental variables",
+    "text": "Data: other environmental variables"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#infering-food-web-structure-base",
+    "href": "presentations/2026-04-14_wine.html#infering-food-web-structure-base",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Infering food web structure: base",
+    "text": "Infering food web structure: base\n\nDefine 4 broad categories at the base of the food web\n\nphytoplankton\nzooplankton\nzoobenthos\nbiofilm"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#infering-food-web-structure-base-1",
+    "href": "presentations/2026-04-14_wine.html#infering-food-web-structure-base-1",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Infering food web structure: base",
+    "text": "Infering food web structure: base\n\n\n\n\n\n\n\nG\n\n\n\nfish\n\nfish\n\n\n\nzooplankton\n\nzooplankton\n\n\n\nfish-&gt;zooplankton\n\n\n\n\n\nzoobenthos\n\nzoobenthos\n\n\n\nfish-&gt;zoobenthos\n\n\n\n\n\nbiofilm\n\nbiofilm\n\n\n\nfish-&gt;biofilm\n\n\n\n\n\nphytoplankton\n\nphytoplankton\n\n\n\nzooplankton-&gt;phytoplankton\n\n\n\n\n\n\n\n\n\n\n\nExtract fish diet with fishbase"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams",
+    "href": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Measuring the impact of dams",
+    "text": "Measuring the impact of dams"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams-1",
+    "href": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams-1",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Measuring the impact of dams",
+    "text": "Measuring the impact of dams\n\nEquation of the metric"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#statistical-model",
+    "href": "presentations/2026-04-14_wine.html#statistical-model",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Statistical model",
+    "text": "Statistical model\n\n\nEquation of the model"
   }
 ]

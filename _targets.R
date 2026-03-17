@@ -37,7 +37,11 @@ list(
     tar_quarto(
         report_A2,
         "analysis/A2-define-model.qmd",
-        quarto_args = c("--embed-resources"),
-        quiet = FALSE
+        quarto_args = c("--embed-resources")
+    ),
+    tar_quarto(
+        presentation_wine,
+        "presentations/2026-04-14_wine.qmd",
+        quarto_args = c("--embed-resources")
     )
 )
