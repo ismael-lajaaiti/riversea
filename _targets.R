@@ -7,12 +7,15 @@ tar_option_set(
         "quarto",
         "dagitty",
         "ggdag",
-        "ggplot2"
+        "ggplot2",
+        "tidyr",
+        "dplyr"
     )
 )
 tar_source()
 
 workshop_dir <- "data/river_workshop"
+sea_data_raw <- "data/sea/raw"
 
 list(
     # Workshop river data.
@@ -33,9 +36,8 @@ list(
     # Sea survey data.
     tar_target(
         sea_data_tidy,
-        clean_sea_data(sea_data_raw),
-        format = "file"
-    )
+        preprocess_sea_data(sea_data_raw)
+    ),
     # Reports.
     tar_quarto(
         report_A1,
@@ -45,6 +47,11 @@ list(
     tar_quarto(
         report_A2,
         "analysis/A2-define-model.qmd",
+        quarto_args = c("--embed-resources")
+    ),
+    tar_quarto(
+        report_C2,
+        "analysis/C2-get-fish-sizes.qmd",
         quarto_args = c("--embed-resources")
     ),
     # Presentations.
@@ -57,7 +64,6 @@ list(
     tar_quarto(
         manuscript,
         "manuscript/manuscript.qmd",
-        quarto_args = c("--embed-resources"),
-        quiet = FALSE
+        quarto_args = c("--embed-resources")
     )
 )

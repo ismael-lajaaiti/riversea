@@ -75,7 +75,10 @@ clean_sea_data <- function(raw_data) {
             species = NomScient,
             length = Longueur_fourche_mm,
             batch_size = Nind_esp_taille
-        )
+        ) |>
+        filter(!is.na(length)) |>
+        uncount(batch_size) |>
+        mutate(length = as.numeric(length))
 
     # Nurse - Catch.
     clean_data$nurse$catch <- raw_data$nurse$catch |>
@@ -105,7 +108,11 @@ clean_sea_data <- function(raw_data) {
             species = Espece,
             length = Longueur,
             batch_size = Nombre
-        )
+        ) |>
+        filter(!is.na(length)) |>
+        uncount(batch_size) |>
+        mutate(length = as.numeric(length))
+
 
     # Solper - Catch.
     clean_data$solper$catch <- raw_data$solper$catch |>
@@ -135,7 +142,10 @@ clean_sea_data <- function(raw_data) {
             species = Espece,
             length = Longueur,
             batch_size = Nombre
-        )
+        ) |>
+        filter(!is.na(length)) |>
+        uncount(batch_size) |>
+        mutate(length = as.numeric(length))
 
     clean_data
 }
@@ -154,7 +164,6 @@ download_sea_data <- function(data_folder) {} # TODO: Write the function.
 #' @return List containing cleaned data frames for each sea campagne.
 #' @export
 combine_sea_data <- function(clean_data) {
-
     combined <- list(catch = c(), size = c())
 
     combined$catch <- rbind(
@@ -170,4 +179,19 @@ combine_sea_data <- function(clean_data) {
     )
 
     combined
+}
+
+#' Entire pipeline to prepare the sea data survey for analysis.
+#'
+#' Pipe utility functions to process raw sea data.
+#'
+#' @param dir Directory of raw data.
+#' @return list of data.frame $catch and $size.
+#' @export
+preprocess_sea_data <- function(dir) {
+    tidy <- load_raw_sea_data(dir) |>
+        clean_sea_data() |>
+        combine_sea_data()
+
+    tidy
 }
