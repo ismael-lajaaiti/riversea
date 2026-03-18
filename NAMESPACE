@@ -2,10 +2,13 @@
 
 export(clean_sea_data)
 export(combine_sea_data)
+export(create_plot_dag)
 export(download_sea_data)
+export(download_workshop_data)
 export(get_diet_category)
 export(get_diet_category_wide)
 export(load_raw_sea_data)
+export(unzip_workshop)
 export(widen_diet_category)
 import(dplyr)
 importFrom(tidyr,pivot_wider)

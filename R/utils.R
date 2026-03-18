@@ -1,3 +1,8 @@
+#' Download the data from the spatiotemporal workshop from Zenodo.
+#'
+#' @param dir Directory where to store the zip file.
+#' @return Path of the downloaded zip file.
+#' @export
 download_workshop_data <- function(dir) {
     if (!dir.exists(dir)) {
         dir.create(dir)
@@ -7,11 +12,26 @@ download_workshop_data <- function(dir) {
     return(zip_path)
 }
 
+#' Unzip data from the spatiotemporal workshop.
+#'
+#' Data is stored within zenodo folder.
+#'
+#' @param zip_file path of the zip file.
+#' @param dir directory where to store the unzipped files.
+#' @return Path of the unzipped directory.
+#' @export
 unzip_workshop <- function(zip_file, dir) {
     unzip(zip_file, exdir = dir)
     return(file.path(dir, "zenodo"))
 }
 
+#' Create the plot of the DAG using ggplot.
+#'
+#' This represents the DAG we assume for our study.
+#' That is, how environmental variable can shape food web structure.
+#'
+#' @return ggplot
+#' @export
 create_plot_dag <- function() {
     dag <- dagify(
         C ~ S + Comp. + Env.,
