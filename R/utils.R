@@ -4,16 +4,14 @@
 #' @return Path of the downloaded zip file.
 #' @export
 download_workshop_data <- function(dir) {
-    if (!dir.exists(dir)) {
-        dir.create(dir)
-    }
-    zen4R::download_zenodo("10.5281/zenodo.17962542", path = dir)
-    zip_path <- file.path(dir, "miste_data.zip")
-    return(zip_path)
+  if (!dir.exists(dir)) {
+    dir.create(dir)
+  }
+  zen4R::download_zenodo("10.5281/zenodo.17962542", path = dir)
+  file.path(dir, "miste_data.zip")
 }
 
 #' Unzip data from the spatiotemporal workshop.
-#'
 #' Data is stored within zenodo folder.
 #'
 #' @param zip_file path of the zip file.
@@ -21,8 +19,8 @@ download_workshop_data <- function(dir) {
 #' @return Path of the unzipped directory.
 #' @export
 unzip_workshop <- function(zip_file, dir) {
-    unzip(zip_file, exdir = dir)
-    return(file.path(dir, "zenodo"))
+  unzip(zip_file, exdir = dir)
+  file.path(dir, "zenodo")
 }
 
 #' Create the plot of the DAG using ggplot.
@@ -33,13 +31,13 @@ unzip_workshop <- function(zip_file, dir) {
 #' @return ggplot
 #' @export
 create_plot_dag <- function() {
-    dag <- dagify(
-        C ~ S + Comp. + Env.,
-        S ~ Env.,
-        Comp. ~ Env.,
-        latent = "Comp.",
-        exposure = "Env.",
-        outcome = "C"
-    )
-    ggdag(dag) + theme_dag()
+  dag <- dagify(
+    C ~ S + Comp. + Env.,
+    S ~ Env.,
+    Comp. ~ Env.,
+    latent = "Comp.",
+    exposure = "Env.",
+    outcome = "C"
+  )
+  ggdag(dag) + theme_dag()
 }

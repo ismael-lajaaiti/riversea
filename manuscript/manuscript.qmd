@@ -18,6 +18,52 @@ comments:
 
 This is some text.
 
+### Connectivity
+
+Key mechanisms
+
+- Small dispersal stabilizes through spatial structure and asynchrony.
+
+- Refuge effects occur when predator have lower efficiency when prey is rare (Holling type III).
+
+- Prey switching of mobile top predators can stabilize connected food webs through ‘spatial coupling’. 
+
+- At high dispersal/connectivity the stabilizing effect wanes as strongly connected patches behave as a single patch.
+
+- Studies between pairs of the following connectivity, complexity and stability are common. However, studies investigating how these are interconnected are rare. 
+
+Important references 
+
+- LeCraw 2014 - Review the effect of connectivity on food web complexity and stability.
+
+- McCann 2005 - Consumers link food web in space, and their response can shape the spatial response of coupled food webs.
+
+- Pillai 2011 - Metacommunity theory shows that food web complexity is maximed at intermediate level of colonization rates.
+
+### Dams
+
+Key mechanisms
+
+- Decrease river connectivity / reduce migration.
+
+- Reservoir, lotic from lentic conditions, can result in hypoxic conditions. Favor phytoplancktons and macrophytes.
+
+- Reservoir increase residence time of nutrients upstream and decrease the downstream output, which can result in a decrease in primary productivity.
+
+- Hydropeaking - that is, the sudden release of large water to answer the higher electric demand  - can harm riverine community due to sudden change in water level and water flow.
+
+- Cumulative impact of dams can reduce the nutrient input in deltas.
+
+Important references
+
+- Ding 2026 - more endangered species near dam at a global scale.
+
+- Dean 2023 - cumulative impact of downstream dam on potamodromous species.
+
+- He 2024 - review dam impacts on riverine community.
+
+- Pedersen 2012 - associate the drastic decline in the European eel to dam impacts.
+
 # Appendix
 
 ## Model DAG

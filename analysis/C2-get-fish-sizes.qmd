@@ -8,7 +8,7 @@ execute:
 
 # Summary
 
-In this notebook, we 
+In this notebook, we
 
 - we infer missing fish sizes for sea campagnes assuming a normal distribution
 - validate our inference using cross-validation
@@ -25,7 +25,7 @@ renv::status() # Check the project state.
 library(targets)
 library(here)
 tar_config_set(
-    store = here::here("_targets")
+  store = here::here("_targets")
 )
 library(dplyr)
 library(tidyr)
@@ -45,6 +45,7 @@ We say that we only know about the mean and the variance of the distribution, an
 To begin with, we illustrate the procedure on synthetic data.
 So let's simulate values from a normal distribution.
 
+
 ```{r}
 n <- 1000 # Sample size.
 obs <- rnorm(n)
@@ -52,16 +53,16 @@ n_missing <- 100
 obs_missing <- data.frame(true = rnorm(n_missing))
 
 infer_missing_sizes <- function(obs, n_missing) {
-    mu <- mean(obs)
-    sigma <- sd(obs)
-    return(rnorm(n_missing, mu, sigma))
+  mu <- mean(obs)
+  sigma <- sd(obs)
+  rnorm(n_missing, mu, sigma)
 }
 
 obs_missing$pred <- infer_missing_sizes(obs, n_missing)
 
 ggplot(obs_missing, aes(x = true, y = pred)) +
-    geom_point() +
-    geom_abline(intercept = 0, slope = 1)
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1)
 ```
 
 We see that this method is quite bad at predicting fish size at the individual level.
@@ -69,14 +70,14 @@ But what really matters is whether the infered distribution of missing sizes cor
 
 ```{r}
 obs_missing_long <- obs_missing |>
-    pivot_longer(
-        cols = c(true, pred),
-        names_to = "type",
-        values_to = "value"
-    )
+  pivot_longer(
+    cols = c(true, pred),
+    names_to = "type",
+    values_to = "value"
+  )
 
 ggplot(obs_missing_long, aes(x = value, fill = type)) +
-    geom_histogram(alpha = 0.5, position = "identity")
+  geom_histogram(alpha = 0.5, position = "identity")
 ```
 
 We see that here it works quite well, because the sample size is large, and we are sampling missing values from a normal distribution, which won't be the case for real data.
@@ -89,84 +90,87 @@ First, we load our data set and summarise the different surveys.
 tidy_data <- tar_read(sea_data_tidy)
 
 tidy_data$catch |>
-    group_by(survey) |>
-    summarise(
-        n_tot = n(),
-        year_min = min(year),
-        year_max = max(year),
-    )
+  group_by(survey) |>
+  summarise(
+    n_tot = n(),
+    year_min = min(year),
+    year_max = max(year),
+  )
 ```
+
+Next, we compute the minimal, mean and maximial length for each species.
 
 ```{r}
 size_extrema <- tidy_data$size |>
-    group_by(species) |>
-    summarise(
-        length_min = min(length),
-        length_mean = mean(length),
-        length_max = max(length),
-        n = n(),
-        .groups = "drop"
-    )
+  group_by(species) |>
+  summarise(
+    length_min = min(length),
+    length_mean = mean(length),
+    length_max = max(length),
+    n = n(),
+    .groups = "drop"
+  )
 head(size_extrema)
 ```
 
 ```{r}
 species_params <- tidy_data$size |>
-    group_by(species, trait, year) |>
-    summarise(
-        mu = mean(length),
-        sigma = sd(length),
-        n_obs = n(),
-        .groups = "drop"
-    )
+  group_by(species, trait, year) |>
+  summarise(
+    mu = mean(length),
+    sigma = sd(length),
+    n_obs = n(),
+    .groups = "drop"
+  )
 head(species_params)
 
 imputation_table <- tidy_data$catch |>
-    left_join(species_params, by = c("trait", "species", "year")) |>
-    mutate(n_missing = abundance - n_obs) |>
-    filter(n_missing > 0)
+  left_join(species_params, by = c("trait", "species", "year")) |>
+  mutate(n_missing = abundance - n_obs) |>
+  filter(n_missing > 0)
 
-infer_missing_size <- function(n_missing, mu, sigma, species, trait) {
-    if (n_obs < 3) {
-        size
-    }
+infer_missing_size <- function(n_obs, n_missing, mu, sigma, species, trait) {
+  if (n_obs < 3) {
+    sizes <- rep(mu, n_missing)
+  } else {
+    sizes <- rnorm(n_missing, mu, sigma)
+  }
+  return(sizes)
 }
 
 imputed_sizes <- imputation_table |>
-    rowwise() |>
-    mutate(
-        length = list(rnorm(n_missing, mu, sigma))
-    ) |>
-    unnest() |> filter(is.na(length))
+  rowwise() |>
+  mutate(
+    length = list(
+      infer_missing_size(n_obs, n_missing, mu, sigma, species, trait)
+    )
+  ) |>
+  unnest(cols = c(length))
 head(imputed_sizes)
-
-missing_neg <- imputation_table |> filter(n_missing < 0) |> arrange(n_missing)
-head(missing_neg)
 ```
+
+```{r}
+tidy_data$size |> filter(is.na(length))
+```
+
+
+```{r}
+tidy_data$size |>
+  left_join(
+    imputed_sizes |> select(-c(abundance, mu, sigma, n_obs, n_missing)),
+    by = c("species", "trait", "survey", "year"),
+    relationship = "many-to-many",
+    suffix = c("", "_imp")
+  ) |>
+  filter(is.na(length))
+```
+
 
 We see that we have negative value for n_missing our imputation table.
 These are very few, and probably due to errors.
 Here, we choose to correct them, setting the abundance to the number of measured fish.
 
-```{r}
 
-```
-
-```{r}
-raw$pomet$size |>
-    filter(ID_interne_prelevement == 61836945, NomScient == "Dicentrarchus labrax") |> pull(Nind_esp_taille) |> sum()
-
-raw <- load_raw_sea_data("data/sea/raw")
-raw$pomet$size |> filter(ID_interne_prelevement == 61838953, NomScient == "Anguilla anguilla")
-```
-
-```{r}
-trait_id <- 61836379
-tidy_data$catch |> filter(trait == trait_id)
-tidy_data$size |>
-    filter(trait == trait_id) |>
-    uncount(batch_size)
-```
 
 ## TODO
 

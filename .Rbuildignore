@@ -5,3 +5,5 @@
 ^\.quarto/
 ^docs/
 ^data/
+^.*\.Rproj$
+^\.Rproj\.user$
