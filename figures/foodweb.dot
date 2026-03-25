@@ -1,0 +1,17 @@
+digraph G {
+    node [shape = box]; fish;
+    node [shape = ellipse];
+    fish -> zooplankton;
+    fish -> zoobenthos;
+    fish -> biofilm;
+    fish -> detritus;
+    fish -> macrophyte;
+    fish -> phytoplankton;
+    macrophyte -> detritus;
+    zooplankton -> phytoplankton;
+    zoobenthos -> detritus;
+    zoobenthos -> biofilm;
+    zoobenthos -> macrophyte;
+    zoobenthos -> zooplankton;
+    zoobenthos -> phytoplankton
+}

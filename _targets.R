@@ -13,7 +13,8 @@ tar_option_set(
     "purrr",
     "stringr",
     "rfishbase",
-    "truncdist"
+    "truncdist",
+    "readr"
   )
 )
 tar_source()
@@ -47,7 +48,34 @@ list(
     sea_data_imputed,
     infer_missing_size(sea_data_tidy)
   ),
+  # Extract fish diet.
+  tar_target(
+    species_list,
+    get_species_list(sea_data_imputed)
+  ),
+  tar_target(
+    diet,
+    get_diet_category(species_list)
+  ),
+  tar_target(
+    diet_wide,
+    widen_diet_category(diet)
+  ),
+  tar_target(
+    diet_file,
+    {
+      path <- "data/diet/fishbase_sea.csv"
+      readr::write_csv(diet_wide, path)
+      path
+    },
+    format = "file"
+  ),
   # Reports.
+  tar_quarto(
+    index,
+    "index.qmd",
+    quarto_args = c("--embed-resources")
+  ),
   tar_quarto(
     report_A1,
     "analysis/A1-model-eel-abundance.qmd",
@@ -59,22 +87,25 @@ list(
     quarto_args = c("--embed-resources")
   ),
   tar_quarto(
+    report_B2,
+    "analysis/B2-get-diet-fishbase.qmd",
+    quarto_args = c("--embed-resources"),
+  ),
+  tar_quarto(
     report_C1,
     "analysis/C1-explore-coast-data.qmd",
     quarto_args = c("--embed-resources"),
-    quiet = FALSE
   ),
   tar_quarto(
     report_C2,
     "analysis/C2-get-fish-sizes.qmd",
     quarto_args = c("--embed-resources"),
-    quiet = FALSE
   ),
   # Presentations.
   tar_quarto(
     presentation_wine,
     "presentations/2026-04-14_wine.qmd",
-    quarto_args = c("--embed-resources")
+    quarto_args = c("--embed-resources"),
   ),
   # Manuscript.
   tar_quarto(

@@ -14,6 +14,7 @@ This page lists all the analyses of the RIVERSEA project.
 ## B. Diet information
 
 1. [Identify and get missing feeding information](analysis/B1-identify-diet.html)
+2. [Extract diet table from fishbase](analysis/B2-get-diet-fishbase.qmd)
 
 ## C. Fish sizes
 

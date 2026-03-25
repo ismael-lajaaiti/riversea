@@ -1,0 +1,138 @@
+---
+title: "Get diet table from fishbase"
+format: html
+execute:
+    message: false
+    warning: false
+---
+
+# Summary
+
+In this notebook we
+
+- extract a diet table using fishbase
+
+# 0. Setup
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore()
+renv::status()
+```
+
+```{r}
+#| output: false
+library(here)
+library(DiagrammeR)
+library(targets)
+library(dplyr)
+library(rfishbase)
+library(riversea)
+```
+
+# 1. Extract the diet table
+
+First, we want to get the list of species present in our dataset.
+
+```{r}
+data <- tar_read(sea_data_imputed)
+species_list <- data$size |>
+  pull(species_valid) |>
+  unique()
+head(species_list)
+```
+
+We have `r length(species_list)` species in our data set.
+We want to retrive their diet for each of them.
+
+We assume the following food web structure.
+
+```{r}
+DiagrammeR::grViz(readLines(here("figures", "foodweb.dot")))
+```
+
+Ellipses represent broad basal categories on which fishes feed on.
+Our goal here is to determine for each fish species on which of these categories
+it feeds, and whether it is piscivorous or not.
+To do so we scrap fishbase.
+
+```{r}
+items <- rfishbase::fb_tbl("diet_items")
+diet_species <- rfishbase::diet(species_list)
+diet_category <- diet_species |>
+  left_join(items, by = "DietCode") |>
+  select(
+    Species,
+    SampleStage,
+    DietCode,
+    FoodI,
+    FoodII,
+    FoodIII,
+    ItemName,
+    Stage,
+    DietPercent
+  )
+head(diet_category)
+```
+
+We see that the food is described by the three columns FoodI, FoodII and 
+FoodIII.
+The question is how we map our categories using those.
+
+```{r}
+diet_category |>
+  pull(FoodI) |>
+  unique()
+```
+
+Here we see that only the "plants" and "others" category cannot be classified
+directly.
+Nekton correspond to other fishes so it implies piscivory.
+
+We can go further in the classification for the ambiguous categories.
+
+```{r}
+diet_category |>
+  filter(FoodI == "plants") |>
+  select(FoodII, FoodIII) |>
+  distinct()
+```
+
+So using these subcategories we can categorize fish diet using our categories
+
+- benthic algae > macrophytes;
+- periphyton > biofilm;
+- terrestrial plants > macrophytes;
+- phytoplankton > phytoplantkon.
+
+```{r}
+diet_category |>
+  filter(FoodI == "others") |>
+  select(FoodII, FoodIII) |>
+  distinct()
+```
+
+These correspond to categories we do not consider in our framework, se we choose
+to ignore them.
+
+Like this we can extract a diet table
+
+```{r}
+diet_table <- tar_read(diet)
+head(diet_table)
+```
+
+which for each species, and life stage, tells what it eats.
+We can also have the table a in "wide" format, where we have one column for each
+basal category.
+
+```{r}
+diet_table_wide <- tar_read(diet_wide)
+head(diet_table_wide)
+```
+
+
+
+

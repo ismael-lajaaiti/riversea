@@ -40,7 +40,7 @@ get_diet_category <- function(species) {
     distinct(Species, PredatorStage, prey_category) |>
     arrange(Species, desc(PredatorStage)) |>
     rename(species = Species, stage = PredatorStage)
-  return(diet_category)
+  diet_category
 }
 
 #' Widen the dataframe of species diets.
@@ -60,7 +60,7 @@ widen_diet_category <- function(diet_category) {
     ) |>
     select(-others) |>
     arrange(species, desc(stage))
-  return(diet_category_wide)
+  diet_category_wide
 }
 
 #' Get fish diet with standardized categories in a wide format.
@@ -69,8 +69,21 @@ widen_diet_category <- function(diet_category) {
 #' @return Same as get_diet_categery, but in wide format.
 #' @export
 get_diet_category_wide <- function(species) {
-  diet_category_wide <- species |>
+  species |>
     get_diet_category() |>
     widen_diet_category()
-  return(diet_category_wide)
+}
+
+#' Get the species list of the data set.
+#'
+#' Assume that species names are given by 'species_valid' column.
+#'
+#' @param data_list
+#'
+#' @return species list
+#' @export
+get_species_list <- function(data_list) {
+  data_list$size |>
+    pull(species_valid) |>
+    unique()
 }

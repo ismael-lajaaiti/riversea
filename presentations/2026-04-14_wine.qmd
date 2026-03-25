@@ -55,15 +55,8 @@ tar_config_set(
 
 ## Infering food web structure: base
 
-```{dot}
-digraph G {
-    node [shape = box]; fish;
-    node [shape = ellipse];
-    fish -> zooplankton;
-    fish -> zoobenthos;
-    fish -> biofilm;
-    zooplankton -> phytoplankton
-}
+```{r}
+DiagrammeR::grViz(readLines(here("figures", "foodweb.dot")))
 ```
 
 - Extract fish diet with fishbase
