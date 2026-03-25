@@ -188,6 +188,139 @@ combine_sea_data <- function(clean_data) {
   combined
 }
 
+#' Validate species scientific names.
+#'
+#' For now, we remove all species who have not a name validated by fishbase.
+#'
+#' @param data_list
+#'
+#' @return List of cleaned data frame.
+#' @export
+validate_species_names <- function(data_list) {
+  data_list |> purrr::map(clean_name)
+}
+
+#' Clean species name of a dataframe using fishbase.
+#'
+#' @param df
+#'
+#' @return df with cleaned name.
+#' @export
+clean_name <- function(df) {
+  df |> mutate(
+    species_valid = rfishbase::validate_names(species),
+    is_valid = !is.na(species_valid)
+  )
+}
+
+#' Keep only species with valid name in data list.
+#'
+#' @param data_list
+#'
+#' @return data_list where non-valid species have been removed.
+#' @export
+filter_valid <- function(data_list) {
+  data_list |> purrr::map(function(df) {
+    df |>
+      filter(is_valid) |>
+      select(-c(is_valid, species))
+  })
+}
+
+#' Add number of measured individuals to the catch data frame.
+#'
+#' @param valid_data
+#'
+#' @return List of data frames.
+#' @export
+add_observation_number <- function(valid_data) {
+  d_measured <- valid_data$size |>
+    group_by(trait, year, survey, species_valid) |>
+    summarise(n_measured = n(), .groups = "drop")
+  valid_data$catch <- valid_data$catch |>
+    left_join(d_measured, by = c("trait", "year", "survey", "species_valid")) |>
+    mutate(
+      abundance_cor = if_else(
+        n_measured > abundance | is.na(abundance),
+        n_measured,
+        abundance
+      )
+    ) |>
+    filter(!is.na(abundance_cor))
+  valid_data
+}
+
+#' Impute missing fish length.
+#'
+#' Infer missing missing fish size using a truncated normal distribution.
+#' Mean and variance are given by the observed length distribution
+#' of the species in the sample.
+#' If there three or less observations the variance is set to zero.
+#' Extrema of the truncated distribution are given by the species length
+#' extrema observed the entire dataset.
+#'
+#' @param data
+#'
+#' @return list of data.frame.
+#' @export
+impute_size <- function(data) {
+  extrema <- data$size |>
+    filter(!is.na(length)) |>
+    group_by(species_valid) |>
+    summarise(size_min = min(length), size_max = max(length), .groups = "drop")
+  size_params <- data$size |>
+    filter(!is.na(length)) |>
+    group_by(trait, year, species_valid, survey) |>
+    summarise(
+      mu = mean(length),
+      sigma = sd(length),
+      .groups = "drop"
+    ) |>
+    left_join(data$catch) |>
+    filter(n_measured < abundance_cor) |>
+    mutate(sigma = if_else(is.na(sigma), 0, sigma)) |>
+    select(-c(abundance, n_measured, abundance_cor)) |>
+    left_join(extrema, by = "species_valid")
+  missing_imputed <- data$catch |>
+    mutate(n_missing = abundance_cor - n_measured) |>
+    select(-c(abundance, abundance_cor, n_measured)) |>
+    filter(n_missing > 0) |>
+    left_join(size_params, by = c("trait", "year", "survey", "species_valid")) |>
+    rowwise() |>
+    mutate(
+      length = list(
+        truncdist::rtrunc(
+          n_missing,
+          spec = "norm",
+          a = size_min,
+          b = size_max,
+          mean = mu,
+          sd = sigma
+        )
+      )
+    ) |>
+    select(-c(n_missing, mu, sigma, size_min, size_max)) |>
+    unnest(length) |>
+    mutate(measured = FALSE)
+  data$size <- data$size |>
+    mutate(measured = TRUE)
+  data$size <- bind_rows(data$size, missing_imputed)
+  data
+}
+
+#' Entire pipeline to infer missing sizes from the tidy data list.
+#'
+#' @param tidy_data
+#'
+#' @return list of data.frame.
+#' @export
+infer_missing_size <- function(tidy_data) {
+  tidy_data |>
+    filter_valid() |>
+    add_observation_number() |>
+    impute_size()
+}
+
 #' Entire pipeline to prepare the sea data survey for analysis.
 #'
 #' Pipe utility functions to process raw sea data.
@@ -198,7 +331,8 @@ combine_sea_data <- function(clean_data) {
 preprocess_sea_data <- function(dir) {
   tidy <- load_raw_sea_data(dir) |>
     clean_sea_data() |>
-    combine_sea_data()
+    combine_sea_data() |>
+    validate_species_names()
 
   tidy
 }

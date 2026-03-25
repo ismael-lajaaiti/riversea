@@ -10,7 +10,10 @@ tar_option_set(
     "ggplot2",
     "tidyr",
     "dplyr",
-    "stringr"
+    "purrr",
+    "stringr",
+    "rfishbase",
+    "truncdist"
   )
 )
 tar_source()
@@ -39,6 +42,11 @@ list(
     sea_data_tidy,
     preprocess_sea_data(sea_data_raw)
   ),
+  # Infer missing size.
+  tar_target(
+    sea_data_imputed,
+    infer_missing_size(sea_data_tidy)
+  ),
   # Reports.
   tar_quarto(
     report_A1,
@@ -53,7 +61,8 @@ list(
   tar_quarto(
     report_C2,
     "analysis/C2-get-fish-sizes.qmd",
-    quarto_args = c("--embed-resources")
+    quarto_args = c("--embed-resources"),
+    quiet = FALSE
   ),
   # Presentations.
   tar_quarto(

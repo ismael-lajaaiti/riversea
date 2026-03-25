@@ -32,13 +32,13 @@ library(dplyr)
 library(ggplot2)
 set_theme(theme_minimal())
 options(
-    ggplot2.continuous.colour = "viridis",
-    ggplot2.continuous.fill = "viridis"
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
 )
 ```
 
 ```{r}
-data_folder <- here("data", "coast")
+data_folder <- here("data", "sea", "raw")
 list.files(data_folder)
 ```
 
@@ -68,21 +68,21 @@ Rename columns for clarity.
 
 ```{r}
 d.poisson <- d.poisson |> rename(
-    zone = ID_Zone,
-    year = Annee,
-    month = Mois,
-    hour = Heure,
-    date = Date,
-    trait = Trait,
-    start_x = Coord_Deb_xmin,
-    start_y = Coord_Deb_ymin,
-    end_x = Coord_Fin_xmin,
-    end_y = Coord_Fin_ymin,
-    depth = Prof,
-    species = NomScient,
-    position = Position,
-    abundance = Nind_esp,
-    weight_batch = Pds_esp
+  zone = ID_Zone,
+  year = Annee,
+  month = Mois,
+  hour = Heure,
+  date = Date,
+  trait = Trait,
+  start_x = Coord_Deb_xmin,
+  start_y = Coord_Deb_ymin,
+  end_x = Coord_Fin_xmin,
+  end_y = Coord_Fin_ymin,
+  depth = Prof,
+  species = NomScient,
+  position = Position,
+  abundance = Nind_esp,
+  weight_batch = Pds_esp
 )
 head(d.poisson)
 ```
@@ -105,10 +105,10 @@ Now let's look at which species are more abundant on average.
 ```{r}
 n <- 10
 d <- d.poisson |>
-    group_by(species) |>
-    summarise(abundance_avg = mean(abundance)) |>
-    arrange(desc(abundance_avg)) |>
-    slice(1:n)
+  group_by(species) |>
+  summarise(abundance_avg = mean(abundance)) |>
+  arrange(desc(abundance_avg)) |>
+  slice(1:n)
 d
 ```
 
@@ -124,15 +124,15 @@ If so species names should be cleaned up.
 common_sp <- d |> pull(species)
 
 d <- d.poisson |>
-    filter(species %in% common_sp) |>
-    group_by(species, year) |>
-    summarise(abundance_avg = mean(abundance), .groups = "drop")
+  filter(species %in% common_sp) |>
+  group_by(species, year) |>
+  summarise(abundance_avg = mean(abundance), .groups = "drop")
 d$log_abundance <- log(d$abundance_avg)
 
 ggplot(d, aes(x = year, y = log_abundance, color = species)) +
-    geom_point() +
-    geom_line() +
-    labs(x = "Year", y = "Log abundance")
+  geom_point() +
+  geom_line() +
+  labs(x = "Year", y = "Log abundance")
 ```
 
 
@@ -144,21 +144,21 @@ They are given as strings and should be converted to numeric values.
 ```{r}
 library(stringr)
 d.poisson <- d.poisson |>
-    mutate(
-        start_x = start_x |> str_replace(",", ".") |> as.numeric(),
-        start_y = start_y |> str_replace(",", ".") |> as.numeric(),
-        end_x = end_x |> str_replace(",", ".") |> as.numeric(),
-        end_y = end_y |> str_replace(",", ".") |> as.numeric(),
-    )
+  mutate(
+    start_x = start_x |> str_replace(",", ".") |> as.numeric(),
+    start_y = start_y |> str_replace(",", ".") |> as.numeric(),
+    end_x = end_x |> str_replace(",", ".") |> as.numeric(),
+    end_y = end_y |> str_replace(",", ".") |> as.numeric(),
+  )
 
 summary(d.poisson[, c("start_x", "start_y", "end_x", "end_y")])
 ```
 
 ```{r}
 ggplot(d.poisson, aes(x = start_x, y = start_y)) +
-    geom_segment(aes(xend = end_x, yend = end_y, color = zone)) +
-    coord_equal() +
-    labs(x = "Longitude", y = "Latitude")
+  geom_segment(aes(xend = end_x, yend = end_y, color = zone)) +
+  coord_equal() +
+  labs(x = "Longitude", y = "Latitude")
 ```
 
 Now let's add a map in the background with `leaflet`.
@@ -172,39 +172,38 @@ library(leaflet)
 zone_plot <- first(d.poisson$zone)
 
 traits_sf <- d.poisson |>
-    filter(zone == zone_plot) |>
-    rowwise() |>
-    mutate(
-        geometry = st_sfc(st_linestring(
-            matrix(c(start_x, end_x, start_y, end_y), ncol = 2, byrow = FALSE)
-        ), crs = 4326)
-    ) |>
-    st_as_sf()
+  filter(zone == zone_plot) |>
+  rowwise() |>
+  mutate(
+    geometry = st_sfc(st_linestring(
+      matrix(c(start_x, end_x, start_y, end_y), ncol = 2, byrow = FALSE)
+    ), crs = 4326)
+  ) |>
+  st_as_sf()
 ```
 
 Then, we can plot them, using year for the color gradient.
 
 ```{r}
 pal <- colorNumeric(
-    palette = "viridis",
-    domain = traits_sf$year
+  palette = "viridis",
+  domain = traits_sf$year
 )
 
 leaflet(traits_sf) |>
-    addTiles() |>
-    addPolygons(
-        data = traits_sf,
-        color = ~ pal(year),
-        opacity = 0.7,
-        popup = ~ paste("Year: ", year)
-    ) |>
-    addLegend("bottomright",
-        pal = pal, values = ~year,
-        title = "Year",
-        labFormat = labelFormat(big.mark = ""),
-        opacity = 1
-    )
-
+  addTiles() |>
+  addPolygons(
+    data = traits_sf,
+    color = ~ pal(year),
+    opacity = 0.7,
+    popup = ~ paste("Year: ", year)
+  ) |>
+  addLegend("bottomright",
+    pal = pal, values = ~year,
+    title = "Year",
+    labFormat = labelFormat(big.mark = ""),
+    opacity = 1
+  )
 ```
 
 Most traits follow the river suggesting that we have processed the data correctly.
@@ -226,11 +225,11 @@ As before let's do a bit of cleaning before anything else.
 
 ```{r}
 d.size <- d.size |> select(-c(
-    Commentaire,
-    Ecologique,
-    Trophique,
-    Engin_peche,
-    Zone
+  Commentaire,
+  Ecologique,
+  Trophique,
+  Engin_peche,
+  Zone
 ))
 
 head(d.size)
@@ -240,27 +239,27 @@ Then let's rename columns.
 
 ```{r}
 d.size <- d.size |> rename(
-    zone = ID_Zone,
-    year = Annee,
-    month = Mois,
-    hour = Heure,
-    date = Date,
-    trait = Trait,
-    start_x = Coord_Deb_xmin,
-    start_y = Coord_Deb_ymin,
-    end_x = Coord_Fin_xmin,
-    end_y = Coord_Fin_ymin,
-    depth = Prof,
-    species = NomScient,
-    position = Position,
-    abundance = Nind_esp,
-    weight_batch = Pds_esp,
-    batch_size = Nind_esp_taille,
-    oxygen = Pour_satO2,
-    salinity = Salinite,
-    length_cm = Longueur_fourche_cm,
-    length_mm = Longueur_fourche_mm,
-    temperature = Temperature_eau
+  zone = ID_Zone,
+  year = Annee,
+  month = Mois,
+  hour = Heure,
+  date = Date,
+  trait = Trait,
+  start_x = Coord_Deb_xmin,
+  start_y = Coord_Deb_ymin,
+  end_x = Coord_Fin_xmin,
+  end_y = Coord_Fin_ymin,
+  depth = Prof,
+  species = NomScient,
+  position = Position,
+  abundance = Nind_esp,
+  weight_batch = Pds_esp,
+  batch_size = Nind_esp_taille,
+  oxygen = Pour_satO2,
+  salinity = Salinite,
+  length_cm = Longueur_fourche_cm,
+  length_mm = Longueur_fourche_mm,
+  temperature = Temperature_eau
 )
 head(d.size)
 ```
@@ -286,11 +285,11 @@ We can check on a subset of our dataframe that length in mm is ten times the len
 
 ```{r}
 d <- d.size |>
-    filter(zone == zone_plot) |>
-    filter(!is.na(length_mm), year == 2014)
+  filter(zone == zone_plot) |>
+  filter(!is.na(length_mm), year == 2014)
 
 ggplot(d, aes(x = length_mm, y = length_cm)) +
-    geom_point()
+  geom_point()
 ```
 
 So let's remove the length in cm, which is a duplicate and less precise than the length in mm.
@@ -308,8 +307,8 @@ We will begin with rough estimates, then refine these at the species and year le
 
 ```{r}
 d <- d.size |>
-    group_by(ID_interne_prelevement, species) |>
-    summarise(n_measured = sum(batch_size), .groups = "drop")
+  group_by(ID_interne_prelevement, species) |>
+  summarise(n_measured = sum(batch_size), .groups = "drop")
 
 d.join <- left_join(d.poisson, d, by = c("ID_interne_prelevement", "species"))
 head(d.join)
@@ -335,10 +334,10 @@ But, let's go in further details and how full size sampling depends on year, zon
 
 ```{r}
 d.sampling <- d.join |>
-    filter(!is.na(n_measured)) |>
-    group_by(species) |>
-    summarise(measurement_rate = mean(n_measured == abundance)) |>
-    arrange(measurement_rate)
+  filter(!is.na(n_measured)) |>
+  group_by(species, ID_interne_prelevement) |>
+  summarise(measurement_rate = n_measured / abundance) |>
+  arrange(measurement_rate)
 head(d.sampling)
 ```
 
@@ -349,25 +348,25 @@ Measuring many individuals is cumbersome, so we expect a decreasing trend betwee
 
 ```{r}
 d.abundance.avg <- d.poisson |>
-    filter(!is.na(abundance)) |>
-    group_by(species) |>
-    summarise(abundance_avg = mean(abundance))
+  filter(!is.na(abundance)) |>
+  group_by(species) |>
+  summarise(abundance_avg = mean(abundance))
 
 d.sampling <- left_join(d.sampling, d.abundance.avg, by = "species")
 
 ggplot(d.sampling, aes(x = abundance_avg, y = measurement_rate)) +
-    geom_point() +
-    labs(x = "Average abundance", y = "Full measurement rate")
+  geom_point() +
+  labs(x = "Average abundance", y = "Full measurement rate")
 ```
 
 Let's look if we have trends per zone.
 
 ```{r}
 d.sampling <- d.join |>
-    filter(!is.na(n_measured)) |>
-    group_by(zone) |>
-    summarise(measurement_rate = mean(n_measured == abundance)) |>
-    arrange(measurement_rate)
+  filter(!is.na(n_measured)) |>
+  group_by(zone) |>
+  summarise(measurement_rate = mean(n_measured == abundance)) |>
+  arrange(measurement_rate)
 head(d.sampling)
 ```
 
@@ -415,43 +414,43 @@ Let's rename column for consistency with other campagnes.
 
 ```{r}
 d.nurse.catch <- d.nurse.catch |>
-    select(-Campagne) |>
-    rename(
-        year = Annee,
-        trait = Trait,
-        species = Espece,
-        abundance = Nombre,
-        weight_batch = Poids
-    )
+  select(-Campagne) |>
+  rename(
+    year = Annee,
+    trait = Trait,
+    species = Espece,
+    abundance = Nombre,
+    weight_batch = Poids
+  )
 head(d.nurse.catch)
 ```
 
 ```{r}
 d.nurse.size <- d.nurse.size |>
-    select(-c(Campagne, Poids, Age, Maturite)) |>
-    rename(
-        year = Annee,
-        trait = Trait,
-        species = Espece,
-        sex = Sexe,
-        length = Longueur,
-        batch_size = Nombre
-    )
+  select(-c(Campagne, Poids, Age, Maturite)) |>
+  rename(
+    year = Annee,
+    trait = Trait,
+    species = Espece,
+    sex = Sexe,
+    length = Longueur,
+    batch_size = Nombre
+  )
 head(d.nurse.size)
 ```
 
 ```{r}
 d.nurse.trait <- d.nurse.trait |>
-    select(-c(Campagne, ProfMoy)) |>
-    rename(
-        year = Annee,
-        trait = Trait,
-        month = Mois,
-        strate = Strate,
-        surface = SurfaceBalayee,
-        lat = Lat,
-        long = Long
-    )
+  select(-c(Campagne, ProfMoy)) |>
+  rename(
+    year = Annee,
+    trait = Trait,
+    month = Mois,
+    strate = Strate,
+    surface = SurfaceBalayee,
+    lat = Lat,
+    long = Long
+  )
 head(d.nurse.trait)
 ```
 
@@ -461,25 +460,25 @@ head(d.nurse.trait)
 
 ```{r}
 trait_counts <- d.nurse.trait |>
-    group_by(year) |>
-    summarise(n_trait = length(unique(trait)))
+  group_by(year) |>
+  summarise(n_trait = length(unique(trait)))
 
 ggplot(trait_counts, aes(x = year, y = n_trait)) +
-    geom_line() +
-    geom_point() +
-    labs(x = "Year", y = "Number of traits")
+  geom_line() +
+  geom_point() +
+  labs(x = "Year", y = "Number of traits")
 ```
 
 
 ```{r}
 surface_year <- d.nurse.trait |>
-    group_by(year) |>
-    summarise(surface_tot = sum(surface))
+  group_by(year) |>
+  summarise(surface_tot = sum(surface))
 
 ggplot(surface_year, aes(x = year, y = surface_tot)) +
-    geom_line() +
-    geom_point() +
-    labs(x = "Year", y = "Surface sampled")
+  geom_line() +
+  geom_point() +
+  labs(x = "Year", y = "Surface sampled")
 ```
 
 We see high variability in the sampling effort across the year.
@@ -490,19 +489,19 @@ We see high variability in the sampling effort across the year.
 trait_sf <- st_as_sf(d.nurse.trait, coords = c("long", "lat"), crs = 4326, remove = FALSE)
 
 leaflet(trait_sf) |>
-    addTiles() |>
-    addCircleMarkers(
-        radius = 2, fillOpacity = 0.7, stroke = FALSE,
-        popup = ~ paste("Trait:", trait, "Year:", year)
-    )
+  addTiles() |>
+  addCircleMarkers(
+    radius = 2, fillOpacity = 0.7, stroke = FALSE,
+    popup = ~ paste("Trait:", trait, "Year:", year)
+  )
 ```
 
 ### 2.2.3. Fish size measurement rate
 
 ```{r}
 d.nurse.batch <- d.nurse.size |>
-    group_by(trait, species) |>
-    summarise(n_measured = sum(batch_size), .groups = "drop")
+  group_by(trait, species) |>
+  summarise(n_measured = sum(batch_size), .groups = "drop")
 head(d.nurse.batch)
 
 d.nurse.batch <- left_join(d.nurse.batch, d.nurse.catch, by = c("species", "trait"))
@@ -511,8 +510,8 @@ head(d.nurse.batch)
 
 ```{r}
 n_tot <- nrow(d.nurse.batch)
-n_full <- nrow(d.nurse.batch |> filter(n_measured == abundance))
-n_full / n_tot
+n_full <- nrow(d.nurse.batch |> filter(n_measured > abundance))
+n_full #/ n_tot
 ```
 
 For the Nurse campagne, we also have a very high size measurement rate.
@@ -541,41 +540,41 @@ As before, we will just rename the column for consistency.
 
 ```{r}
 d.solper.catch <- d.solper.catch |>
-    select(-Campagne) |>
-    rename(
-        year = Annee,
-        trait = Trait,
-        species = Espece,
-        abundance = Nombre,
-        weight_batch = Poids
-    )
+  select(-Campagne) |>
+  rename(
+    year = Annee,
+    trait = Trait,
+    species = Espece,
+    abundance = Nombre,
+    weight_batch = Poids
+  )
 head(d.solper.catch)
 
 d.solper.size <- d.solper.size |>
-    select(-c(Campagne, Age, Maturite)) |>
-    rename(
-        year = Annee,
-        trait = Trait,
-        species = Espece,
-        batch_size = Nombre,
-        sex = Sexe,
-        length = Longueur,
-        weight = Poids
-    )
+  select(-c(Campagne, Age, Maturite)) |>
+  rename(
+    year = Annee,
+    trait = Trait,
+    species = Espece,
+    batch_size = Nombre,
+    sex = Sexe,
+    length = Longueur,
+    weight = Poids
+  )
 head(d.solper.size)
 
 d.solper.trait <- d.solper.trait |>
-    select(-Campagne) |>
-    rename(
-        year = Annee,
-        trait = Trait,
-        month = Mois,
-        strate = Strate,
-        surface = SurfaceBalayee,
-        lat = Lat,
-        long = Long,
-        depth = ProfMoy
-    )
+  select(-Campagne) |>
+  rename(
+    year = Annee,
+    trait = Trait,
+    month = Mois,
+    strate = Strate,
+    surface = SurfaceBalayee,
+    lat = Lat,
+    long = Long,
+    depth = ProfMoy
+  )
 head(d.solper.trait)
 ```
 
@@ -587,13 +586,13 @@ Now that the data is cleaned let's look at general information about the campagn
 
 ```{r}
 trait_year <- d.solper.trait |>
-    group_by(year) |>
-    summarise(n_trait = length(unique(trait)), surf_tot = sum(surface))
+  group_by(year) |>
+  summarise(n_trait = length(unique(trait)), surf_tot = sum(surface))
 
 ggplot(trait_year, aes(x = year, y = n_trait, color = surf_tot)) +
-    geom_line(color = "grey") +
-    geom_point() +
-    labs(x = "Year", y = "Number of traits", color = "Total surface")
+  geom_line(color = "grey") +
+  geom_point() +
+  labs(x = "Year", y = "Number of traits", color = "Total surface")
 ```
 
 The see that the sampling effort has been relatively constant, although decreasing with years.
@@ -605,19 +604,19 @@ Furthermore, as expected, the surface sampled is positively correlated with the 
 trait_sf <- st_as_sf(d.solper.trait, coords = c("long", "lat"), crs = 4326, remove = FALSE)
 
 leaflet(trait_sf) |>
-    addTiles() |>
-    addCircleMarkers(
-        radius = 2, fillOpacity = 0.7, stroke = FALSE,
-        popup = ~ paste("Trait:", trait, "Year:", year)
-    )
+  addTiles() |>
+  addCircleMarkers(
+    radius = 2, fillOpacity = 0.7, stroke = FALSE,
+    popup = ~ paste("Trait:", trait, "Year:", year)
+  )
 ```
 
 ### 3.2.3. Full size sampling
 
 ```{r}
 d.solper.batch <- d.solper.size |>
-    group_by(species, trait, year) |>
-    summarise(n_measured = sum(batch_size), .groups = "drop")
+  group_by(species, trait, year) |>
+  summarise(n_measured = sum(batch_size), .groups = "drop")
 
 d.solper.batch <- left_join(d.solper.batch, d.solper.catch, by = c("species", "trait", "year"))
 

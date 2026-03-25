@@ -2,7 +2,8 @@
 % Please edit documentation in R/utils.R
 \name{unzip_workshop}
 \alias{unzip_workshop}
-\title{Unzip data from the spatiotemporal workshop.}
+\title{Unzip data from the spatiotemporal workshop.
+Data is stored within zenodo folder.}
 \usage{
 unzip_workshop(zip_file, dir)
 }
@@ -15,5 +16,6 @@ unzip_workshop(zip_file, dir)
 Path of the unzipped directory.
 }
 \description{
+Unzip data from the spatiotemporal workshop.
 Data is stored within zenodo folder.
 }

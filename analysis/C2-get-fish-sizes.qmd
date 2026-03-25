@@ -88,91 +88,51 @@ First, we load our data set and summarise the different surveys.
 
 ```{r}
 tidy_data <- tar_read(sea_data_tidy)
-
-tidy_data$catch |>
-  group_by(survey) |>
-  summarise(
-    n_tot = n(),
-    year_min = min(year),
-    year_max = max(year),
-  )
+head(tidy_data$size)
 ```
 
-Next, we compute the minimal, mean and maximial length for each species.
+The first step of the processing is to check the validity of the species name.
+For now, we only verify whether the name is recognized by fishbase.
+We filter out unrecognized species.
 
 ```{r}
-size_extrema <- tidy_data$size |>
-  group_by(species) |>
+valid_data <- filter_valid(tidy_data)
+head(valid_data$size)
+```
+
+Next, we compute the minimal, mean and maximal length for each species.
+
+```{r}
+size_extrema <- valid_data$size |>
+  group_by(species_valid) |>
   summarise(
     length_min = min(length),
     length_mean = mean(length),
     length_max = max(length),
     n = n(),
     .groups = "drop"
-  )
+  ) |>
+  arrange(desc(n))
 head(size_extrema)
 ```
 
 ```{r}
-species_params <- tidy_data$size |>
-  group_by(species, trait, year) |>
-  summarise(
-    mu = mean(length),
-    sigma = sd(length),
-    n_obs = n(),
-    .groups = "drop"
-  )
-head(species_params)
-
-imputation_table <- tidy_data$catch |>
-  left_join(species_params, by = c("trait", "species", "year")) |>
-  mutate(n_missing = abundance - n_obs) |>
-  filter(n_missing > 0)
-
-infer_missing_size <- function(n_obs, n_missing, mu, sigma, species, trait) {
-  if (n_obs < 3) {
-    sizes <- rep(mu, n_missing)
-  } else {
-    sizes <- rnorm(n_missing, mu, sigma)
-  }
-  return(sizes)
-}
-
-imputed_sizes <- imputation_table |>
-  rowwise() |>
-  mutate(
-    length = list(
-      infer_missing_size(n_obs, n_missing, mu, sigma, species, trait)
-    )
-  ) |>
-  unnest(cols = c(length))
-head(imputed_sizes)
+data <- add_observation_number(valid_data)
+head(data$catch)
 ```
 
 ```{r}
-tidy_data$size |> filter(is.na(length))
+data_imp <- impute_size(data)
 ```
 
+For sanity we can check that we have added the right number of sizes to the data frame.
 
 ```{r}
-tidy_data$size |>
-  left_join(
-    imputed_sizes |> select(-c(abundance, mu, sigma, n_obs, n_missing)),
-    by = c("species", "trait", "survey", "year"),
-    relationship = "many-to-many",
-    suffix = c("", "_imp")
-  ) |>
-  filter(is.na(length))
+head(data_imp$size)
+data_imp$catch |>
+  mutate(n_miss = abundance_cor - n_measured) |>
+  pull(n_miss) |>
+  sum()
+sum(!data_imp$size$measured)
 ```
 
-
-We see that we have negative value for n_missing our imputation table.
-These are very few, and probably due to errors.
-Here, we choose to correct them, setting the abundance to the number of measured fish.
-
-
-
-## TODO
-
-- Infer missing sizes in the different survey.
-- Validate the inference by simulating missing data.

@@ -1,6 +1,7 @@
 ---
 title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
 author: "Ismaël Lajaaiti, Eric Edeline, Anik Brindamour, Alain Danet"
+bibliography: references.bib
 format:
   html:
     toc: true
@@ -14,55 +15,122 @@ comments:
 
 ## Abstract
 
+Anthropic disturbances and ecosystem processes transcend the artificial
+boundaries between land, freshwater, and sea.
+While these systems are interconnected through species and material fluxes,
+they are often studied in isolation.
+In response, the concept of metaecosystem has emerged as a powerful framework
+to understand how fluxes among ecosystems shape their functions and dynamics.
+Disrupting these fluxes can have dramatic consequences that ripple across
+entire landscapes.
+In aquatic systems, dams and nutrient pollution are known to strongly affect
+fish communities. Yet, little is still known about how these effects propagate
+and potentially accumulate, through hydrographic basins and ultimately to the
+sea.
+Using bayesian spatio-temporal statistical models (R-INLA), we aim to analyse
+existing data on food-web structure across France, combined with environmental
+variables (dams, nutrients, …), to quantify how breaking or increasing fluxes
+among systems disturbs food-web structure locally and how these disturbances
+spread throughout the metaecosystem.
+
+**Keywords:**
+*foodweb ecology,
+stream network,
+spatial autocorrelation,
+bayesian statistics.*
+
+
 ## Introduction
 
 This is some text.
 
+### Multiple stressors
+
+- Synergistic and antagonistic effects of multiple stressors
+[@Jackson-Pawar-Woodward-2021a; @Orr-etal-2024a].
+
+- Temperature can interact with nutrients and impact food web structure in a 
+nonlinear way [@Bonnaffé-etal-2024b, @Binzer-etal-2012].
+
+- [@Danet-etal-2021b].
+
 ### Connectivity
 
-Key mechanisms
+- Small dispersal stabilizes through spatial structure and asynchrony
+[@LeCraw-Kratina-Srivastava-2014; @McCann-Rasmussen-Umbanhowar-2005;
+@Pillai-Gonzalez-Loreau-2011].
 
-- Small dispersal stabilizes through spatial structure and asynchrony.
+- Prey switching of mobile top predators can stabilize connected food webs
+through ‘spatial coupling’
+[@LeCraw-Kratina-Srivastava-2014; @McCann-Rasmussen-Umbanhowar-2005;
+@Pillai-Gonzalez-Loreau-2011].
 
-- Refuge effects occur when predator have lower efficiency when prey is rare (Holling type III).
+- At high dispersal/connectivity the stabilizing effect wanes as strongly 
+connected patches behave as a single patch
+[@LeCraw-Kratina-Srivastava-2014; @McCann-Rasmussen-Umbanhowar-2005].
 
-- Prey switching of mobile top predators can stabilize connected food webs through ‘spatial coupling’. 
+- Studies between pairs of the following connectivity, complexity and stability
+are common. However, studies investigating how these are interconnected are
+rare [@LeCraw-Kratina-Srivastava-2014].
 
-- At high dispersal/connectivity the stabilizing effect wanes as strongly connected patches behave as a single patch.
+- Connectivity has 4 dimensions: longitudinal, lateral, vertical and temporal
+[@Grill-etal-2019].
 
-- Studies between pairs of the following connectivity, complexity and stability are common. However, studies investigating how these are interconnected are rare. 
-
-Important references 
-
-- LeCraw 2014 - Review the effect of connectivity on food web complexity and stability.
-
-- McCann 2005 - Consumers link food web in space, and their response can shape the spatial response of coupled food webs.
-
-- Pillai 2011 - Metacommunity theory shows that food web complexity is maximed at intermediate level of colonization rates.
+- We identified five pressure factors to represent the main human
+interferences within the four dimensions of fluvial or river connectivity 
+[@Grill-etal-2019]:
+  (1) river fragmentation (longitudinal);
+  (2) flow regulation (lateral and temporal);
+  (3) sediment trapping (longitudinal, lateral and vertical);
+  (4) water consumption (lateral, vertical and temporal);
+  (5) infrastructure development in riparian areas and floodplains
+(lateral and longitudinal). 
 
 ### Dams
 
-Key mechanisms
+- Decrease river connectivity / reduce migration [@Dean-etal-2023b;
+@He-etal-2024; @Pedersen-etal-2012].
 
-- Decrease river connectivity / reduce migration.
+- Reservoir, lotic from lentic conditions, can result in hypoxic conditions.
+Favor phytoplancktons and macrophytes [@Ding-etal-2026; @Dean-etal-2023b].
 
-- Reservoir, lotic from lentic conditions, can result in hypoxic conditions. Favor phytoplancktons and macrophytes.
+- Reservoir increase residence time of nutrients upstream and decrease the
+downstream output, which can result in a decrease in primary productivity.
 
-- Reservoir increase residence time of nutrients upstream and decrease the downstream output, which can result in a decrease in primary productivity.
+- Hydropeaking - that is, the sudden release of large water to answer the
+higher electric demand  - can harm riverine community due to sudden change
+in water level and water flow.
 
-- Hydropeaking - that is, the sudden release of large water to answer the higher electric demand  - can harm riverine community due to sudden change in water level and water flow.
+- Cumulative impact of dams can reduce the nutrient input in deltas
+[@Dean-etal-2023b].
 
-- Cumulative impact of dams can reduce the nutrient input in deltas.
+## Methods
 
-Important references
+### Food web inference
 
-- Ding 2026 - more endangered species near dam at a global scale.
+#### Infer missing fish lengths
 
-- Dean 2023 - cumulative impact of downstream dam on potamodromous species.
+Most length of fishes are measured but not all.
+Yet, we need individual fish length to determine their diet based on their 
+ontogeny.
+We infer missing fish size using information on the given fishing operation.
+When there are more than three observations of the fish species, we use a
+truncated normal distribution (package truncdist; @Nadarajah-Kotz-2006).
+The mean and variance are given by the modes of the observed distribution of the
+fishing operation.
+The minimum and maximum of the distribution are given by the minimal and maximal
+length observed on the entire data set for that species.
+We do so to avoid infering irrealistic lengths.
 
-- He 2024 - review dam impacts on riverine community.
+#### Get fish diet
 
-- Pedersen 2012 - associate the drastic decline in the European eel to dam impacts.
+#### The metaweb
+
+#### Subsampling the metaweb to get local food webs
+
+## Results
+
+## Discussion
 
 # Appendix
 

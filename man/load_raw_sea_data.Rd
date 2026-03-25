@@ -10,7 +10,7 @@ load_raw_sea_data(data_folder)
 \item{data_folder}{Path to data folder.}
 }
 \value{
-A nested list with one element per survey ("pomet", "nurse", "solper").
+A nested list with one element per survey.
 Each survey contains two data frames: \code{catch} and \code{size}.
 }
 \description{

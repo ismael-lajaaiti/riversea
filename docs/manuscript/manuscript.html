@@ -20,7 +20,27 @@ ul.task-list li input[type="checkbox"] {
 width: 0.8em;
 margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
 }
-</style>
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}</style>
 
 
 <script>const headroomChanged = new CustomEvent("quarto-hrChanged", {
@@ -3886,9 +3906,16 @@ vertical-align: -.125em;
   <li><a href="#abstract" id="toc-abstract" class="nav-link active" data-scroll-target="#abstract">Abstract</a></li>
   <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a>
   <ul class="collapse">
+  <li><a href="#multiple-stressors" id="toc-multiple-stressors" class="nav-link" data-scroll-target="#multiple-stressors">Multiple stressors</a></li>
   <li><a href="#connectivity" id="toc-connectivity" class="nav-link" data-scroll-target="#connectivity">Connectivity</a></li>
   <li><a href="#dams" id="toc-dams" class="nav-link" data-scroll-target="#dams">Dams</a></li>
   </ul></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
+  <ul class="collapse">
+  <li><a href="#food-web-inference" id="toc-food-web-inference" class="nav-link" data-scroll-target="#food-web-inference">Food web inference</a></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion">Discussion</a></li>
   <li><a href="#appendix" id="toc-appendix" class="nav-link" data-scroll-target="#appendix">Appendix</a>
   <ul class="collapse">
   <li><a href="#model-dag" id="toc-model-dag" class="nav-link" data-scroll-target="#model-dag">Model DAG</a></li>
@@ -3926,45 +3953,73 @@ vertical-align: -.125em;
 
 <section id="abstract" class="level2">
 <h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
+<p>Anthropic disturbances and ecosystem processes transcend the artificial boundaries between land, freshwater, and sea. While these systems are interconnected through species and material fluxes, they are often studied in isolation. In response, the concept of metaecosystem has emerged as a powerful framework to understand how fluxes among ecosystems shape their functions and dynamics. Disrupting these fluxes can have dramatic consequences that ripple across entire landscapes. In aquatic systems, dams and nutrient pollution are known to strongly affect fish communities. Yet, little is still known about how these effects propagate and potentially accumulate, through hydrographic basins and ultimately to the sea. Using bayesian spatio-temporal statistical models (R-INLA), we aim to analyse existing data on food-web structure across France, combined with environmental variables (dams, nutrients, …), to quantify how breaking or increasing fluxes among systems disturbs food-web structure locally and how these disturbances spread throughout the metaecosystem.</p>
+<p><strong>Keywords:</strong> <em>foodweb ecology, stream network, spatial autocorrelation, bayesian statistics.</em></p>
 </section>
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>This is some text.</p>
+<section id="multiple-stressors" class="level3">
+<h3 class="anchored" data-anchor-id="multiple-stressors">Multiple stressors</h3>
+<ul>
+<li><p>Synergistic and antagonistic effects of multiple stressors <span class="citation" data-cites="Jackson-Pawar-Woodward-2021a Orr-etal-2024a">(<a href="#ref-Jackson-Pawar-Woodward-2021a" role="doc-biblioref">Jackson, Pawar, and Woodward 2021</a>; <a href="#ref-Orr-etal-2024a" role="doc-biblioref">Orr et al. 2024</a>)</span>.</p></li>
+<li><p>Temperature can interact with nutrients and impact food web structure in a nonlinear way <span class="citation" data-cites="Bonnaffé-etal-2024b">Binzer et al. (<a href="#ref-Binzer-etal-2012" role="doc-biblioref">2012</a>)</span>.</p></li>
+<li><p><span class="citation" data-cites="Danet-etal-2021b">(<a href="#ref-Danet-etal-2021b" role="doc-biblioref">Danet et al. 2021</a>)</span>.</p></li>
+</ul>
+</section>
 <section id="connectivity" class="level3">
 <h3 class="anchored" data-anchor-id="connectivity">Connectivity</h3>
-<p>Key mechanisms</p>
 <ul>
-<li><p>Small dispersal stabilizes through spatial structure and asynchrony.</p></li>
-<li><p>Refuge effects occur when predator have lower efficiency when prey is rare (Holling type III).</p></li>
-<li><p>Prey switching of mobile top predators can stabilize connected food webs through ‘spatial coupling’.</p></li>
-<li><p>At high dispersal/connectivity the stabilizing effect wanes as strongly connected patches behave as a single patch.</p></li>
-<li><p>Studies between pairs of the following connectivity, complexity and stability are common. However, studies investigating how these are interconnected are rare.</p></li>
-</ul>
-<p>Important references</p>
-<ul>
-<li><p>LeCraw 2014 - Review the effect of connectivity on food web complexity and stability.</p></li>
-<li><p>McCann 2005 - Consumers link food web in space, and their response can shape the spatial response of coupled food webs.</p></li>
-<li><p>Pillai 2011 - Metacommunity theory shows that food web complexity is maximed at intermediate level of colonization rates.</p></li>
+<li><p>Small dispersal stabilizes through spatial structure and asynchrony <span class="citation" data-cites="LeCraw-Kratina-Srivastava-2014 McCann-Rasmussen-Umbanhowar-2005 Pillai-Gonzalez-Loreau-2011">(<a href="#ref-LeCraw-Kratina-Srivastava-2014" role="doc-biblioref">LeCraw, Kratina, and Srivastava 2014</a>; <a href="#ref-McCann-Rasmussen-Umbanhowar-2005" role="doc-biblioref">McCann, Rasmussen, and Umbanhowar 2005</a>; <a href="#ref-Pillai-Gonzalez-Loreau-2011" role="doc-biblioref">Pillai, Gonzalez, and Loreau 2011</a>)</span>.</p></li>
+<li><p>Prey switching of mobile top predators can stabilize connected food webs through ‘spatial coupling’ <span class="citation" data-cites="LeCraw-Kratina-Srivastava-2014 McCann-Rasmussen-Umbanhowar-2005 Pillai-Gonzalez-Loreau-2011">(<a href="#ref-LeCraw-Kratina-Srivastava-2014" role="doc-biblioref">LeCraw, Kratina, and Srivastava 2014</a>; <a href="#ref-McCann-Rasmussen-Umbanhowar-2005" role="doc-biblioref">McCann, Rasmussen, and Umbanhowar 2005</a>; <a href="#ref-Pillai-Gonzalez-Loreau-2011" role="doc-biblioref">Pillai, Gonzalez, and Loreau 2011</a>)</span>.</p></li>
+<li><p>At high dispersal/connectivity the stabilizing effect wanes as strongly connected patches behave as a single patch <span class="citation" data-cites="LeCraw-Kratina-Srivastava-2014 McCann-Rasmussen-Umbanhowar-2005">(<a href="#ref-LeCraw-Kratina-Srivastava-2014" role="doc-biblioref">LeCraw, Kratina, and Srivastava 2014</a>; <a href="#ref-McCann-Rasmussen-Umbanhowar-2005" role="doc-biblioref">McCann, Rasmussen, and Umbanhowar 2005</a>)</span>.</p></li>
+<li><p>Studies between pairs of the following connectivity, complexity and stability are common. However, studies investigating how these are interconnected are rare <span class="citation" data-cites="LeCraw-Kratina-Srivastava-2014">(<a href="#ref-LeCraw-Kratina-Srivastava-2014" role="doc-biblioref">LeCraw, Kratina, and Srivastava 2014</a>)</span>.</p></li>
+<li><p>Connectivity has 4 dimensions: longitudinal, lateral, vertical and temporal <span class="citation" data-cites="Grill-etal-2019">(<a href="#ref-Grill-etal-2019" role="doc-biblioref">Grill et al. 2019</a>)</span>.</p></li>
+<li><p>We identified five pressure factors to represent the main human interferences within the four dimensions of fluvial or river connectivity <span class="citation" data-cites="Grill-etal-2019">(<a href="#ref-Grill-etal-2019" role="doc-biblioref">Grill et al. 2019</a>)</span>:</p>
+<ol type="1">
+<li>river fragmentation (longitudinal);</li>
+<li>flow regulation (lateral and temporal);</li>
+<li>sediment trapping (longitudinal, lateral and vertical);</li>
+<li>water consumption (lateral, vertical and temporal);</li>
+<li>infrastructure development in riparian areas and floodplains (lateral and longitudinal).</li>
+</ol></li>
 </ul>
 </section>
 <section id="dams" class="level3">
 <h3 class="anchored" data-anchor-id="dams">Dams</h3>
-<p>Key mechanisms</p>
 <ul>
-<li><p>Decrease river connectivity / reduce migration.</p></li>
-<li><p>Reservoir, lotic from lentic conditions, can result in hypoxic conditions. Favor phytoplancktons and macrophytes.</p></li>
+<li><p>Decrease river connectivity / reduce migration <span class="citation" data-cites="Dean-etal-2023b He-etal-2024 Pedersen-etal-2012">(<a href="#ref-Dean-etal-2023b" role="doc-biblioref">Dean et al. 2023</a>; <a href="#ref-He-etal-2024" role="doc-biblioref">He et al. 2024</a>; <a href="#ref-Pedersen-etal-2012" role="doc-biblioref">Pedersen et al. 2012</a>)</span>.</p></li>
+<li><p>Reservoir, lotic from lentic conditions, can result in hypoxic conditions. Favor phytoplancktons and macrophytes <span class="citation" data-cites="Ding-etal-2026 Dean-etal-2023b">(<a href="#ref-Ding-etal-2026" role="doc-biblioref">Ding et al. 2026</a>; <a href="#ref-Dean-etal-2023b" role="doc-biblioref">Dean et al. 2023</a>)</span>.</p></li>
 <li><p>Reservoir increase residence time of nutrients upstream and decrease the downstream output, which can result in a decrease in primary productivity.</p></li>
 <li><p>Hydropeaking - that is, the sudden release of large water to answer the higher electric demand - can harm riverine community due to sudden change in water level and water flow.</p></li>
-<li><p>Cumulative impact of dams can reduce the nutrient input in deltas.</p></li>
-</ul>
-<p>Important references</p>
-<ul>
-<li><p>Ding 2026 - more endangered species near dam at a global scale.</p></li>
-<li><p>Dean 2023 - cumulative impact of downstream dam on potamodromous species.</p></li>
-<li><p>He 2024 - review dam impacts on riverine community.</p></li>
-<li><p>Pedersen 2012 - associate the drastic decline in the European eel to dam impacts.</p></li>
+<li><p>Cumulative impact of dams can reduce the nutrient input in deltas <span class="citation" data-cites="Dean-etal-2023b">(<a href="#ref-Dean-etal-2023b" role="doc-biblioref">Dean et al. 2023</a>)</span>.</p></li>
 </ul>
 </section>
+</section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<section id="food-web-inference" class="level3">
+<h3 class="anchored" data-anchor-id="food-web-inference">Food web inference</h3>
+<section id="infer-missing-fish-lengths" class="level4">
+<h4 class="anchored" data-anchor-id="infer-missing-fish-lengths">Infer missing fish lengths</h4>
+<p>Most length of fishes are measured but not all. Yet, we need individual fish length to determine their diet based on their ontogeny. We infer missing fish size using information on the given fishing operation. When there are more than three observations of the fish species, we use a truncated normal distribution (package truncdist; <span class="citation" data-cites="Nadarajah-Kotz-2006">Nadarajah and Kotz (<a href="#ref-Nadarajah-Kotz-2006" role="doc-biblioref">2006</a>)</span>). The mean and variance are given by the modes of the observed distribution of the fishing operation. The minimum and maximum of the distribution are given by the minimal and maximal length observed on the entire data set for that species. We do so to avoid infering irrealistic lengths.</p>
+</section>
+<section id="get-fish-diet" class="level4">
+<h4 class="anchored" data-anchor-id="get-fish-diet">Get fish diet</h4>
+</section>
+<section id="the-metaweb" class="level4">
+<h4 class="anchored" data-anchor-id="the-metaweb">The metaweb</h4>
+</section>
+<section id="subsampling-the-metaweb-to-get-local-food-webs" class="level4">
+<h4 class="anchored" data-anchor-id="subsampling-the-metaweb-to-get-local-food-webs">Subsampling the metaweb to get local food webs</h4>
+</section>
+</section>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+</section>
+<section id="discussion" class="level2">
+<h2 class="anchored" data-anchor-id="discussion">Discussion</h2>
 </section>
 <section id="appendix" class="level1">
 <h1>Appendix</h1>
@@ -3973,10 +4028,54 @@ vertical-align: -.125em;
 <p>Put model DAG here using targets.</p>
 
 
+
 </section>
 </section>
 
-</main> <!-- /main -->
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Binzer-etal-2012" class="csl-entry" role="listitem">
+Binzer, Amrei, Christian Guill, Ulrich Brose, and Björn C. Rall. 2012. <span>“The Dynamics of Food Chains Under Climate Change and Nutrient Enrichment.”</span> <em>Philosophical Transactions of the Royal Society B: Biological Sciences</em> 367 (1605): 2935–44. <a href="https://doi.org/10.1098/rstb.2012.0230">https://doi.org/10.1098/rstb.2012.0230</a>.
+</div>
+<div id="ref-Bonnaffé-etal-2024b" class="csl-entry" role="listitem">
+Bonnaffé, Willem, Alain Danet, Camille Leclerc, Victor Frossard, Eric Edeline, and Arnaud Sentis. 2024. <span>“The Interaction Between Warming and Enrichment Accelerates Food-Web Simplification in Freshwater Systems.”</span> <em>Ecology Letters</em> 27 (8): e14480. <a href="https://doi.org/10.1111/ele.14480">https://doi.org/10.1111/ele.14480</a>.
+</div>
+<div id="ref-Danet-etal-2021b" class="csl-entry" role="listitem">
+Danet, Alain, Maud Mouchet, Willem Bonnaffé, Elisa Thébault, and Colin Fontaine. 2021. <span>“Species Richness and Food-Web Structure Jointly Drive Community Biomass and Its Temporal Stability in Fish Communities.”</span> <em>Ecology Letters</em> 24 (11): 2364–77. <a href="https://doi.org/10.1111/ele.13857">https://doi.org/10.1111/ele.13857</a>.
+</div>
+<div id="ref-Dean-etal-2023b" class="csl-entry" role="listitem">
+Dean, E. M., Dana M. Infante, Hao Yu, Arthur Cooper, Lizhu Wang, and Jared Ross. 2023. <span>“Cumulative Effects of Dams on Migratory Fishes Across the Conterminous United States: Regional Patterns in Fish Responses to River Network Fragmentation.”</span> <em>River Research and Applications</em> 39 (9): 1736–48. <a href="https://doi.org/10.1002/rra.4173">https://doi.org/10.1002/rra.4173</a>.
+</div>
+<div id="ref-Ding-etal-2026" class="csl-entry" role="listitem">
+Ding, Na, Zunyi Xie, Xiaoming Wang, Zongming Wang, Miao Li, Beiming Cai, Qinghe Zhao, et al. 2026. <span>“Freshwater Biodiversity Impacts of Global Hydropower Dams.”</span> <em>Communications Earth &amp; Environment</em>, February. <a href="https://doi.org/10.1038/s43247-026-03263-y">https://doi.org/10.1038/s43247-026-03263-y</a>.
+</div>
+<div id="ref-Grill-etal-2019" class="csl-entry" role="listitem">
+Grill, G., B. Lehner, M. Thieme, B. Geenen, D. Tickner, F. Antonelli, S. Babu, et al. 2019. <span>“Mapping the World’s Free-Flowing Rivers.”</span> <em>Nature</em> 569 (7755): 215–21. <a href="https://doi.org/10.1038/s41586-019-1111-9">https://doi.org/10.1038/s41586-019-1111-9</a>.
+</div>
+<div id="ref-He-etal-2024" class="csl-entry" role="listitem">
+He, Fengzhi, Christiane Zarfl, Klement Tockner, Julian D. Olden, Zilca Campos, Fábio Muniz, Jens-Christian Svenning, and Sonja C. Jähnig. 2024. <span>“Hydropower Impacts on Riverine Biodiversity.”</span> <em>Nature Reviews Earth &amp; Environment</em> 5 (11): 755–72. <a href="https://doi.org/10.1038/s43017-024-00596-0">https://doi.org/10.1038/s43017-024-00596-0</a>.
+</div>
+<div id="ref-Jackson-Pawar-Woodward-2021a" class="csl-entry" role="listitem">
+Jackson, Michelle C., Samraat Pawar, and Guy Woodward. 2021. <span>“The Temporal Dynamics of Multiple Stressor Effects: From Individuals to Ecosystems.”</span> <em>Trends in Ecology &amp; Evolution</em> 36 (5): 402–10. <a href="https://doi.org/10.1016/j.tree.2021.01.005">https://doi.org/10.1016/j.tree.2021.01.005</a>.
+</div>
+<div id="ref-LeCraw-Kratina-Srivastava-2014" class="csl-entry" role="listitem">
+LeCraw, Robin M., Pavel Kratina, and Diane S. Srivastava. 2014. <span>“Food Web Complexity and Stability Across Habitat Connectivity Gradients.”</span> <em>Oecologia</em> 176 (4): 903–15. <a href="https://doi.org/10.1007/s00442-014-3083-7">https://doi.org/10.1007/s00442-014-3083-7</a>.
+</div>
+<div id="ref-McCann-Rasmussen-Umbanhowar-2005" class="csl-entry" role="listitem">
+McCann, K. S., J. B. Rasmussen, and J. Umbanhowar. 2005. <span>“The Dynamics of Spatially Coupled Food Webs.”</span> <em>Ecology Letters</em> 8 (5): 513–23. <a href="https://doi.org/10.1111/j.1461-0248.2005.00742.x">https://doi.org/10.1111/j.1461-0248.2005.00742.x</a>.
+</div>
+<div id="ref-Nadarajah-Kotz-2006" class="csl-entry" role="listitem">
+Nadarajah, Saralees, and Samuel Kotz. 2006. <span>“R Programs for Truncated Distributions.”</span> <em>Journal of Statistical Software</em> 16 (August): 1–8. <a href="https://doi.org/10.18637/jss.v016.c02">https://doi.org/10.18637/jss.v016.c02</a>.
+</div>
+<div id="ref-Orr-etal-2024a" class="csl-entry" role="listitem">
+Orr, James A., Samuel J. Macaulay, Adriana Mordente, Benjamin Burgess, Dania Albini, Julia G. Hunn, Katherin Restrepo-Sulez, et al. 2024. <span>“Studying Interactions Among Anthropogenic Stressors in Freshwater Ecosystems: A Systematic Review of 2396 Multiple-Stressor Experiments.”</span> <em>Ecology Letters</em> 27 (6): e14463. <a href="https://doi.org/10.1111/ele.14463">https://doi.org/10.1111/ele.14463</a>.
+</div>
+<div id="ref-Pedersen-etal-2012" class="csl-entry" role="listitem">
+Pedersen, M. I., N. Jepsen, K. Aarestrup, A. Koed, S. Pedersen, and F. Økland. 2012. <span>“Loss of European Silver Eel Passing a Hydropower Station.”</span> <em>Journal of Applied Ichthyology</em> 28 (2): 189–93. <a href="https://doi.org/10.1111/j.1439-0426.2011.01913.x">https://doi.org/10.1111/j.1439-0426.2011.01913.x</a>.
+</div>
+<div id="ref-Pillai-Gonzalez-Loreau-2011" class="csl-entry" role="listitem">
+Pillai, Pradeep, Andrew Gonzalez, and Michel Loreau. 2011. <span>“Metacommunity Theory Explains the Emergence of Food Web Complexity.”</span> <em>Proceedings of the National Academy of Sciences</em> 108 (48): 19293–98. <a href="https://doi.org/10.1073/pnas.1106235108">https://doi.org/10.1073/pnas.1106235108</a>.
+</div>
+</div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
