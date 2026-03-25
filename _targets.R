@@ -59,6 +59,12 @@ list(
     quarto_args = c("--embed-resources")
   ),
   tar_quarto(
+    report_C1,
+    "analysis/C1-explore-coast-data.qmd",
+    quarto_args = c("--embed-resources"),
+    quiet = FALSE
+  ),
+  tar_quarto(
     report_C2,
     "analysis/C2-get-fish-sizes.qmd",
     quarto_args = c("--embed-resources"),
