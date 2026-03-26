@@ -84,7 +84,12 @@ interferences within the four dimensions of fluvial or river connectivity
   (3) sediment trapping (longitudinal, lateral and vertical);
   (4) water consumption (lateral, vertical and temporal);
   (5) infrastructure development in riparian areas and floodplains
-(lateral and longitudinal). 
+(lateral and longitudinal).
+
+- In freshwater system, fish dispersal is limited. A meta-analysis found that
+the mean dispersal kernel is around 10km [@Comte-Olden-2018].
+
+- [@Doretto-Piano-Larson-2020].
 
 ### Dams
 
