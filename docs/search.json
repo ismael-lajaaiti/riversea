@@ -501,7 +501,7 @@
     "href": "manuscript/manuscript.html#methods",
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "Methods",
-    "text": "Methods\n\nFood web inference\n\nInfer missing fish lengths\nMost length of fishes are measured but not all. Yet, we need individual fish length to determine their diet based on their ontogeny. We infer missing fish size using information on the given fishing operation. When there are more than three observations of the fish species, we use a truncated normal distribution (package truncdist; Nadarajah and Kotz (2006)). The mean and variance are given by the modes of the observed distribution of the fishing operation. The minimum and maximum of the distribution are given by the minimal and maximal length observed on the entire data set for that species. We do so to avoid infering irrealistic lengths.\n\n\nGet fish diet\n\n\nThe metaweb\n\n\nSubsampling the metaweb to get local food webs"
+    "text": "Methods\n\nFood web inference\nTo infer local food web structure, we used a metaweb approach. That is, we build a web compiling the potential feeding interactions between all species of the dataset. Importantly, our metaweb takes into account intra-specific variation in species diet. We did so by defining trophic interactions at different life stages for each species.\n\nMetaweb nodes\nThe nodes of our metaweb represent a species at a given lifestage. Specifically, fish species were divided into nine body class sizes evenly distributed. Each body size class within a given species is what we call a ‘trophic species’ assuming that conspecifics of the same body size class share similar trophic interactions because trophic interactions are largely determined by predator–prey body size ratio in freshwater ecosystems (Brose, Williams, and Martinez 2006).\nIn addition of fish species, seven basal nodes (resources) were added at the base of the metaweb: detritus, biofilm, phytoplanckton, zooplanckton, macrophytes and zoobenthos. We represent the basal food web structure in the Appendix (see Figure S1). We assumed that these resources were present at all sampling sites.\n\n\n\n\n\n\nNote\n\n\n\nIs it the case even in the coast?\n\n\n\n\nInfer missing fish lengths\nMost length of fishes are measured but not all. Yet, we need individual fish length to determine their diet based on their ontogeny. We infer missing fish size using information on the given fishing operation. When there are more than three observations of the fish species, we use a truncated normal distribution (package truncdist; Nadarajah and Kotz (2006)). The mean and variance are given by the modes of the observed distribution of the fishing operation. The minimum and maximum of the distribution are given by the minimal and maximal length observed on the entire data set for that species. We do so to avoid infering irrealistic lengths.\n\n\nGet fish diet\n\n\nThe metaweb\n\n\nSubsampling the metaweb to get local food webs"
   },
   {
     "objectID": "manuscript/manuscript.html#results",
@@ -537,5 +537,26 @@
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "",
     "text": "library(renv)\n\n\nAttaching package: 'renv'\n\n\nThe following objects are masked from 'package:stats':\n\n    embed, update\n\n\nThe following objects are masked from 'package:utils':\n\n    history, upgrade\n\n\nThe following objects are masked from 'package:base':\n\n    autoload, load, remove, use\n\nrenv::load()\n\n- The project is out-of-sync -- use `renv::status()` for details.\n\nlibrary(targets)\nlibrary(here)\n\nhere() starts at /home/ilajaaiti/Documents/riversea\n\ntar_config_set(\n  store = here::here(\"_targets\")\n)"
+  },
+  {
+    "objectID": "manuscript/manuscript.html#base-food-web-structure",
+    "href": "manuscript/manuscript.html#base-food-web-structure",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Base food web structure",
+    "text": "Base food web structure"
+  },
+  {
+    "objectID": "manuscript/manuscript.html#structure-of-the-food-web-base",
+    "href": "manuscript/manuscript.html#structure-of-the-food-web-base",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Structure of the food web base",
+    "text": "Structure of the food web base\n\n\n\n\n\n\nFigure S1: Assumed structure of the food web base."
+  },
+  {
+    "objectID": "manuscript/manuscript.html#s1.-structure-of-the-food-web-base",
+    "href": "manuscript/manuscript.html#s1.-structure-of-the-food-web-base",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "S1. Structure of the food web base",
+    "text": "S1. Structure of the food web base\n\n\n\n\n\n\n\n\n\n\n\nFigure S1: test"
   }
 ]

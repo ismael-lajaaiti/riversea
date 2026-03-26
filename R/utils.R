@@ -41,3 +41,14 @@ create_plot_dag <- function() {
   )
   ggdag(dag) + theme_dag()
 }
+
+#' Get relative path.
+#'
+#' @param x the absolute path
+#'
+#' @return relative path
+#' @export
+to_rel <- function(x) {
+  rel <- gsub(here::here(), "", x, fixed = TRUE)
+  paste0("..", rel)
+}

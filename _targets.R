@@ -1,5 +1,6 @@
 library(targets)
 library(tarchetypes)
+
 tar_option_set(
   packages = c(
     "zen4R",
@@ -70,6 +71,17 @@ list(
     },
     format = "file"
   ),
+  # Figures.
+  tar_target(
+    foodweb_fig,
+    {
+      dot_file <- here("figures", "foodweb.dot")
+      out_file <- here("figures", "foodweb.png")
+      system2("dot", c("-Tpng", dot_file, "-o", out_file))
+      out_file
+    },
+    format = "file"
+  ),
   # Reports.
   tar_quarto(
     index,
@@ -111,6 +123,7 @@ list(
   tar_quarto(
     manuscript,
     "manuscript/manuscript.qmd",
-    quarto_args = c("--embed-resources")
+    quarto_args = c("--embed-resources"),
+    quiet = FALSE
   )
 )

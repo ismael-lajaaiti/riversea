@@ -2,6 +2,7 @@
 title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
 author: "Ismaël Lajaaiti, Eric Edeline, Anik Brindamour, Alain Danet"
 bibliography: references.bib
+prefer-html: true
 format:
   html:
     toc: true
@@ -11,7 +12,27 @@ format:
     toc: true
 comments:
     hypothesis: true
+crossref:
+  custom:
+    - kind: float
+      reference-prefix: Figure S
+      space-before-numbering: false
+      key: sfig
+      latex-env: sfig
+      latex-list-of-description: Supporting Figure
 ---
+
+```{r}
+#| output: false
+#| echo: false
+library(renv)
+renv::load()
+renv::restore()
+renv::status()
+
+library(here)
+library(DiagrammeR)
+```
 
 ## Abstract
 
@@ -113,6 +134,35 @@ in water level and water flow.
 
 ### Food web inference
 
+To infer local food web structure, we used a metaweb approach. 
+That is, we build a web compiling the potential feeding interactions between 
+all species of the dataset. Importantly, our metaweb takes into account 
+intra-specific variation in species diet. We did so by defining trophic 
+interactions at different life stages for each species.
+
+#### Metaweb nodes
+
+
+The nodes of our metaweb represent a species at a given lifestage. Specifically,
+fish species were divided into nine body class sizes evenly distributed. Each
+body size class within a given species is what we call a ‘trophic species’
+assuming that conspecifics of the same body size class share similar trophic
+interactions because trophic interactions are largely determined by
+predator–prey body size ratio in freshwater ecosystems
+[@Brose-Williams-Martinez-2006].
+
+In addition of fish species, seven basal nodes (resources) were added at the
+base of the metaweb: detritus, biofilm, phytoplanckton, zooplanckton,
+macrophytes and zoobenthos.
+We represent the basal food web structure in the Appendix
+(see @sfig-foodweb-base).
+We assumed that these resources were present at all sampling sites.
+
+::: {.callout-note}
+Is it the case even in the coast?
+:::
+
+
 #### Infer missing fish lengths
 
 Most length of fishes are measured but not all.
@@ -137,7 +187,17 @@ We do so to avoid infering irrealistic lengths.
 
 ## Discussion
 
-# Appendix
+# Supporting Information
+
+## Structure of the food web base
+
+::: {#sfig-foodweb-base}
+
+![](`r riversea::to_rel(targets::tar_read(foodweb_fig))`)
+
+Assumed structure of the food web base.
+
+:::
 
 ## Model DAG
 
