@@ -32,6 +32,10 @@ renv::status()
 
 library(here)
 library(DiagrammeR)
+library(targets)
+tar_config_set(
+  store = here::here("_targets")
+)
 ```
 
 ## Abstract
@@ -63,7 +67,14 @@ bayesian statistics.*
 
 ## Introduction
 
-This is some text.
+### Freshwater ecosystems
+
+- The River Continuum Concept has shaped the freshwater ecology researsh by
+links physical gradients along rivers to predictable changes in community
+structure, energy sources, and ecosystem functioning
+[@Vannote-etal-1980; @Doretto-Piano-Larson-2020].
+
+- Serial Discontinuity Concept [@Ward-Stanford-1995].
 
 ### Multiple stressors
 
@@ -73,7 +84,7 @@ This is some text.
 - Temperature can interact with nutrients and impact food web structure in a 
 nonlinear way [@Bonnaffé-etal-2024b, @Binzer-etal-2012].
 
-- [@Danet-etal-2021b].
+- [@Danet-etal-2021b; @Bonnaffé-etal-2024b].
 
 ### Connectivity
 
@@ -110,8 +121,6 @@ interferences within the four dimensions of fluvial or river connectivity
 - In freshwater system, fish dispersal is limited. A meta-analysis found that
 the mean dispersal kernel is around 10km [@Comte-Olden-2018].
 
-- [@Doretto-Piano-Larson-2020].
-
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
@@ -142,7 +151,6 @@ interactions at different life stages for each species.
 
 #### Metaweb nodes
 
-
 The nodes of our metaweb represent a species at a given lifestage. Specifically,
 fish species were divided into nine body class sizes evenly distributed. Each
 body size class within a given species is what we call a ‘trophic species’
@@ -157,11 +165,6 @@ macrophytes and zoobenthos.
 We represent the basal food web structure in the Appendix
 (see @sfig-foodweb-base).
 We assumed that these resources were present at all sampling sites.
-
-::: {.callout-note}
-Is it the case even in the coast?
-:::
-
 
 #### Infer missing fish lengths
 
@@ -186,6 +189,16 @@ We do so to avoid infering irrealistic lengths.
 ## Results
 
 ## Discussion
+
+### Limitations
+
+Regarding food web structure, we have simplified the base of the web and exclude
+macro-invertebrates.
+This choice naturally emphasizes the functional role of fishes in shaping food
+web structures.
+Yet, it would be valuable to include macro-invertebrates within the food web to
+get a more exhaustive picture of how aquatic community respond to stressors
+along the riversea continuum.
 
 # Supporting Information
 
