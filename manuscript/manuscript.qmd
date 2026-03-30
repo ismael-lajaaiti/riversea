@@ -182,6 +182,14 @@ We do so to avoid infering irrealistic lengths.
 
 #### Get fish diet
 
+We use fishbase as a primary source to extract fish diet at their different
+life stages, to get on which basal categories species feed on and whether they
+are piscivorous or not.
+We detail in the Supporting Information how made the correspondance between our
+categories and the one of fishbase.
+We add a larvae stage when missing, assuming that fish larvae feed on
+zooplankton [@Dabrowski-1984b].
+
 #### The metaweb
 
 #### Subsampling the metaweb to get local food webs

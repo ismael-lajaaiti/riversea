@@ -133,6 +133,28 @@ diet_table_wide <- tar_read(diet_wide)
 head(diet_table_wide)
 ```
 
+# 2. Postprocess diet table
+
+## 2.1. Add larvae stage
+
+Next, we want to add a larvae stage for all species.
+
+```{r}
+d_larvae <- diet_table_wide |>
+  group_by(species) |>
+  summarise(has_larvae = "larvae" %in% stage, .groups = "drop")
+d_larvae  |> count(has_larvae)
+```
+
+So we see that for most species, they do not have a larvae stage.
+We can add them with a utility function.
+We assume that larvae only feed on zooplankton.
+
+```{r}
+diet_with_larvae <- add_larvae(diet_table_wide)
+diet_with_larvae  |> filter(species == sample(species, 1))
+```
+
 
 
 

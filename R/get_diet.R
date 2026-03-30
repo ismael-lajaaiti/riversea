@@ -87,3 +87,30 @@ get_species_list <- function(data_list) {
     pull(species_valid) |>
     unique()
 }
+
+#' Add missing larvae stages to the diet table.
+#'
+#' @param diet_table wide diet table.
+#'
+#' @return data.frame diet table with larvae stage.
+#' @export
+add_larvae <- function(diet_table) {
+  species_no_larvae <- diet_table |>
+    group_by(species) |>
+    summarise(has_larvae = "larvae" %in% stage) |>
+    filter(!has_larvae) |>
+    pull(species)
+  larvae_rows <- diet_table |>
+    filter(
+      species %in% species_no_larvae,
+    ) |>
+    mutate(
+      stage = "larvae",
+      across(-c(species, stage), ~0)
+    ) |>
+    distinct() |>
+    mutate(zooplankton = 1)
+  diet_table |>
+    rbind(larvae_rows) |>
+    arrange(species, desc(stage))
+}

@@ -1,0 +1,62 @@
+---
+title: "Infer missing fish sizes"
+format: 
+  html:
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+# Summary
+
+In this notebook, we
+
+- we extract fish size for each of their life stage.
+
+# 0. Setup
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(dplyr)
+library(tidyr)
+library(riversea)
+library(rfishbase)
+library(ggplot2)
+set_theme(theme_minimal())
+```
+
+```{r}
+species_list <- tar_read(species_list)
+species <- sample(species_list, 1)
+species
+
+d_size <- tar_read(sea_data_imputed)
+species_length <- d_size$size |>
+  group_by(species_valid) |>
+  summarise(n = n())  |>
+  arrange(n)
+
+ggplot(species_length, aes(x = n)) +
+  geom_histogram()
+```
+
+```{r}
+species <- "Abramis brama"
+v <- rfishbase::length_length(species)
+a <- rfishbase::popgrowth(species)
+b <- rfishbase::maturity(species)
+b |> filter(!is.na(Lm))
+```
+
+
