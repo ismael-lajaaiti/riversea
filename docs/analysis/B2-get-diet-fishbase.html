@@ -5150,6 +5150,7 @@ color: #333333;
   <li><a href="#postprocess-diet-table" id="toc-postprocess-diet-table" class="nav-link" data-scroll-target="#postprocess-diet-table">2. Postprocess diet table</a>
   <ul class="collapse">
   <li><a href="#add-larvae-stage" id="toc-add-larvae-stage" class="nav-link" data-scroll-target="#add-larvae-stage">2.1. Add larvae stage</a></li>
+  <li><a href="#remove-rare-species" id="toc-remove-rare-species" class="nav-link" data-scroll-target="#remove-rare-species">2.2. Remove rare species</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -5220,8 +5221,8 @@ color: #333333;
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>DiagrammeR<span class="sc">::</span><span class="fu">grViz</span>(<span class="fu">readLines</span>(<span class="fu">here</span>(<span class="st">&quot;figures&quot;</span>, <span class="st">&quot;foodweb.dot&quot;</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item" id="htmlwidget-15e9c63803dc5b80846f" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-15e9c63803dc5b80846f">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-d9d309ad328e6eec94e6" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-d9d309ad328e6eec94e6">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Ellipses represent broad basal categories on which fishes feed on. Our goal here is to determine for each fish species on which of these categories it feeds, and whether it is piscivorous or not. To do so we scrap fishbase.</p>
@@ -5350,7 +5351,7 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>d_larvae <span class="ot">&lt;-</span> diet_table_wide <span class="sc">|&gt;</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species) <span class="sc">|&gt;</span></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">has_larvae =</span> <span class="st">&quot;larvae&quot;</span> <span class="sc">%in%</span> stage, <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>d_larvae  <span class="sc">|&gt;</span> <span class="fu">count</span>(has_larvae)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>d_larvae <span class="sc">|&gt;</span> <span class="fu">count</span>(has_larvae)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 2 × 2
   has_larvae     n
@@ -5362,15 +5363,57 @@ color: #333333;
 <p>So we see that for most species, they do not have a larvae stage. We can add them with a utility function. We assume that larvae only feed on zooplankton.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>diet_with_larvae <span class="ot">&lt;-</span> <span class="fu">add_larvae</span>(diet_table_wide)</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>diet_with_larvae  <span class="sc">|&gt;</span> <span class="fu">filter</span>(species <span class="sc">==</span> <span class="fu">sample</span>(species, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>diet_with_larvae <span class="sc">|&gt;</span> <span class="fu">filter</span>(species <span class="sc">==</span> <span class="fu">sample</span>(species, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 4 × 10
   species  stage zooplankton zoobenthos detritus  fish plants biofilm macrophyte
   &lt;chr&gt;    &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
-1 Labrus … recr…           0          1        0     0      0       1          0
-2 Labrus … larv…           1          0        0     0      0       0          0
-3 Labrus … juv.…           0          1        0     0      0       1          0
-4 Labrus … adul…           0          1        0     0      0       0          0
+1 Torpedo… recr…           0          1        0     1      0       0          0
+2 Torpedo… larv…           1          0        0     0      0       0          0
+3 Torpedo… juv.…           0          0        0     1      0       0          0
+4 Torpedo… adul…           0          0        0     1      0       0          0
+# ℹ 1 more variable: phytoplankton &lt;dbl&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="remove-rare-species" class="level2">
+<h2 class="anchored" data-anchor-id="remove-rare-species">2.2. Remove rare species</h2>
+<p>To focus on important species for the community we study we filter for very rare species. Let’s have a look.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>sea_data <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(sea_data_imputed)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>occurences <span class="ot">&lt;-</span> sea_data<span class="sc">$</span>catch <span class="sc">|&gt;</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species_valid) <span class="sc">|&gt;</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">occurence =</span> <span class="fu">n</span>(), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(occurence)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>occ_min <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>count_occ <span class="ot">&lt;-</span> occurences <span class="sc">|&gt;</span> <span class="fu">count</span>(occurence <span class="sc">&gt;=</span> occ_min)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>n_remaining <span class="ot">&lt;-</span> <span class="fu">pull</span>(count_occ, n)[<span class="dv">2</span>]</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>count_occ</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  `occurence &gt;= occ_min`     n
+  &lt;lgl&gt;                  &lt;int&gt;
+1 FALSE                     69
+2 TRUE                     107</code></pre>
+</div>
+</div>
+<p>We see that we have many species have a low occurence. For example, if you choose a threshold of 10, we have only 107 species that remain in the data set.</p>
+<p>We created an utility function to remove rare species from the diet table.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>diet_no_rare <span class="ot">&lt;-</span> <span class="fu">filter_out_rare</span>(diet_with_larvae, sea_data)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_no_rare)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 10
+  species  stage zooplankton zoobenthos detritus  fish plants biofilm macrophyte
+  &lt;chr&gt;    &lt;chr&gt;       &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
+1 Abramis… recr…           1          1        1     0      0       0          0
+2 Abramis… larv…           1          0        0     0      0       0          0
+3 Abramis… juv.…           0          1        1     0      0       0          0
+4 Abramis… adul…           0          1        1     0      0       0          0
+5 Agonus … larv…           1          0        0     0      0       0          0
+6 Agonus … juv.…           0          1        0     0      0       0          0
 # ℹ 1 more variable: phytoplankton &lt;dbl&gt;</code></pre>
 </div>
 </div>

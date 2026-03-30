@@ -71,10 +71,14 @@ list(
     add_larvae(diet_wide),
   ),
   tar_target(
+    diet_no_rare,
+    filter_out_rare(diet_larvae, sea_data_imputed)
+  ),
+  tar_target(
     diet_file,
     {
       path <- "data/diet/fishbase_sea.csv"
-      readr::write_csv(diet_larvae, path)
+      readr::write_csv(diet_no_rare, path)
       path
     },
     format = "file"

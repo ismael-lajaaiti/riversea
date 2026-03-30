@@ -143,7 +143,7 @@ Next, we want to add a larvae stage for all species.
 d_larvae <- diet_table_wide |>
   group_by(species) |>
   summarise(has_larvae = "larvae" %in% stage, .groups = "drop")
-d_larvae  |> count(has_larvae)
+d_larvae |> count(has_larvae)
 ```
 
 So we see that for most species, they do not have a larvae stage.
@@ -152,9 +152,41 @@ We assume that larvae only feed on zooplankton.
 
 ```{r}
 diet_with_larvae <- add_larvae(diet_table_wide)
-diet_with_larvae  |> filter(species == sample(species, 1))
+diet_with_larvae |> filter(species == sample(species, 1))
 ```
 
+
+## 2.2. Remove rare species
+
+To focus on important species for the community we study we filter for very rare
+species.
+Let's have a look.
+
+```{r}
+sea_data <- tar_read(sea_data_imputed)
+occurences <- sea_data$catch |>
+  group_by(species_valid) |>
+  summarise(occurence = n(), .groups = "drop") |>
+  arrange(occurence)
+```
+
+```{r}
+occ_min <- 10
+count_occ <- occurences |> count(occurence >= occ_min)
+n_remaining <- pull(count_occ, n)[2]
+count_occ
+```
+
+We see that we have many species have a low occurence.
+For example, if you choose a threshold of `r occ_min`, we have only
+`r n_remaining` species that remain in the data set.
+
+We created an utility function to remove rare species from the diet table.
+
+```{r}
+diet_no_rare <- filter_out_rare(diet_with_larvae, sea_data)
+head(diet_no_rare)
+```
 
 
 

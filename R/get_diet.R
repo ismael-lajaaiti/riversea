@@ -114,3 +114,23 @@ add_larvae <- function(diet_table) {
     rbind(larvae_rows) |>
     arrange(species, desc(stage))
 }
+
+#' Filter rare species from diet table.
+#'
+#' Rare species are defined on occurences.
+#' A species is rare if its occurence is lower than `occurence_min`.
+#'
+#' @param diet_table diet table wide
+#' @param sea_data data list of sea surveys
+#' @param occurence_min set to 10 by default, define when a species is rare
+#'
+#' @return data.frame diet table without rare species
+#' @export
+filter_out_rare <- function(diet_table, sea_data, occurence_min = 10) {
+  species_to_keep <- sea_data$catch |>
+    group_by(species_valid) |>
+    summarise(occurence = n(), .groups = "drop") |>
+    filter(occurence >= occurence_min) |>
+    pull(species_valid)
+  diet_table |> filter(species %in% species_to_keep)
+}
