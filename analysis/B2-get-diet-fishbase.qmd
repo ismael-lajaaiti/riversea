@@ -184,9 +184,23 @@ For example, if you choose a threshold of `r occ_min`, we have only
 We created an utility function to remove rare species from the diet table.
 
 ```{r}
-diet_no_rare <- filter_out_rare(diet_with_larvae, sea_data)
+diet_no_rare <- tar_read(diet_no_rare)
 head(diet_no_rare)
 ```
 
+We can check that we don't have species with missing diet.
 
+```{r}
+diet_no_rare |>
+  filter(is.na(stage)) |>
+  pull(species)
+```
+
+compared to the orginal table where we had missing values
+
+```{r}
+diet_table_wide |>
+  filter(is.na(stage)) |>
+  pull(species)
+```
 

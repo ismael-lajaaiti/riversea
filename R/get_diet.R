@@ -12,35 +12,61 @@ get_diet_category <- function(species) {
     select(
       Species,
       SampleStage,
-      DietCode,
       FoodI,
       FoodII,
       FoodIII,
-      ItemName,
-      Stage,
       DietPercent
     ) |>
     filter(DietPercent > 10) |>
-    rename(PredatorStage = SampleStage, PreyStage = Stage) |>
+    rename(species = Species, stage = SampleStage) |>
+    mutate_prey_category() |>
+    select(species, stage, prey_category) |>
+    distinct() |>
+    arrange(species, desc(stage))
+  missing_species <- tibble(species = species) |>
+    filter(!species %in% diet_category$species) |>
+    pull(species)
+  diet_fooditems <- get_missing_diet(missing_species)
+  still_missing <- tibble(species = missing_species) |>
+    filter_out(species %in% diet_fooditems$species)
+  diet_category |>
+    bind_rows(diet_fooditems) |>
+    bind_rows(still_missing) |>
+    arrange(species, stage)
+}
+
+get_missing_diet <- function(species) {
+  items <- rfishbase::fooditems(species)
+  diet_category <- items |>
+    select(
+      Species,
+      PredatorStage,
+      FoodI,
+      FoodII,
+      FoodIII,
+      CommonessII
+    ) |>
+    filter_out(grepl("rare", CommonessII)) |>
+    rename(species = Species, stage = PredatorStage) |>
+    mutate_prey_category() |>
+    select(species, stage, prey_category) |>
+    distinct() |>
+    arrange(species, desc(stage))
+  diet_category
+}
+
+mutate_prey_category <- function(df) {
+  df |>
     mutate(
       prey_category = case_when(
         FoodII == "phytoplankton" ~ "phytoplankton",
-        FoodII == "other plants" &
-          tolower(ItemName) == "macrophyte" ~ "macrophyte",
-        FoodII == "other plants" &
-          FoodIII == "terrestrial plants" ~ "macrophyte",
-        FoodII == "other plants" &
-          grepl("macrophyte", tolower(ItemName)) ~ "macrophyte",
         FoodII == "other plants" & grepl("algae", tolower(FoodIII)) ~ "biofilm",
+        FoodII == "other plants" & FoodIII == "periphyton" ~ "biofilm",
+        FoodII == "other plants" ~ "macrophyte",
         FoodI == "nekton" ~ "fish",
         TRUE ~ FoodI
       )
-    ) |>
-    select(Species, PredatorStage, prey_category) |>
-    distinct(Species, PredatorStage, prey_category) |>
-    arrange(Species, desc(PredatorStage)) |>
-    rename(species = Species, stage = PredatorStage)
-  diet_category
+    )
 }
 
 #' Widen the dataframe of species diets.
@@ -58,7 +84,7 @@ widen_diet_category <- function(diet_category) {
       values_from = eat,
       values_fill = list(eat = 0)
     ) |>
-    select(-others) |>
+    select(-c(others, "NA")) |>
     arrange(species, desc(stage))
   diet_category_wide
 }
