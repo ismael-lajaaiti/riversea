@@ -188,7 +188,7 @@ diet_no_rare <- tar_read(diet_no_rare)
 head(diet_no_rare)
 ```
 
-We can check that we don't have species with missing diet.
+We can check if we have species with missing diet.
 
 ```{r}
 diet_no_rare |>
@@ -196,11 +196,45 @@ diet_no_rare |>
   pull(species)
 ```
 
-compared to the orginal table where we had missing values
+# 3. Life stage lengths
 
 ```{r}
-diet_table_wide |>
-  filter(is.na(stage)) |>
-  pull(species)
+library(rfishbase)
+
+species_list <- diet_no_rare |>
+  pull(species) |>
+  unique()
+d_maturity <- maturity(species_list) |>
+  select(Species, Lm) |>
+  filter(!is.na(Lm)) |>
+  group_by(Species) |>
+  summarise(
+    Lm_avg = mean(Lm),
+    .groups = "drop"
+  )
+head(d_maturity)
 ```
+
+```{r}
+species_missing <- setdiff(species_list, d_maturity$Species)
+maturity("Barbus barbus")
+```
+
+```{r}
+size_extrema <- tar_read(size_extrema)  |> rename(species = species_valid)
+maturity_length <- tar_read(maturity_length)
+sizes <- inner_join(maturity_length, size_extrema, by = "species")
+head(sizes)
+
+sizes |> filter(maturity_length > length_max | maturity_length < length_min)
+```
+
+Maybe only juveniles are captured?
+
+```{r}
+diet_full <- tar_read(diet_size)
+head(diet_full)
+```
+
+
 

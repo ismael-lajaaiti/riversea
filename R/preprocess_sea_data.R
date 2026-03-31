@@ -308,6 +308,24 @@ impute_size <- function(data) {
   data
 }
 
+#' Get minimal and maximal size for each fish species
+#'
+#' @param data_size
+#'
+#' @return data frame of size extrema
+#' @export
+get_size_extrema <- function(data_size) {
+  data_size |>
+    filter(!is.na(length)) |>
+    filter(measured) |>
+    group_by(species_valid) |>
+    summarise(
+      length_min = min(length),
+      length_max = max(length),
+      .groups = "drop"
+    )
+}
+
 #' Entire pipeline to infer missing sizes from the tidy data list.
 #'
 #' @param tidy_data

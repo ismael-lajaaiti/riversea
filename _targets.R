@@ -75,13 +75,30 @@ list(
     filter_out_rare(diet_larvae, sea_data_imputed)
   ),
   tar_target(
+    diet_size,
+    merge_diet_size(diet_no_rare, maturity_length)
+  ),
+  tar_target(
     diet_file,
     {
       path <- "data/diet/fishbase_sea.csv"
-      readr::write_csv(diet_no_rare, path)
+      readr::write_csv(diet_size, path)
       path
     },
     format = "file"
+  ),
+  # Life stage lengths.
+  tar_target(
+    species_diet,
+    diet_no_rare |> pull(species) |> unique()
+  ),
+  tar_target(
+    maturity_length,
+    get_maturity_length(species_diet)
+  ),
+  tar_target(
+    size_extrema,
+    get_size_extrema(sea_data_imputed$size)
   ),
   # Figures.
   tar_target(

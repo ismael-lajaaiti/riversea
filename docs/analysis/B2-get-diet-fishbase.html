@@ -5152,6 +5152,7 @@ color: #333333;
   <li><a href="#add-larvae-stage" id="toc-add-larvae-stage" class="nav-link" data-scroll-target="#add-larvae-stage">2.1. Add larvae stage</a></li>
   <li><a href="#remove-rare-species" id="toc-remove-rare-species" class="nav-link" data-scroll-target="#remove-rare-species">2.2. Remove rare species</a></li>
   </ul></li>
+  <li><a href="#life-stage-lengths" id="toc-life-stage-lengths" class="nav-link" data-scroll-target="#life-stage-lengths">3. Life stage lengths</a></li>
   </ul>
 </nav>
     </div>
@@ -5221,8 +5222,8 @@ color: #333333;
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>DiagrammeR<span class="sc">::</span><span class="fu">grViz</span>(<span class="fu">readLines</span>(<span class="fu">here</span>(<span class="st">&quot;figures&quot;</span>, <span class="st">&quot;foodweb.dot&quot;</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item" id="htmlwidget-ed9f9677b19953eafd6d" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-ed9f9677b19953eafd6d">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-7b589a00adc11494e9af" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-7b589a00adc11494e9af">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Ellipses represent broad basal categories on which fishes feed on. Our goal here is to determine for each fish species on which of these categories it feeds, and whether it is piscivorous or not. To do so we scrap fishbase.</p>
@@ -5365,11 +5366,12 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>diet_with_larvae <span class="ot">&lt;-</span> <span class="fu">add_larvae</span>(diet_table_wide)</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>diet_with_larvae <span class="sc">|&gt;</span> <span class="fu">filter</span>(species <span class="sc">==</span> <span class="fu">sample</span>(species, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 2 × 9
+<pre><code># A tibble: 3 × 9
   species      stage zoobenthos detritus zooplankton  fish phytoplankton biofilm
   &lt;chr&gt;        &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
-1 Arnoglossus… larv…          0        0           1     0             0       0
-2 Arnoglossus… adul…          1        0           0     1             0       0
+1 Trachurus t… larv…          0        0           1     0             0       0
+2 Trachurus t… juv.…          1        0           1     1             0       0
+3 Trachurus t… adul…          1        0           0     1             0       0
 # ℹ 1 more variable: macrophyte &lt;dbl&gt;</code></pre>
 </div>
 </div>
@@ -5415,7 +5417,7 @@ color: #333333;
 # ℹ 1 more variable: macrophyte &lt;dbl&gt;</code></pre>
 </div>
 </div>
-<p>We can check that we don’t have species with missing diet.</p>
+<p>We can check if we have species with missing diet.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>diet_no_rare <span class="sc">|&gt;</span></span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(stage)) <span class="sc">|&gt;</span></span>
@@ -5424,19 +5426,107 @@ color: #333333;
 <pre><code>[1] &quot;Engraulis maeoticus&quot; &quot;Symphodus bailloni&quot; </code></pre>
 </div>
 </div>
-<p>compared to the orginal table where we had missing values</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>diet_table_wide <span class="sc">|&gt;</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(stage)) <span class="sc">|&gt;</span></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(species)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] &quot;Engraulis maeoticus&quot;       &quot;Lepadogaster lepadogaster&quot;
-[3] &quot;Symphodus bailloni&quot;       </code></pre>
-</div>
-</div>
-
-
 </section>
+</section>
+<section id="life-stage-lengths" class="level1">
+<h1>3. Life stage lengths</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rfishbase)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>species_list <span class="ot">&lt;-</span> diet_no_rare <span class="sc">|&gt;</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(species) <span class="sc">|&gt;</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>()</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>d_maturity <span class="ot">&lt;-</span> <span class="fu">maturity</span>(species_list) <span class="sc">|&gt;</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Species, Lm) <span class="sc">|&gt;</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(Lm)) <span class="sc">|&gt;</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Species) <span class="sc">|&gt;</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">Lm_avg =</span> <span class="fu">mean</span>(Lm),</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(d_maturity)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 2
+  Species            Lm_avg
+  &lt;chr&gt;               &lt;dbl&gt;
+1 Abramis brama       28.8 
+2 Alburnus alburnus    9.90
+3 Alosa alosa         42.5 
+4 Alosa fallax        28.9 
+5 Ammodytes tobianus  13   
+6 Anguilla anguilla   50.8 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>species_missing <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(species_list, d_maturity<span class="sc">$</span>Species)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">maturity</span>(<span class="st">&quot;Barbus barbus&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 41
+  Species    SpecCode autoctr StockCode MaturityRefNo Sex   AgeMatMin AgeMatMin2
+  &lt;chr&gt;         &lt;int&gt;   &lt;int&gt;     &lt;int&gt;         &lt;int&gt; &lt;chr&gt;     &lt;dbl&gt;      &lt;dbl&gt;
+1 Barbus ba…     4472    2212      4670          6258 fema…         4          5
+2 Barbus ba…     4472    2213      4670          6258 male          3          4
+3 Barbus ba…     4472    7184      4670         59043 fema…         3          7
+4 Barbus ba…     4472    5919      4670         59043 male          2          5
+# ℹ 33 more variables: AgeMatRef &lt;int&gt;, tm &lt;dbl&gt;, Number &lt;int&gt;, r2 &lt;dbl&gt;,
+#   SE_tm &lt;dbl&gt;, SD_tm &lt;dbl&gt;, LCL_tm &lt;dbl&gt;, UCL_tm &lt;dbl&gt;, LengthMatMin &lt;dbl&gt;,
+#   LengthMatMin2 &lt;dbl&gt;, Type1 &lt;chr&gt;, LengthMatRef &lt;int&gt;, Lm &lt;dbl&gt;,
+#   LCL_Lm &lt;dbl&gt;, UCL_Lm &lt;dbl&gt;, LmaxLm &lt;dbl&gt;, LmaxLmType &lt;chr&gt;,
+#   LmaxLmRef &lt;int&gt;, LmaxStudy &lt;dbl&gt;, LmaxStudyType &lt;chr&gt;, SE_Lm &lt;dbl&gt;,
+#   SD_Lm &lt;dbl&gt;, Locality &lt;chr&gt;, C_Code &lt;chr&gt;, E_CODE &lt;int&gt;, Comment &lt;chr&gt;,
+#   Entered &lt;int&gt;, DateEntered &lt;dttm&gt;, Modified &lt;int&gt;, DateModified &lt;dttm&gt;, …</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>size_extrema <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(size_extrema)  <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">species =</span> species_valid)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>maturity_length <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(maturity_length)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>sizes <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(maturity_length, size_extrema, <span class="at">by =</span> <span class="st">&quot;species&quot;</span>)</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sizes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 4
+  species            maturity_length length_min length_max
+  &lt;chr&gt;                        &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1 Abramis brama                28.8        1.8        56  
+2 Alburnus alburnus             9.90       1.2        15.6
+3 Alosa alosa                  42.5        4.2        36.5
+4 Alosa fallax                 28.9        2.8        40  
+5 Ammodytes tobianus           13          3.2        27  
+6 Anguilla anguilla            50.8        2.84       96  </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>sizes <span class="sc">|&gt;</span> <span class="fu">filter</span>(maturity_length <span class="sc">&gt;</span> length_max <span class="sc">|</span> maturity_length <span class="sc">&lt;</span> length_min)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 4
+  species                 maturity_length length_min length_max
+  &lt;chr&gt;                             &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
+1 Alosa alosa                        42.5        4.2       36.5
+2 Chelidonichthys cuculus            26.1        7         23  
+3 Clupea harengus                    22.5        2.7       22.5
+4 Diplodus sargus                    18.3        3.5       13.9
+5 Lophius piscatorius                54.9       13         27  
+6 Pollachius pollachius              39.4        3.8       35  
+7 Raja microocellata                 71.7       13         71  
+8 Sparus aurata                      30.8        2.5       26.5</code></pre>
+</div>
+</div>
+<p>Maybe only juveniles are captured?</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>diet_full <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_size)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_full)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 11
+  species      length_min length_max stage zoobenthos detritus zooplankton  fish
+  &lt;chr&gt;             &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;
+1 Abramis bra…       0           2   larv…          0        0           1     0
+2 Abramis bra…       2.01       28.8 juv.…          1        1           0     0
+3 Abramis bra…      28.8       Inf   adul…          1        1           0     0
+4 Agonus cata…       0           2   larv…          0        0           1     0
+5 Agonus cata…       2.01      Inf   comb…          1        0           1     0
+6 Alburnus al…       0           2   larv…          0        0           1     0
+# ℹ 3 more variables: phytoplankton &lt;dbl&gt;, biofilm &lt;dbl&gt;, macrophyte &lt;dbl&gt;</code></pre>
+</div>
+</div>
+
+
 </section>
 
 </main> <!-- /main -->
