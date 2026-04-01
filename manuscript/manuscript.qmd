@@ -67,6 +67,10 @@ bayesian statistics.*
 
 ## Introduction
 
+While patterns in community change within river network have been well studied,
+these studies have mostly focus on specise richness [@Bonnaffé-etal-2024b], or
+roughly defined functional composition [@Vannote-etal-1980].
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by
@@ -75,6 +79,9 @@ structure, energy sources, and ecosystem functioning
 [@Vannote-etal-1980; @Doretto-Piano-Larson-2020].
 
 - Serial Discontinuity Concept [@Ward-Stanford-1995].
+
+- Community richness and hence food web structure is expected to be driven by
+nutrient availability [@Ho-Altermatt-Carraro-2023].
 
 ### Multiple stressors
 
