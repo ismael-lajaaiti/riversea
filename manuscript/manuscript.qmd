@@ -194,8 +194,19 @@ life stages, to get on which basal categories species feed on and whether they
 are piscivorous or not.
 We detail in the Supporting Information how made the correspondance between our
 categories and the one of fishbase.
+We remove species that have an occurence lower than
+`r tar_read(params)$occurence_min` in the entire dataset which comprise
+`r tar_read(n_rare)` species.
+This enable to avoid retrieving diet information of species that will have a
+minimal impact on food web structure due to their rarity.
 We add a larvae stage when missing, assuming that fish larvae feed on
 zooplankton [@Dabrowski-1984b].
+We assume that fish individuals are larvae if they measure less than 2 cm.
+To classify individuals as juvenile or adult we use the length at maturity of
+the species as a threshold.
+When this information was not available we used a single stage (*combined*) by
+merging the diets of the two stages.
+We did not consider a recruit stage.
 
 #### The metaweb
 

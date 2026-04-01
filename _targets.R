@@ -28,6 +28,13 @@ workshop_dir <- "data/river_workshop"
 sea_data_raw <- "data/sea/raw"
 
 list(
+  # Parameters.
+  tar_target(
+    params,
+    list(
+      occurence_min = 10
+    )
+  ),
   # Workshop river data.
   tar_target(
     workshop_zip,
@@ -71,9 +78,15 @@ list(
     add_larvae(diet_wide),
   ),
   tar_target(
-    diet_no_rare,
-    filter_out_rare(diet_larvae, sea_data_imputed)
+    list_no_rare,
+    filter_out_rare(
+      diet_larvae,
+      sea_data_imputed,
+      occurence_min = params$occurence_min
+    )
   ),
+  tar_target(diet_no_rare, list_no_rare$diet),
+  tar_target(n_rare, list_no_rare$n_removed),
   tar_target(
     diet_size,
     merge_diet_size(diet_no_rare, maturity_length)
@@ -152,7 +165,6 @@ list(
   tar_quarto(
     manuscript,
     "manuscript/manuscript.qmd",
-    quarto_args = c("--embed-resources"),
-    quiet = FALSE
+    quarto_args = c("--embed-resources")
   )
 )

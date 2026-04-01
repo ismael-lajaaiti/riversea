@@ -158,5 +158,7 @@ filter_out_rare <- function(diet_table, sea_data, occurence_min = 10) {
     summarise(occurence = n(), .groups = "drop") |>
     filter(occurence >= occurence_min) |>
     pull(species_valid)
-  diet_table |> filter(species %in% species_to_keep)
+  diet <- diet_table |> filter(species %in% species_to_keep)
+  n_removed <- length(setdiff(unique(diet_table$species), species_to_keep))
+  list(diet = diet, n_removed = n_removed)
 }
