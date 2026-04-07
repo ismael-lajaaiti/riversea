@@ -13,6 +13,7 @@ tar_option_set(
     "dagitty",
     "ggdag",
     "ggplot2",
+    "ggVennDiagram",
     "tidyr",
     "dplyr",
     "purrr",
@@ -126,6 +127,14 @@ list(
       out_file <- here("figures", "foodweb.png")
       system2("dot", c("-Tpng", dot_file, "-o", out_file))
       out_file
+    },
+    format = "file"
+  ),
+  tar_target(
+    venn_diagram,
+    {
+      fname <- here("figures", "venn-diagram.png")
+      ggsave(fname, plot_venn_diagram(sea_data_tidy$size))
     },
     format = "file"
   ),

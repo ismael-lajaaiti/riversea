@@ -244,3 +244,15 @@ Assumed structure of the food web base.
 ## Model DAG
 
 Put model DAG here using targets.
+
+## Venn diagramm
+
+
+::: {#sfig-venn}
+
+![](`r riversea::to_rel(targets::tar_read(venn_diagram))`)
+
+Venn diagram of common species between surveys.
+
+:::
+

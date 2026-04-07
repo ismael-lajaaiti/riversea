@@ -428,44 +428,6 @@
       "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
       "Repository": "CRAN"
     },
-    "RcppArmadillo": {
-      "Package": "RcppArmadillo",
-      "Version": "15.2.3-1",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "'Rcpp' Integration for the 'Armadillo' Templated Linear Algebra Library",
-      "Date": "2025-12-16",
-      "Authors@R": "c(person(\"Dirk\", \"Eddelbuettel\", role = c(\"aut\", \"cre\"), email = \"edd@debian.org\", comment = c(ORCID = \"0000-0001-6419-907X\")), person(\"Romain\", \"Francois\", role = \"aut\", comment = c(ORCID = \"0000-0002-2444-4226\")), person(\"Doug\", \"Bates\", role = \"aut\", comment = c(ORCID = \"0000-0001-8316-9503\")), person(\"Binxiang\", \"Ni\", role = \"aut\"), person(\"Conrad\", \"Sanderson\", role = \"aut\", comment = c(ORCID = \"0000-0002-0049-4501\")))",
-      "Description": "'Armadillo' is a templated C++ linear algebra library aiming towards a good balance between speed and ease of use. It provides high-level syntax and functionality deliberately similar to Matlab. It is useful for algorithm development directly in C++, or quick conversion of research code into production environments. It provides efficient classes for vectors, matrices and cubes where dense and sparse matrices are supported. Integer, floating point and complex numbers are supported. A sophisticated expression evaluator (based on template meta-programming) automatically combines several operations to increase speed and efficiency. Dynamic evaluation automatically chooses optimal code paths based on detected matrix structures. Matrix decompositions are provided through integration with LAPACK, or one of its high performance drop-in replacements (such as 'MKL' or 'OpenBLAS'). It can automatically use 'OpenMP' multi-threading (parallelisation) to speed up computationally expensive operations. . The 'RcppArmadillo' package includes the header files from the 'Armadillo' library; users do not need to install 'Armadillo' itself in order to use 'RcppArmadillo'. Starting from release 15.0.0, the minimum compilation standard is C++14 so 'Armadillo' version 14.6.3 is included as a fallback when an R package forces the C++11 standard. Package authors should set a '#define' to select the 'current' version, or select the 'legacy' version (also chosen as default) if they must. See 'GitHub issue #475' for details. . Since release 7.800.0, 'Armadillo' is licensed under Apache License 2; previous releases were under licensed as MPL 2.0 from version 3.800.0 onwards and LGPL-3 prior to that; 'RcppArmadillo' (the 'Rcpp' bindings/bridge to Armadillo) is licensed under the GNU GPL version 2 or later, as is the rest of 'Rcpp'.",
-      "License": "GPL (>= 2)",
-      "LazyLoad": "yes",
-      "Depends": [
-        "R (>= 3.3.0)"
-      ],
-      "LinkingTo": [
-        "Rcpp"
-      ],
-      "Imports": [
-        "Rcpp (>= 1.0.12)",
-        "stats",
-        "utils",
-        "methods"
-      ],
-      "Suggests": [
-        "tinytest",
-        "Matrix (>= 1.3.0)",
-        "pkgKitten",
-        "reticulate",
-        "slam"
-      ],
-      "URL": "https://github.com/RcppCore/RcppArmadillo, https://dirk.eddelbuettel.com/code/rcpp.armadillo.html",
-      "BugReports": "https://github.com/RcppCore/RcppArmadillo/issues",
-      "RoxygenNote": "6.0.1",
-      "NeedsCompilation": "yes",
-      "Author": "Dirk Eddelbuettel [aut, cre] (ORCID: <https://orcid.org/0000-0001-6419-907X>), Romain Francois [aut] (ORCID: <https://orcid.org/0000-0002-2444-4226>), Doug Bates [aut] (ORCID: <https://orcid.org/0000-0001-8316-9503>), Binxiang Ni [aut], Conrad Sanderson [aut] (ORCID: <https://orcid.org/0000-0002-0049-4501>)",
-      "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
-      "Repository": "CRAN"
-    },
     "S7": {
       "Package": "S7",
       "Version": "0.2.1",
@@ -503,42 +465,6 @@
       "NeedsCompilation": "yes",
       "Author": "Object-Oriented Programming Working Group [cph], Davis Vaughan [aut], Jim Hester [aut] (ORCID: <https://orcid.org/0000-0002-2739-7082>), Tomasz Kalinowski [aut], Will Landau [aut], Michael Lawrence [aut], Martin Maechler [aut] (ORCID: <https://orcid.org/0000-0002-8685-9910>), Luke Tierney [aut], Hadley Wickham [aut, cre] (ORCID: <https://orcid.org/0000-0003-4757-117X>)",
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
-      "Repository": "CRAN"
-    },
-    "V8": {
-      "Package": "V8",
-      "Version": "8.0.1",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Embedded JavaScript and WebAssembly Engine for R",
-      "Authors@R": "c( person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), email = \"jeroenooms@gmail.com\", comment = c(ORCID = \"0000-0002-4035-0289\")), person(\"George\", \"Stagg\", role = \"ctb\", comment = c(ORCID = \"0009-0006-3173-9846\")), person(\"Jan Marvin\", \"Garbuszus\", role = \"ctb\"))",
-      "Description": "An R interface to V8 <https://v8.dev>: Google's open source JavaScript and WebAssembly engine. This package can be compiled either with V8 or NodeJS  when built as a shared library.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://jeroen.r-universe.dev/V8",
-      "BugReports": "https://github.com/jeroen/v8/issues",
-      "SystemRequirements": "On Linux you can build against libv8-dev (Debian) or v8-devel (Fedora). We also provide static libv8 binaries for most platforms, see the README for details.",
-      "NeedsCompilation": "yes",
-      "VignetteBuilder": "knitr",
-      "Imports": [
-        "Rcpp (>= 0.12.12)",
-        "jsonlite (>= 1.0)",
-        "curl (>= 1.0)",
-        "utils"
-      ],
-      "LinkingTo": [
-        "Rcpp"
-      ],
-      "Suggests": [
-        "testthat",
-        "knitr",
-        "rmarkdown"
-      ],
-      "RoxygenNote": "7.3.1",
-      "Language": "en-US",
-      "Encoding": "UTF-8",
-      "Biarch": "true",
-      "Author": "Jeroen Ooms [aut, cre] (ORCID: <https://orcid.org/0000-0002-4035-0289>), George Stagg [ctb] (ORCID: <https://orcid.org/0009-0006-3173-9846>), Jan Marvin Garbuszus [ctb]",
-      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
     "XML": {
@@ -585,6 +511,66 @@
       "License": "MIT + file LICENSE",
       "NeedsCompilation": "no",
       "Author": "Tony Plate [aut, cre], Richard Heiberger [aut]",
+      "Repository": "CRAN"
+    },
+    "admisc": {
+      "Package": "admisc",
+      "Version": "0.40",
+      "Source": "Repository",
+      "SystemRequirements": "OpenMP (optional)",
+      "Title": "Adrian Dusa's Miscellaneous",
+      "Authors@R": "person( given = \"Adrian\", family = \"Dusa\", role = c(\"aut\", \"cre\", \"cph\"), email = \"dusa.adrian@unibuc.ro\", comment = c(ORCID = \"0000-0002-3525-9253\"))",
+      "URL": "https://github.com/dusadrian/admisc",
+      "BugReports": "https://github.com/dusadrian/admisc/issues",
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "Imports": [
+        "methods"
+      ],
+      "Suggests": [
+        "QCA (>= 3.7)"
+      ],
+      "Description": "Contains functions used across packages 'DDIwR', 'QCA' and 'venn'. Interprets and translates, factorizes and negates SOP - Sum of Products expressions, for both binary and multi-value crisp sets, and extracts information (set names, set values) from those expressions. Other functions perform various other checks if possibly numeric (even if all numbers reside in a character vector) and coerce to numeric, or check if the numbers are whole. It also offers, among many others, a highly versatile recoding routine and some more flexible alternatives to the base functions 'with()' and 'within()'. SOP simplification functions in this package use related minimization from package 'QCA', which is recommended to be installed despite not being listed in the Imports field, due to circular dependency issues.",
+      "License": "GPL (>= 3)",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "NeedsCompilation": "yes",
+      "Author": "Adrian Dusa [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-3525-9253>)",
+      "Maintainer": "Adrian Dusa <dusa.adrian@unibuc.ro>",
+      "Repository": "CRAN"
+    },
+    "aplot": {
+      "Package": "aplot",
+      "Version": "0.2.9",
+      "Source": "Repository",
+      "Title": "Decorate a 'ggplot' with Associated Information",
+      "Authors@R": "c( person(given = \"Guangchuang\", family = \"Yu\", email = \"guangchuangyu@gmail.com\",   role  = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-6485-8781\")), person(\"Shuangbin\", \"Xu\",       email = \"xshuangbin@163.com\",      role = \"ctb\",  comment = c(ORCID=\"0000-0003-3513-5362\")), person(given = \"Thomas\", family = \"Hackl\", email = \"thackl@mit.edu\", role = \"ctb\") )",
+      "Description": "For many times, we are not just aligning plots as what 'cowplot' and 'patchwork' did. Users would like to align associated information that requires axes to be exactly matched in subplots, e.g. hierarchical clustering with a heatmap. Inspired by the 'Method 2' in 'ggtree' (G Yu (2018) <doi:10.1093/molbev/msy194>), 'aplot' provides utilities to aligns associated subplots to a main plot at different sides (left, right, top and bottom) with axes exactly matched.",
+      "Depends": [
+        "R (>= 4.1.0)"
+      ],
+      "Imports": [
+        "ggfun (>= 0.1.3)",
+        "ggplot2",
+        "ggplotify",
+        "patchwork",
+        "magrittr",
+        "methods",
+        "utils",
+        "yulab.utils (>= 0.1.9)",
+        "pillar"
+      ],
+      "Suggests": [
+        "ggtree"
+      ],
+      "URL": "https://github.com/YuLab-SMU/aplot, https://yulab-smu.top/aplot/",
+      "License": "Artistic-2.0",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "NeedsCompilation": "no",
+      "Author": "Guangchuang Yu [aut, cre] (ORCID: <https://orcid.org/0000-0002-6485-8781>), Shuangbin Xu [ctb] (ORCID: <https://orcid.org/0000-0003-3513-5362>), Thomas Hackl [ctb]",
+      "Maintainer": "Guangchuang Yu <guangchuangyu@gmail.com>",
       "Repository": "CRAN"
     },
     "askpass": {
@@ -863,33 +849,6 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut], Kirill Müller [cre], RStudio [cph, fnd]",
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-      "Repository": "CRAN"
-    },
-    "boot": {
-      "Package": "boot",
-      "Version": "1.3-32",
-      "Source": "Repository",
-      "Priority": "recommended",
-      "Date": "2025-08-29",
-      "Authors@R": "c(person(\"Angelo\", \"Canty\", role = \"aut\", email = \"cantya@mcmaster.ca\",  comment = \"author of original code for S\"), person(\"Brian\", \"Ripley\", role = c(\"aut\", \"trl\"), email = \"Brian.Ripley@R-project.org\", comment = \"conversion to R, maintainer 1999--2022, author of parallel support\"), person(\"Alessandra R.\", \"Brazzale\", role = c(\"ctb\", \"cre\"), email = \"brazzale@stat.unipd.it\", comment = \"minor bug fixes\"))",
-      "Maintainer": "Alessandra R. Brazzale <brazzale@stat.unipd.it>",
-      "Note": "Maintainers are not available to give advice on using a package they did not author.",
-      "Description": "Functions and datasets for bootstrapping from the book \"Bootstrap Methods and Their Application\" by A. C. Davison and  D. V. Hinkley (1997, CUP), originally written by Angelo Canty for S.",
-      "Title": "Bootstrap Functions",
-      "Depends": [
-        "R (>= 3.0.0)",
-        "graphics",
-        "stats"
-      ],
-      "Suggests": [
-        "MASS",
-        "survival"
-      ],
-      "LazyData": "yes",
-      "ByteCompile": "yes",
-      "License": "Unlimited",
-      "NeedsCompilation": "no",
-      "Author": "Angelo Canty [aut] (author of original code for S), Brian Ripley [aut, trl] (conversion to R, maintainer 1999--2022, author of parallel support), Alessandra R. Brazzale [ctb, cre] (minor bug fixes)",
       "Repository": "CRAN"
     },
     "brew": {
@@ -1338,50 +1297,6 @@
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
-    "dagitty": {
-      "Package": "dagitty",
-      "Version": "0.3-4",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Graphical Analysis of Structural Causal Models",
-      "Date": "2023-12-07",
-      "Author": "Johannes Textor, Benito van der Zander, Ankur Ankan",
-      "Maintainer": "Johannes Textor <johannes.textor@gmx.de>",
-      "Description": "A port of the web-based software 'DAGitty', available at  <https://dagitty.net>, for analyzing structural causal models  (also known as directed acyclic graphs or DAGs). This package computes covariate adjustment sets for estimating causal effects, enumerates instrumental variables, derives testable implications (d-separation and vanishing tetrads), generates equivalent models, and includes a simple facility for data simulation.",
-      "VignetteBuilder": "knitr",
-      "Encoding": "UTF-8",
-      "License": "GPL-2",
-      "URL": "https://www.dagitty.net, https://github.com/jtextor/dagitty",
-      "BugReports": "https://github.com/jtextor/dagitty/issues",
-      "Depends": [
-        "R (>= 3.0.0)"
-      ],
-      "Imports": [
-        "V8",
-        "jsonlite",
-        "boot",
-        "MASS",
-        "methods",
-        "grDevices",
-        "stats",
-        "utils",
-        "graphics"
-      ],
-      "Suggests": [
-        "igraph",
-        "knitr",
-        "base64enc (>= 0.1-3)",
-        "testthat",
-        "markdown",
-        "rmarkdown",
-        "lavaan",
-        "CCP",
-        "fastDummies"
-      ],
-      "RoxygenNote": "7.2.1",
-      "NeedsCompilation": "no",
-      "Repository": "CRAN"
-    },
     "data.table": {
       "Package": "data.table",
       "Version": "1.18.2.1",
@@ -1681,8 +1596,7 @@
       "NeedsCompilation": "yes",
       "Author": "Hannes Mühleisen [aut] (ORCID: <https://orcid.org/0000-0001-8552-0029>), Mark Raasveldt [aut] (ORCID: <https://orcid.org/0000-0001-5005-6844>), Kirill Müller [cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>), Stichting DuckDB Foundation [cph], Apache Software Foundation [cph], PostgreSQL Global Development Group [cph], The Regents of the University of California [cph], Cameron Desrochers [cph], Victor Zverovich [cph], RAD Game Tools [cph], Valve Software [cph], Rich Geldreich [cph], Tenacious Software LLC [cph], The RE2 Authors [cph], Google Inc. [cph], Facebook Inc. [cph], Steven G. Johnson [cph], Jiahao Chen [cph], Tony Kelman [cph], Jonas Fonseca [cph], Lukas Fittl [cph], Salvatore Sanfilippo [cph], Art.sy, Inc. [cph], Oran Agra [cph], Redis Labs, Inc. [cph], Melissa O'Neill [cph], PCG Project contributors [cph]",
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-      "Repository": "https://p3m.dev/cran/latest",
-      "Platform": "x86_64-pc-linux-gnu-manylinux_2_27"
+      "Repository": "https://p3m.dev/cran/__linux__/noble/latest"
     },
     "duckdbfs": {
       "Package": "duckdbfs",
@@ -2172,104 +2086,84 @@
       "Maintainer": "David Cooley <david.cooley.au@gmail.com>",
       "Repository": "CRAN"
     },
-    "ggdag": {
-      "Package": "ggdag",
-      "Version": "0.2.13",
-      "Source": "Repository",
-      "Title": "Analyze and Create Elegant Directed Acyclic Graphs",
-      "Authors@R": "person(\"Malcolm\", \"Barrett\", , \"malcolmbarrett@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-0299-5825\"))",
-      "Description": "Tidy, analyze, and plot directed acyclic graphs (DAGs). 'ggdag' is built on top of 'dagitty', an R package that uses the 'DAGitty' web tool (<https://dagitty.net/>) for creating and analyzing DAGs. 'ggdag' makes it easy to tidy and plot 'dagitty' objects using 'ggplot2' and 'ggraph', as well as common analytic and graphical functions, such as determining adjustment sets and node relationships.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://github.com/r-causal/ggdag, https://r-causal.github.io/ggdag/",
-      "BugReports": "https://github.com/r-causal/ggdag/issues",
-      "Depends": [
-        "R (>= 3.4.0)"
-      ],
-      "Imports": [
-        "dagitty",
-        "dplyr",
-        "forcats",
-        "ggplot2 (>= 3.0.0)",
-        "ggraph (>= 2.0.0)",
-        "ggrepel",
-        "igraph",
-        "magrittr",
-        "pillar",
-        "purrr",
-        "rlang",
-        "stringr",
-        "tibble",
-        "tidygraph"
-      ],
-      "Suggests": [
-        "covr",
-        "knitr",
-        "rmarkdown",
-        "spelling",
-        "testthat (>= 3.0.0)",
-        "vdiffr (>= 1.0.2)",
-        "withr"
-      ],
-      "VignetteBuilder": "knitr",
-      "Encoding": "UTF-8",
-      "Language": "en-US",
-      "RoxygenNote": "7.2.3",
-      "Config/testthat/edition": "3",
-      "NeedsCompilation": "no",
-      "Author": "Malcolm Barrett [aut, cre] (<https://orcid.org/0000-0003-0299-5825>)",
-      "Maintainer": "Malcolm Barrett <malcolmbarrett@gmail.com>",
-      "Repository": "CRAN"
-    },
-    "ggforce": {
-      "Package": "ggforce",
-      "Version": "0.5.0",
+    "ggVennDiagram": {
+      "Package": "ggVennDiagram",
+      "Version": "1.5.7",
       "Source": "Repository",
       "Type": "Package",
-      "Title": "Accelerating 'ggplot2'",
-      "Authors@R": "c(person(given = \"Thomas Lin\", family = \"Pedersen\", role = c(\"cre\", \"aut\"), email = \"thomasp85@gmail.com\", comment = c(ORCID = \"0000-0002-5147-4711\")), person(\"RStudio\", role = \"cph\"))",
-      "Maintainer": "Thomas Lin Pedersen <thomasp85@gmail.com>",
-      "Description": "The aim of 'ggplot2' is to aid in visual data investigations. This focus has led to a lack of facilities for composing specialised plots. 'ggforce' aims to be a collection of mainly new stats and geoms that fills this gap. All additional functionality is aimed to come through the official extension system so using 'ggforce' should be a stable experience.",
-      "URL": "https://ggforce.data-imaginist.com, https://github.com/thomasp85/ggforce",
-      "BugReports": "https://github.com/thomasp85/ggforce/issues",
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
+      "Title": "A 'ggplot2' Implement of Venn Diagram",
+      "Authors@R": "c( person(\"Chun-Hui\",\"Gao\", email=\"gaospecial@gmail.com\", role=c(\"aut\",\"cre\"), comment=c(ORCID = \"0000-0002-1445-7939\")), person(\"Guangchuang\", \"Yu\", email = \"guangchuangyu@gmail.com\", role = c(\"ctb\"), comment = c(ORCID = \"0000-0002-6485-8781\")), person(\"Adrian\", \"Dusa\",  email = \"dusa.adrian@unibuc.ro\", role = c(\"aut\",\"cph\"),  comment = c(ORCID = \"0000-0002-3525-9253\",  note = \"Adrian Dusa is the author and copyright holder of venn, where ggVennDiagram imports the polygon coordinates enabling 5 - 7 sets Venn diagram.\")), person(\"Turgut Yigit\", \"Akyol\", email = \"tyakyol@gmail.com\", role = c(\"ctb\"), comment=c(ORCID = \"0000-0003-0897-7716\")) )",
+      "Maintainer": "Chun-Hui Gao <gaospecial@gmail.com>",
+      "Description": "Easy-to-use functions to generate 2-7 sets Venn or upset plot in publication quality.  'ggVennDiagram' plot Venn or upset using well-defined geometry dataset and 'ggplot2'. The shapes of 2-4 sets  Venn use circles and ellipses, while the shapes of 4-7 sets Venn use irregular polygons (4 has both forms), which  are developed and imported from another package 'venn', authored by Adrian Dusa. We provided internal functions to  integrate shape data with user provided sets data, and calculated the geometry of every regions/intersections  of them, then separately plot Venn in four components, set edges/labels, and region edges/labels. From version 1.0, it is possible to customize these components as you demand in ordinary 'ggplot2' grammar. From version 1.4.4, it supports unlimited number of sets, as it can draw a plain upset plot automatically when number of sets is more than 7.",
       "Depends": [
-        "ggplot2 (>= 3.5.0)",
-        "R (>= 3.3.0)"
+        "R (>= 4.1.0)"
       ],
       "Imports": [
-        "grid",
-        "scales",
-        "MASS",
-        "tweenr (>= 0.1.5)",
-        "gtable",
-        "rlang",
-        "polyclip",
-        "stats",
-        "grDevices",
-        "tidyselect",
-        "withr",
-        "utils",
-        "lifecycle",
-        "cli",
-        "vctrs",
-        "systemfonts"
+        "ggplot2 (>= 3.4.0)",
+        "dplyr",
+        "methods",
+        "tibble",
+        "aplot",
+        "venn (>= 1.12)",
+        "yulab.utils",
+        "forcats"
       ],
-      "RoxygenNote": "7.3.2",
-      "LinkingTo": [
-        "cpp11"
+      "URL": "https://github.com/gaospecial/ggVennDiagram, https://gaospecial.github.io/ggVennDiagram/",
+      "License": "GPL-3",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "Suggests": [
+        "testthat (>= 2.1.0)",
+        "knitr",
+        "plotly",
+        "RColorBrewer",
+        "shiny",
+        "rmarkdown",
+        "tidyr"
+      ],
+      "VignetteBuilder": "knitr",
+      "NeedsCompilation": "no",
+      "Author": "Chun-Hui Gao [aut, cre] (ORCID: <https://orcid.org/0000-0002-1445-7939>), Guangchuang Yu [ctb] (ORCID: <https://orcid.org/0000-0002-6485-8781>), Adrian Dusa [aut, cph] (ORCID: <https://orcid.org/0000-0002-3525-9253>, note: Adrian Dusa is the author and copyright holder of venn, where ggVennDiagram imports the polygon coordinates enabling 5 - 7 sets Venn diagram.), Turgut Yigit Akyol [ctb] (ORCID: <https://orcid.org/0000-0003-0897-7716>)",
+      "Repository": "CRAN"
+    },
+    "ggfun": {
+      "Package": "ggfun",
+      "Version": "0.2.0",
+      "Source": "Repository",
+      "Title": "Miscellaneous Functions for 'ggplot2'",
+      "Authors@R": "c( person(\"Guangchuang\", \"Yu\",     email = \"guangchuangyu@gmail.com\", role = c(\"aut\", \"cre\", \"cph\"), comment = c(ORCID = \"0000-0002-6485-8781\")), person(\"Shuangbin\", \"Xu\",       email = \"xshuangbin@163.com\",      role = \"aut\", comment = c(ORCID=\"0000-0003-3513-5362\")) )",
+      "Description": "Useful functions and utilities for 'ggplot' object (e.g., geometric layers, themes, and utilities to edit the object).",
+      "Depends": [
+        "R (>= 4.2.0)"
+      ],
+      "Imports": [
+        "cli",
+        "dplyr",
+        "ggplot2",
+        "grid",
+        "rlang",
+        "scales",
+        "utils",
+        "yulab.utils (>= 0.1.6)"
       ],
       "Suggests": [
-        "sessioninfo",
-        "deldir",
-        "latex2exp",
-        "reshape2",
-        "units (>= 0.8.0)",
-        "covr"
+        "ggplotify",
+        "knitr",
+        "rmarkdown",
+        "prettydoc",
+        "tidyr",
+        "ggnewscale"
       ],
-      "Collate": "'aaa.R' 'shape.R' 'arc_bar.R' 'arc.R' 'autodensity.R' 'autohistogram.R' 'autopoint.R' 'bezier.R' 'bspline.R' 'bspline_closed.R' 'circle.R' 'concaveman.R' 'cpp11.R' 'diagonal.R' 'diagonal_wide.R' 'ellipse.R' 'errorbar.R' 'facet_grid_paginate.R' 'facet_matrix.R' 'facet_row.R' 'facet_stereo.R' 'facet_wrap_paginate.R' 'facet_zoom.R' 'ggforce-package.R' 'ggproto-classes.R' 'interpolate.R' 'labeller.R' 'link.R' 'mark_circle.R' 'mark_ellipse.R' 'mark_hull.R' 'mark_label.R' 'mark_rect.R' 'parallel_sets.R' 'position-jitternormal.R' 'position_auto.R' 'position_floatstack.R' 'regon.R' 'scale-depth.R' 'scale-unit.R' 'sina.R' 'spiro.R' 'themes.R' 'trans.R' 'trans_linear.R' 'utilities.R' 'voronoi.R' 'zzz.R'",
-      "NeedsCompilation": "yes",
-      "Author": "Thomas Lin Pedersen [cre, aut] (ORCID: <https://orcid.org/0000-0002-5147-4711>), RStudio [cph]",
+      "VignetteBuilder": "knitr",
+      "ByteCompile": "true",
+      "License": "Artistic-2.0",
+      "Encoding": "UTF-8",
+      "URL": "https://github.com/YuLab-SMU/ggfun",
+      "BugReports": "https://github.com/YuLab-SMU/ggfun/issues",
+      "RoxygenNote": "7.3.2",
+      "NeedsCompilation": "no",
+      "Author": "Guangchuang Yu [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-6485-8781>), Shuangbin Xu [aut] (ORCID: <https://orcid.org/0000-0003-3513-5362>)",
+      "Maintainer": "Guangchuang Yu <guangchuangyu@gmail.com>",
       "Repository": "CRAN"
     },
     "ggplot2": {
@@ -2345,117 +2239,47 @@
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "CRAN"
     },
-    "ggraph": {
-      "Package": "ggraph",
-      "Version": "2.2.2",
+    "ggplotify": {
+      "Package": "ggplotify",
+      "Version": "0.1.3",
       "Source": "Repository",
-      "Type": "Package",
-      "Title": "An Implementation of Grammar of Graphics for Graphs and Networks",
-      "Authors@R": "c(person(given = \"Thomas Lin\", family = \"Pedersen\", role = c(\"cre\", \"aut\"), email = \"thomasp85@gmail.com\", comment = c(ORCID = \"0000-0002-5147-4711\")), person(given = \"RStudio\", role = \"cph\"))",
-      "Maintainer": "Thomas Lin Pedersen <thomasp85@gmail.com>",
-      "Description": "The grammar of graphics as implemented in ggplot2 is a poor fit for graph and network visualizations due to its reliance on tabular data input. ggraph is an extension of the ggplot2 API tailored to graph visualizations and provides the same flexible approach to building up plots layer by layer.",
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
-      "LazyData": "TRUE",
+      "Title": "Convert Plot to 'grob' or 'ggplot' Object",
+      "Authors@R": "c(person(\"Guangchuang\", \"Yu\", email = \"guangchuangyu@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-6485-8781\")))",
+      "Description": "Convert plot function call (using expression or formula) to 'grob' or 'ggplot' object that compatible to the 'grid' and 'ggplot2' ecosystem. With this package, we are able to e.g. using 'cowplot' to align plots produced by 'base' graphics, 'ComplexHeatmap', 'eulerr', 'grid', 'lattice', 'magick', 'pheatmap', 'vcd' etc. by converting them to 'ggplot' objects.",
+      "Depends": [
+        "R (>= 3.4.0)"
+      ],
       "Imports": [
-        "dplyr",
-        "ggforce (>= 0.3.1)",
+        "ggplot2",
+        "graphics",
+        "grDevices",
         "grid",
-        "igraph (>= 1.0.0)",
-        "scales",
-        "MASS",
-        "ggrepel",
-        "utils",
-        "stats",
-        "viridis",
+        "gridGraphics",
         "rlang",
-        "tidygraph",
-        "graphlayouts (>= 1.1.0)",
-        "withr",
-        "cli",
-        "vctrs",
-        "lifecycle",
-        "memoise"
+        "yulab.utils"
       ],
       "Suggests": [
-        "network",
+        "aplot",
+        "colorspace",
+        "cowplot",
+        "ggimage",
         "knitr",
         "rmarkdown",
-        "purrr",
-        "tibble",
-        "seriation",
-        "deldir",
-        "gganimate",
-        "covr",
-        "sf",
-        "sfnetworks"
-      ],
-      "LinkingTo": [
-        "cpp11"
-      ],
-      "RoxygenNote": "7.3.2",
-      "Depends": [
-        "R (>= 2.10)",
-        "ggplot2 (>= 3.5.0)"
-      ],
-      "VignetteBuilder": "knitr",
-      "URL": "https://ggraph.data-imaginist.com, https://github.com/thomasp85/ggraph",
-      "BugReports": "https://github.com/thomasp85/ggraph/issues",
-      "NeedsCompilation": "yes",
-      "Author": "Thomas Lin Pedersen [cre, aut] (ORCID: <https://orcid.org/0000-0002-5147-4711>), RStudio [cph]",
-      "Repository": "CRAN"
-    },
-    "ggrepel": {
-      "Package": "ggrepel",
-      "Version": "0.9.7",
-      "Source": "Repository",
-      "Authors@R": "c( person(\"Kamil\", \"Slowikowski\", email = \"kslowikowski@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-2843-6370\")), person(\"Teun\", \"van den Brand\", role = \"ctb\", comment = c(ORCID = \"0000-0002-9335-7468\")), person(\"Alicia\", \"Schep\", role = \"ctb\", comment = c(ORCID = \"0000-0002-3915-0618\")), person(\"Sean\", \"Hughes\", role = \"ctb\", comment = c(ORCID = \"0000-0002-9409-9405\")), person(\"Trung Kien\", \"Dang\", role = \"ctb\", comment = c(ORCID = \"0000-0001-7562-6495\")), person(\"Saulius\", \"Lukauskas\", role = \"ctb\"), person(\"Jean-Olivier\", \"Irisson\", role = \"ctb\", comment = c(ORCID = \"0000-0003-4920-3880\")), person(\"Zhian N\", \"Kamvar\", role = \"ctb\", comment = c(ORCID = \"0000-0003-1458-7108\")), person(\"Thompson\", \"Ryan\", role = \"ctb\", comment = c(ORCID = \"0000-0002-0450-8181\")), person(\"Dervieux\", \"Christophe\", role = \"ctb\", comment = c(ORCID = \"0000-0003-4474-2498\")), person(\"Yutani\", \"Hiroaki\", role = \"ctb\"), person(\"Pierre\", \"Gramme\", role = \"ctb\"), person(\"Amir Masoud\", \"Abdol\", role = \"ctb\"), person(\"Malcolm\", \"Barrett\", role = \"ctb\", comment = c(ORCID = \"0000-0003-0299-5825\")), person(\"Robrecht\", \"Cannoodt\", role = \"ctb\", comment = c(ORCID = \"0000-0003-3641-729X\")), person(\"Michał\", \"Krassowski\", role = \"ctb\", comment = c(ORCID = \"0000-0002-9638-7785\")), person(\"Michael\", \"Chirico\", role = \"ctb\", comment = c(ORCID = \"0000-0003-0787-087X\")), person(\"Pedro\", \"Aphalo\", role = \"ctb\", comment = c(ORCID = \"0000-0003-3385-972X\")), person(\"Francis\", \"Barton\", role = \"ctb\") )",
-      "Title": "Automatically Position Non-Overlapping Text Labels with 'ggplot2'",
-      "Description": "Provides text and label geoms for 'ggplot2' that help to avoid overlapping text labels. Labels repel away from each other and away from the data points.",
-      "Depends": [
-        "R (>= 4.5.0)",
-        "ggplot2 (>= 3.5.2)"
-      ],
-      "Imports": [
-        "grid",
-        "Rcpp",
-        "rlang (>= 1.1.6)",
-        "S7",
-        "scales (>= 1.4.0)",
-        "withr (>= 3.0.2)"
-      ],
-      "Suggests": [
-        "knitr",
-        "rmarkdown",
-        "testthat",
-        "svglite",
-        "vdiffr",
-        "gridExtra",
-        "ggpp",
-        "patchwork",
-        "devtools",
+        "lattice",
         "prettydoc",
-        "ggbeeswarm",
-        "dplyr",
-        "magrittr",
-        "readr",
-        "stringr",
-        "marquee",
-        "rsvg",
-        "sf"
+        "vcd",
+        "utils"
       ],
       "VignetteBuilder": "knitr",
-      "License": "GPL-3 | file LICENSE",
-      "URL": "https://ggrepel.slowkow.com/, https://github.com/slowkow/ggrepel",
-      "BugReports": "https://github.com/slowkow/ggrepel/issues",
-      "RoxygenNote": "7.3.3",
-      "LinkingTo": [
-        "Rcpp"
-      ],
+      "ByteCompile": "true",
+      "License": "Artistic-2.0",
+      "URL": "https://github.com/GuangchuangYu/ggplotify",
+      "BugReports": "https://github.com/GuangchuangYu/ggplotify/issues",
       "Encoding": "UTF-8",
-      "NeedsCompilation": "yes",
-      "Author": "Kamil Slowikowski [aut, cre] (ORCID: <https://orcid.org/0000-0002-2843-6370>), Teun van den Brand [ctb] (ORCID: <https://orcid.org/0000-0002-9335-7468>), Alicia Schep [ctb] (ORCID: <https://orcid.org/0000-0002-3915-0618>), Sean Hughes [ctb] (ORCID: <https://orcid.org/0000-0002-9409-9405>), Trung Kien Dang [ctb] (ORCID: <https://orcid.org/0000-0001-7562-6495>), Saulius Lukauskas [ctb], Jean-Olivier Irisson [ctb] (ORCID: <https://orcid.org/0000-0003-4920-3880>), Zhian N Kamvar [ctb] (ORCID: <https://orcid.org/0000-0003-1458-7108>), Thompson Ryan [ctb] (ORCID: <https://orcid.org/0000-0002-0450-8181>), Dervieux Christophe [ctb] (ORCID: <https://orcid.org/0000-0003-4474-2498>), Yutani Hiroaki [ctb], Pierre Gramme [ctb], Amir Masoud Abdol [ctb], Malcolm Barrett [ctb] (ORCID: <https://orcid.org/0000-0003-0299-5825>), Robrecht Cannoodt [ctb] (ORCID: <https://orcid.org/0000-0003-3641-729X>), Michał Krassowski [ctb] (ORCID: <https://orcid.org/0000-0002-9638-7785>), Michael Chirico [ctb] (ORCID: <https://orcid.org/0000-0003-0787-087X>), Pedro Aphalo [ctb] (ORCID: <https://orcid.org/0000-0003-3385-972X>), Francis Barton [ctb]",
-      "Maintainer": "Kamil Slowikowski <kslowikowski@gmail.com>",
+      "RoxygenNote": "7.3.3",
+      "NeedsCompilation": "no",
+      "Author": "Guangchuang Yu [aut, cre] (ORCID: <https://orcid.org/0000-0002-6485-8781>)",
+      "Maintainer": "Guangchuang Yu <guangchuangyu@gmail.com>",
       "Repository": "CRAN"
     },
     "glue": {
@@ -2499,69 +2323,29 @@
       "Maintainer": "Jennifer Bryan <jenny@posit.co>",
       "Repository": "CRAN"
     },
-    "graphlayouts": {
-      "Package": "graphlayouts",
-      "Version": "1.2.3",
+    "gridGraphics": {
+      "Package": "gridGraphics",
+      "Version": "0.5-1",
       "Source": "Repository",
-      "Title": "Additional Layout Algorithms for Network Visualizations",
-      "Authors@R": "person(\"David\", \"Schoch\", email = \"david@schochastics.net\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-2952-4812\"))",
-      "Description": "Several new layout algorithms to visualize networks are provided which are not part of 'igraph'.  Most are based on the concept of stress majorization by Gansner et al. (2004) <doi:10.1007/978-3-540-31843-9_25>.  Some more specific algorithms allow the user to emphasize hidden group structures in networks or focus on specific nodes.",
-      "URL": "https://github.com/schochastics/graphlayouts, https://schochastics.github.io/graphlayouts/",
-      "BugReports": "https://github.com/schochastics/graphlayouts/issues",
+      "Title": "Redraw Base Graphics Using 'grid' Graphics",
+      "Authors@R": "c(person(\"Paul\", \"Murrell\", role = c(\"cre\", \"aut\"), email = \"paul@stat.auckland.ac.nz\"), person(\"Zhijian\", \"Wen\", role = \"aut\", email = \"jwen246@aucklanduni.ac.nz\"))",
+      "Description": "Functions to convert a page of plots drawn with the  'graphics' package into identical output drawn with the 'grid' package. The result looks like the original 'graphics'-based plot, but consists of 'grid' grobs and viewports that can then be manipulated with  'grid' functions (e.g., edit grobs and revisit viewports).",
       "Depends": [
-        "R (>= 3.6.0)"
-      ],
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "Imports": [
-        "igraph (>= 2.0.0)",
-        "Rcpp"
-      ],
-      "Suggests": [
-        "testthat",
-        "ggplot2",
-        "uwot",
-        "oaqc"
-      ],
-      "LinkingTo": [
-        "Rcpp",
-        "RcppArmadillo"
-      ],
-      "RoxygenNote": "7.3.2",
-      "NeedsCompilation": "yes",
-      "Author": "David Schoch [aut, cre] (ORCID: <https://orcid.org/0000-0003-2952-4812>)",
-      "Maintainer": "David Schoch <david@schochastics.net>",
-      "Repository": "CRAN"
-    },
-    "gridExtra": {
-      "Package": "gridExtra",
-      "Version": "2.3",
-      "Source": "Repository",
-      "Authors@R": "c(person(\"Baptiste\", \"Auguie\", email = \"baptiste.auguie@gmail.com\", role = c(\"aut\", \"cre\")), person(\"Anton\", \"Antonov\", email = \"tonytonov@gmail.com\", role = c(\"ctb\")))",
-      "License": "GPL (>= 2)",
-      "Title": "Miscellaneous Functions for \"Grid\" Graphics",
-      "Type": "Package",
-      "Description": "Provides a number of user-level functions to work with \"grid\" graphics, notably to arrange multiple grid-based plots on a page, and draw tables.",
-      "VignetteBuilder": "knitr",
-      "Imports": [
-        "gtable",
         "grid",
-        "grDevices",
-        "graphics",
-        "utils"
+        "graphics"
+      ],
+      "Imports": [
+        "grDevices"
       ],
       "Suggests": [
-        "ggplot2",
-        "egg",
-        "lattice",
-        "knitr",
-        "testthat"
+        "magick (>= 1.3)",
+        "pdftools (>= 1.6)"
       ],
-      "RoxygenNote": "6.0.1",
+      "License": "GPL (>= 2)",
+      "URL": "https://github.com/pmur002/gridgraphics",
       "NeedsCompilation": "no",
-      "Author": "Baptiste Auguie [aut, cre], Anton Antonov [ctb]",
-      "Maintainer": "Baptiste Auguie <baptiste.auguie@gmail.com>",
+      "Author": "Paul Murrell [cre, aut], Zhijian Wen [aut]",
+      "Maintainer": "Paul Murrell <paul@stat.auckland.ac.nz>",
       "Repository": "CRAN"
     },
     "gstat": {
@@ -3975,6 +3759,50 @@
       "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
       "Repository": "CRAN"
     },
+    "patchwork": {
+      "Package": "patchwork",
+      "Version": "1.3.2",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "The Composer of Plots",
+      "Authors@R": "person(given = \"Thomas Lin\", family = \"Pedersen\", role = c(\"cre\", \"aut\"), email = \"thomasp85@gmail.com\", comment = c(ORCID = \"0000-0002-5147-4711\"))",
+      "Maintainer": "Thomas Lin Pedersen <thomasp85@gmail.com>",
+      "Description": "The 'ggplot2' package provides a strong API for sequentially  building up a plot, but does not concern itself with composition of multiple plots. 'patchwork' is a package that expands the API to allow for  arbitrarily complex composition of plots by, among others, providing  mathematical operators for combining multiple plots. Other packages that try  to address this need (but with a different approach) are 'gridExtra' and  'cowplot'.",
+      "License": "MIT + file LICENSE",
+      "Encoding": "UTF-8",
+      "Imports": [
+        "ggplot2 (>= 3.0.0)",
+        "gtable (>= 0.3.6)",
+        "grid",
+        "stats",
+        "grDevices",
+        "utils",
+        "graphics",
+        "rlang (>= 1.0.0)",
+        "cli",
+        "farver"
+      ],
+      "RoxygenNote": "7.3.2",
+      "URL": "https://patchwork.data-imaginist.com, https://github.com/thomasp85/patchwork",
+      "BugReports": "https://github.com/thomasp85/patchwork/issues",
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "gridGraphics",
+        "gridExtra",
+        "ragg",
+        "testthat (>= 2.1.0)",
+        "vdiffr",
+        "covr",
+        "png",
+        "gt (>= 0.11.0)"
+      ],
+      "VignetteBuilder": "knitr",
+      "Config/Needs/website": "gifski",
+      "NeedsCompilation": "no",
+      "Author": "Thomas Lin Pedersen [cre, aut] (ORCID: <https://orcid.org/0000-0002-5147-4711>)",
+      "Repository": "CRAN"
+    },
     "pillar": {
       "Package": "pillar",
       "Version": "1.11.1",
@@ -4108,27 +3936,6 @@
       "SystemRequirements": "libpng",
       "URL": "http://www.rforge.net/png/",
       "NeedsCompilation": "yes",
-      "Repository": "CRAN"
-    },
-    "polyclip": {
-      "Package": "polyclip",
-      "Version": "1.10-7",
-      "Source": "Repository",
-      "Date": "2024-07-23",
-      "Title": "Polygon Clipping",
-      "Authors@R": "c(person(\"Angus\", \"Johnson\", role = \"aut\",  comment=\"C++ original, http://www.angusj.com/delphi/clipper.php\"), person(\"Adrian\", \"Baddeley\", role = c(\"aut\", \"trl\", \"cre\"), email = \"Adrian.Baddeley@curtin.edu.au\"), person(\"Kurt\", \"Hornik\", role = \"ctb\"), person(c(\"Brian\", \"D.\"), \"Ripley\", role = \"ctb\"), person(\"Elliott\", \"Sales de Andrade\", role=\"ctb\"), person(\"Paul\", \"Murrell\", role = \"ctb\"), person(\"Ege\", \"Rubak\", role=\"ctb\"), person(\"Mark\", \"Padgham\", role=\"ctb\"))",
-      "Maintainer": "Adrian Baddeley <Adrian.Baddeley@curtin.edu.au>",
-      "Depends": [
-        "R (>= 3.5.0)"
-      ],
-      "Description": "R port of Angus Johnson's open source library 'Clipper'. Performs polygon clipping operations (intersection, union, set minus, set difference) for polygonal regions of arbitrary complexity, including holes. Computes offset polygons (spatial buffer zones, morphological dilations, Minkowski dilations) for polygonal regions and polygonal lines. Computes Minkowski Sum of general polygons. There is a function for removing self-intersections from polygon data.",
-      "License": "BSL",
-      "URL": "https://www.angusj.com, https://sourceforge.net/projects/polyclipping, https://github.com/baddstats/polyclip",
-      "BugReports": "https://github.com/baddstats/polyclip/issues",
-      "ByteCompile": "true",
-      "Note": "built from Clipper C++ version 6.4.0",
-      "NeedsCompilation": "yes",
-      "Author": "Angus Johnson [aut] (C++ original, http://www.angusj.com/delphi/clipper.php), Adrian Baddeley [aut, trl, cre], Kurt Hornik [ctb], Brian D. Ripley [ctb], Elliott Sales de Andrade [ctb], Paul Murrell [ctb], Ege Rubak [ctb], Mark Padgham [ctb]",
       "Repository": "CRAN"
     },
     "prettyunits": {
@@ -4389,69 +4196,6 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
-    "quarto": {
-      "Package": "quarto",
-      "Version": "1.5.1",
-      "Source": "Repository",
-      "Title": "R Interface to 'Quarto' Markdown Publishing System",
-      "Authors@R": "c( person(\"JJ\", \"Allaire\", , \"jj@posit.co\", role = \"aut\", comment = c(ORCID = \"0000-0003-0174-9868\")), person(\"Christophe\", \"Dervieux\", , \"cderv@posit.co\", role = c(\"cre\", \"aut\"), comment = c(ORCID = \"0000-0003-4474-2498\")), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")), person(\"Gordon\", \"Woodhull\", role = \"ctb\") )",
-      "Description": "Convert R Markdown documents and 'Jupyter' notebooks to a variety of output formats using 'Quarto'.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://github.com/quarto-dev/quarto-r, https://quarto-dev.github.io/quarto-r/",
-      "BugReports": "https://github.com/quarto-dev/quarto-r/issues",
-      "Depends": [
-        "R (>= 4.1.0)"
-      ],
-      "Imports": [
-        "cli",
-        "fs",
-        "htmltools",
-        "jsonlite",
-        "later",
-        "lifecycle",
-        "processx",
-        "rlang",
-        "rmarkdown",
-        "rstudioapi",
-        "tools",
-        "utils",
-        "xfun",
-        "yaml (>= 2.3.10)"
-      ],
-      "Suggests": [
-        "bslib",
-        "callr",
-        "curl",
-        "dplyr",
-        "flextable",
-        "ggiraph",
-        "ggplot2",
-        "gt",
-        "heatmaply",
-        "kableExtra",
-        "knitr",
-        "palmerpenguins",
-        "patchwork",
-        "pkgload",
-        "plotly",
-        "rsconnect (>= 0.8.26)",
-        "testthat (>= 3.1.7)",
-        "thematic",
-        "tidyverse",
-        "tinytable",
-        "whoami",
-        "withr"
-      ],
-      "VignetteBuilder": "quarto",
-      "Config/testthat/edition": "3",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.2",
-      "SystemRequirements": "Quarto command line tool (<https://github.com/quarto-dev/quarto-cli>).",
-      "NeedsCompilation": "no",
-      "Author": "JJ Allaire [aut] (ORCID: <https://orcid.org/0000-0003-0174-9868>), Christophe Dervieux [cre, aut] (ORCID: <https://orcid.org/0000-0003-4474-2498>), Posit Software, PBC [cph, fnd], Gordon Woodhull [ctb]",
-      "Maintainer": "Christophe Dervieux <cderv@posit.co>",
-      "Repository": "CRAN"
-    },
     "rapidjsonr": {
       "Package": "rapidjsonr",
       "Version": "1.2.1",
@@ -4692,15 +4436,14 @@
       "RoxygenNote": "7.3.1",
       "Language": "en-US",
       "Roxygen": "list(markdown = TRUE)",
+      "Author": "Carl Boettiger [cre, aut] (ORCID: <https://orcid.org/0000-0002-1642-628X>), Scott Chamberlain [aut] (ORCID: <https://orcid.org/0000-0003-1444-9135>), Duncan Temple Lang [aut], Peter Wainwright [aut], Kevin Cazelles [ctb] (ORCID: <https://orcid.org/0000-0001-6619-9874>), Guohuan Su [ctb] (ORCID: <https://orcid.org/0000-0003-0091-9773>)",
+      "Maintainer": "Carl Boettiger <cboettig@gmail.com>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "rfishbase",
       "RemoteUsername": "ropensci",
       "RemoteRef": "HEAD",
-      "RemoteSha": "0e093e41539d5f1edc6774ddc564a02715996689",
-      "NeedsCompilation": "no",
-      "Author": "Carl Boettiger [cre, aut] (ORCID: <https://orcid.org/0000-0002-1642-628X>), Scott Chamberlain [aut] (ORCID: <https://orcid.org/0000-0003-1444-9135>), Duncan Temple Lang [aut], Peter Wainwright [aut], Kevin Cazelles [ctb] (ORCID: <https://orcid.org/0000-0001-6619-9874>), Guohuan Su [ctb] (ORCID: <https://orcid.org/0000-0003-0091-9773>)",
-      "Maintainer": "Carl Boettiger <cboettig@gmail.com>"
+      "RemoteSha": "0e093e41539d5f1edc6774ddc564a02715996689"
     },
     "rlang": {
       "Package": "rlang",
@@ -5718,51 +5461,6 @@
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "CRAN"
     },
-    "tarchetypes": {
-      "Package": "tarchetypes",
-      "Version": "0.14.0",
-      "Source": "Repository",
-      "Title": "Archetypes for Targets",
-      "Description": "Function-oriented Make-like declarative pipelines for Statistics and data science are supported in the 'targets' R package. As an extension to 'targets', the 'tarchetypes' package provides convenient user-side functions to make 'targets' easier to use. By establishing reusable archetypes for common kinds of targets and pipelines, these functions help express complicated reproducible pipelines concisely and compactly. The methods in this package were influenced by the 'targets' R package. by Will Landau (2018) <doi:10.21105/joss.00550>.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://docs.ropensci.org/tarchetypes/, https://github.com/ropensci/tarchetypes",
-      "BugReports": "https://github.com/ropensci/tarchetypes/issues",
-      "Authors@R": "c( person( given = c(\"William\", \"Michael\"), family = \"Landau\", role = c(\"aut\", \"cre\"), email = \"will.landau.oss@gmail.com\", comment = c(ORCID = \"0000-0003-1878-3253\") ), person( given = \"Rudolf\", family = \"Siegel\", role = \"ctb\", comment = c(ORCID = \"0000-0002-6021-804X\") ), person( given = \"Samantha\", family = \"Oliver\", role = \"rev\", comment = c(ORCID = \"0000-0001-5668-1165\") ), person( given = \"Tristan\", family = \"Mahr\", role = \"rev\", comment = c(ORCID = \"0000-0002-8890-5116\") ), person( family = \"Eli Lilly and Company\", role = c(\"cph\", \"fnd\") ))",
-      "Depends": [
-        "R (>= 4.1.0)"
-      ],
-      "Imports": [
-        "dplyr (>= 1.0.0)",
-        "fs (>= 1.4.2)",
-        "parallel",
-        "rlang (>= 0.4.7)",
-        "secretbase (>= 0.4.0)",
-        "targets (>= 1.6.0)",
-        "tibble (>= 3.0.1)",
-        "tidyselect (>= 1.1.0)",
-        "utils",
-        "vctrs (>= 0.3.4)",
-        "withr (>= 2.1.2)"
-      ],
-      "Suggests": [
-        "curl (>= 4.3)",
-        "knitr (>= 1.28)",
-        "nanoparquet",
-        "parsermd",
-        "quarto (>= 1.4)",
-        "rmarkdown (>= 2.1)",
-        "testthat (>= 3.0.0)",
-        "xml2 (>= 1.3.2)"
-      ],
-      "Encoding": "UTF-8",
-      "Language": "en-US",
-      "Config/testthat/edition": "3",
-      "RoxygenNote": "7.3.3",
-      "NeedsCompilation": "no",
-      "Author": "William Michael Landau [aut, cre] (ORCID: <https://orcid.org/0000-0003-1878-3253>), Rudolf Siegel [ctb] (ORCID: <https://orcid.org/0000-0002-6021-804X>), Samantha Oliver [rev] (ORCID: <https://orcid.org/0000-0001-5668-1165>), Tristan Mahr [rev] (ORCID: <https://orcid.org/0000-0002-8890-5116>), Eli Lilly and Company [cph, fnd]",
-      "Maintainer": "William Michael Landau <will.landau.oss@gmail.com>",
-      "Repository": "CRAN"
-    },
     "targets": {
       "Package": "targets",
       "Version": "1.12.0",
@@ -6181,40 +5879,6 @@
       "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
-    "tweenr": {
-      "Package": "tweenr",
-      "Version": "2.0.3",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Interpolate Data for Smooth Animations",
-      "Authors@R": "c(person(given = \"Thomas Lin\", family = \"Pedersen\", role = c(\"aut\", \"cre\"), email = \"thomasp85@gmail.com\", comment = c(ORCID = \"0000-0002-5147-4711\")))",
-      "Maintainer": "Thomas Lin Pedersen <thomasp85@gmail.com>",
-      "Description": "In order to create smooth animation between states of data, tweening is necessary. This package provides a range of functions for creating tweened data that can be used as basis for animation. Furthermore  it adds a number of vectorized interpolaters for common R data  types such as numeric, date and colour.",
-      "URL": "https://github.com/thomasp85/tweenr",
-      "BugReports": "https://github.com/thomasp85/tweenr/issues",
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
-      "Depends": [
-        "R (>= 3.2.0)"
-      ],
-      "Imports": [
-        "farver",
-        "magrittr",
-        "rlang",
-        "vctrs"
-      ],
-      "LinkingTo": [
-        "cpp11 (>= 0.4.2)"
-      ],
-      "RoxygenNote": "7.2.3",
-      "Suggests": [
-        "testthat",
-        "covr"
-      ],
-      "NeedsCompilation": "yes",
-      "Author": "Thomas Lin Pedersen [aut, cre] (<https://orcid.org/0000-0002-5147-4711>)",
-      "Repository": "CRAN"
-    },
     "tzdb": {
       "Package": "tzdb",
       "Version": "0.5.0",
@@ -6387,50 +6051,30 @@
       "Maintainer": "Davis Vaughan <davis@posit.co>",
       "Repository": "CRAN"
     },
-    "viridis": {
-      "Package": "viridis",
-      "Version": "0.6.5",
+    "venn": {
+      "Package": "venn",
+      "Version": "1.13",
       "Source": "Repository",
-      "Type": "Package",
-      "Title": "Colorblind-Friendly Color Maps for R",
-      "Date": "2024-01-28",
-      "Authors@R": "c( person(\"Simon\", \"Garnier\", email = \"garnier@njit.edu\", role = c(\"aut\", \"cre\")), person(\"Noam\", \"Ross\", email = \"noam.ross@gmail.com\", role = c(\"ctb\", \"cph\")), person(\"Bob\", \"Rudis\", email = \"bob@rud.is\", role = c(\"ctb\", \"cph\")), person(\"Marco\", \"Sciaini\", email = \"sciaini.marco@gmail.com\", role = c(\"ctb\", \"cph\")), person(\"Antônio Pedro\", \"Camargo\", role = c(\"ctb\", \"cph\")), person(\"Cédric\", \"Scherer\", email = \"scherer@izw-berlin.de\", role = c(\"ctb\", \"cph\")) )",
-      "Maintainer": "Simon Garnier <garnier@njit.edu>",
-      "Description": "Color maps designed to improve graph readability for readers with  common forms of color blindness and/or color vision deficiency. The color  maps are also perceptually-uniform, both in regular form and also when  converted to black-and-white for printing. This package also contains  'ggplot2' bindings for discrete and continuous color and fill scales. A lean version of the package called 'viridisLite' that does not include the  'ggplot2' bindings can be found at  <https://cran.r-project.org/package=viridisLite>.",
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
+      "Title": "Draw Venn Diagrams",
+      "Authors@R": "person(given = \"Adrian\", family = \"Dusa\", role = c(\"aut\", \"cre\", \"cph\"), email = \"dusa.adrian@unibuc.ro\", comment = c(ORCID = \"0000-0002-3525-9253\"))",
       "Depends": [
-        "R (>= 2.10)",
-        "viridisLite (>= 0.4.0)"
+        "R (>= 3.5.0)"
       ],
       "Imports": [
-        "ggplot2 (>= 1.0.1)",
-        "gridExtra"
+        "admisc (>= 0.33)"
       ],
       "Suggests": [
-        "hexbin (>= 1.27.0)",
-        "scales",
-        "MASS",
-        "knitr",
-        "dichromat",
-        "colorspace",
-        "httr",
-        "mapproj",
-        "vdiffr",
-        "svglite (>= 1.2.0)",
-        "testthat",
-        "covr",
-        "rmarkdown",
-        "maps",
-        "terra"
+        "QCA (>= 3.9)",
+        "ggplot2",
+        "ggpolypath"
       ],
-      "LazyData": "true",
-      "VignetteBuilder": "knitr",
-      "URL": "https://sjmgarnier.github.io/viridis/, https://github.com/sjmgarnier/viridis/",
-      "BugReports": "https://github.com/sjmgarnier/viridis/issues",
-      "RoxygenNote": "7.3.1",
+      "Description": "A close to zero dependency package to draw and display Venn diagrams up to 7 sets, and any Boolean union of set intersections.",
+      "License": "GPL (>= 3)",
+      "URL": "https://github.com/dusadrian/venn",
+      "BugReports": "https://github.com/dusadrian/venn/issues",
       "NeedsCompilation": "no",
-      "Author": "Simon Garnier [aut, cre], Noam Ross [ctb, cph], Bob Rudis [ctb, cph], Marco Sciaini [ctb, cph], Antônio Pedro Camargo [ctb, cph], Cédric Scherer [ctb, cph]",
+      "Author": "Adrian Dusa [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-3525-9253>)",
+      "Maintainer": "Adrian Dusa <dusa.adrian@unibuc.ro>",
       "Repository": "CRAN"
     },
     "viridisLite": {
@@ -6792,6 +6436,45 @@
       "NeedsCompilation": "yes",
       "Author": "Hadley Wickham [cre] (ORCID: <https://orcid.org/0000-0003-4757-117X>), Shawn Garbett [ctb] (ORCID: <https://orcid.org/0000-0003-4079-5621>), Jeremy Stephens [aut, ctb], Kirill Simonov [aut], Yihui Xie [ctb] (ORCID: <https://orcid.org/0000-0003-0645-5666>), Zhuoer Dong [ctb], Jeffrey Horner [ctb], reikoch [ctb], Will Beasley [ctb] (ORCID: <https://orcid.org/0000-0002-5613-5006>), Brendan O'Connor [ctb], Michael Quinn [ctb], Charlie Gao [ctb], Gregory R. Warnes [ctb], Zhian N. Kamvar [ctb]",
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
+      "Repository": "CRAN"
+    },
+    "yulab.utils": {
+      "Package": "yulab.utils",
+      "Version": "0.2.4",
+      "Source": "Repository",
+      "Title": "Supporting Functions for Packages Maintained by 'YuLab-SMU'",
+      "Authors@R": "c(person(\"Guangchuang\", \"Yu\", email = \"guangchuangyu@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-6485-8781\")))",
+      "Description": "Miscellaneous functions commonly used by 'YuLab-SMU'.",
+      "Depends": [
+        "R (>= 4.2.0)"
+      ],
+      "Imports": [
+        "cli",
+        "digest",
+        "fs",
+        "methods",
+        "rappdirs",
+        "rlang",
+        "tools",
+        "utils"
+      ],
+      "Suggests": [
+        "httr2",
+        "jsonlite",
+        "openssl",
+        "R.utils",
+        "testthat (>= 3.0.0)"
+      ],
+      "ByteCompile": "true",
+      "License": "Artistic-2.0",
+      "URL": "https://yulab-smu.top/",
+      "BugReports": "https://github.com/YuLab-SMU/yulab.utils/issues",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "Config/testthat/edition": "3",
+      "NeedsCompilation": "no",
+      "Author": "Guangchuang Yu [aut, cre] (ORCID: <https://orcid.org/0000-0002-6485-8781>)",
+      "Maintainer": "Guangchuang Yu <guangchuangyu@gmail.com>",
       "Repository": "CRAN"
     },
     "zen4R": {

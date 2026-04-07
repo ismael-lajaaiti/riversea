@@ -42,6 +42,21 @@ create_plot_dag <- function() {
   ggdag(dag) + theme_dag()
 }
 
+#' Plot venn diagram of common species between surveys
+#'
+#' @param df data frame
+#'
+#' @return plot
+#' @export
+plot_venn_diagram <- function(df) {
+  df |>
+    distinct(species_valid, survey) |>
+    group_split(survey) |>
+    setNames(unique(df$survey)) |>
+    lapply(\(x) x$species_valid) |>
+    ggVennDiagram()
+}
+
 #' Get relative path.
 #'
 #' @param x the absolute path
