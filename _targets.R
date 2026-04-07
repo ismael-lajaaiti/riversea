@@ -153,7 +153,7 @@ list(
   tar_quarto(
     report_C2,
     "analysis/C2-get-fish-sizes.qmd",
-    quarto_args = c("--embed-resources"),
+    quarto_args = c("--embed-resources")
   ),
   # Presentations.
   tar_quarto(

@@ -128,6 +128,9 @@ interferences within the four dimensions of fluvial or river connectivity
 - In freshwater system, fish dispersal is limited. A meta-analysis found that
 the mean dispersal kernel is around 10km [@Comte-Olden-2018].
 
+- Connectivity structures and mititgates effect of drying events in
+macroinvertebrates communities [@Chalmandrier-etal-2025b].
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;

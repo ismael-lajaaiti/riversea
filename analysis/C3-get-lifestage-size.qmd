@@ -44,7 +44,7 @@ species
 d_size <- tar_read(sea_data_imputed)
 species_length <- d_size$size |>
   group_by(species_valid) |>
-  summarise(n = n())  |>
+  summarise(n = n()) |>
   arrange(n)
 
 ggplot(species_length, aes(x = n)) +

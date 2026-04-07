@@ -3,6 +3,7 @@ title: "How disrupted spatial fluxes reshape food web structure along the riverâ
 author: "IsmaÃ«l Lajaaiti, Alain Danet, Anik Brindamour, Eric Edeline"
 date: "04/14/2026"
 date-format: long
+bibliography: references.bib
 include-in-header:
   - text: |
       <style>
@@ -27,11 +28,23 @@ tar_config_set(
 )
 ```
 
-# Context
+# Introduction
 
-## Introduction
+## The River Continuum Concept
 
-- RIVERSEA project
+- Headwater
+  - Canopied by terrestrial vegatation
+  - Coarse substrate
+  - Light-limited
+  - Heterotrophic
+
+@Vannote-etal-1980
+
+## The Serial Discontinuity Concept
+
+- How dams impact biotic and abiotic parameters along the river continuum.
+
+@Ward-Stanford-1983
 
 # Data
 
