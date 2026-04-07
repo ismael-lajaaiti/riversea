@@ -196,8 +196,8 @@ combine_sea_data <- function(clean_data) {
 #'
 #' @return List of cleaned data frame.
 #' @export
-validate_species_names <- function(data_list) {
-  data_list |> purrr::map(clean_name)
+validate_species_names <- function(data_list, solper_reftax) {
+  data_list |> purrr::map(clean_name, solper_reftax)
 }
 
 #' Clean species name of a dataframe using fishbase.
@@ -206,11 +206,33 @@ validate_species_names <- function(data_list) {
 #'
 #' @return df with cleaned name.
 #' @export
-clean_name <- function(df) {
-  df |> mutate(
-    species_valid = rfishbase::validate_names(species),
-    is_valid = !is.na(species_valid)
-  )
+clean_name <- function(df, solper_reftax) {
+  df |>
+    transform_solper_name(solper_reftax) |>
+    mutate(
+      species_valid = rfishbase::validate_names(species),
+      is_valid = !is.na(species_valid)
+    )
+}
+
+#' Transform solper code to scientific species name
+#'
+#' @param df data frame with species code names
+#' @param fname path to solper reftax file
+#'
+#' @return data frame with species scientifc names
+#' @export
+transform_solper_name <- function(df, fname) {
+  solper_reftax <- read.csv2(fname) |>
+    select(C_VALIDE, L_VALIDE) |>
+    rename(code = C_VALIDE, scientific_name = L_VALIDE)
+  df_solper <- df |> filter(survey == "solper")
+  df_other <- df |> filter(survey != "solper")
+  df_solper <- df_solper |>
+    left_join(solper_reftax, by = join_by(species == code)) |>
+    select(-species) |>
+    rename(species = scientific_name)
+  bind_rows(df_other, df_solper)
 }
 
 #' Keep only species with valid name in data list.
@@ -346,11 +368,11 @@ infer_missing_size <- function(tidy_data) {
 #' @param dir Directory of raw data.
 #' @return list of data.frame $catch and $size.
 #' @export
-preprocess_sea_data <- function(dir) {
+preprocess_sea_data <- function(dir, solper_reftax) {
   tidy <- load_raw_sea_data(dir) |>
     clean_sea_data() |>
     combine_sea_data() |>
-    validate_species_names()
+    validate_species_names(solper_reftax)
 
   tidy
 }

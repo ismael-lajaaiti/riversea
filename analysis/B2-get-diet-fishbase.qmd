@@ -221,7 +221,7 @@ maturity("Barbus barbus")
 ```
 
 ```{r}
-size_extrema <- tar_read(size_extrema)  |> rename(species = species_valid)
+size_extrema <- tar_read(size_extrema) |> rename(species = species_valid)
 maturity_length <- tar_read(maturity_length)
 sizes <- inner_join(maturity_length, size_extrema, by = "species")
 head(sizes)
@@ -235,6 +235,33 @@ Maybe only juveniles are captured?
 diet_full <- tar_read(diet_size)
 head(diet_full)
 ```
+
+
+```{r}
+fname <- here("data", "sea", "raw", "Reftax_SIH.txt")
+solper_reftax <- read.csv2(fname) |>
+  select(C_VALIDE, L_VALIDE) |>
+  rename(code = C_VALIDE, scientific_name = L_VALIDE)
+head(solper_reftax)
+```
+
+
+```{r}
+sea_data <- tar_read(sea_data_tidy)
+
+data_solper <- sea_data$catch |> filter(survey == "solper")
+
+d_solper <- data_solper |>
+  left_join(solper_reftax, by = join_by(species == code)) |>
+  select(-species) |>
+  rename(species = scientific_name) |>
+  mutate(species_valid = rfishbase::validate_names(species))
+
+d_solper |> filter(is.na(species_valid))
+
+head(d_solper)
+```
+
 
 
 
