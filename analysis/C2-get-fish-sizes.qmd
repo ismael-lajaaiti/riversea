@@ -30,6 +30,7 @@ tar_config_set(
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(ggVennDiagram)
 set_theme(theme_minimal())
 library(riversea)
 ```
@@ -98,6 +99,17 @@ We filter out unrecognized species.
 ```{r}
 valid_data <- filter_valid(tidy_data)
 head(valid_data$size)
+```
+
+```{r}
+data <- valid_data$size
+sets <- data |>
+  distinct(species_valid, survey) |>
+  group_split(survey) |>
+  setNames(unique(data$survey)) |>
+  lapply(\(x) x$species_valid)
+
+ggVennDiagram(sets)
 ```
 
 Next, we compute the minimal, mean and maximal length for each species.

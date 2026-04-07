@@ -219,20 +219,26 @@ clean_name <- function(df, solper_reftax) {
 #'
 #' @param df data frame with species code names
 #' @param fname path to solper reftax file
+#' @param solper whether or not to include solper survey data
 #'
 #' @return data frame with species scientifc names
 #' @export
-transform_solper_name <- function(df, fname) {
-  solper_reftax <- read.csv2(fname) |>
-    select(C_VALIDE, L_VALIDE) |>
-    rename(code = C_VALIDE, scientific_name = L_VALIDE)
-  df_solper <- df |> filter(survey == "solper")
-  df_other <- df |> filter(survey != "solper")
-  df_solper <- df_solper |>
-    left_join(solper_reftax, by = join_by(species == code)) |>
-    select(-species) |>
-    rename(species = scientific_name)
-  bind_rows(df_other, df_solper)
+transform_solper_name <- function(df, fname, solper = FALSE) {
+  if (solper) {
+    solper_reftax <- read.csv2(fname) |>
+      select(C_VALIDE, L_VALIDE) |>
+      rename(code = C_VALIDE, scientific_name = L_VALIDE)
+    df_solper <- df |> filter(survey == "solper")
+    df_other <- df |> filter(survey != "solper")
+    df_solper <- df_solper |>
+      left_join(solper_reftax, by = join_by(species == code)) |>
+      select(-species) |>
+      rename(species = scientific_name)
+    res <- bind_rows(df_other, df_solper)
+  } else {
+    res <- df |> filter(survey != "solper")
+  }
+  res
 }
 
 #' Keep only species with valid name in data list.
