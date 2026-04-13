@@ -4,7 +4,7 @@
 \alias{validate_species_names}
 \title{Validate species scientific names.}
 \usage{
-validate_species_names(data_list)
+validate_species_names(data_list, solper_reftax)
 }
 \arguments{
 \item{data_list}{}

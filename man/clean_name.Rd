@@ -4,7 +4,7 @@
 \alias{clean_name}
 \title{Clean species name of a dataframe using fishbase.}
 \usage{
-clean_name(df)
+clean_name(df, solper_reftax)
 }
 \arguments{
 \item{df}{}

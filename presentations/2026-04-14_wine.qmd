@@ -34,47 +34,49 @@ tar_config_set(
 
 ## The River Continuum Concept
 
-- Headwater
-  - Canopied by terrestrial vegatation
-  - Coarse substrate
-  - Light-limited
-  - Heterotrophic
+![](../assets/vannote.png){fig-align="center"}
 
 @Vannote-etal-1980
 
 ## The Serial Discontinuity Concept
 
-- How dams impact biotic and abiotic parameters along the river continuum.
+![](../assets/serial-discontinuity.png){fig-align="center"}
 
 @Ward-Stanford-1983
 
-# Data
-
-## Data: river
-
-## Data: sea
-
-## Data: dams
-
-## Data: other environmental variables
-
 # Methods
 
-## Infering food web structure: base
+## What we have
 
-- Define 4 broad categories at the base of the food web
-    - phytoplankton
-    - zooplankton
-    - zoobenthos
-    - biofilm
+```{r}
+tar_read(plot_station)
+```
 
-## Infering food web structure: base
+- Species abundances
+- Individual fish size (sometimes missing)
+
+## What we plan to add
+
+- Distance to the sea/source
+- Dams location
+- Temperature
+- Chemical information
+- ... (any suggestion?)
+
+## How we reconstruct food webs
+### The base
 
 ```{r}
 DiagrammeR::grViz(readLines(here("figures", "foodweb.dot")))
 ```
 
-- Extract fish diet with fishbase
+## How we reconstruct food webs
+### Diet and piscivory
+
+- Extract fish diet with **fishbase**
+- Piscivorous interaction infered with predation window (e.g. 5-45% body size)
+- Build a global metaweb with all possible interactions
+- Infer local food web by subsampling
 
 ## Measuring the impact of dams
 
@@ -82,7 +84,13 @@ DiagrammeR::grViz(readLines(here("figures", "foodweb.dot")))
 
 ## Measuring the impact of dams
 
-- Equation of the metric
+- Distance to the closest dam
+- Height of the closest dam
+- Accumulated heights of upstream/downstream dams
+- **At what scale dam impacts operate?**
+  - Use the literature, but difficult because of varied impact on species
+  - Make the statistical model infer the scale
+  - $\text{Dam}_\text{down} = \sum_i w(h_i) e^{-\frac{d_i}{L}}$
 
 ## Statistical model
 
@@ -92,3 +100,5 @@ plot_dag
 ```
 
 - Equation of the model
+
+## References

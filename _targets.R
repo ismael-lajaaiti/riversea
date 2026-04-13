@@ -20,13 +20,17 @@ tar_option_set(
     "stringr",
     "rfishbase",
     "truncdist",
-    "readr"
+    "readr",
+    "rnaturalearth",
+    "rnaturalearthdata",
+    "sf"
   )
 )
 tar_source()
 
 workshop_dir <- "data/river_workshop"
 sea_data_raw <- "data/sea/raw"
+station_file <- "data/river/station_analysis.csv"
 
 list(
   # Parameters.
@@ -137,6 +141,10 @@ list(
       ggsave(fname, plot_venn_diagram(sea_data_tidy$size))
     },
     format = "file"
+  ),
+  tar_target(
+    plot_station,
+    plot_sampling(sea_data_tidy, station_file)
   ),
   # Reports.
   tar_quarto(

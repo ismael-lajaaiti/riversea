@@ -67,3 +67,37 @@ to_rel <- function(x) {
   rel <- gsub(here::here(), "", x, fixed = TRUE)
   paste0("..", rel)
 }
+
+#' Plot sampling station sea and river survey.
+#'
+#' @param sea_data tidy data frame of sea data.
+#' @param station_file file containing information about river station.
+#'
+#' @return plot.
+#' @export
+plot_sampling <- function(sea_data, station_file) {
+  d_trait <- sea_data$trait
+  d_sf <- d_trait |>
+    st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+  france <- rnaturalearth::ne_countries(
+    geounit = "france",
+    type = "map_units",
+    scale = "medium",
+    returnclass = "sf"
+  )
+  rivers <- ne_download(
+    scale = 10, type = "rivers_lake_centerlines", category = "physical",
+    returnclass = "sf"
+  )
+  rivers_fr <- st_intersection(rivers, france)
+  d_station <- read.csv(station_file, sep = ";") |>
+    st_as_sf(coords = c("lat", "long"), crs = 4326)
+  d_sampling <- rbind(
+    d_sf |> select(survey, geometry),
+    d_station |> mutate(survey = "onema") |> select(survey, geometry)
+  )
+  ggplot() +
+    geom_sf(data = france) +
+    geom_sf(data = rivers_fr, color = "grey") +
+    geom_sf(data = d_sampling, aes(color = survey))
+}

@@ -13,13 +13,15 @@ load_raw_sea_data <- function(data_folder) {
 
   out$pomet$catch <- read_file("poisson_pomet.csv")
   out$pomet$size <- read_file("poisson_tailles_pomet.csv")
+  out$pomet$trait <- read_file("poisson_pomet.csv")
   out$nurse$catch <- read_file("Captures_Nurse_1980_2023.csv")
   out$nurse$size <- read_file("Tailles_Nurse_1980_2023.csv")
+  out$nurse$trait <- read_file("Traits_Nurse_1980_2023.csv")
   out$solper$catch <- read_file("captures_SOLPER_2005_2011.csv")
   out$solper$size <- read_file("tailles_SOLPER_2005_2011.csv")
+  out$solper$trait <- NA # For the moment we ignore this survey.
 
   # TODO: Add reftax.
-  # TODO: Add trait.
 
   out
 }
@@ -43,7 +45,6 @@ clean_sea_data <- function(raw_data) {
     nurse = list(),
     solper = list()
   )
-
   # Pomet - Catch.
   clean_data$pomet$catch <- raw_data$pomet$catch |>
     select(c(
@@ -58,7 +59,6 @@ clean_sea_data <- function(raw_data) {
       species = NomScient,
       abundance = Nind_esp,
     )
-
   # Pomet - Size.
   clean_data$pomet$size <- raw_data$pomet$size |>
     select(c(
@@ -79,7 +79,40 @@ clean_sea_data <- function(raw_data) {
     uncount(batch_size) |>
     mutate(length = length |> str_replace(",", ".") |> as.numeric()) |>
     mutate(length = length / 10) # Convert to cm.
-
+  # Pomet - Trait.
+  clean_data$pomet$trait <- raw_data$pomet$trait |>
+    select(
+      ID_interne_prelevement,
+      Annee,
+      Mois,
+      Coord_Deb_xmin,
+      Coord_Deb_ymin,
+      Coord_Fin_xmin,
+      Coord_Fin_ymin
+    ) |>
+    rename(
+      trait = ID_interne_prelevement,
+      year = Annee,
+      month = Mois,
+      x_start = Coord_Deb_xmin,
+      y_start = Coord_Deb_ymin,
+      x_end = Coord_Fin_xmin,
+      y_end = Coord_Fin_ymin,
+    ) |>
+    mutate(
+      x_start = x_start |> str_replace(",", ".") |> as.numeric(),
+      x_end = x_end |> str_replace(",", ".") |> as.numeric(),
+      y_start = y_start |> str_replace(",", ".") |> as.numeric(),
+      y_end = y_end |> str_replace(",", ".") |> as.numeric(),
+      longitude = (x_start + x_end) / 2,
+      latitude = (y_start + y_end) / 2
+    ) |>
+    select(-c(
+      x_start,
+      y_start,
+      x_end,
+      y_end
+    ))
   # Nurse - Catch.
   clean_data$nurse$catch <- raw_data$nurse$catch |>
     select(
@@ -94,7 +127,6 @@ clean_sea_data <- function(raw_data) {
       species = Espece,
       abundance = Nombre
     )
-
   # Nurse - Size.
   clean_data$nurse$size <- raw_data$nurse$size |>
     select(
@@ -116,7 +148,22 @@ clean_sea_data <- function(raw_data) {
     filter(!is.na(length)) |>
     uncount(batch_size) |>
     mutate(length = length |> str_replace(",", ".") |> as.numeric())
-
+  # Nurse - Trait
+  clean_data$nurse$trait <- raw_data$nurse$trait |>
+    select(
+      Trait,
+      Annee,
+      Mois,
+      Lat,
+      Long
+    ) |>
+    rename(
+      trait = Trait,
+      year = Annee,
+      month = Mois,
+      latitude = Lat,
+      longitude = Long
+    )
   # Solper - Catch.
   clean_data$solper$catch <- raw_data$solper$catch |>
     select(
@@ -131,7 +178,6 @@ clean_sea_data <- function(raw_data) {
       species = Espece,
       abundance = Nombre
     )
-
   # Solper - Size.
   clean_data$solper$size <- raw_data$solper$size |>
     select(
@@ -153,6 +199,8 @@ clean_sea_data <- function(raw_data) {
     filter(!is.na(length)) |>
     uncount(batch_size) |>
     mutate(length = length |> str_replace(",", ".") |> as.numeric())
+  # Solper - Trait.
+  clean_data$solper$trait <- NA # For now, we exclude SOLPER survey.
 
   clean_data
 }
@@ -185,6 +233,11 @@ combine_sea_data <- function(clean_data) {
     clean_data$solper$size |> mutate(survey = "solper")
   )
 
+  combined$trait <- rbind(
+    clean_data$pomet$trait |> mutate(survey = "pomet"),
+    clean_data$nurse$trait |> mutate(survey = "nurse")
+  )
+
   combined
 }
 
@@ -197,7 +250,9 @@ combine_sea_data <- function(clean_data) {
 #' @return List of cleaned data frame.
 #' @export
 validate_species_names <- function(data_list, solper_reftax) {
-  data_list |> purrr::map(clean_name, solper_reftax)
+  data <- data_list[c("catch", "size")] |> purrr::map(clean_name, solper_reftax)
+  data$trait <- data_list$trait
+  data
 }
 
 #' Clean species name of a dataframe using fishbase.
@@ -248,7 +303,7 @@ transform_solper_name <- function(df, fname, solper = FALSE) {
 #' @return data_list where non-valid species have been removed.
 #' @export
 filter_valid <- function(data_list) {
-  data_list |> purrr::map(function(df) {
+  data_list[c("catch", "size")] |> purrr::map(function(df) {
     df |>
       filter(is_valid) |>
       select(-c(is_valid, species))

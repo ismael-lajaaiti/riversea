@@ -4,7 +4,7 @@
 \alias{preprocess_sea_data}
 \title{Entire pipeline to prepare the sea data survey for analysis.}
 \usage{
-preprocess_sea_data(dir)
+preprocess_sea_data(dir, solper_reftax)
 }
 \arguments{
 \item{dir}{Directory of raw data.}

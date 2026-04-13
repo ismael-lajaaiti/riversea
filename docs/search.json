@@ -466,14 +466,14 @@
     "href": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams-1",
     "title": "RIVERSEA Project",
     "section": "Measuring the impact of dams",
-    "text": "Measuring the impact of dams\n\nEquation of the metric"
+    "text": "Measuring the impact of dams\n\nDistance to the closest dam\nHeight of the closest dam\nAccumulated heights of upstream/downstream dams\nAt what scale dam impacts operate?\n\nUse the literature, but difficult because of varied impact on species\nMake the statistical model infer the scale\n\\(\\text{Dam}_\\text{down} = \\sum_i w(h_i) e^{-\\frac{d_i}{L}}\\)"
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#statistical-model",
     "href": "presentations/2026-04-14_wine.html#statistical-model",
     "title": "RIVERSEA Project",
     "section": "Statistical model",
-    "text": "Statistical model\n\n\nEquation of the model\n\n\n\n\n\nVannote, Robin L., G. Wayne Minshall, Kenneth W. Cummins, James R. Sedell, and Colbert E. Cushing. 1980. “The River Continuum Concept.” Canadian Journal of Fisheries and Aquatic Sciences 37 (1): 130–37. https://doi.org/10.1139/f80-017.\n\n\nWard, J., and Jack Stanford. 1983. “The Serial Discontinuity Concept of Lotic Ecosystems.” Dynamics of Lotic Ecosystems 10 (January)."
+    "text": "Statistical model\n\n\nEquation of the model"
   },
   {
     "objectID": "manuscript/manuscript.html",
@@ -564,7 +564,7 @@
     "href": "analysis/B2-get-diet-fishbase.html#add-larvae-stage",
     "title": "Get diet table from fishbase",
     "section": "2.1. Add larvae stage",
-    "text": "2.1. Add larvae stage\nNext, we want to add a larvae stage for all species.\n\nd_larvae &lt;- diet_table_wide |&gt;\n  group_by(species) |&gt;\n  summarise(has_larvae = \"larvae\" %in% stage, .groups = \"drop\")\nd_larvae |&gt; count(has_larvae)\n\n# A tibble: 2 × 2\n  has_larvae     n\n  &lt;lgl&gt;      &lt;int&gt;\n1 FALSE        148\n2 TRUE          28\n\n\nSo we see that for most species, they do not have a larvae stage. We can add them with a utility function. We assume that larvae only feed on zooplankton.\n\ndiet_with_larvae &lt;- add_larvae(diet_table_wide)\ndiet_with_larvae |&gt; filter(species == sample(species, 1))\n\n# A tibble: 2 × 9\n  species      stage zoobenthos detritus zooplankton  fish phytoplankton biofilm\n  &lt;chr&gt;        &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;\n1 Symphodus b… larv…          0        0           1     0             0       0\n2 Symphodus b… &lt;NA&gt;           0        0           0     0             0       0\n# ℹ 1 more variable: macrophyte &lt;dbl&gt;"
+    "text": "2.1. Add larvae stage\nNext, we want to add a larvae stage for all species.\n\nd_larvae &lt;- diet_table_wide |&gt;\n  group_by(species) |&gt;\n  summarise(has_larvae = \"larvae\" %in% stage, .groups = \"drop\")\nd_larvae |&gt; count(has_larvae)\n\n# A tibble: 2 × 2\n  has_larvae     n\n  &lt;lgl&gt;      &lt;int&gt;\n1 FALSE        148\n2 TRUE          28\n\n\nSo we see that for most species, they do not have a larvae stage. We can add them with a utility function. We assume that larvae only feed on zooplankton.\n\ndiet_with_larvae &lt;- add_larvae(diet_table_wide)\ndiet_with_larvae |&gt; filter(species == sample(species, 1))\n\n# A tibble: 4 × 9\n  species      stage zoobenthos detritus zooplankton  fish phytoplankton biofilm\n  &lt;chr&gt;        &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;\n1 Abramis bra… recr…          1        1           1     0             0       0\n2 Abramis bra… larv…          0        0           1     0             0       0\n3 Abramis bra… juv.…          1        1           0     0             0       0\n4 Abramis bra… adul…          1        1           0     0             0       0\n# ℹ 1 more variable: macrophyte &lt;dbl&gt;"
   },
   {
     "objectID": "analysis/C3-get-lifestage-size.html",
@@ -585,14 +585,14 @@
     "href": "presentations/2026-04-14_wine.html#the-river-continuum-concept",
     "title": "RIVERSEA Project",
     "section": "The River Continuum Concept",
-    "text": "The River Continuum Concept\n\nHeadwater\n\nCanopied by terrestrial vegatation\nCoarse substrate\nLight-limited\nHeterotrophic\n\n\nVannote et al. (1980)"
+    "text": "The River Continuum Concept\n\nVannote et al. (1980)"
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#the-serial-discontinuity-concept",
     "href": "presentations/2026-04-14_wine.html#the-serial-discontinuity-concept",
     "title": "RIVERSEA Project",
     "section": "The Serial Discontinuity Concept",
-    "text": "The Serial Discontinuity Concept\n\nHow dams impact biotic and abiotic parameters along the river continuum.\n\nWard and Stanford (1983)"
+    "text": "The Serial Discontinuity Concept\n\nWard and Stanford (1983)"
   },
   {
     "objectID": "manuscript/manuscript.html#venn-diagramm",
@@ -600,5 +600,103 @@
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "Venn diagramm",
     "text": "Venn diagramm\n\n\n\n\n\n\nFigure S2: Venn diagram of common species between surveys."
+  },
+  {
+    "objectID": "index.html#d.-general-informations",
+    "href": "index.html#d.-general-informations",
+    "title": "Analysis",
+    "section": "D. General informations",
+    "text": "D. General informations\n\nSpatial distribution of data"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-the-continuum",
+    "href": "presentations/2026-04-14_wine.html#data-the-continuum",
+    "title": "RIVERSEA Project",
+    "section": "Data: the continuum",
+    "text": "Data: the continuum"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-river-and-coast",
+    "href": "presentations/2026-04-14_wine.html#data-river-and-coast",
+    "title": "RIVERSEA Project",
+    "section": "Data: river and coast",
+    "text": "Data: river and coast\n\n\nSpecies abundances\nIndividual fish size (sometimes missing)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-environmental-variables",
+    "href": "presentations/2026-04-14_wine.html#data-environmental-variables",
+    "title": "RIVERSEA Project",
+    "section": "Data: environmental variables",
+    "text": "Data: environmental variables\n\nDistance to the sea/source\nDams location\nTemperature\nChemical information"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-river-and-coast-1",
+    "href": "presentations/2026-04-14_wine.html#data-river-and-coast-1",
+    "title": "RIVERSEA Project",
+    "section": "Data: river and coast",
+    "text": "Data: river and coast\n\nSpecies abundances\nIndividual fish size (sometimes missing)\nTheir diet with fishbase\nBuild the metaweb using predation window"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#data-from-size-to-food-webs",
+    "href": "presentations/2026-04-14_wine.html#data-from-size-to-food-webs",
+    "title": "RIVERSEA Project",
+    "section": "Data: from size to food webs",
+    "text": "Data: from size to food webs\n\nSpecies abundances\nIndividual fish size (sometimes missing)\nTheir diet with fishbase\nBuild the metaweb using predation window (e.g. 5-45% body size)\nInfer local food web by subsampling"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#what-we-have",
+    "href": "presentations/2026-04-14_wine.html#what-we-have",
+    "title": "RIVERSEA Project",
+    "section": "What we have",
+    "text": "What we have\n\n\nSpecies abundances\nIndividual fish size (sometimes missing)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-we-build-food-webs",
+    "href": "presentations/2026-04-14_wine.html#how-we-build-food-webs",
+    "title": "RIVERSEA Project",
+    "section": "How we build food webs",
+    "text": "How we build food webs"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-the-base",
+    "href": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-the-base",
+    "title": "RIVERSEA Project",
+    "section": "How we reconstruct food webs: the base",
+    "text": "How we reconstruct food webs: the base\nThe base"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-diet-and-piscivory",
+    "href": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-diet-and-piscivory",
+    "title": "RIVERSEA Project",
+    "section": "How we reconstruct food webs: diet and piscivory",
+    "text": "How we reconstruct food webs: diet and piscivory\n\nExtract fish diet with fishbase\nPiscivorous interaction infered with predation window (e.g. 5-45% body size)\nBuild a global metaweb with all possible interactions\nInfer local food web by subsampling"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#what-we-plan-to-add",
+    "href": "presentations/2026-04-14_wine.html#what-we-plan-to-add",
+    "title": "RIVERSEA Project",
+    "section": "What we plan to add",
+    "text": "What we plan to add\n\nDistance to the sea/source\nDams location\nTemperature\nChemical information\n… (any suggestion?)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs",
+    "href": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs",
+    "title": "RIVERSEA Project",
+    "section": "How we reconstruct food webs",
+    "text": "How we reconstruct food webs\nThe base"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-1",
+    "href": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-1",
+    "title": "RIVERSEA Project",
+    "section": "How we reconstruct food webs",
+    "text": "How we reconstruct food webs\nDiet and piscivory\n\nExtract fish diet with fishbase\nPiscivorous interaction infered with predation window (e.g. 5-45% body size)\nBuild a global metaweb with all possible interactions\nInfer local food web by subsampling"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#references",
+    "href": "presentations/2026-04-14_wine.html#references",
+    "title": "RIVERSEA Project",
+    "section": "References",
+    "text": "References\n\n\n\n\nVannote, Robin L., G. Wayne Minshall, Kenneth W. Cummins, James R. Sedell, and Colbert E. Cushing. 1980. “The River Continuum Concept.” Canadian Journal of Fisheries and Aquatic Sciences 37 (1): 130–37. https://doi.org/10.1139/f80-017.\n\n\nWard, J., and Jack Stanford. 1983. “The Serial Discontinuity Concept of Lotic Ecosystems.” Dynamics of Lotic Ecosystems 10 (January)."
   }
 ]
