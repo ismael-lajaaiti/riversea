@@ -20,3 +20,6 @@ This page lists all the analyses of the RIVERSEA project.
 
 1. [Explore coastal data and fish size measurement](analysis/C1-explore-coast-data.html)
 2. [Infer missing fish sizes](analysis/C2-get-fish-sizes.html)
+
+## D. General informations
+1. [Spatial distribution of data](analysis/D1-spatial-distribution.qmd)

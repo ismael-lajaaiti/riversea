@@ -1,6 +1,7 @@
 ---
-title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
-author: "Ismaël Lajaaiti, Alain Danet, Anik Brindamour, Eric Edeline"
+title: "RIVERSEA Project"
+subtitle: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
+author: "Ismaël Lajaaiti, Alain Danet, Anik Brind'Amour, Eric Edeline"
 date: "04/14/2026"
 date-format: long
 bibliography: references.bib
@@ -16,6 +17,7 @@ format:
         incremental: true
         slide-number: true
         embed-resources: true
+        theme: simple
 ---
 
 ```{r}

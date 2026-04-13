@@ -1,0 +1,11 @@
+---
+title: "Data spatial distribution"
+format: 
+  html:
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+## Summary
