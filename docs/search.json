@@ -459,21 +459,21 @@
     "href": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams",
     "title": "RIVERSEA Project",
     "section": "Measuring the impact of dams",
-    "text": "Measuring the impact of dams"
+    "text": "Measuring the impact of dams\n\nDistance to the closest dam\nHeight/reservoir volume of the closest dam\nAccumulated heights of upstream/downstream dams (Dean et al. 2023)\nAt what scale dam impacts operate?\n\nUse the literature, but difficult because of varied impacts on species\nMake the statistical model infer the scale\n\\(\\text{Dam}_\\text{down}(L) = \\sum_{i \\in \\text{dam}} h_i e^{-\\frac{d_i}{L}}\\)\n\\(L\\) define the scale at which dam operates\nTry different values and compare WAIC (that is, model performance)"
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams-1",
     "href": "presentations/2026-04-14_wine.html#measuring-the-impact-of-dams-1",
     "title": "RIVERSEA Project",
     "section": "Measuring the impact of dams",
-    "text": "Measuring the impact of dams\n\nDistance to the closest dam\nHeight of the closest dam\nAccumulated heights of upstream/downstream dams\nAt what scale dam impacts operate?\n\nUse the literature, but difficult because of varied impact on species\nMake the statistical model infer the scale\n\\(\\text{Dam}_\\text{down} = \\sum_i w(h_i) e^{-\\frac{d_i}{L}}\\)"
+    "text": "Measuring the impact of dams\n\nDistance to the closest dam\nHeight of the closest dam\nAccumulated heights of upstream/downstream dams (Dean et al. 2023)\nAt what scale dam impacts operate?\n\nUse the literature, but difficult because of varied impacts on species\nMake the statistical model infer the scale\n\\(\\text{Dam}_\\text{down} = \\sum_{i \\in \\text{dam}} h_i e^{-\\frac{d_i}{L}}\\)"
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#statistical-model",
     "href": "presentations/2026-04-14_wine.html#statistical-model",
     "title": "RIVERSEA Project",
     "section": "Statistical model",
-    "text": "Statistical model\n\n\nEquation of the model"
+    "text": "Statistical model"
   },
   {
     "objectID": "manuscript/manuscript.html",
@@ -585,14 +585,14 @@
     "href": "presentations/2026-04-14_wine.html#the-river-continuum-concept",
     "title": "RIVERSEA Project",
     "section": "The River Continuum Concept",
-    "text": "The River Continuum Concept\n\nVannote et al. (1980)"
+    "text": "The River Continuum Concept\n\n\n Vannote et al. (1980)\n\n\nIn natural stream, communities form a continuum\nSpecies turnover \\(\\rightarrow\\) function replacement \\(\\rightarrow\\) efficient use of energy input\nDownstream community captalize on upstream community outputs\nProvide a baseline expectation\nLimitations:\n\nFocus on the main stream: ignore the stream network\nDispersal ability of organisms are disregarded"
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#the-serial-discontinuity-concept",
     "href": "presentations/2026-04-14_wine.html#the-serial-discontinuity-concept",
     "title": "RIVERSEA Project",
     "section": "The Serial Discontinuity Concept",
-    "text": "The Serial Discontinuity Concept\n\nWard and Stanford (1983)"
+    "text": "The Serial Discontinuity Concept\n\n\n\nWard and Stanford (1983) assess the impact of discontinuities (e.g. dams) on downstream biotic and abiotic conditions\nDiscontinuity impact with its position along the river continuum\nCumulative effects of impoundment?\nLimitation: we rarely have access to natural stream at the scale of the bassin\n\n\n Ward and Stanford (1983)"
   },
   {
     "objectID": "manuscript/manuscript.html#venn-diagramm",
@@ -648,7 +648,7 @@
     "href": "presentations/2026-04-14_wine.html#what-we-have",
     "title": "RIVERSEA Project",
     "section": "What we have",
-    "text": "What we have\n\n\nSpecies abundances\nIndividual fish size (sometimes missing)"
+    "text": "What we have\n\n\n\n\n\n\n\n\n\n\n\n\n\nRiver and coast/estuary data (respectively provided by Alain and Anik)\nLong time series (e.g. Nurse survey started in 1980)\n\nNot always continuous (gaps)\nDifferent protocoles\n\nSpecies abundances\nIndividual fish size (sometimes missing)"
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#how-we-build-food-webs",
@@ -676,7 +676,7 @@
     "href": "presentations/2026-04-14_wine.html#what-we-plan-to-add",
     "title": "RIVERSEA Project",
     "section": "What we plan to add",
-    "text": "What we plan to add\n\nDistance to the sea/source\nDams location\nTemperature\nChemical information\n… (any suggestion?)"
+    "text": "What we plan to add\nFor each local community:\n\nDistance to the sea/source\nDams location\nSalinity\nTemperature\nNutrient concentration\n… (any suggestion?)\n\n\n\n\n\n\n\nCaution\n\n\nData should be available at each site (or can be infered) along the river-sea continuum."
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs",
@@ -690,13 +690,97 @@
     "href": "presentations/2026-04-14_wine.html#how-we-reconstruct-food-webs-1",
     "title": "RIVERSEA Project",
     "section": "How we reconstruct food webs",
-    "text": "How we reconstruct food webs\nDiet and piscivory\n\nExtract fish diet with fishbase\nPiscivorous interaction infered with predation window (e.g. 5-45% body size)\nBuild a global metaweb with all possible interactions\nInfer local food web by subsampling"
+    "text": "How we reconstruct food webs\nDiet and piscivory\n\nExtract fish diet with fishbase\nDiet changes with ontogeny (juvenile vs adults)\nPiscivorous interaction infered with predation window (e.g. 5-45% body size)\nBuild a global metaweb with all possible interactions\nInfer local food web by subsampling\nQuantify structure with connectance and trophic length (a metric weighted by biomass?)\n\n\n\n\n\n\n\nNote\n\n\nMethods of Bonnaffé et al. (2021)."
   },
   {
     "objectID": "presentations/2026-04-14_wine.html#references",
     "href": "presentations/2026-04-14_wine.html#references",
     "title": "RIVERSEA Project",
     "section": "References",
-    "text": "References\n\n\n\n\nVannote, Robin L., G. Wayne Minshall, Kenneth W. Cummins, James R. Sedell, and Colbert E. Cushing. 1980. “The River Continuum Concept.” Canadian Journal of Fisheries and Aquatic Sciences 37 (1): 130–37. https://doi.org/10.1139/f80-017.\n\n\nWard, J., and Jack Stanford. 1983. “The Serial Discontinuity Concept of Lotic Ecosystems.” Dynamics of Lotic Ecosystems 10 (January)."
+    "text": "References\n\n\n\n\nBinzer, Amrei, Christian Guill, Ulrich Brose, and Björn C. Rall. 2012. “The Dynamics of Food Chains Under Climate Change and Nutrient Enrichment.” Philosophical Transactions of the Royal Society B: Biological Sciences 367 (1605): 2935–44. https://doi.org/10.1098/rstb.2012.0230.\n\n\nBonnaffé, Willem, Alain Danet, Camille Leclerc, Victor Frossard, Eric Edeline, and Arnaud Sentis. 2024. “The Interaction Between Warming and Enrichment Accelerates Food-Web Simplification in Freshwater Systems.” Ecology Letters 27 (8): e14480. https://doi.org/10.1111/ele.14480.\n\n\nBonnaffé, Willem, Alain Danet, Stéphane Legendre, and Eric Edeline. 2021. “Comparison of Size-Structured and Species-Level Trophic Networks Reveals Antagonistic Effects of Temperature on Vertical Trophic Diversity at the Population and Species Level.” Oikos 130 (8): 1297–309. https://doi.org/10.1111/oik.08173.\n\n\nChan, Jeffery C. F., Billy Y. K. Lam, David Dudgeon, and Jia Huan Liew. 2025. “Global Consequences of Dam-Induced River Fragmentation on Diadromous Migrants: A Systematic Review and Meta-Analysis.” Biological Reviews 100 (5): 2020–37. https://doi.org/10.1111/brv.70032.\n\n\nDean, E. M., Dana M. Infante, Hao Yu, Arthur Cooper, Lizhu Wang, and Jared Ross. 2023. “Cumulative Effects of Dams on Migratory Fishes Across the Conterminous United States: Regional Patterns in Fish Responses to River Network Fragmentation.” River Research and Applications 39 (9): 1736–48. https://doi.org/10.1002/rra.4173.\n\n\nHe, Fengzhi, Christiane Zarfl, Klement Tockner, et al. 2024. “Hydropower Impacts on Riverine Biodiversity.” Nature Reviews Earth & Environment 5 (11): 755–72. https://doi.org/10.1038/s43017-024-00596-0.\n\n\nHo, Hsi-Cheng, Florian Altermatt, and Luca Carraro. 2023. “Coupled Biological and Hydrological Processes Shape Spatial Food-Web Structures in Riverine Metacommunities.” Frontiers in Ecology and Evolution 11 (June). https://doi.org/10.3389/fevo.2023.1147834.\n\n\nJackson, Michelle C., Samraat Pawar, and Guy Woodward. 2021. “The Temporal Dynamics of Multiple Stressor Effects: From Individuals to Ecosystems.” Trends in Ecology & Evolution 36 (5): 402–10. https://doi.org/10.1016/j.tree.2021.01.005.\n\n\nLeCraw, Robin M., Pavel Kratina, and Diane S. Srivastava. 2014. “Food Web Complexity and Stability Across Habitat Connectivity Gradients.” Oecologia 176 (4): 903–15. https://doi.org/10.1007/s00442-014-3083-7.\n\n\nMaavara, Taylor, Qiuwen Chen, Kimberly Van Meter, et al. 2020. “River Dam Impacts on Biogeochemical Cycling.” Nature Reviews Earth & Environment 1 (2): 103–16. https://doi.org/10.1038/s43017-019-0019-0.\n\n\nMcCann, Kevin S., Kevin Cazelles, Andrew S. MacDougall, et al. 2021. “Landscape Modification and Nutrient-Driven Instability at a Distance.” Ecology Letters 24 (3): 398–414. https://doi.org/10.1111/ele.13644.\n\n\nOrr, James A., Samuel J. Macaulay, Adriana Mordente, et al. 2024. “Studying Interactions Among Anthropogenic Stressors in Freshwater Ecosystems: A Systematic Review of 2396 Multiple-Stressor Experiments.” Ecology Letters 27 (6): e14463. https://doi.org/10.1111/ele.14463.\n\n\nVannote, Robin L., G. Wayne Minshall, Kenneth W. Cummins, James R. Sedell, and Colbert E. Cushing. 1980. “The River Continuum Concept.” Canadian Journal of Fisheries and Aquatic Sciences 37 (1): 130–37. https://doi.org/10.1139/f80-017.\n\n\nWard, J., and Jack Stanford. 1983. “The Serial Discontinuity Concept of Lotic Ecosystems.” Dynamics of Lotic Ecosystems 10 (January)."
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#the-statistical-model",
+    "href": "presentations/2026-04-14_wine.html#the-statistical-model",
+    "title": "RIVERSEA Project",
+    "section": "The statistical model",
+    "text": "The statistical model\nCausal graph (DAG)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#the-statistical-model-1",
+    "href": "presentations/2026-04-14_wine.html#the-statistical-model-1",
+    "title": "RIVERSEA Project",
+    "section": "The statistical model",
+    "text": "The statistical model\nEquation\n\\[\n\\begin{align}\n\\text{TL}_i &= \\text{Normal}(\\mu_i, \\sigma_i) \\\\\n\\text{logit} (\\mu_i) &= \\beta_0 + \\beta_1 D_i + \\beta_2 \\text{Dam} + ... ~ \\text{[fixed effects]} \\\\\n&+ \\text{interactions} \\\\\n&+ \\text{random effects}\n\\end{align}\n\\]\n\nAccount for survey random effects\nAccount for spatial and temporal auto-correlation\nUse a spatiotemporal model (R-INLA)\nPossible limitations\n\nCan we distengle survey bias from environment effect?\nUntil where the concept of continuum holds?\nDo we have high variability in dams density between hydrographic bassin?"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#empirical-sudies",
+    "href": "presentations/2026-04-14_wine.html#empirical-sudies",
+    "title": "RIVERSEA Project",
+    "section": "Empirical sudies",
+    "text": "Empirical sudies\n\nMigratory fishes impacted by dam\nAccumulation of sediments"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#the-impacts-of-dams",
+    "href": "presentations/2026-04-14_wine.html#the-impacts-of-dams",
+    "title": "RIVERSEA Project",
+    "section": "The impacts of dams",
+    "text": "The impacts of dams\n\n\n He et al. (2024)\n\n\nDecrease richness abundance of migratory species (Chan et al. 2025)\nLotic to lentic environment (He et al. 2024)\nRetention of sediments and nutrients\nNutrient availability drive community richness (Ho et al. 2023)\nIncreasing connectivity promote trophic length through prey availability (LeCraw et al. 2014)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#the-impacts-of-dams-1",
+    "href": "presentations/2026-04-14_wine.html#the-impacts-of-dams-1",
+    "title": "RIVERSEA Project",
+    "section": "The impacts of dams",
+    "text": "The impacts of dams"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#the-impacts-of-dams-on-riverine-ecosystems",
+    "href": "presentations/2026-04-14_wine.html#the-impacts-of-dams-on-riverine-ecosystems",
+    "title": "RIVERSEA Project",
+    "section": "The impacts of dams on riverine ecosystems",
+    "text": "The impacts of dams on riverine ecosystems\n\n\n He et al. (2024)\n\n\nDecrease and richness abundance of migratory species (Chan et al. 2025)\nLotic to lentic environment (He et al. 2024)\nRetention of sediments and nutrients\nNutrient availability drive community richness (Ho et al. 2023)\nIncreasing connectivity promote trophic length through prey availability (LeCraw et al. 2014)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-these-impact-spread-throughout-the-river-sea-continuum",
+    "href": "presentations/2026-04-14_wine.html#how-these-impact-spread-throughout-the-river-sea-continuum",
+    "title": "RIVERSEA Project",
+    "section": "How these impact spread throughout the river-sea continuum",
+    "text": "How these impact spread throughout the river-sea continuum"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-these-impacts-spread-throughout-the-river-sea-continuum",
+    "href": "presentations/2026-04-14_wine.html#how-these-impacts-spread-throughout-the-river-sea-continuum",
+    "title": "RIVERSEA Project",
+    "section": "How these impacts spread throughout the river-sea continuum",
+    "text": "How these impacts spread throughout the river-sea continuum\nA meta-ecosystem perspective\n\n\n\nBecause ecosystem are connected in space the distrubance can spread\nAdressed by McCann et al. (2021) with a small meta-ecosystem model\nNutrients driven instability\nFinds that terminal node is the most sensitive\nIn our case, upstream of the dam\n\n\n\nMcCann et al. (2021)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#how-multiple-stressors-interact",
+    "href": "presentations/2026-04-14_wine.html#how-multiple-stressors-interact",
+    "title": "RIVERSEA Project",
+    "section": "How multiple stressors interact",
+    "text": "How multiple stressors interact\n\nStressors can interact with one another such that they can multiply or cancel their individual impacts (Jackson et al. 2021)\nThe interaction can be synergistic or antagonistic (Orr et al. 2024)\nTemperature \\(\\times\\) nutrients\n\nExpected in theory to be antagonistic (Binzer et al. 2012)\nBut not supported by empirical data (Bonnaffé et al. 2024)\n\nDam \\(\\times\\) nutrients\n\nDecrease in connectivity which favor accumulation and so eutrophication (Maavara et al. 2020)\n\nDam \\(\\times\\) dam\n\nDam have cumulative impact on migratory species (Dean et al. 2023)"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#in-brief",
+    "href": "presentations/2026-04-14_wine.html#in-brief",
+    "title": "RIVERSEA Project",
+    "section": "In brief",
+    "text": "In brief\n\nDams have been reported to have an impact on riverine ecosystem\nBut studies are mostly local and focused on species richness\nFurthermore the interaction of dams with other stressors has not been clearly assessed\nLastly, dam impact could spread to the sea but this propagation has not been investigated\n\nSeparation between freshwater and marine ecology\nDifferent survey and dataset\nDifferent interests, terminology, etc.\n\nWe aim to link these fields, to answer the following question…"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#what-we-want",
+    "href": "presentations/2026-04-14_wine.html#what-we-want",
+    "title": "RIVERSEA Project",
+    "section": "What we want",
+    "text": "What we want\nHow dams reshape food web along the river-sea continuum by disrupting spatial fluxes?\n\nQuantify the impact of dams on food web structure\nIn space and time\nAlong the river-sea continuum\nQuantify interaction of dam with other stressors\nBonus (liste au Père Noël):\n\nUse spatial correlation to assess flux between ecosystem (meta-ecosystem view)\nPredict the impact of dam removal (may be possible with bayesian model)\nSélune project: tracking the impact of dam removal in Britany"
+  },
+  {
+    "objectID": "presentations/2026-04-14_wine.html#roadmap",
+    "href": "presentations/2026-04-14_wine.html#roadmap",
+    "title": "RIVERSEA Project",
+    "section": "Roadmap",
+    "text": "Roadmap\n\nBuild food webs in the coast/estuary\nUpdate food webs in rivers\nCollect and infer if necessary environmental data\nFirst perform “coarse-grained” statistical analysis\n\nAt the bassin scale: Number of dam vs. Trends [TL vs Distance to the source]\nPCA to assess the main environmental drivers of food web structure\n\nNext, refine statistical analysis (R-INLA)…"
   }
 ]

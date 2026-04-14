@@ -32,14 +32,20 @@ unzip_workshop <- function(zip_file, dir) {
 #' @export
 create_plot_dag <- function() {
   dag <- dagify(
-    C ~ S + Comp. + Env.,
-    S ~ Env.,
-    Comp. ~ Env.,
-    latent = "Comp.",
-    exposure = "Env.",
-    outcome = "C"
+    TL ~ S + Comp + Env,
+    S ~ Env,
+    Comp ~ Env,
+    latent = "Comp",
+    exposure = "Env",
+    outcome = "TL",
+    labels = c(
+      TL = "Food web structure",
+      S = "Richness",
+      Comp = "Composition",
+      Env = "Environment"
+    )
   )
-  ggdag(dag) + theme_dag()
+  ggdag(dag, use_labels = "label") + theme_dag()
 }
 
 #' Plot venn diagram of common species between surveys
