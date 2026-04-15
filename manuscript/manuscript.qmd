@@ -131,6 +131,11 @@ the mean dispersal kernel is around 10km [@Comte-Olden-2018].
 - Connectivity structures and mititgates effect of drying events in
 macroinvertebrates communities [@Chalmandrier-etal-2025b].
 
+- It is key to adopt a network perspective to understand how diversity is
+created and maintained within riverine ecosystems [@Altermatt-2013b]. With this
+perspective one can account for the dendritic network and so the spatial
+processes that shape diversity.
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;

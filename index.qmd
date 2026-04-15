@@ -8,18 +8,18 @@ This page lists all the analyses of the RIVERSEA project.
 
 ## A. Method and model selection
 
-1. [Model eel abundance using INLA](analysis/A1-model-eel-abundance.html)
-2. [Define the statistical model](analysis/A2-define-model.html)
+1. [Model eel abundance using INLA](analysis/A1-model-eel-abundance.qmd)
+2. [Define the statistical model](analysis/A2-define-model.qmd)
 
 ## B. Diet information
 
-1. [Identify and get missing feeding information](analysis/B1-identify-diet.html)
+1. [Identify and get missing feeding information](analysis/B1-identify-diet.qmd)
 2. [Extract diet table from fishbase](analysis/B2-get-diet-fishbase.qmd)
 
 ## C. Fish sizes
 
-1. [Explore coastal data and fish size measurement](analysis/C1-explore-coast-data.html)
-2. [Infer missing fish sizes](analysis/C2-get-fish-sizes.html)
+1. [Explore coastal data and fish size measurement](analysis/C1-explore-coast-data.qmd)
+2. [Infer missing fish sizes](analysis/C2-get-fish-sizes.qmd)
 
 ## D. General informations
 1. [Spatial distribution of data](analysis/D1-spatial-distribution.qmd)
