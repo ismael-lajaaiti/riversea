@@ -782,5 +782,19 @@
     "title": "RIVERSEA Project",
     "section": "Roadmap",
     "text": "Roadmap\n\nBuild food webs in the coast/estuary\nUpdate food webs in rivers\nCollect and infer if necessary environmental data\nFirst perform “coarse-grained” statistical analysis\n\nAt the bassin scale: Number of dam vs. Trends [TL vs Distance to the source]\nPCA to assess the main environmental drivers of food web structure\n\nNext, refine statistical analysis (R-INLA)…"
+  },
+  {
+    "objectID": "analysis/D1-spatial-distribution.html",
+    "href": "analysis/D1-spatial-distribution.html",
+    "title": "Data spatial distribution",
+    "section": "",
+    "text": "library(renv)\nrenv::load()\nrenv::restore() # Install missing librairies.\nrenv::status() # Check the project state.\n\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\n\nHere is the map of the sampling station for the different surveys.\n\ntar_read(plot_station)"
+  },
+  {
+    "objectID": "analysis/D1-spatial-distribution.html#summary",
+    "href": "analysis/D1-spatial-distribution.html#summary",
+    "title": "Data spatial distribution",
+    "section": "",
+    "text": "library(renv)\nrenv::load()\nrenv::restore() # Install missing librairies.\nrenv::status() # Check the project state.\n\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\n\nHere is the map of the sampling station for the different surveys.\n\ntar_read(plot_station)"
   }
 ]
