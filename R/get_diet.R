@@ -183,7 +183,7 @@ get_piscivorous <- function(diet_table) {
 #'
 #' @param diet_table
 #'
-#' @return
+#' @return data frame
 #' @export
 get_predation_window <- function(diet_table) {
   sp_piscivorous <- get_piscivorous(diet_table)

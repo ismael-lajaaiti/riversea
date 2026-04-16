@@ -70,7 +70,7 @@ Then, we define size classes for all species.
 ```{r}
 size_classes <- compute_size_classes(
   ind_measure = d_size_clean,
-  num_classes = 5
+  num_classes = 4
 )
 head(size_classes)
 ```
@@ -107,15 +107,25 @@ resources <- c(
   "macrophyte",
   "detritus"
 )
+
 metaweb <- build_metaweb(
   tab_size_classes = size_classes,
   pred_win = predation_window,
   fish_diet_shift = d_diet,
   resource_diet_shift = d_resource,
-  num_classes = 5,
+  num_classes = 4,
   selected_resources = resources
 )
 ```
 
+We can check the connectance of the metaweb.
 
+```{r}
+metaweb_table <- tar_read(metaweb_table)
+metaweb_table
+```
+
+```{r}
+tar_read(plot_metaweb_connectance)
+```
 

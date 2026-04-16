@@ -4,7 +4,7 @@
 \alias{merge_diet_size}
 \title{Fill diet table with corresponding life stage size}
 \usage{
-merge_diet_size(diet, maturity_length)
+merge_diet_size(diet, maturity_length, epsilon = 1e-06)
 }
 \arguments{
 \item{diet}{diet table}

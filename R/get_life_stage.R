@@ -34,7 +34,7 @@ filter_out_only_larvae <- function(diet) {
 #'
 #' @return data.frame
 #' @export
-merge_diet_size <- function(diet, maturity_length) {
+merge_diet_size <- function(diet, maturity_length, epsilon = 1e-6) {
   species_no_lm <- maturity_length |>
     filter(is.na(maturity_length)) |>
     pull(species)
@@ -49,16 +49,16 @@ merge_diet_size <- function(diet, maturity_length) {
     left_join(maturity_length, by = "species") |>
     mutate(
       maturity_length =
-        if_else(species %in% species_no_juv, 2, maturity_length)
+        if_else(species %in% species_no_juv, 2 + epsilon, maturity_length)
     ) |>
     mutate(
       length_min = case_when(
         stage == "larvae" ~ 0,
-        stage == "juv./adults" ~ 2.01,
-        stage == "adults" ~ maturity_length + 0.01
+        stage == "juv./adults" ~ 2 + 2 * epsilon,
+        stage == "adults" ~ maturity_length + epsilon
       ),
       length_max = case_when(
-        stage == "larvae" ~ 2,
+        stage == "larvae" ~ 2 + epsilon,
         stage == "juv./adults" ~ maturity_length,
         stage == "adults" ~ Inf
       )
@@ -75,7 +75,7 @@ merge_diet_size <- function(diet, maturity_length) {
     filter(species %in% species_no_lm) |>
     group_by(species) |>
     summarise(
-      length_min = 2.01,
+      length_min = 2 + 2 * epsilon,
       length_max = Inf,
       stage = "combined", # or "combined" if you prefer
       across(zoobenthos:macrophyte, max),

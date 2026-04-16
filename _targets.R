@@ -4,6 +4,8 @@ renv::restore()
 renv::load()
 library(targets)
 library(tarchetypes)
+library(ggplot2)
+set_theme(theme_minimal())
 
 tar_option_set(
   packages = c(
@@ -23,7 +25,8 @@ tar_option_set(
     "readr",
     "rnaturalearth",
     "rnaturalearthdata",
-    "sf"
+    "sf",
+    "foodwebbuilder"
   )
 )
 tar_source()
@@ -31,6 +34,7 @@ tar_source()
 workshop_dir <- "data/river_workshop"
 sea_data_raw <- "data/sea/raw"
 station_file <- "data/river/station_analysis.csv"
+diet_resource_file <- "data/diet/resource_diet_shift.csv"
 
 list(
   # Parameters.
@@ -127,6 +131,25 @@ list(
     predation_window,
     get_predation_window(diet_size)
   ),
+  tar_target(
+    diet_resource,
+    read.csv(diet_resource_file)
+  ),
+  tar_target(n_class_vals, seq(3, 9)),
+  tar_target(
+    metaweb_table,
+    tibble(
+      num_classes = n_class_vals,
+      metaweb = list(get_metaweb(
+        sea_data_imputed$size,
+        diet_size,
+        diet_resource,
+        predation_window,
+        num_classes = n_class_vals
+      ))
+    ),
+    pattern = map(n_class_vals),
+  ),
   # Figures.
   tar_target(
     foodweb_fig,
@@ -149,6 +172,10 @@ list(
   tar_target(
     plot_station,
     plot_sampling(sea_data_tidy, station_file)
+  ),
+  tar_target(
+    plot_metaweb_connectance,
+    plot_sizeclass_connectance(metaweb_table)
   ),
   # Reports.
   tar_quarto(

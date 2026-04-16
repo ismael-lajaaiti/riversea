@@ -1,6 +1,6 @@
 ---
 title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
-author: "Ismaël Lajaaiti, Eric Edeline, Anik Brindamour, Alain Danet"
+author: "Ismaël Lajaaiti, Eric Edeline, Anik Brind'Amour, Alain Danet"
 bibliography: references.bib
 prefer-html: true
 format:
@@ -225,6 +225,12 @@ merging the diets of the two stages.
 We did not consider a recruit stage.
 
 #### The metaweb
+
+Predation window are assumed to be 0.03 to 0.45 of individual body size for
+piscivorous species.
+We then use the package [foodwebbuilder](https://github.com/Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder)
+to build the metaweb and the local food webs through subsampling.
+
 
 #### Subsampling the metaweb to get local food webs
 
