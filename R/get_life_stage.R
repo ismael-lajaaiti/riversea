@@ -18,6 +18,15 @@ get_maturity_length <- function(species) {
   rbind(lm, missing)
 }
 
+filter_out_only_larvae <- function(diet) {
+  sp_only_larvae <- diet |>
+    group_by(species) |>
+    summarise(has_larvae = "larvae" %in% stage, n = n(), .groups = "drop") |>
+    filter(has_larvae & n == 1) |>
+    pull(species)
+  diet |> filter_out(species %in% sp_only_larvae)
+}
+
 #' Fill diet table with corresponding life stage size
 #'
 #' @param diet diet table
@@ -29,10 +38,19 @@ merge_diet_size <- function(diet, maturity_length) {
   species_no_lm <- maturity_length |>
     filter(is.na(maturity_length)) |>
     pull(species)
+  species_no_juv <- diet |> # Species with no juvenile stage.
+    group_by(species) |>
+    summarise(has_juv = "juv./adults" %in% stage, .groups = "drop") |>
+    pull(species)
   diet <- diet |>
     filter_out(is.na(stage)) |>
     filter_out(stage == "recruits/juv.") |>
+    filter_out_only_larvae() |>
     left_join(maturity_length, by = "species") |>
+    mutate(
+      maturity_length =
+        if_else(species %in% species_no_juv, 2, maturity_length)
+    ) |>
     mutate(
       length_min = case_when(
         stage == "larvae" ~ 0,

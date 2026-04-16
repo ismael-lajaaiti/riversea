@@ -134,7 +134,10 @@ macroinvertebrates communities [@Chalmandrier-etal-2025b].
 - It is key to adopt a network perspective to understand how diversity is
 created and maintained within riverine ecosystems [@Altermatt-2013b]. With this
 perspective one can account for the dendritic network and so the spatial
-processes that shape diversity.
+processes that shape diversity. 
+
+- From points [@Death-Winterbourn-1995]... to lines (RCC, SDC)... to dendritic
+networks [@Shepherd-Ellis-1997].
 
 ### Dams
 
@@ -153,6 +156,11 @@ in water level and water flow.
 
 - Cumulative impact of dams can reduce the nutrient input in deltas
 [@Dean-etal-2023b].
+
+- A review [@Ellis-Jones-2013b] suggests that two recovery gradients exist in
+regulated river:
+  1) a longer, thermal gradient of around 100 km;
+  2) a shorter resource subsidy gradient of around 1-4 km.
 
 ## Methods
 

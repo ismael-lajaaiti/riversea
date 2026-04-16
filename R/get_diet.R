@@ -162,3 +162,45 @@ filter_out_rare <- function(diet_table, sea_data, occurence_min = 10) {
   n_removed <- length(setdiff(unique(diet_table$species), species_to_keep))
   list(diet = diet, n_removed = n_removed)
 }
+
+#' Get the list of piscivorous species from the diet table.
+#'
+#' @param diet_table
+#'
+#' @return vector of piscivorous species
+get_piscivorous <- function(diet_table) {
+  diet_table |>
+    filter(fish == 1) |>
+    pull(species) |>
+    unique()
+}
+
+#' Create predation window table.
+#'
+#' Beta_min and beta_max corresponds respectively to the minimal and maximal
+#' size on which species can feed on, relative to its own body size.
+#' For now, and for simplicity, we take constant values for piscivorous species.
+#'
+#' @param diet_table
+#'
+#' @return
+#' @export
+get_predation_window <- function(diet_table) {
+  sp_piscivorous <- get_piscivorous(diet_table)
+  sp_all <- diet_table |>
+    pull(species) |>
+    unique()
+  sp_remaining <- setdiff(sp_all, sp_piscivorous)
+  bind_rows(
+    tibble(
+      species = sp_piscivorous,
+      beta_min = 0.03,
+      beta_max = 0.45
+    ),
+    tibble(
+      species = sp_remaining,
+      beta_min = 0,
+      beta_max = 0
+    )
+  )
+}

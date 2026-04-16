@@ -15,11 +15,12 @@ This page lists all the analyses of the RIVERSEA project.
 
 1. [Identify and get missing feeding information](analysis/B1-identify-diet.qmd)
 2. [Extract diet table from fishbase](analysis/B2-get-diet-fishbase.qmd)
+3. [Build food webs](analysis/B3-build-food-webs.qmd)
 
 ## C. Fish sizes
 
 1. [Explore coastal data and fish size measurement](analysis/C1-explore-coast-data.qmd)
 2. [Infer missing fish sizes](analysis/C2-get-fish-sizes.qmd)
 
-## D. General informations
+## D. General information
 1. [Spatial distribution of data](analysis/D1-spatial-distribution.qmd)

@@ -2042,6 +2042,39 @@
       "Maintainer": "Richard Iannone <rich@posit.co>",
       "Repository": "CRAN"
     },
+    "foodwebbuilder": {
+      "Package": "foodwebbuilder",
+      "Version": "0.1.0",
+      "Source": "GitHub",
+      "Type": "Package",
+      "Title": "Reconstructing fish local food-webs accounting for intraspecific diet variation",
+      "Authors@R": "c( person( \"Jane\", \"Doe\", email = \"jane@example.com\", role = c(\"aut\", \"cre\") ) )",
+      "Description": "Reconstruct fish local food-web structures that account for intraspecific diet variation by integrating both taxonomic identity and body size.",
+      "License": "GPL (>= 3)",
+      "Encoding": "UTF-8",
+      "LazyData": "true",
+      "Roxygen": "list(markdown = TRUE)",
+      "RoxygenNote": "7.3.3",
+      "Depends": [
+        "R (>= 3.5)"
+      ],
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "testthat (>= 3.0.0)"
+      ],
+      "VignetteBuilder": "knitr",
+      "Config/testthat/edition": "3",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "foodwebbuilder",
+      "RemoteUsername": "Fellows-of-the-Fish-Food-Webs-F3W",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894",
+      "NeedsCompilation": "no",
+      "Author": "Jane Doe [aut, cre]",
+      "Maintainer": "Jane Doe <jane@example.com>"
+    },
     "forcats": {
       "Package": "forcats",
       "Version": "1.0.1",

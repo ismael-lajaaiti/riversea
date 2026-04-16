@@ -123,6 +123,10 @@ list(
     size_extrema,
     get_size_extrema(sea_data_imputed$size)
   ),
+  tar_target(
+    predation_window,
+    get_predation_window(diet_size)
+  ),
   # Figures.
   tar_target(
     foodweb_fig,
@@ -165,6 +169,11 @@ list(
   tar_quarto(
     report_B2,
     "analysis/B2-get-diet-fishbase.qmd",
+    quarto_args = c("--embed-resources"),
+  ),
+  tar_quarto(
+    report_B3,
+    "analysis/B3-build-food-webs.qmd",
     quarto_args = c("--embed-resources"),
   ),
   tar_quarto(

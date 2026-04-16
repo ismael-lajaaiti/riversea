@@ -5389,8 +5389,8 @@ color: #333333;
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>DiagrammeR<span class="sc">::</span><span class="fu">grViz</span>(<span class="fu">readLines</span>(<span class="fu">here</span>(<span class="st">&quot;figures&quot;</span>, <span class="st">&quot;foodweb.dot&quot;</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item" id="htmlwidget-406c825b7af8c7311b1a" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-406c825b7af8c7311b1a">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-259a04c8c9aefb02591a" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-259a04c8c9aefb02591a">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Ellipses represent broad basal categories on which fishes feed on. Our goal here is to determine for each fish species on which of these categories it feeds, and whether it is piscivorous or not. To do so we scrap fishbase.</p>
@@ -5536,10 +5536,10 @@ color: #333333;
 <pre><code># A tibble: 4 × 9
   species      stage zoobenthos detritus zooplankton  fish phytoplankton biofilm
   &lt;chr&gt;        &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
-1 Abramis bra… recr…          1        1           1     0             0       0
-2 Abramis bra… larv…          0        0           1     0             0       0
-3 Abramis bra… juv.…          1        1           0     0             0       0
-4 Abramis bra… adul…          1        1           0     0             0       0
+1 Myoxocephal… recr…          0        0           0     1             0       0
+2 Myoxocephal… larv…          1        0           1     0             1       0
+3 Myoxocephal… juv.…          1        0           1     1             0       0
+4 Myoxocephal… adul…          1        1           0     0             0       0
 # ℹ 1 more variable: macrophyte &lt;dbl&gt;</code></pre>
 </div>
 </div>
@@ -5684,12 +5684,12 @@ color: #333333;
 <pre><code># A tibble: 6 × 11
   species      length_min length_max stage zoobenthos detritus zooplankton  fish
   &lt;chr&gt;             &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;
-1 Abramis bra…       0           2   larv…          0        0           1     0
-2 Abramis bra…       2.01       28.8 juv.…          1        1           0     0
-3 Abramis bra…      28.8       Inf   adul…          1        1           0     0
-4 Agonus cata…       0           2   larv…          0        0           1     0
-5 Agonus cata…       2.01      Inf   comb…          1        0           1     0
-6 Alburnus al…       0           2   larv…          0        0           1     0
+1 Abramis bra…       0             2 larv…          0        0           1     0
+2 Abramis bra…       2.01          2 juv.…          1        1           0     0
+3 Abramis bra…       2.01        Inf adul…          1        1           0     0
+4 Agonus cata…       0             2 larv…          0        0           1     0
+5 Agonus cata…       2.01        Inf comb…          1        0           1     0
+6 Alburnus al…       0             2 larv…          0        0           1     0
 # ℹ 3 more variables: phytoplankton &lt;dbl&gt;, biofilm &lt;dbl&gt;, macrophyte &lt;dbl&gt;</code></pre>
 </div>
 </div>
