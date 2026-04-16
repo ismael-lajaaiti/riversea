@@ -76,3 +76,17 @@ tar_read(plot_metaweb_connectance)
 
 We observe little variation indicating that the number of size class does not
 change too much the structure of the food web reconstructed.
+
+## Get local food webs
+
+```{r}
+web_list <- tar_read(web_list)
+
+get_connectance(web_list$metaweb)
+
+length(web_list$local)
+```
+
+
+
+

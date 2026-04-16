@@ -104,8 +104,20 @@ data_targets <- list(
         diet_resource,
         predation_window,
         num_classes = n_class_vals
-      ))
+      )$metaweb)
     ),
     pattern = map(n_class_vals),
+  ),
+  tar_target(num_classes, 5),
+  tar_target(
+    web_list,
+    get_metaweb(
+      sea_data_imputed$size,
+      diet_size,
+      diet_resource,
+      predation_window,
+      num_classes = num_classes,
+      local = TRUE
+    )
   )
 )

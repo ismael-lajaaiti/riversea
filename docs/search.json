@@ -831,5 +831,12 @@
     "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
     "section": "Number of size classes and metaweb structure",
     "text": "Number of size classes and metaweb structure\n\n\n\n\ntargets::tar_read(plot_metaweb_connectance)\n\n\n\n\n\n\n\n\n\n\nFigure S3: How metaweb connectance varies with the number of size classes."
+  },
+  {
+    "objectID": "analysis/B3-build-food-webs.html#get-local-food-webs",
+    "href": "analysis/B3-build-food-webs.html#get-local-food-webs",
+    "title": "Build food webs",
+    "section": "Get local food webs",
+    "text": "Get local food webs"
   }
 ]

@@ -11,6 +11,8 @@
 #' @param selected_resources which resources are considered at the base of the
 #' web, by default we consider: zooplankton, phytoplankton, biofilm, zoobenthos,
 #' macrophyte and detritus.
+#' @param local whether or not to build local food webs.
+#' @param local_id column name indicating the location.
 #'
 #' @return metaweb as a matrix.
 #' @export
@@ -19,7 +21,9 @@ get_metaweb <- function(
   diet_fish,
   diet_resource,
   predation_window,
+  local = FALSE,
   num_classes = 5,
+  local_id = "trait",
   selected_resources = c(
     "zooplankton",
     "phytoplankton",
@@ -64,7 +68,7 @@ get_metaweb <- function(
     ind_measure = size_clean,
     num_classes = num_classes
   )
-  build_metaweb(
+  metaweb <- build_metaweb(
     tab_size_classes = size_classes,
     pred_win = predation_window,
     fish_diet_shift = diet_fish,
@@ -72,6 +76,17 @@ get_metaweb <- function(
     num_classes = num_classes,
     selected_resources = selected_resources
   )
+  res <- list(metaweb = metaweb, size_class = size_classes)
+  if (local) {
+    res$local <- build_local_foodweb(
+      ind_measure = size_clean,
+      local_id = local_id,
+      metaweb = metaweb,
+      tab_size_classes = size_classes,
+      selected_resources = selected_resources
+    )
+  }
+  res
 }
 
 #' Compute the connectance of the web.

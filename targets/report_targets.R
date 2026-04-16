@@ -22,8 +22,7 @@ report_targets <- list(
   tar_quarto(
     report_B3,
     "analysis/B3-build-food-webs.qmd",
-    quarto_args = c("--embed-resources"),
-    quiet = FALSE
+    quarto_args = c("--embed-resources")
   ),
   tar_quarto(
     report_C1,
