@@ -8,15 +8,12 @@ execute:
     warning: false
 ---
 
-## Summary
-
 ```{r}
 #| output: false
 library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
-
 library(targets)
 library(here)
 tar_config_set(
@@ -26,106 +23,56 @@ library(foodwebbuilder)
 library(dplyr)
 ```
 
-Individual fish size.
+## Build the metaweb
+
+To build the metaweb, we need the following.
+
+The diet table for fish species considered.
 
 ```{r}
-d_size <- tar_read(sea_data_imputed)$size
-d_size <- d_size |> rename(species_code = species_valid, size = length)
-head(d_size)
+diet_fish <- tar_read(diet_size)
+head(diet_fish)
 ```
 
-Diet.
+The diet for the resources considered.
 
 ```{r}
-d_diet <- read.csv(here(tar_read(diet_file)))
-d_diet <- d_diet |>
-  rename(
-    species_code = species,
-    size_min = length_min,
-    size_max = length_max,
-  )
-head(d_diet)
+diet_resource <- tar_read(diet_resource)
 ```
 
-Predation window.
+The size of each individual fish.
+
+```{r}
+size <- tar_read(sea_data_imputed)$size
+head(size)
+```
+
+The predation window.
 
 ```{r}
 predation_window <- tar_read(predation_window)
-predation_window <- predation_window |> rename(species_code = species)
 head(predation_window)
 ```
 
-First, we remove species with incomplete information.
+From this we can build the metaweb using helper functions of the 
+`foodwebbuilder` package.
+We wrapped them in a `riversea` function so the metaweb can be build directly.
+We just need to specify the number of size class, and the selected resources,
+although default values are set if not specified.
 
-```{r}
-d_size_clean <- remove_missing_species(
-  ind_measure = d_size,
-  fish_diet_shift = d_diet,
-  pred_win = predation_window
-)
-```
-
-Then, we define size classes for all species.
-
-```{r}
-size_classes <- compute_size_classes(
-  ind_measure = d_size_clean,
-  num_classes = 4
-)
-head(size_classes)
-```
-
-Next, we build the metaweb.
-Before that we need to load the diet table for the resources.
-
-```{r}
-d_resource <- read.csv(here("data", "diet", "resource_diet_shift.csv"))
-d_resource <- d_resource |>
-  mutate(species = if_else(
-    species == "biofilms",
-    "biofilm",
-    species
-  ))
-d_resource$species_code <- d_resource$species
-d_resource <- d_resource |> rename(
-  detritus = det,
-  biofilm = biof,
-  macrophyte = macroph,
-  phytoplankton = phytopl,
-  zooplankton = zoopl,
-  zoobenthos = zoob
-)
-head(d_resource)
-```
-
-```{r}
-resources <- c(
-  "zooplankton",
-  "phytoplankton",
-  "biofilm",
-  "zoobenthos",
-  "macrophyte",
-  "detritus"
-)
-
-metaweb <- build_metaweb(
-  tab_size_classes = size_classes,
-  pred_win = predation_window,
-  fish_diet_shift = d_diet,
-  resource_diet_shift = d_resource,
-  num_classes = 4,
-  selected_resources = resources
-)
-```
-
-We can check the connectance of the metaweb.
+We have already computed metaweb for different number of size classes,
+so we can check whether this parameter influences the metaweb structure.
 
 ```{r}
 metaweb_table <- tar_read(metaweb_table)
 metaweb_table
 ```
 
+We can plot the metaweb connectance against the number of size classes.
+
 ```{r}
 tar_read(plot_metaweb_connectance)
 ```
 
+We observe little variation indicating that the number of size class does not
+change too much the structure of the food web reconstructed.

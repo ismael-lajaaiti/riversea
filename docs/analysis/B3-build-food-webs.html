@@ -4077,7 +4077,7 @@ vertical-align: -.125em;
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#summary" id="toc-summary" class="nav-link active" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#build-the-metaweb" id="toc-build-the-metaweb" class="nav-link active" data-scroll-target="#build-the-metaweb">Build the metaweb</a></li>
   </ul>
 </nav>
     </div>
@@ -4103,72 +4103,64 @@ vertical-align: -.125em;
 </header>
 
 
-<section id="summary" class="level2">
-<h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(renv)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">load</span>()</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>() <span class="co"># Install missing librairies.</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">status</span>() <span class="co"># Check the project state.</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(targets)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_config_set</span>(</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">store =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;_targets&quot;</span>)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(foodwebbuilder)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(targets)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_config_set</span>(</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">store =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;_targets&quot;</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(foodwebbuilder)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Individual fish size.</p>
+<section id="build-the-metaweb" class="level2">
+<h2 class="anchored" data-anchor-id="build-the-metaweb">Build the metaweb</h2>
+<p>To build the metaweb, we need the following.</p>
+<p>The diet table for fish species considered.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>d_size <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(sea_data_imputed)<span class="sc">$</span>size</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>d_size <span class="ot">&lt;-</span> d_size <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">species_code =</span> species_valid, <span class="at">size =</span> length)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(d_size)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>diet_fish <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_size)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_fish)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>     trait size year survey  species_code measured
-1 61836630  6.3 2016  pomet Abramis brama     TRUE
-2 61836630  5.5 2016  pomet Abramis brama     TRUE
-3 61836630  7.0 2016  pomet Abramis brama     TRUE
-4 61836630  6.5 2016  pomet Abramis brama     TRUE
-5 61836630 19.3 2016  pomet Abramis brama     TRUE
-6 61836630  6.1 2016  pomet Abramis brama     TRUE</code></pre>
+<pre><code># A tibble: 6 × 11
+  species      length_min length_max stage zoobenthos detritus zooplankton  fish
+  &lt;chr&gt;             &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt; &lt;dbl&gt;
+1 Abramis bra…       0          2.00 larv…          0        0           1     0
+2 Abramis bra…       2.00       2.00 juv.…          1        1           0     0
+3 Abramis bra…       2.00     Inf    adul…          1        1           0     0
+4 Agonus cata…       0          2.00 larv…          0        0           1     0
+5 Agonus cata…       2.00     Inf    comb…          1        0           1     0
+6 Alburnus al…       0          2.00 larv…          0        0           1     0
+# ℹ 3 more variables: phytoplankton &lt;dbl&gt;, biofilm &lt;dbl&gt;, macrophyte &lt;dbl&gt;</code></pre>
 </div>
 </div>
-<p>Diet.</p>
+<p>The diet for the resources considered.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>d_diet <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="fu">tar_read</span>(diet_file)))</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>d_diet <span class="ot">&lt;-</span> d_diet <span class="sc">|&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">species_code =</span> species,</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">size_min =</span> length_min,</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">size_max =</span> length_max,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(d_diet)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>diet_resource <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_resource)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The size of each individual fish.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>size <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(sea_data_imputed)<span class="sc">$</span>size</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(size)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>         species_code size_min size_max       stage zoobenthos detritus
-1       Abramis brama 0.000000 2.000001      larvae          0        0
-2       Abramis brama 2.000002 2.000001 juv./adults          1        1
-3       Abramis brama 2.000002      Inf      adults          1        1
-4 Agonus cataphractus 0.000000 2.000001      larvae          0        0
-5 Agonus cataphractus 2.000002      Inf    combined          1        0
-6   Alburnus alburnus 0.000000 2.000001      larvae          0        0
-  zooplankton fish phytoplankton biofilm macrophyte
-1           1    0             0       0          0
-2           0    0             0       0          0
-3           0    0             0       0          0
-4           1    0             0       0          0
-5           1    0             0       0          0
-6           1    0             0       0          0</code></pre>
+<pre><code>     trait length year survey species_valid measured
+1 61836630    6.3 2016  pomet Abramis brama     TRUE
+2 61836630    5.5 2016  pomet Abramis brama     TRUE
+3 61836630    7.0 2016  pomet Abramis brama     TRUE
+4 61836630    6.5 2016  pomet Abramis brama     TRUE
+5 61836630   19.3 2016  pomet Abramis brama     TRUE
+6 61836630    6.1 2016  pomet Abramis brama     TRUE</code></pre>
 </div>
 </div>
-<p>Predation window.</p>
+<p>The predation window.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>predation_window <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(predation_window)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>predation_window <span class="ot">&lt;-</span> predation_window <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">species_code =</span> species)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(predation_window)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>predation_window <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(predation_window)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(predation_window)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 3
-  species_code        beta_min beta_max
+  species             beta_min beta_max
   &lt;chr&gt;                  &lt;dbl&gt;    &lt;dbl&gt;
 1 Alosa alosa             0.03     0.45
 2 Alosa fallax            0.03     0.45
@@ -4178,104 +4170,11 @@ vertical-align: -.125em;
 6 Arnoglossus laterna     0.03     0.45</code></pre>
 </div>
 </div>
-<p>First, we remove species with incomplete information.</p>
+<p>From this we can build the metaweb using helper functions of the <code>foodwebbuilder</code> package. We wrapped them in a <code>riversea</code> function so the metaweb can be build directly. We just need to specify the number of size class, and the selected resources, although default values are set if not specified.</p>
+<p>We have already computed metaweb for different number of size classes, so we can check whether this parameter influences the metaweb structure.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>d_size_clean <span class="ot">&lt;-</span> <span class="fu">remove_missing_species</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">ind_measure =</span> d_size,</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">fish_diet_shift =</span> d_diet,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">pred_win =</span> predation_window</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>Then, we define size classes for all species.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>size_classes <span class="ot">&lt;-</span> <span class="fu">compute_size_classes</span>(</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">ind_measure =</span> d_size_clean,</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">num_classes =</span> <span class="dv">4</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(size_classes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>         species_code lower_bound upper_bound_1 upper_bound_2 upper_bound_3
-1       Abramis brama           0        14.000         28.00        42.000
-2 Agonus cataphractus           0         3.000          6.00         9.000
-3   Alburnus alburnus           0         3.900          7.80        11.700
-4         Alosa alosa           0         9.125         18.25        27.375
-5        Alosa fallax           0        10.000         20.00        30.000
-6      Ameiurus melas           0         4.750          9.50        14.250
-  upper_bound_4
-1          56.0
-2          12.0
-3          15.6
-4          36.5
-5          40.0
-6          19.0</code></pre>
-</div>
-</div>
-<p>Next, we build the metaweb. Before that we need to load the diet table for the resources.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>d_resource <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">&quot;data&quot;</span>, <span class="st">&quot;diet&quot;</span>, <span class="st">&quot;resource_diet_shift.csv&quot;</span>))</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>d_resource <span class="ot">&lt;-</span> d_resource <span class="sc">|&gt;</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">species =</span> <span class="fu">if_else</span>(</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    species <span class="sc">==</span> <span class="st">&quot;biofilms&quot;</span>,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;biofilm&quot;</span>,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    species</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>d_resource<span class="sc">$</span>species_code <span class="ot">&lt;-</span> d_resource<span class="sc">$</span>species</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>d_resource <span class="ot">&lt;-</span> d_resource <span class="sc">|&gt;</span> <span class="fu">rename</span>(</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">detritus =</span> det,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">biofilm =</span> biof,</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">macrophyte =</span> macroph,</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">phytoplankton =</span> phytopl,</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">zooplankton =</span> zoopl,</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">zoobenthos =</span> zoob</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(d_resource)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   species_code       species size_min size_max stage light detritus biofilm
-1      detritus      detritus        0        0     0     0        0       0
-2       biofilm       biofilm        0        0     0     1        0       0
-3  phytobenthos  phytobenthos        0        0     0     1        1       0
-4    macrophyte    macrophyte        0        0     0     1        1       0
-5 phytoplankton phytoplankton        0        0     0     1        0       0
-6   zooplankton   zooplankton        0        0     0     0        0       0
-  phytob macrophyte phytoplankton zooplankton zoobenthos fish ref_diet ref_ods
-1      0          0             0           0          0    0       NA      NA
-2      0          0             0           0          0    0       NA      NA
-3      0          0             0           0          0    0       NA      NA
-4      0          0             0           0          0    0       NA      NA
-5      0          0             0           0          0    0       NA      NA
-6      0          0             1           1          0    0       NA      NA
-  hypoth_ods remark
-1         NA     NA
-2         NA     NA
-3         NA     NA
-4         NA     NA
-5         NA     NA
-6         NA     NA</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>resources <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;zooplankton&quot;</span>,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;phytoplankton&quot;</span>,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;biofilm&quot;</span>,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;zoobenthos&quot;</span>,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;macrophyte&quot;</span>,</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;detritus&quot;</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>metaweb <span class="ot">&lt;-</span> <span class="fu">build_metaweb</span>(</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">tab_size_classes =</span> size_classes,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">pred_win =</span> predation_window,</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">fish_diet_shift =</span> d_diet,</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">resource_diet_shift =</span> d_resource,</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">num_classes =</span> <span class="dv">4</span>,</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">selected_resources =</span> resources</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>We can check the connectance of the metaweb.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>metaweb_table <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(metaweb_table)</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>metaweb_table</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>metaweb_table <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(metaweb_table)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>metaweb_table</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 7 × 2
   num_classes metaweb          
@@ -4289,8 +4188,9 @@ vertical-align: -.125em;
 7           9 &lt;dbl [915 × 915]&gt;</code></pre>
 </div>
 </div>
+<p>We can plot the metaweb connectance against the number of size classes.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_read</span>(plot_metaweb_connectance)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_read</span>(plot_metaweb_connectance)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -4299,6 +4199,7 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>We observe little variation indicating that the number of size class does not change too much the structure of the food web reconstructed.</p>
 
 
 </section>

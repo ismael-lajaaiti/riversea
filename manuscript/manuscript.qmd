@@ -230,6 +230,11 @@ Predation window are assumed to be 0.03 to 0.45 of individual body size for
 piscivorous species.
 We then use the package [foodwebbuilder](https://github.com/Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder)
 to build the metaweb and the local food webs through subsampling.
+We investigated the effect of the number of size classes on the structure of the
+reconstructed metaweb.
+We observed little influence of the number of size classes on the metaweb
+connectance @sfig-metaweb-sizeclass.
+So, we decided to split each species 5 size classes as in @Bonnaffé-etal-2024b.
 
 
 #### Subsampling the metaweb to get local food webs
@@ -275,3 +280,14 @@ Venn diagram of common species between surveys.
 
 :::
 
+## Number of size classes and metaweb structure
+
+::: {#sfig-metaweb-sizeclass}
+
+```{r}
+targets::tar_read(plot_metaweb_connectance)
+```
+
+How metaweb connectance varies with the number of size classes.
+
+:::
