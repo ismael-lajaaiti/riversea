@@ -4204,6 +4204,1571 @@ vertical-align: -.125em;
 </section>
 <section id="get-local-food-webs" class="level2">
 <h2 class="anchored" data-anchor-id="get-local-food-webs">Get local food webs</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>web_list <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(web_list)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(web_list<span class="sc">$</span>metaweb)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                      Abramis brama_1 Abramis brama_2 Abramis brama_3
+Abramis brama_1                     0               0               0
+Abramis brama_2                     0               0               0
+Abramis brama_3                     0               0               0
+Abramis brama_4                     0               0               0
+Abramis brama_5                     0               0               0
+Agonus cataphractus_1               0               0               0
+                      Abramis brama_4 Abramis brama_5 Agonus cataphractus_1
+Abramis brama_1                     0               0                     0
+Abramis brama_2                     0               0                     0
+Abramis brama_3                     0               0                     0
+Abramis brama_4                     0               0                     0
+Abramis brama_5                     0               0                     0
+Agonus cataphractus_1               0               0                     0
+                      Agonus cataphractus_2 Agonus cataphractus_3
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Agonus cataphractus_4 Agonus cataphractus_5
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Alburnus alburnus_1 Alburnus alburnus_2
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Alburnus alburnus_3 Alburnus alburnus_4
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Alburnus alburnus_5 Alosa alosa_1 Alosa alosa_2
+Abramis brama_1                         0             0             0
+Abramis brama_2                         0             0             0
+Abramis brama_3                         0             0             0
+Abramis brama_4                         0             0             0
+Abramis brama_5                         0             0             0
+Agonus cataphractus_1                   0             1             1
+                      Alosa alosa_3 Alosa alosa_4 Alosa alosa_5 Alosa fallax_1
+Abramis brama_1                   1             1             1              0
+Abramis brama_2                   0             0             0              0
+Abramis brama_3                   0             0             0              0
+Abramis brama_4                   0             0             0              0
+Abramis brama_5                   0             0             0              0
+Agonus cataphractus_1             1             1             1              1
+                      Alosa fallax_2 Alosa fallax_3 Alosa fallax_4
+Abramis brama_1                    0              1              1
+Abramis brama_2                    0              0              0
+Abramis brama_3                    0              0              0
+Abramis brama_4                    0              0              0
+Abramis brama_5                    0              0              0
+Agonus cataphractus_1              1              1              1
+                      Alosa fallax_5 Ameiurus melas_1 Ameiurus melas_2
+Abramis brama_1                    1                0                0
+Abramis brama_2                    0                0                0
+Abramis brama_3                    0                0                0
+Abramis brama_4                    0                0                0
+Abramis brama_5                    0                0                0
+Agonus cataphractus_1              1                0                1
+                      Ameiurus melas_3 Ameiurus melas_4 Ameiurus melas_5
+Abramis brama_1                      0                1                1
+Abramis brama_2                      0                0                0
+Abramis brama_3                      0                0                0
+Abramis brama_4                      0                0                0
+Abramis brama_5                      0                0                0
+Agonus cataphractus_1                1                1                1
+                      Ammodytes tobianus_1 Ammodytes tobianus_2
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Ammodytes tobianus_3 Ammodytes tobianus_4
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Ammodytes tobianus_5 Anguilla anguilla_1
+Abramis brama_1                          0                   0
+Abramis brama_2                          0                   0
+Abramis brama_3                          0                   0
+Abramis brama_4                          0                   0
+Abramis brama_5                          0                   0
+Agonus cataphractus_1                    0                   1
+                      Anguilla anguilla_2 Anguilla anguilla_3
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   1
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   0
+                      Anguilla anguilla_4 Anguilla anguilla_5 Aphia minuta_1
+Abramis brama_1                         1                   1              0
+Abramis brama_2                         1                   1              0
+Abramis brama_3                         1                   1              0
+Abramis brama_4                         0                   0              0
+Abramis brama_5                         0                   0              0
+Agonus cataphractus_1                   0                   0              0
+                      Aphia minuta_2 Aphia minuta_3 Aphia minuta_4
+Abramis brama_1                    0              0              0
+Abramis brama_2                    0              0              0
+Abramis brama_3                    0              0              0
+Abramis brama_4                    0              0              0
+Abramis brama_5                    0              0              0
+Agonus cataphractus_1              0              0              0
+                      Aphia minuta_5 Argyrosomus regius_1 Argyrosomus regius_2
+Abramis brama_1                    0                    0                    1
+Abramis brama_2                    0                    0                    0
+Abramis brama_3                    0                    0                    0
+Abramis brama_4                    0                    0                    0
+Abramis brama_5                    0                    0                    0
+Agonus cataphractus_1              0                    1                    1
+                      Argyrosomus regius_3 Argyrosomus regius_4
+Abramis brama_1                          1                    1
+Abramis brama_2                          0                    1
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    0
+                      Argyrosomus regius_5 Arnoglossus laterna_1
+Abramis brama_1                          1                     0
+Abramis brama_2                          1                     0
+Abramis brama_3                          1                     0
+Abramis brama_4                          0                     0
+Abramis brama_5                          0                     0
+Agonus cataphractus_1                    0                     0
+                      Arnoglossus laterna_2 Arnoglossus laterna_3
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Arnoglossus laterna_4 Arnoglossus laterna_5
+Abramis brama_1                           1                     1
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Arnoglossus thori_1 Arnoglossus thori_2
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Arnoglossus thori_3 Arnoglossus thori_4
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Arnoglossus thori_5 Atherina presbyter_1
+Abramis brama_1                         0                    0
+Abramis brama_2                         0                    0
+Abramis brama_3                         0                    0
+Abramis brama_4                         0                    0
+Abramis brama_5                         0                    0
+Agonus cataphractus_1                   0                    0
+                      Atherina presbyter_2 Atherina presbyter_3
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Atherina presbyter_4 Atherina presbyter_5
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Barbatula barbatula_1 Barbatula barbatula_2
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Barbatula barbatula_3 Barbatula barbatula_4
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Barbatula barbatula_5 Barbus barbus_1 Barbus barbus_2
+Abramis brama_1                           0               0               0
+Abramis brama_2                           0               0               0
+Abramis brama_3                           0               0               0
+Abramis brama_4                           0               0               0
+Abramis brama_5                           0               0               0
+Agonus cataphractus_1                     0               0               0
+                      Barbus barbus_3 Barbus barbus_4 Barbus barbus_5
+Abramis brama_1                     0               0               0
+Abramis brama_2                     0               0               0
+Abramis brama_3                     0               0               0
+Abramis brama_4                     0               0               0
+Abramis brama_5                     0               0               0
+Agonus cataphractus_1               0               0               0
+                      Blennius ocellaris_1 Blennius ocellaris_2
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Blennius ocellaris_3 Blennius ocellaris_4
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Blennius ocellaris_5 Blicca bjoerkna_1 Blicca bjoerkna_2
+Abramis brama_1                          0                 0                 0
+Abramis brama_2                          0                 0                 0
+Abramis brama_3                          0                 0                 0
+Abramis brama_4                          0                 0                 0
+Abramis brama_5                          0                 0                 0
+Agonus cataphractus_1                    0                 0                 0
+                      Blicca bjoerkna_3 Blicca bjoerkna_4 Blicca bjoerkna_5
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Buglossidium luteum_1 Buglossidium luteum_2
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Buglossidium luteum_3 Buglossidium luteum_4
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Buglossidium luteum_5 Callionymus lyra_1
+Abramis brama_1                           0                  0
+Abramis brama_2                           0                  0
+Abramis brama_3                           0                  0
+Abramis brama_4                           0                  0
+Abramis brama_5                           0                  0
+Agonus cataphractus_1                     0                  0
+                      Callionymus lyra_2 Callionymus lyra_3 Callionymus lyra_4
+Abramis brama_1                        0                  0                  0
+Abramis brama_2                        0                  0                  0
+Abramis brama_3                        0                  0                  0
+Abramis brama_4                        0                  0                  0
+Abramis brama_5                        0                  0                  0
+Agonus cataphractus_1                  0                  0                  0
+                      Callionymus lyra_5 Chelon labrosus_1 Chelon labrosus_2
+Abramis brama_1                        0                 0                 0
+Abramis brama_2                        0                 0                 0
+Abramis brama_3                        0                 0                 0
+Abramis brama_4                        0                 0                 0
+Abramis brama_5                        0                 0                 0
+Agonus cataphractus_1                  0                 0                 0
+                      Chelon labrosus_3 Chelon labrosus_4 Chelon labrosus_5
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Ciliata mustela_1 Ciliata mustela_2 Ciliata mustela_3
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Ciliata mustela_4 Ciliata mustela_5 Clupea harengus_1
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Clupea harengus_2 Clupea harengus_3 Clupea harengus_4
+Abramis brama_1                       0                 0                 1
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 1                 1                 1
+                      Clupea harengus_5 Conger conger_1 Conger conger_2
+Abramis brama_1                       1               1               1
+Abramis brama_2                       0               0               1
+Abramis brama_3                       0               0               0
+Abramis brama_4                       0               0               0
+Abramis brama_5                       0               0               0
+Agonus cataphractus_1                 1               1               0
+                      Conger conger_3 Conger conger_4 Conger conger_5
+Abramis brama_1                     1               1               1
+Abramis brama_2                     1               1               1
+Abramis brama_3                     1               1               1
+Abramis brama_4                     0               1               1
+Abramis brama_5                     0               0               1
+Agonus cataphractus_1               0               0               0
+                      Cottus gobio_1 Cottus gobio_2 Cottus gobio_3
+Abramis brama_1                    0              0              0
+Abramis brama_2                    0              0              0
+Abramis brama_3                    0              0              0
+Abramis brama_4                    0              0              0
+Abramis brama_5                    0              0              0
+Agonus cataphractus_1              0              0              0
+                      Cottus gobio_4 Cottus gobio_5 Ctenolabrus rupestris_1
+Abramis brama_1                    0              0                       0
+Abramis brama_2                    0              0                       0
+Abramis brama_3                    0              0                       0
+Abramis brama_4                    0              0                       0
+Abramis brama_5                    0              0                       0
+Agonus cataphractus_1              0              0                       0
+                      Ctenolabrus rupestris_2 Ctenolabrus rupestris_3
+Abramis brama_1                             0                       0
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Ctenolabrus rupestris_4 Ctenolabrus rupestris_5
+Abramis brama_1                             0                       1
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Cyprinus carpio_1 Cyprinus carpio_2 Cyprinus carpio_3
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Cyprinus carpio_4 Cyprinus carpio_5
+Abramis brama_1                       0                 0
+Abramis brama_2                       0                 0
+Abramis brama_3                       0                 0
+Abramis brama_4                       0                 0
+Abramis brama_5                       0                 0
+Agonus cataphractus_1                 0                 0
+                      Dicentrarchus punctatus_1 Dicentrarchus punctatus_2
+Abramis brama_1                               0                         1
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         1                         1
+                      Dicentrarchus punctatus_3 Dicentrarchus punctatus_4
+Abramis brama_1                               1                         1
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         1                         1
+                      Dicentrarchus punctatus_5 Dicologlossa cuneata_1
+Abramis brama_1                               1                      0
+Abramis brama_2                               1                      0
+Abramis brama_3                               0                      0
+Abramis brama_4                               0                      0
+Abramis brama_5                               0                      0
+Agonus cataphractus_1                         1                      0
+                      Dicologlossa cuneata_2 Dicologlossa cuneata_3
+Abramis brama_1                            0                      0
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      0                      0
+                      Dicologlossa cuneata_4 Dicologlossa cuneata_5
+Abramis brama_1                            0                      0
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      0                      0
+                      Diplecogaster bimaculata_1 Diplecogaster bimaculata_2
+Abramis brama_1                                0                          0
+Abramis brama_2                                0                          0
+Abramis brama_3                                0                          0
+Abramis brama_4                                0                          0
+Abramis brama_5                                0                          0
+Agonus cataphractus_1                          0                          0
+                      Diplecogaster bimaculata_3 Diplecogaster bimaculata_4
+Abramis brama_1                                0                          0
+Abramis brama_2                                0                          0
+Abramis brama_3                                0                          0
+Abramis brama_4                                0                          0
+Abramis brama_5                                0                          0
+Agonus cataphractus_1                          0                          0
+                      Diplecogaster bimaculata_5 Diplodus sargus_1
+Abramis brama_1                                0                 0
+Abramis brama_2                                0                 0
+Abramis brama_3                                0                 0
+Abramis brama_4                                0                 0
+Abramis brama_5                                0                 0
+Agonus cataphractus_1                          0                 0
+                      Diplodus sargus_2 Diplodus sargus_3 Diplodus sargus_4
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 1                 1                 1
+                      Diplodus sargus_5 Echiichthys vipera_1
+Abramis brama_1                       1                    0
+Abramis brama_2                       0                    0
+Abramis brama_3                       0                    0
+Abramis brama_4                       0                    0
+Abramis brama_5                       0                    0
+Agonus cataphractus_1                 1                    0
+                      Echiichthys vipera_2 Echiichthys vipera_3
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Echiichthys vipera_4 Echiichthys vipera_5
+Abramis brama_1                          0                    1
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Entelurus aequoreus_1 Entelurus aequoreus_2
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Entelurus aequoreus_3 Entelurus aequoreus_4
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Entelurus aequoreus_5 Eutrigla gurnardus_1
+Abramis brama_1                           0                    0
+Abramis brama_2                           0                    0
+Abramis brama_3                           0                    0
+Abramis brama_4                           0                    0
+Abramis brama_5                           0                    0
+Agonus cataphractus_1                     0                    0
+                      Eutrigla gurnardus_2 Eutrigla gurnardus_3
+Abramis brama_1                          0                    1
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Eutrigla gurnardus_4 Eutrigla gurnardus_5
+Abramis brama_1                          1                    1
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Gasterosteus aculeatus_1 Gasterosteus aculeatus_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Gasterosteus aculeatus_3 Gasterosteus aculeatus_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Gasterosteus aculeatus_5 Gobio gobio_1 Gobio gobio_2
+Abramis brama_1                              0             0             0
+Abramis brama_2                              0             0             0
+Abramis brama_3                              0             0             0
+Abramis brama_4                              0             0             0
+Abramis brama_5                              0             0             0
+Agonus cataphractus_1                        0             0             0
+                      Gobio gobio_3 Gobio gobio_4 Gobio gobio_5 Gobius niger_1
+Abramis brama_1                   0             0             0              0
+Abramis brama_2                   0             0             0              0
+Abramis brama_3                   0             0             0              0
+Abramis brama_4                   0             0             0              0
+Abramis brama_5                   0             0             0              0
+Agonus cataphractus_1             0             0             0              0
+                      Gobius niger_2 Gobius niger_3 Gobius niger_4
+Abramis brama_1                    0              0              0
+Abramis brama_2                    0              0              0
+Abramis brama_3                    0              0              0
+Abramis brama_4                    0              0              0
+Abramis brama_5                    0              0              0
+Agonus cataphractus_1              0              0              0
+                      Gobius niger_5 Gobius paganellus_1 Gobius paganellus_2
+Abramis brama_1                    0                   0                   0
+Abramis brama_2                    0                   0                   0
+Abramis brama_3                    0                   0                   0
+Abramis brama_4                    0                   0                   0
+Abramis brama_5                    0                   0                   0
+Agonus cataphractus_1              0                   0                   0
+                      Gobius paganellus_3 Gobius paganellus_4
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Gobius paganellus_5 Pomatoschistus flavescens_1
+Abramis brama_1                         0                           0
+Abramis brama_2                         0                           0
+Abramis brama_3                         0                           0
+Abramis brama_4                         0                           0
+Abramis brama_5                         0                           0
+Agonus cataphractus_1                   0                           0
+                      Pomatoschistus flavescens_2 Pomatoschistus flavescens_3
+Abramis brama_1                                 0                           0
+Abramis brama_2                                 0                           0
+Abramis brama_3                                 0                           0
+Abramis brama_4                                 0                           0
+Abramis brama_5                                 0                           0
+Agonus cataphractus_1                           0                           0
+                      Pomatoschistus flavescens_4 Pomatoschistus flavescens_5
+Abramis brama_1                                 0                           0
+Abramis brama_2                                 0                           0
+Abramis brama_3                                 0                           0
+Abramis brama_4                                 0                           0
+Abramis brama_5                                 0                           0
+Agonus cataphractus_1                           0                           0
+                      Gymnocephalus cernua_1 Gymnocephalus cernua_2
+Abramis brama_1                            0                      0
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      0                      0
+                      Gymnocephalus cernua_3 Gymnocephalus cernua_4
+Abramis brama_1                            0                      0
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      0                      0
+                      Gymnocephalus cernua_5 Hippocampus guttulatus_1
+Abramis brama_1                            0                        0
+Abramis brama_2                            0                        0
+Abramis brama_3                            0                        0
+Abramis brama_4                            0                        0
+Abramis brama_5                            0                        0
+Agonus cataphractus_1                      0                        0
+                      Hippocampus guttulatus_2 Hippocampus guttulatus_3
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Hippocampus guttulatus_4 Hippocampus guttulatus_5
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Hippocampus hippocampus_1 Hippocampus hippocampus_2
+Abramis brama_1                               0                         0
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         0                         0
+                      Hippocampus hippocampus_3 Hippocampus hippocampus_4
+Abramis brama_1                               0                         0
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         0                         0
+                      Hippocampus hippocampus_5 Hyperoplus immaculatus_1
+Abramis brama_1                               0                        0
+Abramis brama_2                               0                        0
+Abramis brama_3                               0                        0
+Abramis brama_4                               0                        0
+Abramis brama_5                               0                        0
+Agonus cataphractus_1                         0                        0
+                      Hyperoplus immaculatus_2 Hyperoplus immaculatus_3
+Abramis brama_1                              0                        1
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        1                        1
+                      Hyperoplus immaculatus_4 Hyperoplus immaculatus_5
+Abramis brama_1                              1                        1
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        1                        1
+                      Hyperoplus lanceolatus_1 Hyperoplus lanceolatus_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Hyperoplus lanceolatus_3 Hyperoplus lanceolatus_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Hyperoplus lanceolatus_5 Labrus bergylta_1
+Abramis brama_1                              0                 0
+Abramis brama_2                              0                 0
+Abramis brama_3                              0                 0
+Abramis brama_4                              0                 0
+Abramis brama_5                              0                 0
+Agonus cataphractus_1                        0                 0
+                      Labrus bergylta_2 Labrus bergylta_3 Labrus bergylta_4
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Labrus bergylta_5 Lepadogaster candolii_1
+Abramis brama_1                       0                       0
+Abramis brama_2                       0                       0
+Abramis brama_3                       0                       0
+Abramis brama_4                       0                       0
+Abramis brama_5                       0                       0
+Agonus cataphractus_1                 0                       0
+                      Lepadogaster candolii_2 Lepadogaster candolii_3
+Abramis brama_1                             0                       0
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       0                       0
+                      Lepadogaster candolii_4 Lepadogaster candolii_5
+Abramis brama_1                             0                       0
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       0                       0
+                      Limanda limanda_1 Limanda limanda_2 Limanda limanda_3
+Abramis brama_1                       0                 0                 1
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 1                 1                 1
+                      Limanda limanda_4 Limanda limanda_5 Chelon auratus_1
+Abramis brama_1                       1                 1                0
+Abramis brama_2                       0                 0                0
+Abramis brama_3                       0                 0                0
+Abramis brama_4                       0                 0                0
+Abramis brama_5                       0                 0                0
+Agonus cataphractus_1                 1                 1                0
+                      Chelon auratus_2 Chelon auratus_3 Chelon auratus_4
+Abramis brama_1                      0                0                0
+Abramis brama_2                      0                0                0
+Abramis brama_3                      0                0                0
+Abramis brama_4                      0                0                0
+Abramis brama_5                      0                0                0
+Agonus cataphractus_1                0                0                0
+                      Chelon auratus_5 Chelon ramada_1 Chelon ramada_2
+Abramis brama_1                      0               0               0
+Abramis brama_2                      0               0               0
+Abramis brama_3                      0               0               0
+Abramis brama_4                      0               0               0
+Abramis brama_5                      0               0               0
+Agonus cataphractus_1                0               0               0
+                      Chelon ramada_3 Chelon ramada_4 Chelon ramada_5
+Abramis brama_1                     0               0               0
+Abramis brama_2                     0               0               0
+Abramis brama_3                     0               0               0
+Abramis brama_4                     0               0               0
+Abramis brama_5                     0               0               0
+Agonus cataphractus_1               0               0               0
+                      Merlangius merlangus_1 Merlangius merlangus_2
+Abramis brama_1                            0                      1
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Merlangius merlangus_3 Merlangius merlangus_4
+Abramis brama_1                            1                      1
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Merlangius merlangus_5 Merluccius merluccius_1
+Abramis brama_1                            1                       0
+Abramis brama_2                            1                       0
+Abramis brama_3                            0                       0
+Abramis brama_4                            0                       0
+Abramis brama_5                            0                       0
+Agonus cataphractus_1                      1                       1
+                      Merluccius merluccius_2 Merluccius merluccius_3
+Abramis brama_1                             1                       1
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Merluccius merluccius_4 Merluccius merluccius_5
+Abramis brama_1                             1                       1
+Abramis brama_2                             0                       1
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       0
+                      Microchirus variegatus_1 Microchirus variegatus_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Microchirus variegatus_3 Microchirus variegatus_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Microchirus variegatus_5 Mullus barbatus_1
+Abramis brama_1                              0                 0
+Abramis brama_2                              0                 0
+Abramis brama_3                              0                 0
+Abramis brama_4                              0                 0
+Abramis brama_5                              0                 0
+Agonus cataphractus_1                        0                 0
+                      Mullus barbatus_2 Mullus barbatus_3 Mullus barbatus_4
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Mullus barbatus_5 Mullus surmuletus_1 Mullus surmuletus_2
+Abramis brama_1                       0                   0                   0
+Abramis brama_2                       0                   0                   0
+Abramis brama_3                       0                   0                   0
+Abramis brama_4                       0                   0                   0
+Abramis brama_5                       0                   0                   0
+Agonus cataphractus_1                 0                   0                   0
+                      Mullus surmuletus_3 Mullus surmuletus_4
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Mullus surmuletus_5 Neogobius melanostomus_1
+Abramis brama_1                         0                        0
+Abramis brama_2                         0                        0
+Abramis brama_3                         0                        0
+Abramis brama_4                         0                        0
+Abramis brama_5                         0                        0
+Agonus cataphractus_1                   0                        0
+                      Neogobius melanostomus_2 Neogobius melanostomus_3
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        1                        1
+                      Neogobius melanostomus_4 Neogobius melanostomus_5
+Abramis brama_1                              0                        1
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        1                        1
+                      Nerophis lumbriciformis_1 Nerophis lumbriciformis_2
+Abramis brama_1                               0                         0
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         0                         1
+                      Nerophis lumbriciformis_3 Nerophis lumbriciformis_4
+Abramis brama_1                               0                         1
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         1                         1
+                      Nerophis lumbriciformis_5 Nerophis ophidion_1
+Abramis brama_1                               1                   0
+Abramis brama_2                               0                   0
+Abramis brama_3                               0                   0
+Abramis brama_4                               0                   0
+Abramis brama_5                               0                   0
+Agonus cataphractus_1                         1                   1
+                      Nerophis ophidion_2 Nerophis ophidion_3
+Abramis brama_1                         0                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Nerophis ophidion_4 Nerophis ophidion_5
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Osmerus eperlanus_1 Osmerus eperlanus_2
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Osmerus eperlanus_3 Osmerus eperlanus_4
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Osmerus eperlanus_5 Parablennius gattorugine_1
+Abramis brama_1                         0                          0
+Abramis brama_2                         0                          0
+Abramis brama_3                         0                          0
+Abramis brama_4                         0                          0
+Abramis brama_5                         0                          0
+Agonus cataphractus_1                   0                          0
+                      Parablennius gattorugine_2 Parablennius gattorugine_3
+Abramis brama_1                                0                          0
+Abramis brama_2                                0                          0
+Abramis brama_3                                0                          0
+Abramis brama_4                                0                          0
+Abramis brama_5                                0                          0
+Agonus cataphractus_1                          0                          0
+                      Parablennius gattorugine_4 Parablennius gattorugine_5
+Abramis brama_1                                0                          0
+Abramis brama_2                                0                          0
+Abramis brama_3                                0                          0
+Abramis brama_4                                0                          0
+Abramis brama_5                                0                          0
+Agonus cataphractus_1                          0                          0
+                      Pegusa lascaris_1 Pegusa lascaris_2 Pegusa lascaris_3
+Abramis brama_1                       0                 1                 1
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 1                 1                 1
+                      Pegusa lascaris_4 Pegusa lascaris_5 Perca fluviatilis_1
+Abramis brama_1                       1                 1                   0
+Abramis brama_2                       0                 1                   0
+Abramis brama_3                       0                 0                   0
+Abramis brama_4                       0                 0                   0
+Abramis brama_5                       0                 0                   0
+Agonus cataphractus_1                 1                 1                   1
+                      Perca fluviatilis_2 Perca fluviatilis_3
+Abramis brama_1                         0                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Perca fluviatilis_4 Perca fluviatilis_5
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Zeugopterus norvegicus_1 Zeugopterus norvegicus_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        1
+                      Zeugopterus norvegicus_3 Zeugopterus norvegicus_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        1                        1
+                      Zeugopterus norvegicus_5 Platichthys flesus_1
+Abramis brama_1                              0                    0
+Abramis brama_2                              0                    0
+Abramis brama_3                              0                    0
+Abramis brama_4                              0                    0
+Abramis brama_5                              0                    0
+Agonus cataphractus_1                        1                    0
+                      Platichthys flesus_2 Platichthys flesus_3
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Platichthys flesus_4 Platichthys flesus_5
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Pleuronectes platessa_1 Pleuronectes platessa_2
+Abramis brama_1                             0                       1
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Pleuronectes platessa_3 Pleuronectes platessa_4
+Abramis brama_1                             1                       1
+Abramis brama_2                             1                       1
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       0
+                      Pleuronectes platessa_5 Pollachius pollachius_1
+Abramis brama_1                             1                       0
+Abramis brama_2                             1                       0
+Abramis brama_3                             1                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       0                       1
+                      Pollachius pollachius_2 Pollachius pollachius_3
+Abramis brama_1                             0                       1
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Pollachius pollachius_4 Pollachius pollachius_5
+Abramis brama_1                             1                       1
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Pomatoschistus lozanoi_1 Pomatoschistus lozanoi_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus lozanoi_3 Pomatoschistus lozanoi_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus lozanoi_5 Pomatoschistus microps_1
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus microps_2 Pomatoschistus microps_3
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus microps_4 Pomatoschistus microps_5
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus minutus_1 Pomatoschistus minutus_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus minutus_3 Pomatoschistus minutus_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Pomatoschistus minutus_5 Pomatoschistus pictus_1
+Abramis brama_1                              0                       0
+Abramis brama_2                              0                       0
+Abramis brama_3                              0                       0
+Abramis brama_4                              0                       0
+Abramis brama_5                              0                       0
+Agonus cataphractus_1                        0                       0
+                      Pomatoschistus pictus_2 Pomatoschistus pictus_3
+Abramis brama_1                             0                       0
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       0                       0
+                      Pomatoschistus pictus_4 Pomatoschistus pictus_5
+Abramis brama_1                             0                       0
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       0                       0
+                      Raja clavata_1 Raja clavata_2 Raja clavata_3
+Abramis brama_1                    0              1              1
+Abramis brama_2                    0              0              1
+Abramis brama_3                    0              0              0
+Abramis brama_4                    0              0              0
+Abramis brama_5                    0              0              0
+Agonus cataphractus_1              1              1              0
+                      Raja clavata_4 Raja clavata_5 Raja undulata_1
+Abramis brama_1                    1              1               0
+Abramis brama_2                    1              1               0
+Abramis brama_3                    1              1               0
+Abramis brama_4                    0              0               0
+Abramis brama_5                    0              0               0
+Agonus cataphractus_1              0              0               0
+                      Raja undulata_2 Raja undulata_3 Raja undulata_4
+Abramis brama_1                     0               0               0
+Abramis brama_2                     0               0               0
+Abramis brama_3                     0               0               0
+Abramis brama_4                     0               0               0
+Abramis brama_5                     0               0               0
+Agonus cataphractus_1               0               0               0
+                      Raja undulata_5 Rutilus rutilus_1 Rutilus rutilus_2
+Abramis brama_1                     0                 0                 0
+Abramis brama_2                     0                 0                 0
+Abramis brama_3                     0                 0                 0
+Abramis brama_4                     0                 0                 0
+Abramis brama_5                     0                 0                 0
+Agonus cataphractus_1               0                 0                 0
+                      Rutilus rutilus_3 Rutilus rutilus_4 Rutilus rutilus_5
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Sander lucioperca_1 Sander lucioperca_2
+Abramis brama_1                         0                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Sander lucioperca_3 Sander lucioperca_4
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Sander lucioperca_5 Sardina pilchardus_1
+Abramis brama_1                         1                    0
+Abramis brama_2                         1                    0
+Abramis brama_3                         0                    0
+Abramis brama_4                         0                    0
+Abramis brama_5                         0                    0
+Agonus cataphractus_1                   0                    0
+                      Sardina pilchardus_2 Sardina pilchardus_3
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Sardina pilchardus_4 Sardina pilchardus_5
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Scomber scombrus_1 Scomber scombrus_2 Scomber scombrus_3
+Abramis brama_1                        0                  0                  1
+Abramis brama_2                        0                  0                  0
+Abramis brama_3                        0                  0                  0
+Abramis brama_4                        0                  0                  0
+Abramis brama_5                        0                  0                  0
+Agonus cataphractus_1                  1                  1                  1
+                      Scomber scombrus_4 Scomber scombrus_5
+Abramis brama_1                        1                  1
+Abramis brama_2                        0                  0
+Abramis brama_3                        0                  0
+Abramis brama_4                        0                  0
+Abramis brama_5                        0                  0
+Agonus cataphractus_1                  1                  1
+                      Scophthalmus maximus_1 Scophthalmus maximus_2
+Abramis brama_1                            0                      1
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Scophthalmus maximus_3 Scophthalmus maximus_4
+Abramis brama_1                            1                      1
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Scophthalmus maximus_5 Scophthalmus rhombus_1
+Abramis brama_1                            1                      0
+Abramis brama_2                            1                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Scophthalmus rhombus_2 Scophthalmus rhombus_3
+Abramis brama_1                            0                      1
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Scophthalmus rhombus_4 Scophthalmus rhombus_5
+Abramis brama_1                            1                      1
+Abramis brama_2                            0                      0
+Abramis brama_3                            0                      0
+Abramis brama_4                            0                      0
+Abramis brama_5                            0                      0
+Agonus cataphractus_1                      1                      1
+                      Scyliorhinus canicula_1 Scyliorhinus canicula_2
+Abramis brama_1                             0                       1
+Abramis brama_2                             0                       0
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       1
+                      Scyliorhinus canicula_3 Scyliorhinus canicula_4
+Abramis brama_1                             1                       1
+Abramis brama_2                             1                       1
+Abramis brama_3                             0                       0
+Abramis brama_4                             0                       0
+Abramis brama_5                             0                       0
+Agonus cataphractus_1                       1                       0
+                      Scyliorhinus canicula_5 Solea solea_1 Solea solea_2
+Abramis brama_1                             1             0             0
+Abramis brama_2                             1             0             0
+Abramis brama_3                             1             0             0
+Abramis brama_4                             0             0             0
+Abramis brama_5                             0             0             0
+Agonus cataphractus_1                       0             0             0
+                      Solea solea_3 Solea solea_4 Solea solea_5 Sparus aurata_1
+Abramis brama_1                   0             0             0               0
+Abramis brama_2                   0             0             0               0
+Abramis brama_3                   0             0             0               0
+Abramis brama_4                   0             0             0               0
+Abramis brama_5                   0             0             0               0
+Agonus cataphractus_1             0             0             0               0
+                      Sparus aurata_2 Sparus aurata_3 Sparus aurata_4
+Abramis brama_1                     0               0               0
+Abramis brama_2                     0               0               0
+Abramis brama_3                     0               0               0
+Abramis brama_4                     0               0               0
+Abramis brama_5                     0               0               0
+Agonus cataphractus_1               0               0               0
+                      Sparus aurata_5 Spinachia spinachia_1
+Abramis brama_1                     0                     0
+Abramis brama_2                     0                     0
+Abramis brama_3                     0                     0
+Abramis brama_4                     0                     0
+Abramis brama_5                     0                     0
+Agonus cataphractus_1               0                     0
+                      Spinachia spinachia_2 Spinachia spinachia_3
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Spinachia spinachia_4 Spinachia spinachia_5
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Spondyliosoma cantharus_1 Spondyliosoma cantharus_2
+Abramis brama_1                               0                         0
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         0                         0
+                      Spondyliosoma cantharus_3 Spondyliosoma cantharus_4
+Abramis brama_1                               0                         0
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         0                         0
+                      Spondyliosoma cantharus_5 Sprattus sprattus_1
+Abramis brama_1                               0                   0
+Abramis brama_2                               0                   0
+Abramis brama_3                               0                   0
+Abramis brama_4                               0                   0
+Abramis brama_5                               0                   0
+Agonus cataphractus_1                         0                   0
+                      Sprattus sprattus_2 Sprattus sprattus_3
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Sprattus sprattus_4 Sprattus sprattus_5
+Abramis brama_1                         0                   0
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Squalius cephalus_1 Squalius cephalus_2
+Abramis brama_1                         0                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Squalius cephalus_3 Squalius cephalus_4
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Squalius cephalus_5 Symphodus melops_1 Symphodus melops_2
+Abramis brama_1                         1                  0                  0
+Abramis brama_2                         1                  0                  0
+Abramis brama_3                         0                  0                  0
+Abramis brama_4                         0                  0                  0
+Abramis brama_5                         0                  0                  0
+Agonus cataphractus_1                   1                  0                  0
+                      Symphodus melops_3 Symphodus melops_4 Symphodus melops_5
+Abramis brama_1                        0                  0                  0
+Abramis brama_2                        0                  0                  0
+Abramis brama_3                        0                  0                  0
+Abramis brama_4                        0                  0                  0
+Abramis brama_5                        0                  0                  0
+Agonus cataphractus_1                  0                  0                  0
+                      Symphodus roissali_1 Symphodus roissali_2
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Symphodus roissali_3 Symphodus roissali_4
+Abramis brama_1                          0                    0
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    0                    0
+                      Symphodus roissali_5 Syngnathus acus_1 Syngnathus acus_2
+Abramis brama_1                          0                 0                 0
+Abramis brama_2                          0                 0                 0
+Abramis brama_3                          0                 0                 0
+Abramis brama_4                          0                 0                 0
+Abramis brama_5                          0                 0                 0
+Agonus cataphractus_1                    0                 0                 0
+                      Syngnathus acus_3 Syngnathus acus_4 Syngnathus acus_5
+Abramis brama_1                       0                 0                 0
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 0                 0                 0
+                      Syngnathus rostellatus_1 Syngnathus rostellatus_2
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Syngnathus rostellatus_3 Syngnathus rostellatus_4
+Abramis brama_1                              0                        0
+Abramis brama_2                              0                        0
+Abramis brama_3                              0                        0
+Abramis brama_4                              0                        0
+Abramis brama_5                              0                        0
+Agonus cataphractus_1                        0                        0
+                      Syngnathus rostellatus_5 Syngnathus typhle_1
+Abramis brama_1                              0                   0
+Abramis brama_2                              0                   0
+Abramis brama_3                              0                   0
+Abramis brama_4                              0                   0
+Abramis brama_5                              0                   0
+Agonus cataphractus_1                        0                   1
+                      Syngnathus typhle_2 Syngnathus typhle_3
+Abramis brama_1                         0                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Syngnathus typhle_4 Syngnathus typhle_5
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Taurulus bubalis_1 Taurulus bubalis_2 Taurulus bubalis_3
+Abramis brama_1                        0                  0                  0
+Abramis brama_2                        0                  0                  0
+Abramis brama_3                        0                  0                  0
+Abramis brama_4                        0                  0                  0
+Abramis brama_5                        0                  0                  0
+Agonus cataphractus_1                  0                  1                  1
+                      Taurulus bubalis_4 Taurulus bubalis_5 Torpedo marmorata_1
+Abramis brama_1                        0                  1                   0
+Abramis brama_2                        0                  0                   0
+Abramis brama_3                        0                  0                   0
+Abramis brama_4                        0                  0                   0
+Abramis brama_5                        0                  0                   0
+Agonus cataphractus_1                  1                  1                   1
+                      Torpedo marmorata_2 Torpedo marmorata_3
+Abramis brama_1                         1                   1
+Abramis brama_2                         0                   0
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   1                   1
+                      Torpedo marmorata_4 Torpedo marmorata_5
+Abramis brama_1                         1                   1
+Abramis brama_2                         1                   1
+Abramis brama_3                         0                   0
+Abramis brama_4                         0                   0
+Abramis brama_5                         0                   0
+Agonus cataphractus_1                   0                   0
+                      Trachurus trachurus_1 Trachurus trachurus_2
+Abramis brama_1                           0                     1
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Trachurus trachurus_3 Trachurus trachurus_4
+Abramis brama_1                           1                     1
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Trachurus trachurus_5 Trigla lyra_1 Trigla lyra_2
+Abramis brama_1                           1             0             0
+Abramis brama_2                           1             0             0
+Abramis brama_3                           0             0             0
+Abramis brama_4                           0             0             0
+Abramis brama_5                           0             0             0
+Agonus cataphractus_1                     1             0             0
+                      Trigla lyra_3 Trigla lyra_4 Trigla lyra_5
+Abramis brama_1                   0             0             0
+Abramis brama_2                   0             0             0
+Abramis brama_3                   0             0             0
+Abramis brama_4                   0             0             0
+Abramis brama_5                   0             0             0
+Agonus cataphractus_1             0             0             0
+                      Chelidonichthys lastoviza_1 Chelidonichthys lastoviza_2
+Abramis brama_1                                 0                           0
+Abramis brama_2                                 0                           0
+Abramis brama_3                                 0                           0
+Abramis brama_4                                 0                           0
+Abramis brama_5                                 0                           0
+Agonus cataphractus_1                           0                           0
+                      Chelidonichthys lastoviza_3 Chelidonichthys lastoviza_4
+Abramis brama_1                                 0                           0
+Abramis brama_2                                 0                           0
+Abramis brama_3                                 0                           0
+Abramis brama_4                                 0                           0
+Abramis brama_5                                 0                           0
+Agonus cataphractus_1                           0                           0
+                      Chelidonichthys lastoviza_5 Trisopterus luscus_1
+Abramis brama_1                                 0                    0
+Abramis brama_2                                 0                    0
+Abramis brama_3                                 0                    0
+Abramis brama_4                                 0                    0
+Abramis brama_5                                 0                    0
+Agonus cataphractus_1                           0                    1
+                      Trisopterus luscus_2 Trisopterus luscus_3
+Abramis brama_1                          0                    1
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Trisopterus luscus_4 Trisopterus luscus_5
+Abramis brama_1                          1                    1
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Trisopterus minutus_1 Trisopterus minutus_2
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     1
+                      Trisopterus minutus_3 Trisopterus minutus_4
+Abramis brama_1                           0                     1
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Trisopterus minutus_5 Umbrina canariensis_1
+Abramis brama_1                           1                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     0
+                      Umbrina canariensis_2 Umbrina canariensis_3
+Abramis brama_1                           0                     0
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     0                     0
+                      Umbrina canariensis_4 Umbrina canariensis_5 Zeus faber_1
+Abramis brama_1                           0                     0            0
+Abramis brama_2                           0                     0            0
+Abramis brama_3                           0                     0            0
+Abramis brama_4                           0                     0            0
+Abramis brama_5                           0                     0            0
+Agonus cataphractus_1                     0                     0            1
+                      Zeus faber_2 Zeus faber_3 Zeus faber_4 Zeus faber_5
+Abramis brama_1                  0            1            1            1
+Abramis brama_2                  0            0            0            0
+Abramis brama_3                  0            0            0            0
+Abramis brama_4                  0            0            0            0
+Abramis brama_5                  0            0            0            0
+Agonus cataphractus_1            1            1            1            1
+                      Raja microocellata_1 Raja microocellata_2
+Abramis brama_1                          0                    1
+Abramis brama_2                          0                    0
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    1
+                      Raja microocellata_3 Raja microocellata_4
+Abramis brama_1                          1                    1
+Abramis brama_2                          0                    1
+Abramis brama_3                          0                    0
+Abramis brama_4                          0                    0
+Abramis brama_5                          0                    0
+Agonus cataphractus_1                    1                    0
+                      Raja microocellata_5 Lophius piscatorius_1
+Abramis brama_1                          1                     0
+Abramis brama_2                          1                     0
+Abramis brama_3                          1                     0
+Abramis brama_4                          0                     0
+Abramis brama_5                          0                     0
+Agonus cataphractus_1                    0                     1
+                      Lophius piscatorius_2 Lophius piscatorius_3
+Abramis brama_1                           0                     1
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Lophius piscatorius_4 Lophius piscatorius_5
+Abramis brama_1                           1                     1
+Abramis brama_2                           0                     0
+Abramis brama_3                           0                     0
+Abramis brama_4                           0                     0
+Abramis brama_5                           0                     0
+Agonus cataphractus_1                     1                     1
+                      Chelidonichthys cuculus_1 Chelidonichthys cuculus_2
+Abramis brama_1                               0                         0
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         0                         1
+                      Chelidonichthys cuculus_3 Chelidonichthys cuculus_4
+Abramis brama_1                               0                         1
+Abramis brama_2                               0                         0
+Abramis brama_3                               0                         0
+Abramis brama_4                               0                         0
+Abramis brama_5                               0                         0
+Agonus cataphractus_1                         1                         1
+                      Chelidonichthys cuculus_5 Trachinus draco_1
+Abramis brama_1                               1                 0
+Abramis brama_2                               0                 0
+Abramis brama_3                               0                 0
+Abramis brama_4                               0                 0
+Abramis brama_5                               0                 0
+Agonus cataphractus_1                         1                 1
+                      Trachinus draco_2 Trachinus draco_3 Trachinus draco_4
+Abramis brama_1                       0                 1                 1
+Abramis brama_2                       0                 0                 0
+Abramis brama_3                       0                 0                 0
+Abramis brama_4                       0                 0                 0
+Abramis brama_5                       0                 0                 0
+Agonus cataphractus_1                 1                 1                 1
+                      Trachinus draco_5 zooplankton phytoplankton biofilm
+Abramis brama_1                       1           0             0       0
+Abramis brama_2                       0           0             0       0
+Abramis brama_3                       0           0             0       0
+Abramis brama_4                       0           0             0       0
+Abramis brama_5                       0           0             0       0
+Agonus cataphractus_1                 1           0             0       0
+                      zoobenthos macrophyte detritus
+Abramis brama_1                0          0        0
+Abramis brama_2                0          0        0
+Abramis brama_3                0          0        0
+Abramis brama_4                0          0        0
+Abramis brama_5                0          0        0
+Agonus cataphractus_1          0          0        0</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(web_list<span class="sc">$</span>local)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 9895</code></pre>
+</div>
+</div>
 
 
 </section>

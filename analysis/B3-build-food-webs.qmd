@@ -82,7 +82,7 @@ change too much the structure of the food web reconstructed.
 ```{r}
 web_list <- tar_read(web_list)
 
-get_connectance(web_list$metaweb)
+head(web_list$metaweb)
 
 length(web_list$local)
 ```
