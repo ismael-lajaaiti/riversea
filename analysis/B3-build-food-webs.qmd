@@ -21,6 +21,11 @@ tar_config_set(
 )
 library(foodwebbuilder)
 library(dplyr)
+library(tibble)
+library(riversea)
+library(ggplot2)
+set_theme(theme_minimal())
+library(INLA)
 ```
 
 ## Build the metaweb
@@ -82,11 +87,81 @@ change too much the structure of the food web reconstructed.
 ```{r}
 web_list <- tar_read(web_list)
 
-head(web_list$metaweb)
+get_connectance(web_list$metaweb)
 
-length(web_list$local)
+local_foodwebs <- enframe(web_list$local, name = "trait", value = "foodweb")
+head(local_foodwebs)
+
+local_foodwebs <- local_foodwebs |>
+  mutate(
+    log_richness = log(purrr::map_dbl(foodweb, get_richness)),
+    connectance = purrr::map_dbl(foodweb, get_connectance)
+  )
+head(local_foodwebs)
 ```
 
+```{r}
+trait_data <- tar_read(sea_data_tidy)$trait
+local_foodwebs <- local_foodwebs |>
+  left_join(trait_data)
+head(local_foodwebs)
+```
+
+
+We have computed the connectance and richness of local metaweb so we can plot
+the relationship between these two variables.
+
+```{r}
+m1 <- inla(
+  connectance ~ 1 + log_richness + f(survey, model = "iid") + f(year, model = "iid"),
+  data = local_foodwebs |> select(-foodweb)
+)
+summary(m1)
+
+intercept <- m1$summary.fixed["(Intercept)", "mean"]
+slope <- m1$summary.fixed["log_richness", "mean"]
+
+ggplot(local_foodwebs, aes(x = log_richness, y = connectance, color = survey)) +
+  geom_point(alpha  = 0.3) +
+  geom_abline(intercept = intercept, slope = slope) +
+  labs(x = "Log richness", y = "Connectance", color = "Survey")
+```
+
+As expected, we observe a negative trend between connectance and species
+richness.
+There is also a small random effect attributed to the survey.
+
+Next, we investigate the effect of the year on species richness.
+
+```{r}
+ggplot(local_foodwebs, aes(x = year, y = log_richness, color = survey)) +
+  geom_point(alpha  = 0.1) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    linewidth = 1
+  ) +
+  labs(x = "Year", y = "Log richness", color = "Survey")
+```
+
+As we observe a positive trend between richness and year, and that we have
+observed a negative trend between richness and connectance, we expect a negative
+trend between connectance and year.
+
+```{r}
+ggplot(local_foodwebs, aes(x = year, y = connectance, color = survey)) +
+  geom_point(alpha  = 0.1) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    linewidth = 1
+  ) +
+  labs(x = "Year", y = "Connectance", color = "Survey")
+```
+
+Interestingly, we see that connectance values are in agreement between the two
+survey (when there is an overlap), suggesting that it makes sense to merge these
+two different data sources.
 
 
 

@@ -99,6 +99,20 @@ get_connectance <- function(web) {
   sum(web) / prod(dim(web))
 }
 
+#' Compute the species richness of food web.
+#'
+#' @param web
+#'
+#' @return numeric
+#' @export
+get_richness <- function(web) {
+  dimension <- dim(web)
+  if (dimension[1] != dimension[2]) {
+    stop("Dimension of the adjacency matrix are different.")
+  }
+  dimension[1]
+}
+
 plot_sizeclass_connectance <- function(metaweb_table) {
   metaweb_table |>
     mutate(connectance = purrr::map_dbl(metaweb, get_connectance)) |>

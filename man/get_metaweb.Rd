@@ -9,7 +9,9 @@ get_metaweb(
   diet_fish,
   diet_resource,
   predation_window,
+  local = FALSE,
   num_classes = 5,
+  local_id = "trait",
   selected_resources = c("zooplankton", "phytoplankton", "biofilm", "zoobenthos",
     "macrophyte", "detritus")
 )
@@ -25,8 +27,12 @@ id.}
 \item{predation_window}{table of fish predation window, defining the minimal
 and maximal size at which they can eat (for piscivorous).}
 
+\item{local}{whether or not to build local food webs.}
+
 \item{num_classes}{number of size classes used to build the metaweb, default
 set to 5.}
+
+\item{local_id}{column name indicating the location.}
 
 \item{selected_resources}{which resources are considered at the base of the
 web, by default we consider: zooplankton, phytoplankton, biofilm, zoobenthos,

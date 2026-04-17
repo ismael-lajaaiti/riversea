@@ -17,6 +17,7 @@ tar_option_set(
     "ggplot2",
     "ggVennDiagram",
     "tidyr",
+    "tibble",
     "dplyr",
     "purrr",
     "stringr",
