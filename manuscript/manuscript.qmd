@@ -139,6 +139,11 @@ processes that shape diversity.
 - From points [@Death-Winterbourn-1995]... to lines (RCC, SDC)... to dendritic
 networks [@Shepherd-Ellis-1997].
 
+- River network characteristics, local network properties and their
+interaction were important individual contributors to explaining local
+species richness of aquatic insects [@Altermatt-Seymour-Martinez-2013].
+Effect of connectivity on richness supported experimentally [@cCarrara-etal-2012].
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
@@ -236,6 +241,13 @@ We observed little influence of the number of size classes on the metaweb
 connectance @sfig-metaweb-sizeclass.
 So, we decided to split each species 5 size classes as in @Bonnaffé-etal-2024b.
 
+::: {.callout-note}
+The choice of a constant predation window has an important implication.
+It implies that what only matters in terms of ecosystem functioning is the
+individual size (once the species is known to be piscivorous).
+In this setting, two piscivorous individual of different species but same size
+will eat the very same things.
+:::
 
 #### Subsampling the metaweb to get local food webs
 

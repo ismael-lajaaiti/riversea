@@ -5,7 +5,8 @@ report_targets <- list(
     "index.qmd",
     quarto_args = c("--embed-resources")
   ),
-  tar_quarto(, ,
+  tar_quarto(report_A1,
+    "analysis/A1-model-eel-abundance.qmd",
     quarto_args = c("--embed-resources")
   ),
   tar_quarto(
