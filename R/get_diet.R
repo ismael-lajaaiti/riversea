@@ -5,39 +5,8 @@
 #' @import dplyr
 #' @export
 get_diet_category <- function(species) {
-  items <- rfishbase::fb_tbl("diet_items")
-  diet_species <- rfishbase::diet(species)
-  diet_category <- diet_species |>
-    left_join(items, by = "DietCode") |>
-    select(
-      Species,
-      SampleStage,
-      FoodI,
-      FoodII,
-      FoodIII,
-      DietPercent
-    ) |>
-    filter(DietPercent > 10) |>
-    rename(species = Species, stage = SampleStage) |>
-    mutate_prey_category() |>
-    select(species, stage, prey_category) |>
-    distinct() |>
-    arrange(species, desc(stage))
-  missing_species <- tibble(species = species) |>
-    filter(!species %in% diet_category$species) |>
-    pull(species)
-  diet_fooditems <- get_missing_diet(missing_species)
-  still_missing <- tibble(species = missing_species) |>
-    filter_out(species %in% diet_fooditems$species)
-  diet_category |>
-    bind_rows(diet_fooditems) |>
-    bind_rows(still_missing) |>
-    arrange(species, stage)
-}
-
-get_missing_diet <- function(species) {
   items <- rfishbase::fooditems(species)
-  diet_category <- items |>
+  diet_table <- items |>
     select(
       Species,
       PredatorStage,
@@ -52,7 +21,11 @@ get_missing_diet <- function(species) {
     select(species, stage, prey_category) |>
     distinct() |>
     arrange(species, desc(stage))
-  diet_category
+  missing <- tibble(species = species) |>
+    filter_out(species %in% diet_table$species)
+  diet_table |>
+    bind_rows(missing) |>
+    arrange(species, stage)
 }
 
 mutate_prey_category <- function(df) {
@@ -84,9 +57,11 @@ widen_diet_category <- function(diet_category) {
       values_from = eat,
       values_fill = list(eat = 0)
     ) |>
-    select(-c(others, "NA")) |>
+    select(-c(others, "NA"))
+  cols <- names(diet_category_wide)
+  diet_category_wide |> 
+    select(species, stage, sort(setdiff(cols, c("species", "stage")))) |>
     arrange(species, desc(stage))
-  diet_category_wide
 }
 
 #' Get fish diet with standardized categories in a wide format.

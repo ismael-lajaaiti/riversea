@@ -78,7 +78,7 @@ merge_diet_size <- function(diet, maturity_length, epsilon = 1e-6) {
       length_min = 2 + 2 * epsilon,
       length_max = Inf,
       stage = "combined", # or "combined" if you prefer
-      across(zoobenthos:macrophyte, max),
+      across(biofilm:zooplankton, max),
       .groups = "drop"
     )
   diet |>
