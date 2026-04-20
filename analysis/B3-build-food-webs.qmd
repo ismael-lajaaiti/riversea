@@ -163,5 +163,11 @@ Interestingly, we see that connectance values are in agreement between the two
 survey (when there is an overlap), suggesting that it makes sense to merge these
 two different data sources.
 
+## TODO
+
+- Use life stage lengths from Anik dataset to refine diet table;
+- Split zoobenthos in three categories: molluscs, crustaceans and polychaetes;
+- Relate food web structure to environmental variables.
+
 
 

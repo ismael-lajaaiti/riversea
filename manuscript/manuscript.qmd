@@ -99,6 +99,10 @@ nonlinear way [@Bonnaffé-etal-2024b, @Binzer-etal-2012].
 [@LeCraw-Kratina-Srivastava-2014; @McCann-Rasmussen-Umbanhowar-2005;
 @Pillai-Gonzalez-Loreau-2011].
 
+- A metaecosystem model shows that dispersal of living organisms (that consume 
+nutrients) is stabilising,while dispersal of non-living compartments such as 
+nutrients or detritus is destabilising [@Gounand-etal-2014].
+
 - Prey switching of mobile top predators can stabilize connected food webs
 through ‘spatial coupling’
 [@LeCraw-Kratina-Srivastava-2014; @McCann-Rasmussen-Umbanhowar-2005;
@@ -142,7 +146,8 @@ networks [@Shepherd-Ellis-1997].
 - River network characteristics, local network properties and their
 interaction were important individual contributors to explaining local
 species richness of aquatic insects [@Altermatt-Seymour-Martinez-2013].
-Effect of connectivity on richness supported experimentally [@cCarrara-etal-2012].
+Effect of connectivity on richness supported experimentally 
+[@Carrara-etal-2012].
 
 ### Dams
 
