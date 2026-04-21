@@ -25,12 +25,16 @@ get_metaweb <- function(
   num_classes = 5,
   local_id = "trait",
   selected_resources = c(
-    "zooplankton",
-    "phytoplankton",
     "biofilm",
-    "zoobenthos",
+    "detritus",
+    "phytoplankton",
     "macrophyte",
-    "detritus"
+    "worm",
+    "crustacean",
+    "mollusk",
+    "echinoderm",
+    "insect",
+    "zooplankton"
   )
 ) {
   # Format input data.
@@ -42,22 +46,10 @@ get_metaweb <- function(
       size_min = length_min,
       size_max = length_max,
     )
-  predation_window <- predation_window |> rename(species_code = species)
   diet_resource <- diet_resource |>
-    mutate(species = if_else(
-      species == "biofilms",
-      "biofilm",
-      species
-    ))
-  diet_resource$species_code <- diet_resource$species
-  diet_resource <- diet_resource |> rename(
-    detritus = det,
-    biofilm = biof,
-    macrophyte = macroph,
-    phytoplankton = phytopl,
-    zooplankton = zoopl,
-    zoobenthos = zoob
-  )
+    rename(species_code = species) |>
+    filter_out(species_code == "fish")
+  predation_window <- predation_window |> rename(species_code = species)
   # Clean data.
   size_clean <- remove_missing_species(
     ind_measure = size_table,

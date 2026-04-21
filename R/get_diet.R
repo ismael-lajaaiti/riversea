@@ -1,7 +1,8 @@
 #' Get fish diet with standardized categories.
 #'
 #' @param species A character vector of species names.
-#' @return A data frame with species name ("species"), predator stage ("stage") and prey category ("prey_category").
+#' @return A data frame with species name ("species"), predator stage ("stage")
+#' and prey category ("prey_category").
 #' @import dplyr
 #' @export
 get_diet_category <- function(species) {
@@ -37,6 +38,12 @@ mutate_prey_category <- function(df) {
         FoodII == "other plants" & FoodIII == "periphyton" ~ "biofilm",
         FoodII == "other plants" ~ "macrophyte",
         FoodI == "nekton" ~ "fish",
+        FoodI == "zoobenthos" & grepl("crust", FoodII) ~ "crustacean",
+        FoodI == "zoobenthos" & FoodII == "insects" ~ "insect",
+        FoodI == "zoobenthos" & FoodII == "mollusks" ~ "mollusk",
+        FoodI == "zoobenthos" & FoodII == "echinoderms" ~ "echinoderm",
+        FoodI == "zoobenthos" & FoodII == "worms" ~ "worm",
+        FoodI == "zoobenthos" ~ NA_character_, # Ignore rare zoobenthos groups.
         TRUE ~ FoodI
       )
     )
@@ -59,7 +66,7 @@ widen_diet_category <- function(diet_category) {
     ) |>
     select(-c(others, "NA"))
   cols <- names(diet_category_wide)
-  diet_category_wide |> 
+  diet_category_wide |>
     select(species, stage, sort(setdiff(cols, c("species", "stage")))) |>
     arrange(species, desc(stage))
 }

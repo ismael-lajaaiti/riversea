@@ -27,7 +27,9 @@ tar_option_set(
     "rnaturalearth",
     "rnaturalearthdata",
     "sf",
-    "foodwebbuilder"
+    "foodwebbuilder",
+    "igraph",
+    "metanetwork"
   )
 )
 
@@ -38,7 +40,6 @@ lapply(list.files("targets", full.names = TRUE), source)
 workshop_dir <- "data/river_workshop"
 sea_data_raw <- "data/sea/raw"
 station_file <- "data/river/station_analysis.csv"
-diet_resource_file <- "data/diet/resource_diet_shift.csv"
 
 list(
   data_targets,

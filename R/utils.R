@@ -107,3 +107,12 @@ plot_sampling <- function(sea_data, station_file) {
     geom_sf(data = rivers_fr, color = "grey") +
     geom_sf(data = d_sampling, aes(color = survey))
 }
+
+plot_network_groups <- function(diet_resource) {
+  adj <- t(as.matrix(diet_resource |> select(-c(light, species, reference))))
+  colnames(adj) <- diet_resource$species
+  g <- igraph::graph_from_adjacency_matrix(adj, mode = "directed")
+  build_metanet(metaweb = g) |>
+    compute_TL() |>
+    ggmetanet()
+}

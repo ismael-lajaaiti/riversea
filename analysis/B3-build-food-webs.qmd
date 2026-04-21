@@ -65,6 +65,13 @@ We wrapped them in a `riversea` function so the metaweb can be build directly.
 We just need to specify the number of size class, and the selected resources,
 although default values are set if not specified.
 
+For information, here is the structure that we consider between the different
+trophic groups on which fish can feed on.
+
+```{r}
+tar_read(plot_net_groups)
+```
+
 We have already computed metaweb for different number of size classes,
 so we can check whether this parameter influences the metaweb structure.
 
@@ -168,6 +175,4 @@ two different data sources.
 - Use life stage lengths from Anik dataset to refine diet table;
 - Split zoobenthos in three categories: molluscs, crustaceans and polychaetes;
 - Relate food web structure to environmental variables.
-
-
 

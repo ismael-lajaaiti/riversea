@@ -90,8 +90,13 @@ data_targets <- list(
     get_predation_window(diet_size)
   ),
   tar_target(
+    diet_resource_file,
+    "data/diet/resource_diet.csv",
+    format = "file"
+  ),
+  tar_target(
     diet_resource,
-    read.csv(diet_resource_file)
+    read.csv(diet_resource_file),
   ),
   tar_target(n_class_vals, seq(3, 9)),
   tar_target(

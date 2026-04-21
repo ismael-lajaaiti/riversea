@@ -5389,8 +5389,8 @@ color: #333333;
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>DiagrammeR<span class="sc">::</span><span class="fu">grViz</span>(<span class="fu">readLines</span>(<span class="fu">here</span>(<span class="st">&quot;figures&quot;</span>, <span class="st">&quot;foodweb.dot&quot;</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item" id="htmlwidget-bf804fba51f563fd6fe8" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-bf804fba51f563fd6fe8">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-232b97cb7d96c41a2f0f" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-232b97cb7d96c41a2f0f">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Ellipses represent broad basal categories on which fishes feed on. Our goal here is to determine for each fish species on which of these categories it feeds, and whether it is piscivorous or not. To do so we scrap fishbase.</p>
@@ -5482,14 +5482,14 @@ color: #333333;
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_table)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 3
-  species       stage       prey_category
-  &lt;chr&gt;         &lt;chr&gt;       &lt;chr&gt;        
-1 Abramis brama adults      detritus     
-2 Abramis brama adults      fish         
-3 Abramis brama adults      zoobenthos   
-4 Abramis brama adults      zooplankton  
-5 Abramis brama juv./adults detritus     
-6 Abramis brama juv./adults macrophyte   </code></pre>
+  species       stage  prey_category
+  &lt;chr&gt;         &lt;chr&gt;  &lt;chr&gt;        
+1 Abramis brama adults detritus     
+2 Abramis brama adults fish         
+3 Abramis brama adults insect       
+4 Abramis brama adults crustacean   
+5 Abramis brama adults worm         
+6 Abramis brama adults zooplankton  </code></pre>
 </div>
 </div>
 <p>which for each species, and life stage, tells what it eats. We can also have the table a in “wide” format, where we have one column for each basal category.</p>
@@ -5497,16 +5497,17 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>diet_table_wide <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_wide)</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_table_wide)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 9
-  species       stage biofilm detritus  fish macrophyte phytoplankton zoobenthos
-  &lt;chr&gt;         &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;         &lt;dbl&gt;      &lt;dbl&gt;
-1 Abramis brama recr…       0        0     0          0             0          1
-2 Abramis brama juv.…       0        1     0          1             0          1
-3 Abramis brama adul…       0        1     1          0             0          1
-4 Acipenser st… recr…       0        0     1          0             0          1
-5 Acipenser st… juv.…       0        0     1          0             0          1
-6 Agonus catap… adul…       0        0     0          0             0          1
-# ℹ 1 more variable: zooplankton &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 6 × 13
+  species   stage biofilm crustacean detritus echinoderm  fish insect macrophyte
+  &lt;chr&gt;     &lt;chr&gt;   &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;
+1 Abramis … recr…       0          1        0          0     0      1          0
+2 Abramis … juv.…       0          1        1          0     0      1          1
+3 Abramis … adul…       0          1        1          0     1      1          0
+4 Acipense… recr…       0          1        0          0     1      1          0
+5 Acipense… juv.…       0          1        0          0     1      0          0
+6 Agonus c… adul…       0          1        0          0     0      0          0
+# ℹ 4 more variables: mollusk &lt;dbl&gt;, phytoplankton &lt;dbl&gt;, worm &lt;dbl&gt;,
+#   zooplankton &lt;dbl&gt;</code></pre>
 </div>
 </div>
 </section>
@@ -5533,12 +5534,14 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>diet_with_larvae <span class="ot">&lt;-</span> <span class="fu">add_larvae</span>(diet_table_wide)</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>diet_with_larvae <span class="sc">|&gt;</span> <span class="fu">filter</span>(species <span class="sc">==</span> <span class="fu">sample</span>(species, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 2 × 9
-  species       stage biofilm detritus  fish macrophyte phytoplankton zoobenthos
-  &lt;chr&gt;         &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;         &lt;dbl&gt;      &lt;dbl&gt;
-1 Liparis mont… larv…       0        0     0          0             0          0
-2 Liparis mont… juv.…       0        0     0          0             0          1
-# ℹ 1 more variable: zooplankton &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 3 × 13
+  species   stage biofilm crustacean detritus echinoderm  fish insect macrophyte
+  &lt;chr&gt;     &lt;chr&gt;   &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;
+1 Microsto… larv…       0          0        0          0     0      0          0
+2 Microsto… juv.…       0          0        0          1     0      0          0
+3 Microsto… adul…       0          0        0          0     0      0          0
+# ℹ 4 more variables: mollusk &lt;dbl&gt;, phytoplankton &lt;dbl&gt;, worm &lt;dbl&gt;,
+#   zooplankton &lt;dbl&gt;</code></pre>
 </div>
 </div>
 </section>
@@ -5571,16 +5574,17 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>diet_no_rare <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_no_rare)</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_no_rare)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 9
-  species       stage biofilm detritus  fish macrophyte phytoplankton zoobenthos
-  &lt;chr&gt;         &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;         &lt;dbl&gt;      &lt;dbl&gt;
-1 Abramis brama recr…       0        0     0          0             0          1
-2 Abramis brama larv…       0        0     0          0             0          0
-3 Abramis brama juv.…       0        1     0          1             0          1
-4 Abramis brama adul…       0        1     1          0             0          1
-5 Agonus catap… larv…       0        0     0          0             0          0
-6 Agonus catap… adul…       0        0     0          0             0          1
-# ℹ 1 more variable: zooplankton &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 6 × 13
+  species   stage biofilm crustacean detritus echinoderm  fish insect macrophyte
+  &lt;chr&gt;     &lt;chr&gt;   &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;
+1 Abramis … recr…       0          1        0          0     0      1          0
+2 Abramis … larv…       0          0        0          0     0      0          0
+3 Abramis … juv.…       0          1        1          0     0      1          1
+4 Abramis … adul…       0          1        1          0     1      1          0
+5 Agonus c… larv…       0          0        0          0     0      0          0
+6 Agonus c… adul…       0          1        0          0     0      0          0
+# ℹ 4 more variables: mollusk &lt;dbl&gt;, phytoplankton &lt;dbl&gt;, worm &lt;dbl&gt;,
+#   zooplankton &lt;dbl&gt;</code></pre>
 </div>
 </div>
 <p>We can check if we have species with missing diet.</p>
@@ -5679,16 +5683,17 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>diet_full <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_size)</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_full)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 11
-  species          length_min length_max stage biofilm detritus  fish macrophyte
-  &lt;chr&gt;                 &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;
-1 Abramis brama          0          2.00 larv…       0        0     0          0
-2 Abramis brama          2.00       2.00 juv.…       0        1     0          1
-3 Abramis brama          2.00     Inf    adul…       0        1     1          0
-4 Agonus cataphra…       0          2.00 larv…       0        0     0          0
-5 Agonus cataphra…       2.00     Inf    comb…       0        0     0          0
-6 Alburnus alburn…       0          2.00 larv…       0        0     0          0
-# ℹ 3 more variables: phytoplankton &lt;dbl&gt;, zoobenthos &lt;dbl&gt;, zooplankton &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 6 × 15
+  species     length_min length_max stage biofilm crustacean detritus echinoderm
+  &lt;chr&gt;            &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt;
+1 Abramis br…       0          2.00 larv…       0          0        0          0
+2 Abramis br…       2.00       2.00 juv.…       0          1        1          0
+3 Abramis br…       2.00     Inf    adul…       0          1        1          0
+4 Agonus cat…       0          2.00 larv…       0          0        0          0
+5 Agonus cat…       2.00     Inf    comb…       0          1        0          0
+6 Alburnus a…       0          2.00 larv…       0          0        0          0
+# ℹ 7 more variables: fish &lt;dbl&gt;, insect &lt;dbl&gt;, macrophyte &lt;dbl&gt;,
+#   mollusk &lt;dbl&gt;, phytoplankton &lt;dbl&gt;, worm &lt;dbl&gt;, zooplankton &lt;dbl&gt;</code></pre>
 </div>
 </div>
 
