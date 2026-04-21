@@ -132,6 +132,10 @@ interferences within the four dimensions of fluvial or river connectivity
 - In freshwater system, fish dispersal is limited. A meta-analysis found that
 the mean dispersal kernel is around 10km [@Comte-Olden-2018].
 
+- Neutral metacommunity model explains biodiversity pattern in the Mississipi
+river, showing the key role of dispersal in explaining community structure along
+the river continuum [@Muneepeerakul-etal-2008].
+
 - Connectivity structures and mititgates effect of drying events in
 macroinvertebrates communities [@Chalmandrier-etal-2025b].
 
@@ -148,6 +152,7 @@ interaction were important individual contributors to explaining local
 species richness of aquatic insects [@Altermatt-Seymour-Martinez-2013].
 Effect of connectivity on richness supported experimentally 
 [@Carrara-etal-2012].
+
 
 ### Dams
 

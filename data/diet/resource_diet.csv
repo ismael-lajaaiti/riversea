@@ -1,7 +1,7 @@
 "species","light","detritus","biofilm","macrophyte","phytoplankton","zooplankton","worm","mollusk","crustacean","insect","echinoderm","fish","reference"
 "detritus",0,0,0,0,0,0,0,0,0,0,0,0,NA
 "biofilm",1,0,0,0,0,0,0,0,0,0,0,0,NA
-"macrophyte",1,1,0,0,0,0,0,0,0,0,0,0,NA
+"macrophyte",1,0,0,0,0,0,0,0,0,0,0,0,NA
 "phytoplankton",1,0,0,0,0,0,0,0,0,0,0,0,NA
 "zooplankton",0,0,0,0,1,1,0,0,0,0,0,0,NA
 "worm",0,1,1,1,1,1,1,1,1,0,0,0,10.1186/s10152-016-0469-4
