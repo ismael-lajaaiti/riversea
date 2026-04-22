@@ -12,8 +12,8 @@ get_metaweb(
   local = FALSE,
   num_classes = 5,
   local_id = "trait",
-  selected_resources = c("zooplankton", "phytoplankton", "biofilm", "zoobenthos",
-    "macrophyte", "detritus")
+  selected_resources = c("biofilm", "detritus", "phytoplankton", "macrophyte", "worm",
+    "crustacean", "mollusk", "echinoderm", "insect", "zooplankton")
 )
 }
 \arguments{

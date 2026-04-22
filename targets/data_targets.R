@@ -59,19 +59,6 @@ data_targets <- list(
   ),
   tar_target(diet_no_rare, list_no_rare$diet),
   tar_target(n_rare, list_no_rare$n_removed),
-  tar_target(
-    diet_size,
-    merge_diet_size(diet_no_rare, maturity_length)
-  ),
-  tar_target(
-    diet_file,
-    {
-      path <- "data/diet/fishbase_sea.csv"
-      readr::write_csv(diet_size, path)
-      path
-    },
-    format = "file"
-  ),
   # Life stage lengths.
   tar_target(
     species_diet,
@@ -82,12 +69,34 @@ data_targets <- list(
     get_maturity_length(species_diet)
   ),
   tar_target(
+    life_stage_length_file,
+    "data/sea/raw/lifestage_size.csv",
+    format = "file"
+  ),
+  tar_target(
+    life_stage_length,
+    get_life_stage_length(life_stage_length_file, maturity_length)
+  ),
+  tar_target(
+    diet_and_length,
+    merge_diet_length(diet_no_rare, life_stage_length)
+  ),
+  tar_target(
+    diet_file,
+    {
+      path <- "data/diet/fishbase_sea.csv"
+      readr::write_csv(diet_and_length, path)
+      path
+    },
+    format = "file"
+  ),
+  tar_target(
     size_extrema,
     get_size_extrema(sea_data_imputed$size)
   ),
   tar_target(
     predation_window,
-    get_predation_window(diet_size)
+    get_predation_window(diet_and_length)
   ),
   tar_target(
     diet_resource_file,
@@ -105,7 +114,7 @@ data_targets <- list(
       num_classes = n_class_vals,
       metaweb = list(get_metaweb(
         sea_data_imputed$size,
-        diet_size,
+        diet_and_length,
         diet_resource,
         predation_window,
         num_classes = n_class_vals
@@ -118,7 +127,7 @@ data_targets <- list(
     web_list,
     get_metaweb(
       sea_data_imputed$size,
-      diet_size,
+      diet_and_length,
       diet_resource,
       predation_window,
       num_classes = num_classes,

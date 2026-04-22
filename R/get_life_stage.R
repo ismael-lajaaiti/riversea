@@ -27,63 +27,93 @@ filter_out_only_larvae <- function(diet) {
   diet |> filter_out(species %in% sp_only_larvae)
 }
 
-#' Fill diet table with corresponding life stage size
+#' Get life stage length for species.
 #'
-#' @param diet diet table
-#' @param maturity_length table of species maturity length
+#' To get life stage length we use data provided by Anik to get lg0max, lg1max
+#' and length at maturity.
+#' When the data is missing, we use fishbase which can provide length at
+#' maturity.
 #'
-#' @return data.frame
+#'
+#' @param life_stage_file path to the file
+#' @param maturity_length data frame with maturity length for each species
+#' extracted from fishbase
+#'
+#' @return dataframe
 #' @export
-merge_diet_size <- function(diet, maturity_length, epsilon = 1e-6) {
-  species_no_lm <- maturity_length |>
-    filter(is.na(maturity_length)) |>
-    pull(species)
-  species_no_juv <- diet |> # Species with no juvenile stage.
-    group_by(species) |>
-    summarise(has_juv = "juv./adults" %in% stage, .groups = "drop") |>
-    pull(species)
-  diet <- diet |>
-    filter_out(is.na(stage)) |>
-    filter_out(stage == "recruits/juv.") |>
-    filter_out_only_larvae() |>
-    left_join(maturity_length, by = "species") |>
-    mutate(
-      maturity_length =
-        if_else(species %in% species_no_juv, 2 + epsilon, maturity_length)
+get_life_stage_length <- function(
+  life_stage_file,
+  maturity_length,
+  epsilon = 1e-6
+) {
+  df <- read.csv2(life_stage_file) |>
+    rename(
+      species = Espece,
+      lg0_max = LG0max,
+      maturity_length = L50
     ) |>
+    select(species, lg0_max, maturity_length) |>
+    mutate(species = rfishbase::validate_names(species))
+  df_join <- left_join(maturity_length, df, by = join_by(species)) |>
     mutate(
-      length_min = case_when(
-        stage == "larvae" ~ 0,
-        stage == "juv./adults" ~ 2 + 2 * epsilon,
-        stage == "adults" ~ maturity_length + epsilon
-      ),
-      length_max = case_when(
-        stage == "larvae" ~ 2 + epsilon,
-        stage == "juv./adults" ~ maturity_length,
-        stage == "adults" ~ Inf
+      juvenile_length_max = coalesce(
+        maturity_length.y,
+        maturity_length.x,
+        lg0_max
       )
     ) |>
-    select(species, length_min, length_max, everything()) |>
-    group_by(species) |>
-    mutate(
-      has_adult = any(stage == "adults"),
-      length_max = if_else(stage == "juv./adults" & !has_adult, Inf, length_max)
+    select(-c(maturity_length.x, maturity_length.y, lg0_max)) |>
+    transmute(
+      species,
+      larvae_length_min = 0,
+      larvae_length_max = 2 + epsilon,
+      juvenile_length_min = 2 + 2 * epsilon,
+      juvenile_length_max =
+        pmax(juvenile_length_max + epsilon, 2 + 2 * epsilon, na.rm = TRUE),
+      adult_length_min = juvenile_length_max + epsilon,
+      adult_length_max = Inf
     ) |>
-    ungroup() |>
-    select(-has_adult)
-  merged_rows <- diet |>
-    filter(species %in% species_no_lm) |>
+    pivot_longer(
+      -species,
+      names_to = c("stage", ".value"),
+      names_sep = "_length_"
+    ) |>
+    rename(length_max = max, length_min = min)
+}
+
+merge_diet_length <- function(diet, length, epsilon = 1e-6) {
+  diet_and_length <- diet |>
+    filter_out(is.na(stage)) |>
+    mutate(
+      stage = case_when(
+        stage == "recruits/juv." ~ "juvenile",
+        stage == "juv./adults" ~ "adult",
+        stage == "adults" ~ "adult",
+        TRUE ~ stage
+      )
+    ) |>
+    pivot_longer(!c(species, stage), names_to = "category", values_to = "eat") |>
+    filter_out(eat == 0) |>
+    distinct() |>
+    pivot_wider(
+      names_from = category,
+      values_from = eat,
+      values_fill = list(eat = 0)
+    ) |>
+    arrange(species, desc(stage)) |>
+    inner_join(length, by = join_by(species, stage)) |>
+    select(species, stage, length_min, length_max, everything()) |>
+    filter_out_only_larvae()
+  without_juvenile <- diet_and_length |>
     group_by(species) |>
-    summarise(
-      length_min = 2 + 2 * epsilon,
-      length_max = Inf,
-      stage = "combined", # or "combined" if you prefer
-      across(biofilm:zooplankton, max),
-      .groups = "drop"
+    summarise(with_juvenile = "juvenile" %in% stage, .groups = "drop") |>
+    filter_out(with_juvenile) |>
+    pull(species)
+  diet_and_length |> mutate(
+    length_min = if_else(
+      species %in% without_juvenile & stage == "adult",
+      2 + 2 * epsilon,
+      length_min
     )
-  diet |>
-    select(-maturity_length) |>
-    filter_out(species %in% species_no_lm & stage != "larvae") |>
-    rbind(merged_rows) |>
-    arrange(species, desc(stage))
+  )
 }

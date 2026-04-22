@@ -10,7 +10,8 @@ get_diet_category(species)
 \item{species}{A character vector of species names.}
 }
 \value{
-A data frame with species name ("species"), predator stage ("stage") and prey category ("prey_category").
+A data frame with species name ("species"), predator stage ("stage")
+and prey category ("prey_category").
 }
 \description{
 Get fish diet with standardized categories.
