@@ -133,5 +133,14 @@ data_targets <- list(
       num_classes = num_classes,
       local = TRUE
     )
+  ),
+  tar_target(
+    local_foodwebs,
+    prepare_local_foodwebs(web_list, sea_data_tidy)
+  ),
+  tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
+  tar_target(
+    environment_data,
+    read_environment_data(dir_environment)
   )
 )

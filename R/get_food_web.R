@@ -113,3 +113,13 @@ plot_sizeclass_connectance <- function(metaweb_table) {
     geom_line() +
     labs(x = "Number of size classes", y = "Metaweb connectance")
 }
+
+prepare_local_foodwebs <- function(web_list, sea_data_tidy) {
+  foodweb <- enframe(web_list$local, name = "trait", value = "foodweb") |>
+    mutate(
+      log_richness = log(purrr::map_dbl(foodweb, get_richness)),
+      connectance = purrr::map_dbl(foodweb, get_connectance)
+    )
+  trait <- sea_data_tidy$trait
+  foodweb |> left_join(trait, by = join_by(trait))
+}

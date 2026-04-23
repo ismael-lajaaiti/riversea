@@ -116,3 +116,12 @@ plot_network_groups <- function(diet_resource) {
     compute_TL() |>
     ggmetanet()
 }
+
+read_environment_data <- function(dir, year_start = 1993, year_end = 2023) {
+  year_vals <- seq(year_start, year_end)
+  purrr::map(year_vals, function(year) {
+    read.csv(here(dir, paste0("Environment_QM_", year, ".csv"))) |>
+      mutate(year = year)
+  }) |>
+    purrr::list_rbind()
+}

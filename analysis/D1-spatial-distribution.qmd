@@ -22,11 +22,105 @@ library(here)
 tar_config_set(
   store = here::here("_targets")
 )
+
+library(ggplot2)
+set_theme(theme_minimal())
+library(dplyr)
 ```
+
+## Sea survey data
 
 Here is the map of the sampling station for the different surveys.
 
 ```{r}
 tar_read(plot_station)
 ```
+
+## Sea environmental data
+
+Here is the kind of environment data we have for the sea.
+
+```{r}
+env <- tar_read(environment_data)
+head(env)
+```
+
+We can have a look at the evolution of average temperature with years.
+
+```{r}
+env |>
+  group_by(year) |>
+  summarise(annual_temperature = mean(temp_mean), .groups = "drop") |>
+  ggplot(aes(x = year, y = annual_temperature)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Year", y = "Mean annual temperature")
+```
+
+```{r}
+#| fig-width: 15
+#| fig-height: 10
+
+library(tidyr)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthhires)
+
+coastline <- ne_coastline(scale = "large", returnclass = "sf")
+
+var_list <- c("temp_mean", "temp_cv", "o2_mean", "o2_cv")
+year_list <- c(2005, 2010, 2015, 2020)
+
+env_long <- env |>
+  pivot_longer(
+    cols = c(
+      chl_mean, nppv_mean, o2_mean, o2_cv,
+      o2_perc_25, temp_mean, temp_cv, temp_perc_90
+    ),
+    names_to = "variable",
+    values_to = "value"
+  ) |>
+  group_by(variable) |>
+  filter(year %in% year_list & variable %in% var_list) |>
+  mutate(value_scaled = scale(value)) |>
+  ungroup()
+
+ggplot(env_long, aes(x = x, y = y, fill = value_scaled)) +
+  geom_tile() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  facet_grid(variable ~ year) +
+  scale_fill_viridis_c() +
+  coord_sf(xlim = range(env$x), ylim = range(env$y))
+```
+
+```{r}
+foodweb <- tar_read(local_foodwebs)
+head(foodweb, n = 10)
+
+foodweb_long <- foodweb |>
+  pivot_longer(
+    cols = c(log_richness, connectance), names_to = "variable",
+    values_to = "value"
+  ) |>
+  filter(year %in% year_list)
+
+vars <- unique(foodweb_long$variable)
+
+plots <- purrr::map(vars, \(var)
+foodweb_long |>
+  filter(variable == var) |>
+  ggplot(aes(x = longitude, y = latitude, color = value)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  facet_wrap(~year, nrow = 1) +
+  scale_color_viridis_c(name = var) +
+  coord_sf(
+    xlim = range(foodweb_long$longitude),
+    ylim = range(foodweb_long$latitude)
+  ) +
+  labs(x = NULL, y = NULL))
+
+patchwork::wrap_plots(plots, ncol = 1)
+```
+
 

@@ -434,6 +434,6 @@ preprocess_sea_data <- function(dir, solper_reftax) {
     clean_sea_data() |>
     combine_sea_data() |>
     validate_species_names(solper_reftax)
-
+  tidy$trait <- tidy$trait |> distinct()
   tidy
 }
