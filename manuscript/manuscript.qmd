@@ -80,6 +80,9 @@ structure, energy sources, and ecosystem functioning
 
 - Serial Discontinuity Concept [@Ward-Stanford-1995].
 
+- The River Wave concept as unifying framework of different concepts of
+freshwater ecology [@Humphries-Keckeis-Finlayson-2014].
+
 - Community richness and hence food web structure is expected to be driven by
 nutrient availability [@Ho-Altermatt-Carraro-2023].
 
@@ -161,6 +164,7 @@ Effect of connectivity on richness supported experimentally
 
 - Reservoir, lotic from lentic conditions, can result in hypoxic conditions.
 Favor phytoplancktons and macrophytes [@Ding-etal-2026; @Dean-etal-2023b].
+Facilitate the spread of invasive species [@Johnson-Olden-VanderZanden-2008b].
 
 - Reservoir increase residence time of nutrients upstream and decrease the
 downstream output, which can result in a decrease in primary productivity.
