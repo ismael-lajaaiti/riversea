@@ -78,7 +78,22 @@ links physical gradients along rivers to predictable changes in community
 structure, energy sources, and ecosystem functioning
 [@Vannote-etal-1980; @Doretto-Piano-Larson-2020].
 
-- Serial Discontinuity Concept [@Ward-Stanford-1995].
+- Serial Discontinuity Concept is a framework to predict the impact of
+discontinuities, such as dams, on biotic and abiotic variables along the river
+continuum [@Ward-Stanford-1995].
+
+- The Flood Pulse Concept (FPC) complements the RCC as it focuses on the lateral
+dimension of rivers and its role in explaining community productivity, while the
+RCC focused on the longitudinal aspect. The FPC states that its the rythm of
+flood and recession -- that is, the pulse -- which structures ecosystem
+productivity, not the flow [@Junk-Bayley-Sparks-1989].
+  - Terrestrial organic matter (leaf litter, vegetation, soil nutrients) gets
+  dissolved and mobilized into the water
+  - Aquatic plants and algae explode in productivity in the shallow, sunlit
+  floodwaters
+  - Fish and invertebrates move onto the floodplain to feed and reproduce
+  - When waters recede, nutrients and organic matter flush back into the main
+  channel
 
 - The River Wave concept as unifying framework of different concepts of
 freshwater ecology [@Humphries-Keckeis-Finlayson-2014].
