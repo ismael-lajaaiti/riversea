@@ -151,7 +151,7 @@ head(foodweb, n = 10)
 
 foodweb_long <- foodweb |>
   pivot_longer(
-    cols = c(log_richness, connectance, trophic_length), names_to = "variable",
+    cols = c(log_species_richness, connectance, trophic_length), names_to = "variable",
     values_to = "value"
   ) |>
   filter(year %in% year_list)
@@ -184,7 +184,7 @@ GGally::ggpairs(
   foodweb |>
     filter(year %in% year_vals) |>
     mutate(year = as.factor(year)),
-  columns = c("log_richness", "connectance", "trophic_length"),
+  columns = c("log_trophic_richness", "connectance", "trophic_length"),
   aes(colour = year)
 )
 ```
@@ -256,7 +256,9 @@ structure metrics.
 #| fig-height: 8
 
 response <- fw_with_env |>
-  select(log_richness, connectance, trophic_length) |>
+  select(
+    log_species_richness, log_trophic_richness, connectance, trophic_length
+  ) |>
   scale()
 
 predictor <- fw_with_env |>

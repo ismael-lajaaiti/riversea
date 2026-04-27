@@ -91,18 +91,37 @@ get_connectance <- function(web) {
   sum(web) / prod(dim(web))
 }
 
-#' Compute the species richness of food web.
+#' Compute the trophic richness of food web.
+#'
+#' Trophic richness count class sizes of the same species as different trophic
+#' species, so it is not always equal to the species richness.
 #'
 #' @param web
 #'
 #' @return numeric
 #' @export
-get_richness <- function(web) {
+get_trophic_richness <- function(web) {
   dimension <- dim(web)
   if (dimension[1] != dimension[2]) {
     stop("Dimension of the adjacency matrix are different.")
   }
   dimension[1]
+}
+
+#' Compute the species richness of the food web
+#'
+#' @param web matrix
+#'
+#' @return numeric
+#' @export
+get_species_richness <- function(web) {
+  dimension <- dim(web)
+  if (dimension[1] != dimension[2]) {
+    stop("Dimension of the adjacency matrix are different.")
+  }
+  sub("_.*", "", colnames(web)) |>
+    unique() |>
+    length()
 }
 
 #' Get trophic length from a food web adjacency matrix
@@ -145,7 +164,8 @@ plot_sizeclass_connectance <- function(metaweb_table) {
 prepare_local_foodwebs <- function(web_list, sea_data_tidy) {
   foodweb <- enframe(web_list$local, name = "trait", value = "foodweb") |>
     mutate(
-      log_richness = log(purrr::map_dbl(foodweb, get_richness)),
+      log_trophic_richness = log(purrr::map_dbl(foodweb, get_trophic_richness)),
+      log_species_richness = log(purrr::map_dbl(foodweb, get_species_richness)),
       connectance = purrr::map_dbl(foodweb, get_connectance),
       trophic_length = purrr::map_dbl(foodweb, get_trophic_length)
     )
