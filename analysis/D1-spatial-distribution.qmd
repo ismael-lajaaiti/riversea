@@ -57,9 +57,16 @@ env |>
   labs(x = "Year", y = "Mean annual temperature")
 ```
 
+However, this is not very informative because we do not account for the
+spatialization of the data.
+A better way, to investigate the data is to plot yearly map of the different
+environmental variables.
+For example, below we plot the distribution of mean oxygen level, chorophyl
+concentration, and temperature.
+
 ```{r}
-#| fig-width: 15
-#| fig-height: 10
+#| fig-width: 12
+#| fig-height: 8
 
 library(tidyr)
 library(sf)
@@ -68,14 +75,14 @@ library(rnaturalearthhires)
 
 coastline <- ne_coastline(scale = "large", returnclass = "sf")
 
-var_list <- c("temp_mean", "temp_cv", "o2_mean", "o2_cv")
-year_list <- c(2005, 2010, 2015, 2020)
+var_list <- c("o2_mean", "chl_mean", "temp_mean")
+year_list <- c(2000, 2005, 2010, 2015, 2020)
 
 env_long <- env |>
   pivot_longer(
     cols = c(
       chl_mean, nppv_mean, o2_mean, o2_cv,
-      o2_perc_25, temp_mean, temp_cv, temp_perc_90
+      o2_perc_25, temp_mean, temp_cv, temp_perc_90, sali_mean
     ),
     names_to = "variable",
     values_to = "value"
@@ -93,34 +100,176 @@ ggplot(env_long, aes(x = x, y = y, fill = value_scaled)) +
   coord_sf(xlim = range(env$x), ylim = range(env$y))
 ```
 
+We can also plot the salinity for a given year, say 2023.
+We use a log scale, as salinity changes a lot in the estuary.
+
+```{r}
+env |>
+  mutate(log_salinity = log10(sali_mean)) |>
+  filter(year == 2023) |>
+  ggplot(aes(x = x, y = y, fill = log_salinity)) +
+  geom_tile() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_fill_viridis_c() +
+  coord_sf(xlim = range(env$x), ylim = range(env$y))
+```
+
+We see that different environmental variables seem correlated.
+We can have a look at them more exhaustively with pairwise scatterplot.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+cols <- c(
+  "chl_mean", "nppv_mean", "o2_mean", "temp_mean", "sali_mean",
+  "bathymetry"
+)
+year_vals <- c(2000, 2010, 2020)
+GGally::ggpairs(
+  env |> mutate(year = as.factor(year)) |> filter(year %in% year_vals),
+  columns = cols,
+  aes(colour = year, alpha = 0.1)
+)
+```
+
+First, we see that we have some strong correlations between variables, such as,
+between oxygen and temperature.
+Interestingly, there are also changes between the correlation between the
+variables.
+In particular, we see that in the recent years, there is now a very strong
+correlation between chlorophyll and net primary productivity.
+
+## Food web structure metrics
+
+Next, we investigate the structure of local food webs.
+We focus on food web richness, connectance and trophic length.
+
 ```{r}
 foodweb <- tar_read(local_foodwebs)
 head(foodweb, n = 10)
 
 foodweb_long <- foodweb |>
   pivot_longer(
-    cols = c(log_richness, connectance), names_to = "variable",
+    cols = c(log_richness, connectance, trophic_length), names_to = "variable",
     values_to = "value"
   ) |>
   filter(year %in% year_list)
 
 vars <- unique(foodweb_long$variable)
 
-plots <- purrr::map(vars, \(var)
-foodweb_long |>
-  filter(variable == var) |>
-  ggplot(aes(x = longitude, y = latitude, color = value)) +
-  geom_point(size = 2.5) +
-  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
-  facet_wrap(~year, nrow = 1) +
-  scale_color_viridis_c(name = var) +
-  coord_sf(
-    xlim = range(foodweb_long$longitude),
-    ylim = range(foodweb_long$latitude)
-  ) +
-  labs(x = NULL, y = NULL))
+plots <- purrr::map(vars, function(var) {
+  foodweb_long |>
+    filter(variable == var) |>
+    ggplot(aes(x = longitude, y = latitude, color = value)) +
+    geom_point(size = 2.5) +
+    geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+    facet_wrap(~year, nrow = 1) +
+    scale_color_viridis_c(name = var) +
+    coord_sf(
+      xlim = range(foodweb_long$longitude),
+      ylim = range(foodweb_long$latitude)
+    ) +
+    labs(x = NULL, y = NULL)
+})
 
 patchwork::wrap_plots(plots, ncol = 1)
 ```
+
+We can also have a look at the correlations between the different structure
+metrics.
+
+```{r}
+GGally::ggpairs(
+  foodweb |>
+    filter(year %in% year_vals) |>
+    mutate(year = as.factor(year)),
+  columns = c("log_richness", "connectance", "trophic_length"),
+  aes(colour = year)
+)
+```
+
+We see a strong correlation between richness and connectance and trophic length,
+which is respectively negtive and positive.
+
+## Matching food web and environmental data
+
+We match food webs with the closest environmental data available.
+We also record the distance between the foodweb and the environmental data,
+so we can later filter out food webs for which we don't environmental data
+available (e.g. if the distance is greater than 20 km).
+
+```{r}
+fw_with_env <- tar_read(fw_with_env)
+```
+
+Next, we want to check that the distance to environmental data is consistent
+with our expectation, that is, the distance is low for the atlantic coast, and
+increases as we go further into the Manche.
+
+```{r}
+ggplot(fw_with_env, aes(x = longitude, y = latitude, color = dist_to_env)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_color_viridis_c() +
+  coord_sf(
+    xlim = range(fw_with_env$longitude),
+    ylim = range(fw_with_env$latitude)
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+```{r}
+dist_max <- 20
+```
+
+Let's say, that we want to keep only food webs for which with have
+environmental variables closer than `r dist_max` km, and map them.
+
+```{r}
+ggplot(
+  fw_with_env |> filter(dist_to_env < dist_max),
+  aes(x = longitude, y = latitude, color = dist_to_env)
+) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_color_viridis_c() +
+  coord_sf(
+    xlim = range(fw_with_env$longitude),
+    ylim = range(fw_with_env$latitude)
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+For now we will work with these food webs.
+
+```{r}
+fw_with_env <- fw_with_env |>
+  filter(dist_to_env < dist_max)
+```
+
+We can do a RDA to investigate how environmental variables affect food web
+structure metrics.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+response <- fw_with_env |>
+  select(log_richness, connectance, trophic_length) |>
+  scale()
+
+predictor <- fw_with_env |>
+  select(
+    longitude, latitude, chl_mean, nppv_mean, o2_mean, temp_mean,
+    sali_mean, bathymetry
+  ) |>
+  scale()
+
+m <- vegan::rda(response, predictor)
+ggvegan::autoplot(m)
+```
+
+Interestingly, we see that the salinity is closely related to the richness.
 
 

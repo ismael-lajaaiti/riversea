@@ -12,6 +12,7 @@ tar_option_set(
     "ggdag",
     "ggplot2",
     "ggVennDiagram",
+    "GGally",
     "tidyr",
     "tibble",
     "dplyr",
@@ -25,7 +26,10 @@ tar_option_set(
     "sf",
     "foodwebbuilder",
     "igraph",
-    "metanetwork"
+    "metanetwork",
+    "cheddar",
+    "vegan",
+    "ggvegan"
   )
 )
 

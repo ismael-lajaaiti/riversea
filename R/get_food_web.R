@@ -105,6 +105,34 @@ get_richness <- function(web) {
   dimension[1]
 }
 
+#' Get trophic length from a food web adjacency matrix
+#'
+#' @param web adjacency matrix of type matrix.
+#' @param tl_method string, cheddar method to compute trophic levels.
+#'
+#' @return numeric, trophic length, that is the maximal trophic level of the
+#' community.
+#' @export
+get_trophic_length <- function(web, tl_method = "ChainAveragedTL") {
+  nodes <- data.frame(node = colnames(web))
+  links <- web |>
+    as.data.frame() |>
+    mutate(resource = rownames(web)) |>
+    pivot_longer(-one_of("resource"), names_to = "consumer") |>
+    filter(value == 1) |>
+    select(-value)
+  # trophic_length <-
+  community <- cheddar::Community(
+    nodes = nodes,
+    properties = list(title = "Community"),
+    trophic.links = links
+  )
+  cheddar::TrophicLevels(community) |>
+    as.data.frame() |>
+    pull("ChainAveragedTL") |>
+    max(na.rm = TRUE)
+}
+
 plot_sizeclass_connectance <- function(metaweb_table) {
   metaweb_table |>
     mutate(connectance = purrr::map_dbl(metaweb, get_connectance)) |>
@@ -118,8 +146,38 @@ prepare_local_foodwebs <- function(web_list, sea_data_tidy) {
   foodweb <- enframe(web_list$local, name = "trait", value = "foodweb") |>
     mutate(
       log_richness = log(purrr::map_dbl(foodweb, get_richness)),
-      connectance = purrr::map_dbl(foodweb, get_connectance)
+      connectance = purrr::map_dbl(foodweb, get_connectance),
+      trophic_length = purrr::map_dbl(foodweb, get_trophic_length)
     )
   trait <- sea_data_tidy$trait
   foodweb |> left_join(trait, by = join_by(trait))
+}
+
+match_with_environment <- function(foodweb, environment) {
+  foodweb |>
+    filter(year %in% unique(environment$year)) |>
+    group_by(year) |>
+    group_modify(~ {
+      env_year <- environment |>
+        filter(year == .y$year) |>
+        st_as_sf(coords = c("x", "y"), crs = 4326)
+      fw_year <- .x |>
+        st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+      idx <- st_nearest_feature(fw_year, env_year)
+      env_matched <- env_year |>
+        slice(idx) |>
+        select(-year)
+      dist_km <- st_distance(fw_year, env_matched, by_element = TRUE) / 1000
+      bind_cols(
+        fw_year |>
+          mutate(
+            longitude = st_coordinates(geometry)[, 1],
+            latitude = st_coordinates(geometry)[, 2]
+          ) |>
+          st_drop_geometry(),
+        env_matched |> st_drop_geometry()
+      ) |>
+        mutate(dist_to_env = as.numeric(dist_km))
+    }) |>
+    ungroup()
 }

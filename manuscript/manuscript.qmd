@@ -71,6 +71,15 @@ While patterns in community change within river network have been well studied,
 these studies have mostly focus on specise richness [@Bonnaffé-etal-2024b], or
 roughly defined functional composition [@Vannote-etal-1980].
 
+### River-estuary-sea continuum
+
+- [@Xenopoulos-etal-2017] highlights the importance of accounting for the full
+gradient from headwater to the sea. Freshwater and coastal ecosystems are
+connected by flux of carbone and nutrients (N, P), as well as, movement of
+migratory species. Reviews work connecting river and sea, that said, most of
+them focus on chemical fluxes, remain relatively local, and none of them focused
+on the food web structure.
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by

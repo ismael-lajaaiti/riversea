@@ -142,5 +142,9 @@ data_targets <- list(
   tar_target(
     environment_data,
     read_environment_data(dir_environment)
+  ),
+  tar_target(
+    fw_with_env,
+    match_with_environment(local_foodwebs, environment_data)
   )
 )
