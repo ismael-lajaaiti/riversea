@@ -258,20 +258,57 @@ structure metrics.
 response <- fw_with_env |>
   select(
     log_species_richness, log_trophic_richness, connectance, trophic_length
-  ) |>
-  scale()
+  )
 
 predictor <- fw_with_env |>
   select(
-    longitude, latitude, chl_mean, nppv_mean, o2_mean, temp_mean,
-    sali_mean, bathymetry
+    chl_mean, nppv_mean, o2_mean, temp_mean,
+    sali_mean, bathymetry, temp_cv, o2_cv, sali_cv
   ) |>
   scale()
 
+cor(predictor, use = "complete.obs") |> round(2)
+
 m <- vegan::rda(response, predictor)
+summary(m)
+
 ggvegan::autoplot(m)
 ```
 
+Most of the variance is still unexplained by environmental driver.
+It may mean two things.
+First, we are missing some of the key environmental driver.
+Second, there is a high stochaticity (which can be expected).
 Interestingly, we see that the salinity is closely related to the richness.
+
+```{r}
+m_space <- vegan::rda(response ~ . + Condition(longitude + latitude),
+  data = as.data.frame(predictor) |>
+    bind_cols(fw_with_env |> select(longitude, latitude))
+)
+summary(m_space)
+
+m_year <- vegan::rda(response ~ . + Condition(year),
+  data = as.data.frame(predictor) |>
+    bind_cols(fw_with_env |> select(year))
+)
+summary(m_year)
+```
+
+```{r}
+variance_partitioning <- vegan::varpart(
+  response, predictor,
+  fw_with_env |> select(longitude, latitude),
+  fw_with_env |> select(year)
+)
+
+plot(
+  variance_partitioning,
+  digits = 2,
+  Xnames = c("Environment", "Space", "Time")
+)
+```
+
+
 
 
