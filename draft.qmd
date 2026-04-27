@@ -1,0 +1,65 @@
+---
+title: drafting code
+---
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(dplyr)
+library(tibble)
+library(ggplot2)
+set_theme(theme_minimal())
+```
+
+```{r}
+#tar_make()
+library(sf)
+load(file = here::here("data", "river", "station.rda"))
+web_in_web_loc_path <- here::here("data", "river", "web_in_web.rda")
+load(file = web_in_web_loc_path)
+plot(riveratlas_station)
+library(mapview)
+
+com_metrics_st <- com_metrics %>%
+  left_join(op_st_filtered$op, by = "opcod") %>%
+  group_by(station) %>%
+  summarise(
+    begin = min(lubridate::year(date)),
+    end = max(lubridate::year(date)),
+    nsampling = n(),
+    protocol = unique(protocol),
+    med_richness = median(richness),
+    med_biomass = median(biomass),
+    med_nind = median(nind),
+    .groups = "drop"
+  )
+net_metrics_st <- network_metrics %>%
+  group_by(station) %>%
+  summarise(
+    med_connectance = median(connectance),
+    med_max_tlvl = median(max_troph_lvl),
+    med_nbnode = median(nbnode),
+    med_w_avg_tlvl = median(weighted_avg_obs_tlvl),
+    .groups = "drop"
+  )
+
+st_to_plot <- op_st_filtered$station %>%
+  select(station, libelle_sandre, town) %>%
+  left_join(com_metrics_st, by = "station") %>%
+  left_join(net_metrics_st, by = "station")
+
+mapview(riveratlas_station) +
+mapview(st_to_plot, zcol = c("protocol", "nsampling", "med_richness",
+    "med_biomass", "med_nind", "med_richness", "med_max_tlvl", "med_w_avg_tlvl"))
+
+```
+
+
