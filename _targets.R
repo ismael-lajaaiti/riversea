@@ -29,7 +29,8 @@ tar_option_set(
     "metanetwork",
     "cheddar",
     "vegan",
-    "ggvegan"
+    "ggvegan",
+    "lubridate"
   )
 )
 

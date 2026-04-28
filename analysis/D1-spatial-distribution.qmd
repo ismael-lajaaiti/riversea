@@ -151,7 +151,8 @@ head(foodweb, n = 10)
 
 foodweb_long <- foodweb |>
   pivot_longer(
-    cols = c(log_species_richness, connectance, trophic_length), names_to = "variable",
+    cols = c(log_species_richness, connectance, trophic_length),
+    names_to = "variable",
     values_to = "value"
   ) |>
   filter(year %in% year_list)
@@ -281,19 +282,8 @@ First, we are missing some of the key environmental driver.
 Second, there is a high stochaticity (which can be expected).
 Interestingly, we see that the salinity is closely related to the richness.
 
-```{r}
-m_space <- vegan::rda(response ~ . + Condition(longitude + latitude),
-  data = as.data.frame(predictor) |>
-    bind_cols(fw_with_env |> select(longitude, latitude))
-)
-summary(m_space)
-
-m_year <- vegan::rda(response ~ . + Condition(year),
-  data = as.data.frame(predictor) |>
-    bind_cols(fw_with_env |> select(year))
-)
-summary(m_year)
-```
+We can have use variance partitioning method to assess what fraction of the
+variance is explained by environment, spatial and temporal effects respectively.
 
 ```{r}
 variance_partitioning <- vegan::varpart(
@@ -309,6 +299,130 @@ plot(
 )
 ```
 
+## The continuum: map sea and river data
 
 
+```{r}
+load(file = here::here("data", "river", "station.rda"))
+web_in_web_loc_path <- here::here("data", "river", "web_in_web.rda")
+load(file = web_in_web_loc_path)
+plot(riveratlas_station["ord_stra"])
 
+com_metrics_st <- com_metrics |>
+  left_join(op_st_filtered$op, by = "opcod") |>
+  group_by(station) |>
+  summarise(
+    begin = min(lubridate::year(date)),
+    end = max(lubridate::year(date)),
+    nsampling = n(),
+    med_richness = median(richness),
+    med_biomass = median(biomass),
+    med_nind = median(nind),
+    .groups = "drop"
+  )
+
+net_metrics_st <- network_metrics |>
+  group_by(station) |>
+  summarise(
+    med_connectance = median(connectance),
+    med_max_tlvl = median(max_troph_lvl),
+    med_nbnode = median(nbnode),
+    med_w_avg_tlvl = median(weighted_avg_obs_tlvl),
+    .groups = "drop"
+  )
+
+st_to_plot <- op_st_filtered$station |>
+  select(station, libelle_sandre, town) |>
+  left_join(com_metrics_st, by = "station") |>
+  left_join(net_metrics_st, by = "station") |>
+  mutate(
+    longitude = st_coordinates(geometry)[, 1],
+    latitude = st_coordinates(geometry)[, 2]
+  ) |>
+  st_drop_geometry()
+```
+
+Is there a continuum?
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+river <- st_to_plot |>
+  select(longitude, latitude, med_richness, med_connectance, med_max_tlvl) |>
+  rename(connectance = med_connectance, trophic_length = med_max_tlvl) |>
+  mutate(log_species_richness = log(med_richness), type = "river") |>
+  select(-med_richness)
+
+sea <- foodweb |>
+  select(
+    longitude, latitude, connectance, log_species_richness, trophic_length
+  ) |>
+  mutate(type = "sea")
+
+river_sea <- rbind(river, sea)
+
+river_sea |>
+  ggplot(aes(x = longitude, y = latitude, color = type)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  coord_sf(
+    xlim = range(river_sea$longitude),
+    ylim = range(river_sea$latitude)
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+Species richness.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+river_sea |>
+  ggplot(aes(x = longitude, y = latitude, color = log_species_richness)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_color_viridis_c() +
+  coord_sf(
+    xlim = range(river_sea$longitude),
+    ylim = range(river_sea$latitude)
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+Connectance.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+river_sea |>
+  ggplot(aes(x = longitude, y = latitude, color = connectance)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_color_viridis_c() +
+  coord_sf(
+    xlim = range(river_sea$longitude),
+    ylim = range(river_sea$latitude)
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+Trophic length.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+river_sea |>
+  ggplot(aes(x = longitude, y = latitude, color = trophic_length)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_color_viridis_c() +
+  coord_sf(
+    xlim = range(river_sea$longitude),
+    ylim = range(river_sea$latitude)
+  ) +
+  labs(x = NULL, y = NULL)
+```

@@ -1,7 +1,7 @@
 ---
 title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
 author: "Ismaël Lajaaiti, Eric Edeline, Anik Brind'Amour, Alain Danet"
-bibliography: references.bib
+bibliography: ../references.bib
 prefer-html: true
 format:
   html:
