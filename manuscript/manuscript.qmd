@@ -80,6 +80,9 @@ migratory species. Reviews work connecting river and sea, that said, most of
 them focus on chemical fluxes, remain relatively local, and none of them focused
 on the food web structure.
 
+- Catchment land-use impacts macro-invertebrates along the river-sea continuum
+with no dilution effect [@Bierschenk-Savage-Matthaei-2017].
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by

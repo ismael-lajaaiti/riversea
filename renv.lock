@@ -2285,15 +2285,14 @@
       ],
       "VignetteBuilder": "knitr",
       "Config/testthat/edition": "3",
+      "Author": "Jane Doe [aut, cre]",
+      "Maintainer": "Jane Doe <jane@example.com>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "foodwebbuilder",
       "RemoteUsername": "Fellows-of-the-Fish-Food-Webs-F3W",
       "RemoteRef": "HEAD",
-      "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894",
-      "NeedsCompilation": "no",
-      "Author": "Jane Doe [aut, cre]",
-      "Maintainer": "Jane Doe <jane@example.com>"
+      "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894"
     },
     "forcats": {
       "Package": "forcats",
@@ -5914,13 +5913,12 @@
       "RoxygenNote": "7.3.1",
       "Encoding": "UTF-8",
       "Repository": "https://ropensci.r-universe.dev",
-      "NeedsCompilation": "no",
-      "Author": "Andy South [aut, cre] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
-      "Maintainer": "Andy South <southandy@gmail.com>",
-      "RemoteType": "repository",
       "RemoteUrl": "https://github.com/ropensci/rnaturalearthhires",
       "RemoteRef": "main",
-      "RemoteSha": "e4736f636baa1c013d77d2ba028dd5bc334defee"
+      "RemoteSha": "e4736f636baa1c013d77d2ba028dd5bc334defee",
+      "NeedsCompilation": "no",
+      "Author": "Andy South [aut, cre] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
+      "Maintainer": "Andy South <southandy@gmail.com>"
     },
     "rprojroot": {
       "Package": "rprojroot",
