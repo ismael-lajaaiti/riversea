@@ -30,7 +30,8 @@ tar_option_set(
     "cheddar",
     "vegan",
     "ggvegan",
-    "lubridate"
+    "lubridate",
+    "mapview"
   )
 )
 

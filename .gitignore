@@ -5,6 +5,7 @@
 .Ruserdata
 .Rapp.history
 data/river_workshop/
+data/river/web_in_web.rda
 data/sea/
 data/*.zip
 docs/site_libs/

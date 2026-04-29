@@ -73,7 +73,7 @@ roughly defined functional composition [@Vannote-etal-1980].
 
 ### River-estuary-sea continuum
 
-- [@Xenopoulos-etal-2017] highlights the importance of accounting for the full
+- @Xenopoulos-etal-2017 highlights the importance of accounting for the full
 gradient from headwater to the sea. Freshwater and coastal ecosystems are
 connected by flux of carbone and nutrients (N, P), as well as, movement of
 migratory species. Reviews work connecting river and sea, that said, most of
@@ -82,6 +82,10 @@ on the food web structure.
 
 - Catchment land-use impacts macro-invertebrates along the river-sea continuum
 with no dilution effect [@Bierschenk-Savage-Matthaei-2017].
+
+- The Land-to-Ocean Continuum (LOAC) concept has been used to study carbon
+fluxes between land and ocean, and how these fluxes, and feedback loop influence
+the carbon storage by oceans [@Regnier-etal-2022].
 
 ### Freshwater ecosystems
 

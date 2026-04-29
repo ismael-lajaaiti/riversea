@@ -426,3 +426,15 @@ river_sea |>
   ) +
   labs(x = NULL, y = NULL)
 ```
+
+```{r}
+#| eval: false
+
+river_sea |> 
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+  mapview::mapview(
+    zcol = c("type", "log_species_richness", "connectance", "trophic_length")
+  )
+```
+
+
