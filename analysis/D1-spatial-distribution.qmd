@@ -1,5 +1,5 @@
 ---
-title: "Data spatial distribution"
+title: "Data overview"
 format: 
   html:
     embed-resources: true
@@ -75,8 +75,8 @@ library(rnaturalearthhires)
 
 coastline <- ne_coastline(scale = "large", returnclass = "sf")
 
-var_list <- c("o2_mean", "chl_mean", "temp_mean")
-year_list <- c(2000, 2005, 2010, 2015, 2020)
+var_list <- c("o2_mean", "nppv_mean", "temp_mean")
+year_list <- c(2019, 2020, 2021, 2022, 2023)
 
 env_long <- env |>
   pivot_longer(
@@ -139,6 +139,40 @@ Interestingly, there are also changes between the correlation between the
 variables.
 In particular, we see that in the recent years, there is now a very strong
 correlation between chlorophyll and net primary productivity.
+This seems to be due to an explosion in primary productivity values in recent
+years. This is probably due to a change in the way the productivity is computed,
+but let's further investigate.
+
+```{r}
+year_list <- c(2019, 2020, 2021, 2022, 2023)
+
+ggplot(
+  env |> filter(year %in% year_list),
+  aes(x = x, y = y, fill = nppv_mean)
+) +
+  geom_tile() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  facet_wrap(~year) +
+  scale_fill_viridis_c() +
+  coord_sf(xlim = c(-1.5,-0.5), ylim = c(44.8, 45.8))
+```
+
+We see indeed an explosion of the net primary productivity in the Gironde and
+Loire estuaries.
+
+For comparison let's plot cholorophyll values.
+
+```{r}
+ggplot(
+  env |> filter(year %in% year_list),
+  aes(x = x, y = y, fill = chl_mean)
+) +
+  geom_tile() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  facet_wrap(~year) +
+  scale_fill_viridis_c() +
+  coord_sf(xlim = c(-1.5,-0.5), ylim = c(44.8, 45.8))
+```
 
 ## Food web structure metrics
 
@@ -149,6 +183,7 @@ We focus on food web richness, connectance and trophic length.
 foodweb <- tar_read(local_foodwebs)
 head(foodweb, n = 10)
 
+year_list <- c(2000, 2005, 2010, 2015, 2020)
 foodweb_long <- foodweb |>
   pivot_longer(
     cols = c(log_species_richness, connectance, trophic_length),
@@ -430,7 +465,7 @@ river_sea |>
 ```{r}
 #| eval: false
 
-river_sea |> 
+river_sea |>
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
   mapview::mapview(
     zcol = c("type", "log_species_richness", "connectance", "trophic_length")
