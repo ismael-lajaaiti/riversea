@@ -125,3 +125,100 @@ read_environment_data <- function(dir, year_start = 1993, year_end = 2023) {
   }) |>
     purrr::list_rbind()
 }
+
+download_hydrographic_files <- function(dir) {
+  url_sea_polygones <- c(
+    estuary = "https://services.sandre.eaufrance.fr/telechargement/geo/MDO/MasseDEau/vedl_2019/PolygMasseDEauTransition/PolygMasseDEauTransition_FXX-shp.zip",
+    coast = "https://services.sandre.eaufrance.fr/telechargement/geo/MDO/MasseDEau/vrap_2022/MasseDEauCotiere/MasseDEauCotiere_FRA-shp.zip"
+  )
+  if (!dir.exists(dir)) {
+    dir.create(dir)
+  }
+  purrr::walk2(
+    url_sea_polygones, names(url_sea_polygones),
+    \(url, name) {
+      zip_file <- here::here(dir, paste0(name, ".zip"))
+      download.file(url, destfile = zip_file)
+      unzip(zipfile = zip_file, exdir = here::here(dir))
+      file.remove(zip_file)
+    }
+  )
+  dir
+}
+
+format_hydrographic_area <- function(dir) {
+  # District classification from
+  # https://www.donnees.statistiques.developpement-durable.gouv.fr/lesessentiels/essentiels/dce-district.html
+  file_list <- list.files(path = dir, pattern = ".shp")
+  purrr::map(
+    here::here(dir, file_list),
+    \(x) sf::read_sf(x) |> dplyr::select(CdEuMasseD)
+  ) |>
+    purrr::map(\(x) sf::st_transform(x, crs = 4326)) |>
+    bind_rows() |>
+    rename(zone_id = CdEuMasseD) |>
+    sf::st_make_valid() |>
+    mutate(district = case_when(
+      str_detect(zone_id, "^FRA") ~ "Escaut-Somme",
+      str_detect(zone_id, "^FRB") ~ "Meuse",
+      str_detect(zone_id, "^FRC") ~ "Rhin",
+      str_detect(zone_id, "^FRD") ~ "Rhone",
+      str_detect(zone_id, "^FRE") ~ "Corse",
+      str_detect(zone_id, "^FRF") ~ "Ardour-Garonne",
+      str_detect(zone_id, "^FRG") ~ "Loire",
+      str_detect(zone_id, "^FRH") ~ "Seine",
+      TRUE ~ NA_character_
+    ))
+}
+
+match_foodweb_district <- function(foodweb, hydro_zone, dist_max = 5) {
+  fw_sf <- foodweb |>
+    select(-c(
+      foodweb,
+      log_trophic_richness,
+      log_species_richness,
+      connectance,
+      trophic_length
+    )) |>
+    st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+    st_join(hydro_zone, join = sf::st_within)
+
+  # Food web within zone.
+  fw_within <- fw_sf |>
+    filter(!is.na(zone_id)) |>
+    mutate(dist_to_district = 0)
+  fw_outside <- fw_sf |>
+    filter(is.na(zone_id))
+
+  # Match outside point to nearest district.
+  fw_nearest <- fw_outside |>
+    mutate(
+      nearest_idx = sf::st_nearest_feature(geometry, hydro_zone),
+      district = hydro_zone$district[nearest_idx],
+      dist_to_district = sf::st_distance(geometry, hydro_zone[nearest_idx, ],
+        by_element = TRUE
+      ) |> as.numeric() / 1000
+    ) |>
+    select(-nearest_idx) |>
+    filter(dist_to_district < dist_max)
+
+  fw_within |>
+    rbind(fw_nearest) |>
+    mutate(
+      longitude = sf::st_coordinates(geometry)[, 1],
+      latitude  = sf::st_coordinates(geometry)[, 2]
+    ) |>
+    sf::st_drop_geometry()
+}
+
+#' Convert a dataframe to sf object
+#'
+#' Assumes coordinates are given by the longitude and latitude columns.
+#'
+#' @param x data.frame
+#'
+#' @return sf object
+#' @export
+to_sf <- function(x) {
+  x |> sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+}

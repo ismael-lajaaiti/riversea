@@ -43,6 +43,11 @@ report_targets <- list(
     "analysis/D1-spatial-distribution.qmd",
     quarto_args = c("--embed-resources")
   ),
+  tar_quarto(
+    report_D2,
+    "analysis/D2-estuary-sea-continuum.qmd",
+    quarto_args = c("--embed-resources")
+  ),
   # Presentations.
   tar_quarto(
     presentation_wine,

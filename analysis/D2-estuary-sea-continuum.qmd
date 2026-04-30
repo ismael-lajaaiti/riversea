@@ -15,9 +15,6 @@ execute:
 #| output: false
 library(renv)
 renv::load()
-renv::restore() # Install missing librairies.
-renv::status() # Check the project state.
-
 library(targets)
 library(here)
 tar_config_set(
@@ -27,7 +24,52 @@ tar_config_set(
 library(ggplot2)
 set_theme(theme_minimal())
 library(dplyr)
+library(riversea)
+library(sf)
 ```
+
+## Estuary classification
+
+First, we have different zones that we can download from the Sandre database.
+They take the form of polygons.
+
+```{r}
+area <- tar_read(hydrographic_area)
+head(area)
+```
+
+::: {.callout-note}
+By investigating with `mapview`, we can see that there is a zone missing near Le
+Havre.
+:::
+
+We can match food webs to zone either if they fit within a polygon, or if they
+are very close to it (e.g. less than 5km away).
+
+To classify food webs in different bassin, we use the define of the hydrographic
+district given by the DCE. It is a very broad geographical unit, but we will
+start from there.
+
+```{r}
+fw_with_district <- tar_read(fw_with_district)
+
+library(rnaturalearth)
+library(rnaturalearthhires)
+coastline <- ne_coastline(scale = "large", returnclass = "sf")
+
+ggplot(fw_with_district, aes(x = longitude, y = latitude, color = district)) +
+  geom_point(size = 2.5) +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_color_viridis_d() +
+  coord_sf(
+    xlim = range(fw_with_district$longitude),
+    ylim = range(fw_with_district$latitude)
+  ) +
+  labs(x = NULL, y = NULL, color = "Hydrographic district")
+```
+
+We will later this classification to model it as a random effect to take into
+account the differences that can be due to the hydrographic bassin.
 
 ## First model
 

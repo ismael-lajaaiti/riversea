@@ -893,20 +893,39 @@
     "href": "analysis/D2-estuary-sea-continuum.html",
     "title": "How eutrophisation affect food web structures along the estuary-sea continuum",
     "section": "",
+<<<<<<< HEAD
     "text": "library(renv)\nrenv::load()\nrenv::restore() # Install missing librairies.\nrenv::status() # Check the project state.\n\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\n\nlibrary(ggplot2)\nset_theme(theme_minimal())\nlibrary(dplyr)"
+=======
+    "text": "library(renv)\nrenv::load()\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\n\nlibrary(ggplot2)\nset_theme(theme_minimal())\nlibrary(dplyr)\nlibrary(riversea)\nlibrary(sf)"
+>>>>>>> 36ee71f (Match food web to district)
   },
   {
     "objectID": "analysis/D2-estuary-sea-continuum.html#summary",
     "href": "analysis/D2-estuary-sea-continuum.html#summary",
     "title": "How eutrophisation affect food web structures along the estuary-sea continuum",
     "section": "",
+<<<<<<< HEAD
     "text": "library(renv)\nrenv::load()\nrenv::restore() # Install missing librairies.\nrenv::status() # Check the project state.\n\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\n\nlibrary(ggplot2)\nset_theme(theme_minimal())\nlibrary(dplyr)"
+=======
+    "text": "library(renv)\nrenv::load()\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\n\nlibrary(ggplot2)\nset_theme(theme_minimal())\nlibrary(dplyr)\nlibrary(riversea)\nlibrary(sf)"
+>>>>>>> 36ee71f (Match food web to district)
   },
   {
     "objectID": "analysis/D2-estuary-sea-continuum.html#first-model",
     "href": "analysis/D2-estuary-sea-continuum.html#first-model",
     "title": "How eutrophisation affect food web structures along the estuary-sea continuum",
     "section": "First model",
+<<<<<<< HEAD
     "text": "First model\n\nlibrary(INLA)\n\nfw_with_env &lt;- tar_read(fw_with_env) |&gt;\n  select(\n    log_species_richness,\n    trophic_length,\n    sali_mean,\n    chl_mean,\n    year\n  ) |&gt;\n  mutate(\n    salinity = scale(log10(sali_mean)),\n    chlorophyll = scale(chl_mean)\n  )\n\nm &lt;- inla(\n  trophic_length ~ 1 + salinity + chlorophyll + f(year, model = \"iid\"),\n  data = fw_with_env\n)\nsummary(m)\n\nTime used:\n    Pre = 0.399, Running = 0.312, Post = 0.0963, Total = 0.808 \nFixed effects:\n             mean    sd 0.025quant 0.5quant 0.975quant  mode kld\n(Intercept) 3.283 0.036      3.212    3.283      3.353 3.283   0\nsalinity    0.089 0.008      0.074    0.089      0.105 0.089   0\nchlorophyll 0.041 0.008      0.025    0.041      0.057 0.041   0\n\nRandom effects:\n  Name    Model\n    year IID model\n\nModel hyperparameters:\n                                         mean    sd 0.025quant 0.5quant\nPrecision for the Gaussian observations  3.36  0.05       3.26     3.36\nPrecision for year                      33.44 10.26      17.42    32.06\n                                        0.975quant  mode\nPrecision for the Gaussian observations       3.46  3.35\nPrecision for year                           57.42 29.52\n\nMarginal log-Likelihood:  -7379.05 \n is computed \nPosterior summaries for the linear predictor and the fitted values are computed\n(Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')"
+=======
+    "text": "First model\n\nlibrary(INLA)\n\nfw_with_env &lt;- tar_read(fw_with_env) |&gt;\n  select(\n    log_species_richness,\n    trophic_length,\n    sali_mean,\n    chl_mean,\n    year\n  ) |&gt;\n  mutate(\n    salinity = scale(log10(sali_mean)),\n    chlorophyll = scale(chl_mean)\n  )\n\nm &lt;- inla(\n  trophic_length ~ 1 + salinity + chlorophyll + f(year, model = \"iid\"),\n  data = fw_with_env\n)\nsummary(m)\n\nTime used:\n    Pre = 0.399, Running = 0.342, Post = 0.0619, Total = 0.803 \nFixed effects:\n             mean    sd 0.025quant 0.5quant 0.975quant  mode kld\n(Intercept) 3.283 0.036      3.212    3.283      3.353 3.283   0\nsalinity    0.089 0.008      0.074    0.089      0.105 0.089   0\nchlorophyll 0.041 0.008      0.025    0.041      0.057 0.041   0\n\nRandom effects:\n  Name    Model\n    year IID model\n\nModel hyperparameters:\n                                         mean    sd 0.025quant 0.5quant\nPrecision for the Gaussian observations  3.36  0.05       3.26     3.36\nPrecision for year                      33.47 10.30      17.47    32.05\n                                        0.975quant  mode\nPrecision for the Gaussian observations       3.46  3.35\nPrecision for year                           57.63 29.43\n\nMarginal log-Likelihood:  -7379.05 \n is computed \nPosterior summaries for the linear predictor and the fitted values are computed\n(Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')"
+  },
+  {
+    "objectID": "analysis/D2-estuary-sea-continuum.html#estuary-classification",
+    "href": "analysis/D2-estuary-sea-continuum.html#estuary-classification",
+    "title": "How eutrophisation affect food web structures along the estuary-sea continuum",
+    "section": "Estuary classification",
+    "text": "Estuary classification\nFirst, we have different zones that we can download from the Sandre database. They take the form of polygons.\n\narea &lt;- tar_read(hydrographic_area)\nhead(area)\n\nSimple feature collection with 6 features and 2 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: -2.855164 ymin: 41.34807 xmax: 9.430482 ymax: 49.92083\nGeodetic CRS:  WGS 84\n# A tibble: 6 × 3\n  zone_id                                                      geometry district\n  &lt;chr&gt;                                                   &lt;POLYGON [°]&gt; &lt;chr&gt;   \n1 FRDC02B  ((3.472332 43.26727, 3.47888 43.27553, 3.478796 43.27568, 3… Rhone   \n2 FREC01E  ((9.376087 43.02597, 9.368322 43.02286, 9.368023 43.02268, … Corse   \n3 FRHC17   ((0.8945173 49.92083, 0.8939853 49.92081, 0.8933403 49.9207… Seine   \n4 FRDC08E  ((7.115827 43.56353, 7.11573 43.56363, 7.115711 43.56364, 7… Rhone   \n5 FREC03EG ((9.18065 41.36577, 9.180537 41.36582, 9.180482 41.36587, 9… Corse   \n6 FRGC05   ((-2.854934 48.67191, -2.854931 48.67189, -2.854889 48.6714… Loire   \n\n\n\n\n\n\n\n\nNote\n\n\n\nBy investigating with mapview, we can see that there is a zone missing near Le Havre.\n\n\nWe can match food webs to zone either if they fit within a polygon, or if they are very close to it (e.g. less than 5km away).\nTo classify food webs in different bassin, we use the define of the hydrographic district given by the DCE. It is a very broad geographical unit, but we will start from there.\n\nfw_with_district &lt;- tar_read(fw_with_district)\n\nlibrary(rnaturalearth)\nlibrary(rnaturalearthhires)\ncoastline &lt;- ne_coastline(scale = \"large\", returnclass = \"sf\")\n\nggplot(fw_with_district, aes(x = longitude, y = latitude, color = district)) +\n  geom_point(size = 2.5) +\n  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +\n  scale_color_viridis_d() +\n  coord_sf(\n    xlim = range(fw_with_district$longitude),\n    ylim = range(fw_with_district$latitude)\n  ) +\n  labs(x = NULL, y = NULL, color = \"Hydrographic district\")\n\n\n\n\n\n\n\n\nWe will later this classification to model it as a random effect to take into account the differences that can be due to the hydrographic bassin."
+>>>>>>> 36ee71f (Match food web to district)
   }
 ]

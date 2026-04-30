@@ -146,5 +146,18 @@ data_targets <- list(
   tar_target(
     fw_with_env,
     match_with_environment(local_foodwebs, environment_data)
+  ),
+  tar_target(
+    hydrographic_area_dir,
+    download_hydrographic_files(here("data", "geo", "hydrographic")),
+    format = "file"
+  ),
+  tar_target(
+    hydrographic_area,
+    format_hydrographic_area(hydrographic_area_dir)
+  ),
+  tar_target(
+    fw_with_district,
+    match_foodweb_district(local_foodwebs, hydrographic_area)
   )
 )

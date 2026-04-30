@@ -7,6 +7,7 @@
 data/river_workshop/
 data/river/web_in_web.rda
 data/sea/
+data/geo/
 data/*.zip
 docs/site_libs/
 
