@@ -22,7 +22,7 @@ This page lists all the analyses of the RIVERSEA project.
 1. [Explore coastal data and fish size measurement](analysis/C1-explore-coast-data.qmd)
 2. [Infer missing fish sizes](analysis/C2-get-fish-sizes.qmd)
 
-## D. Environmental driver of food web structure
+## D. Environmental driver of food web structures
 1. [Data overview](analysis/D1-spatial-distribution.qmd)
 2. [How eutrophisation affect food web structures along the estuary-sea
    continuum](analysis/D2-estuary-sea-continuum.qmd)
