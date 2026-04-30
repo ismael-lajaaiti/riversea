@@ -1,0 +1,57 @@
+---
+title: "How eutrophisation affect food web structures along the estuary-sea
+   continuum"
+format:
+  html:
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+## Summary
+
+```{r}
+#| output: false
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+
+library(ggplot2)
+set_theme(theme_minimal())
+library(dplyr)
+```
+
+## First model
+
+```{r}
+library(INLA)
+
+fw_with_env <- tar_read(fw_with_env) |>
+  select(
+    log_species_richness,
+    trophic_length,
+    sali_mean,
+    chl_mean,
+    year
+  ) |>
+  mutate(
+    salinity = scale(log10(sali_mean)),
+    chlorophyll = scale(chl_mean)
+  )
+
+m <- inla(
+  trophic_length ~ 1 + salinity + chlorophyll + f(year, model = "iid"),
+  data = fw_with_env
+)
+summary(m)
+```
+
+
