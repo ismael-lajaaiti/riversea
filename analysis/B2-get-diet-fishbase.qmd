@@ -1,6 +1,8 @@
 ---
 title: "Get diet table from fishbase"
-format: html
+format:
+  html:
+    embed-resources: true
 execute:
     message: false
     warning: false

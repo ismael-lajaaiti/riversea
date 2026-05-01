@@ -1,10 +1,11 @@
 ---
 title: "Model eel abundance in the Vilaine bassin"
-format: html
+format:
+  html:
+    embed-resources: true
 execute:
     message: false
     warning: false
-    freeze: true
 ---
 
 # Summary

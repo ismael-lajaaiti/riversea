@@ -1,6 +1,8 @@
 ---
 title: "Infer missing fish sizes"
-format: html
+format:
+  html:
+    embed-resources: true
 execute:
     message: false
     warning: false

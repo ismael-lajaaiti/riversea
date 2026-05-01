@@ -1,6 +1,6 @@
 ---
 title: "Build food webs"
-format: 
+format:
   html:
     embed-resources: true
 execute:

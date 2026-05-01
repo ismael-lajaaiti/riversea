@@ -1,6 +1,8 @@
 ---
 title: "Define the statistical model"
-format: html
+format:
+  html:
+    embed-resources: true
 resources: 
     - figures/
 execute:
