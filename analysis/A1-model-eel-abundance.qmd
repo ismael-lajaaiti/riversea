@@ -4,6 +4,7 @@ format: html
 execute:
     message: false
     warning: false
+    freeze: true
 ---
 
 # Summary

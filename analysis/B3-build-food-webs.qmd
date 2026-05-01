@@ -96,14 +96,7 @@ web_list <- tar_read(web_list)
 
 get_connectance(web_list$metaweb)
 
-local_foodwebs <- enframe(web_list$local, name = "trait", value = "foodweb")
-head(local_foodwebs)
-
-local_foodwebs <- local_foodwebs |>
-  mutate(
-    log_richness = log(purrr::map_dbl(foodweb, get_richness)),
-    connectance = purrr::map_dbl(foodweb, get_connectance)
-  )
+local_foodwebs <- tar_read(local_foodwebs)
 head(local_foodwebs)
 ```
 
@@ -120,18 +113,18 @@ the relationship between these two variables.
 
 ```{r}
 m1 <- inla(
-  connectance ~ 1 + log_richness + f(survey, model = "iid") + f(year, model = "iid"),
+  connectance ~ 1 + log_trophic_richness + f(survey, model = "iid") + f(year, model = "iid"),
   data = local_foodwebs |> select(-foodweb)
 )
 summary(m1)
 
 intercept <- m1$summary.fixed["(Intercept)", "mean"]
-slope <- m1$summary.fixed["log_richness", "mean"]
+slope <- m1$summary.fixed["log_trophic_richness", "mean"]
 
-ggplot(local_foodwebs, aes(x = log_richness, y = connectance, color = survey)) +
+ggplot(local_foodwebs, aes(x = log_trophic_richness, y = connectance, color = survey)) +
   geom_point(alpha  = 0.3) +
   geom_abline(intercept = intercept, slope = slope) +
-  labs(x = "Log richness", y = "Connectance", color = "Survey")
+  labs(x = "Log trophic richness", y = "Connectance", color = "Survey")
 ```
 
 As expected, we observe a negative trend between connectance and species
@@ -141,7 +134,7 @@ There is also a small random effect attributed to the survey.
 Next, we investigate the effect of the year on species richness.
 
 ```{r}
-ggplot(local_foodwebs, aes(x = year, y = log_richness, color = survey)) +
+ggplot(local_foodwebs, aes(x = year, y = log_trophic_richness, color = survey)) +
   geom_point(alpha  = 0.1) +
   stat_summary(
     fun = mean,
@@ -169,10 +162,4 @@ ggplot(local_foodwebs, aes(x = year, y = connectance, color = survey)) +
 Interestingly, we see that connectance values are in agreement between the two
 survey (when there is an overlap), suggesting that it makes sense to merge these
 two different data sources.
-
-## TODO
-
-- Use life stage lengths from Anik dataset to refine diet table;
-- Split zoobenthos in three categories: molluscs, crustaceans and polychaetes;
-- Relate food web structure to environmental variables.
 

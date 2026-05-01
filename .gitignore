@@ -10,6 +10,7 @@ data/sea/
 data/geo/
 data/*.zip
 docs/site_libs/
+_freeze/
 
 _targets/
 *targets.yaml

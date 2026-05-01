@@ -43,7 +43,7 @@ url <- "https://raw.githubusercontent.com/CamilleLeclerc/FoodWebsLakeStream/refs
 We download it and convert it to a dataframe.
 
 ```{r}
-data_folder <- here("data", "coast")
+data_folder <- here("data", "river")
 file_name <- "fish_diet.csv"
 download.file(url, destfile = here(data_folder, file_name))
 ```
@@ -68,6 +68,7 @@ sp_list.diet
 To identify missing species in this dataframe, we have to load dataframes from sea campagne (solper, pomet, nurse).
 
 ```{r}
+data_folder <- here("data", "sea", "raw")
 pomet <- read.csv(here(data_folder, "poisson_pomet.csv"), sep = ";")
 solper <- read.csv(here(data_folder, "captures_SOLPER_2005_2011.csv"), sep = ";")
 nurse <- read.csv(here(data_folder, "Captures_Nurse_1980_2023.csv"), sep = ";")
@@ -361,7 +362,8 @@ unique(nurse$Espece)
 Let's load the combined dataset.
 
 ```{r}
-tidy_data <- load_raw_sea_data(here("data", "coast")) |>
+library(tidyr)
+tidy_data <- load_raw_sea_data(here("data", "sea", "raw")) |>
     clean_sea_data() |>
     combine_sea_data()
 
@@ -376,7 +378,7 @@ head(species)
 ```
 
 ```{r}
-aquatic_web <- read.csv(here("data", "aquatic-web-extraction-eric.csv"))
+aquatic_web <- read.csv(here("data", "diet", "aquatic-web-extraction-eric.csv"))
 head(aquatic_web)
 
 names_aquatic_web <- aquatic_web |>
