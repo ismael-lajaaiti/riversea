@@ -82,6 +82,7 @@ district <- tar_read(fw_with_district) |>
 
 # Food web with environment information.
 environment <- tar_read(fw_with_env) |>
+  filter(dist_to_env < 5) |>
   select(
     trait,
     log_species_richness,
@@ -90,15 +91,17 @@ environment <- tar_read(fw_with_env) |>
     sali_mean,
     chl_mean,
     year,
-    survey
+    survey,
+    longitude,
+    latitude
   ) |>
   mutate(
     salinity = scale(log10(sali_mean)),
     chlorophyll = scale(chl_mean)
   )
 
-data <- inner_join(district, environment, by = join_by(trait))
-
+data <- inner_join(district, environment, by = join_by(trait)) |>
+  mutate(log_trophic_richness = scale(log_trophic_richness))
 ```
 
 ### Fit the models
@@ -111,10 +114,18 @@ We fit three models to begin with that consider trophic length is shaped by
 ```{r}
 library(INLA)
 
+m0 <- inla(
+  trophic_length ~ 1 + salinity +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(zone_id, model = "iid"),
+  data = data
+)
+summary(m0)
+
 m1 <- inla(
-  trophic_length ~ 1 + salinity + chlorophyll + 
-    f(year, model = "iid") + f(survey, model = "iid") + 
-    f(district, model = "iid"),
+  trophic_length ~ 1 + salinity + chlorophyll +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(zone_id, model = "iid"),
   data = data
 )
 summary(m1)
@@ -122,7 +133,7 @@ summary(m1)
 m2 <- inla(
   trophic_length ~ 1 + salinity * chlorophyll +
     f(year, model = "iid") + f(survey, model = "iid") +
-    f(district, model = "iid"),
+    f(zone_id, model = "iid"),
   data = data
 )
 summary(m2)
@@ -130,7 +141,7 @@ summary(m2)
 m3 <- inla(
   trophic_length ~ 1 + salinity + chlorophyll + log_trophic_richness +
     f(year, model = "iid") + f(survey, model = "iid") +
-    f(district, model = "iid"),
+    f(zone_id, model = "iid"),
   data = data
 )
 summary(m3)
@@ -147,17 +158,21 @@ extract_fixed <- function(model, model_name) {
 }
 
 fixed <- bind_rows(
-  extract_fixed(m1,  "Without interaction"),
-  extract_fixed(m2, "With interaction"),
-  extract_fixed(m3, "With richness")
+  extract_fixed(m0, "Salinity"),
+  extract_fixed(m1, "Salinity + Chlorophyll"),
+  extract_fixed(m2, "Salinity * Chlorophyll"),
+  extract_fixed(m3, "Salinity + Chlorophyll + Richness")
 )
 
 ggplot(fixed, aes(x = mean, y = term, color = model)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
   geom_linerange(aes(xmin = `0.025quant`, xmax = `0.975quant`),
-                 position = position_dodge(width = 0.5)) +
-  geom_point(aes(x = `0.5quant`), size = 3,
-             position = position_dodge(width = 0.5)) +
+    position = position_dodge(width = 0.5)
+  ) +
+  geom_point(aes(x = `0.5quant`),
+    size = 3,
+    position = position_dodge(width = 0.5)
+  ) +
   labs(x = "Effect on trophic length", y = NULL, color = NULL) +
   theme(legend.position = "bottom")
 ```
@@ -185,9 +200,12 @@ fixed |>
   ggplot(aes(x = mean, y = term, color = model)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
   geom_linerange(aes(xmin = `0.025quant`, xmax = `0.975quant`),
-                 position = position_dodge(width = 0.5)) +
-  geom_point(aes(x = `0.5quant`), size = 3,
-             position = position_dodge(width = 0.5)) +
+    position = position_dodge(width = 0.5)
+  ) +
+  geom_point(aes(x = `0.5quant`),
+    size = 3,
+    position = position_dodge(width = 0.5)
+  ) +
   labs(x = "Effect on trophic length", y = NULL, color = NULL) +
   theme(legend.position = "bottom")
 ```
@@ -199,7 +217,7 @@ salinity_vals <- seq(min(data$salinity), max(data$salinity), length.out = 100)
 
 prediction_salinity <- data.frame(
   salinity    = salinity_vals,
-  chlorophyll = 0,  # held at mean (scaled)
+  chlorophyll = 0, # held at mean (scaled)
   year        = NA,
   survey      = NA,
   district    = NA
@@ -209,7 +227,7 @@ data_pred <- bind_rows(data, prediction_salinity)
 m_pred_salinity <- inla(
   trophic_length ~ 1 + salinity + chlorophyll +
     f(year, model = "iid") + f(survey, model = "iid") +
-    f(district, model = "iid"),
+    f(zone_id, model = "iid"),
   data = data_pred,
   control.predictor = list(compute = TRUE, link = 1)
 )
@@ -225,7 +243,123 @@ prediction_salinity |>
   geom_line(aes(y = mean)) +
   geom_point(data = data, aes(x = salinity, y = trophic_length), alpha = 0.1) +
   labs(x = "Salinity (scaled)", y = "Trophic length")
+```
 
+
+```{r}
+chlorophyll_vals <- seq(min(data$chlorophyll), max(data$chlorophyll), length.out = 100)
+
+prediction_chlorophyll <- data.frame(
+  chlorophyll = chlorophyll_vals,
+  salinity = 0, # held at mean (scaled)
+  year = NA,
+  survey = NA,
+  district = NA
+)
+
+data_pred <- bind_rows(data, prediction_chlorophyll)
+m_pred_chlorophyll <- inla(
+  trophic_length ~ 1 + salinity + chlorophyll +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(zone_id, model = "iid"),
+  data = data_pred,
+  control.predictor = list(compute = TRUE, link = 1)
+)
+
+# extract predictions for the NA rows
+n_obs <- nrow(data)
+preds <- m_pred_chlorophyll$summary.fitted.values[(n_obs + 1):(n_obs + 100), ]
+
+prediction_chlorophyll |>
+  bind_cols(preds) |>
+  ggplot(aes(x = chlorophyll_vals)) +
+  geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), alpha = 0.2) +
+  geom_line(aes(y = mean)) +
+  geom_point(data = data, aes(x = chlorophyll, y = trophic_length), alpha = 0.1) +
+  labs(x = "Chlorophyll (scaled)", y = "Trophic length")
+```
+
+
+```{r}
+richness_vals <- seq(min(data$log_trophic_richness),
+  max(data$log_trophic_richness),
+  length.out = 100
+)
+
+prediction <- data.frame(
+  log_trophic_richness = richness_vals,
+  chlorophyll = 0,
+  salinity = 0,
+  year = NA,
+  survey = NA,
+  district = NA
+)
+
+data_pred <- bind_rows(data, prediction)
+m_pred <- inla(
+  trophic_length ~ 1 + salinity + chlorophyll + log_trophic_richness +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(zone_id, model = "iid"),
+  data = data_pred,
+  control.predictor = list(compute = TRUE, link = 1)
+)
+
+# extract predictions for the NA rows
+n_obs <- nrow(data)
+preds <- m_pred$summary.fitted.values[(n_obs + 1):(n_obs + 100), ]
+
+prediction |>
+  bind_cols(preds) |>
+  ggplot(aes(x = richness_vals)) +
+  geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), alpha = 0.2) +
+  geom_line(aes(y = mean)) +
+  geom_point(data = data, aes(x = log_trophic_richness, y = trophic_length), alpha = 0.1) +
+  labs(x = "Log trophic richness (scaled)", y = "Trophic length")
+```
+
+
+### Visualise random effects
+
+#### Temporal
+
+```{r}
+year_re <- m3$summary.random$year |>
+  as_tibble() |>
+  rename(year = ID)
+
+ggplot(year_re, aes(x = year, y = mean)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), alpha = 0.2) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Year", y = "Year random effect on trophic length") +
+  theme_minimal()
+```
+
+#### Spatial
+
+```{r}
+area <- tar_read(hydrographic_area)
+spatial_re <- m3$summary.random$zone_id |>
+  as_tibble() |>
+  rename(zone_id = ID) |>
+  left_join(area, by = join_by(zone_id)) |>
+  st_as_sf()
+
+bbox <- st_bbox(spatial_re)
+
+ggplot(spatial_re) +
+  geom_sf(aes(fill = mean)) +
+  geom_sf(data = coastline) +
+  scale_fill_gradient2(
+    low = "steelblue", mid = "white", high = "tomato",
+    midpoint = 0, name = "RE"
+  ) +
+  coord_sf(
+    xlim = c(bbox["xmin"], bbox["xmax"]),
+    ylim = c(bbox["ymin"], bbox["ymax"])
+  ) +
+  labs(x = NULL, y = NULL)
 ```
 
 
