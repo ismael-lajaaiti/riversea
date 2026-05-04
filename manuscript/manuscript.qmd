@@ -91,7 +91,7 @@ the carbon storage by oceans [@Regnier-etal-2022].
 of human pressure along the river-estuary-sea continuum, more focused toward
 biochemistry than ecology.
 
-- @Ouellet-etal-2022 provides a conceptual model, DWOC, to advance a more
+- @Ouellet-etal-2022 provides a conceptual model (DWOC) to advance a more
 holistic management of diadromous species across the watersheds-ocean continuum.
 
 ### Freshwater ecosystems

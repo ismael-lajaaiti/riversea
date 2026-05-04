@@ -71,29 +71,161 @@ ggplot(fw_with_district, aes(x = longitude, y = latitude, color = district)) +
 We will later this classification to model it as a random effect to take into
 account the differences that can be due to the hydrographic bassin.
 
-## First model
+## First models
+
+### Format the data
 
 ```{r}
-library(INLA)
+# Food web with zone information (DCE hydrographic district).
+district <- tar_read(fw_with_district) |>
+  select(trait, district, zone_id)
 
-fw_with_env <- tar_read(fw_with_env) |>
+# Food web with environment information.
+environment <- tar_read(fw_with_env) |>
   select(
+    trait,
     log_species_richness,
+    log_trophic_richness,
     trophic_length,
     sali_mean,
     chl_mean,
-    year
+    year,
+    survey
   ) |>
   mutate(
     salinity = scale(log10(sali_mean)),
     chlorophyll = scale(chl_mean)
   )
 
-m <- inla(
-  trophic_length ~ 1 + salinity + chlorophyll + f(year, model = "iid"),
-  data = fw_with_env
+data <- inner_join(district, environment, by = join_by(trait))
+
+```
+
+### Fit the models
+
+We fit three models to begin with that consider trophic length is shaped by
+1. salinity and chlorophyll
+2. salinity, chlorophyll and their interactions
+3. salinity, chlorophyll and trophic richness (number of nodes in the local web)
+
+```{r}
+library(INLA)
+
+m1 <- inla(
+  trophic_length ~ 1 + salinity + chlorophyll + 
+    f(year, model = "iid") + f(survey, model = "iid") + 
+    f(district, model = "iid"),
+  data = data
 )
-summary(m)
+summary(m1)
+
+m2 <- inla(
+  trophic_length ~ 1 + salinity * chlorophyll +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(district, model = "iid"),
+  data = data
+)
+summary(m2)
+
+m3 <- inla(
+  trophic_length ~ 1 + salinity + chlorophyll + log_trophic_richness +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(district, model = "iid"),
+  data = data
+)
+summary(m3)
+```
+
+### Visualise fixed effects
+
+```{r}
+extract_fixed <- function(model, model_name) {
+  model$summary.fixed |>
+    tibble::rownames_to_column("term") |>
+    filter(term != "(Intercept)") |>
+    mutate(model = model_name)
+}
+
+fixed <- bind_rows(
+  extract_fixed(m1,  "Without interaction"),
+  extract_fixed(m2, "With interaction"),
+  extract_fixed(m3, "With richness")
+)
+
+ggplot(fixed, aes(x = mean, y = term, color = model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_linerange(aes(xmin = `0.025quant`, xmax = `0.975quant`),
+                 position = position_dodge(width = 0.5)) +
+  geom_point(aes(x = `0.5quant`), size = 3,
+             position = position_dodge(width = 0.5)) +
+  labs(x = "Effect on trophic length", y = NULL, color = NULL) +
+  theme(legend.position = "bottom")
+```
+
+We see that the main driver of trophic length is clearly trophic richness.
+The effects of salinity and chlorophyll in the two models that do not include
+richness appear to be a consequence of their correlation of with richness and
+not a direct effect.
+
+It is partly expected. Trophic structure can be shaped by three factors: trophic
+richness, individual sizes, and their predation window.
+As we have for now taken the same predation window for all species, only effect
+of environmental drivers on indivdual sizes could explain variation in trophic
+structure.
+Probably by refining predation window and species diet we will be able to
+capture an effect of environmental driver beyond pure richness effects.
+
+If we further compare these two models, we see that the interaction between
+salinity and chlorophyll overlaps with zero, indicating that it does not
+influence community trophic length.
+
+```{r}
+fixed |>
+  filter_out(model == "With richness") |>
+  ggplot(aes(x = mean, y = term, color = model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_linerange(aes(xmin = `0.025quant`, xmax = `0.975quant`),
+                 position = position_dodge(width = 0.5)) +
+  geom_point(aes(x = `0.5quant`), size = 3,
+             position = position_dodge(width = 0.5)) +
+  labs(x = "Effect on trophic length", y = NULL, color = NULL) +
+  theme(legend.position = "bottom")
+```
+
+### Visualise marginal effets
+
+```{r}
+salinity_vals <- seq(min(data$salinity), max(data$salinity), length.out = 100)
+
+prediction_salinity <- data.frame(
+  salinity    = salinity_vals,
+  chlorophyll = 0,  # held at mean (scaled)
+  year        = NA,
+  survey      = NA,
+  district    = NA
+)
+
+data_pred <- bind_rows(data, prediction_salinity)
+m_pred_salinity <- inla(
+  trophic_length ~ 1 + salinity + chlorophyll +
+    f(year, model = "iid") + f(survey, model = "iid") +
+    f(district, model = "iid"),
+  data = data_pred,
+  control.predictor = list(compute = TRUE, link = 1)
+)
+
+# extract predictions for the NA rows
+n_obs <- nrow(data)
+preds <- m_pred_salinity$summary.fitted.values[(n_obs + 1):(n_obs + 100), ]
+
+prediction_salinity |>
+  bind_cols(preds) |>
+  ggplot(aes(x = salinity_vals)) +
+  geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), alpha = 0.2) +
+  geom_line(aes(y = mean)) +
+  geom_point(data = data, aes(x = salinity, y = trophic_length), alpha = 0.1) +
+  labs(x = "Salinity (scaled)", y = "Trophic length")
+
 ```
 
 
