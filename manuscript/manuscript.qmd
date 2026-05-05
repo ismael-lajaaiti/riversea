@@ -94,6 +94,9 @@ biochemistry than ecology.
 - @Ouellet-etal-2022 provides a conceptual model (DWOC) to advance a more
 holistic management of diadromous species across the watersheds-ocean continuum.
 
+- @Tee-etal-2021 studies the river-to-sea continuum of microbial communities
+through community composition and their function (nutrient cycling).
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by
