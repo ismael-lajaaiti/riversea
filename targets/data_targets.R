@@ -107,6 +107,13 @@ data_targets <- list(
     diet_resource,
     read.csv(diet_resource_file),
   ),
+  tar_target(
+    resource_list,
+    setdiff(
+      names(diet_resource),
+      c("light", "fish", "reference")
+    )
+  ),
   tar_target(n_class_vals, seq(3, 9)),
   tar_target(
     metaweb_table,
@@ -136,7 +143,7 @@ data_targets <- list(
   ),
   tar_target(
     local_foodwebs,
-    prepare_local_foodwebs(web_list, sea_data_tidy)
+    prepare_local_foodwebs(web_list, sea_data_tidy, resource_list)
   ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
   tar_target(

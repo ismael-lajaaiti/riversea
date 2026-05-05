@@ -124,6 +124,29 @@ get_species_richness <- function(web) {
     length()
 }
 
+#' Fraction of piscivorous fishes.
+#'
+#' @param web adjacency matix
+#' @param resource list of resources so we exclude them when computing the
+#' fraction.
+#'
+#' @return numeric
+#' @export
+get_frac_piscivorous <- function(web, resource) {
+  S_cor <- ncol(web) - length(resource)
+  if (S_cor == 0) {
+    return(0)
+  }
+  web |>
+    as.data.frame() |>
+    tibble::rownames_to_column("prey") |>
+    filter_out(prey %in% resource) |>
+    summarise(across(where(is.numeric), \(x) if_else(sum(x) >= 1, 1, 0))) |>
+    rowwise() |>
+    mutate(frac_piscivorous = sum(c_across(where(is.numeric))) / S_cor) |>
+    pull(frac_piscivorous)
+}
+
 #' Get trophic length from a food web adjacency matrix
 #'
 #' @param web adjacency matrix of type matrix.
@@ -161,13 +184,33 @@ plot_sizeclass_connectance <- function(metaweb_table) {
     labs(x = "Number of size classes", y = "Metaweb connectance")
 }
 
-prepare_local_foodwebs <- function(web_list, sea_data_tidy) {
+get_trophic_breadth <- function(web) {
+  breadth_values <- apply(web, 2, mean)
+  list(
+    median = median(breadth_values),
+    mean = mean(breadth_values),
+    max = max(breadth_values),
+    q90 = quantile(breadth_values, 0.9)[[1]]
+  )
+}
+
+prepare_local_foodwebs <- function(web_list, sea_data_tidy, resource) {
   foodweb <- enframe(web_list$local, name = "trait", value = "foodweb") |>
     mutate(
       log_trophic_richness = log(purrr::map_dbl(foodweb, get_trophic_richness)),
       log_species_richness = log(purrr::map_dbl(foodweb, get_species_richness)),
       connectance = purrr::map_dbl(foodweb, get_connectance),
-      trophic_length = purrr::map_dbl(foodweb, get_trophic_length)
+      trophic_length = purrr::map_dbl(foodweb, get_trophic_length),
+      trophic_breadth_q90 = purrr::map_dbl(
+        foodweb, \(x) get_trophic_breadth(x)$q90
+      ),
+      trophic_breadth_median = purrr::map_dbl(
+        foodweb, \(x) get_trophic_breadth(x)$median
+      ),
+      frac_piscivorous = purrr::map_dbl(
+        foodweb,
+        \(x) get_frac_piscivorous(x, resource = resource)
+      )
     )
   trait <- sea_data_tidy$trait
   foodweb |> left_join(trait, by = join_by(trait))

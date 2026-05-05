@@ -154,7 +154,7 @@ ggplot(
   geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
   facet_wrap(~year) +
   scale_fill_viridis_c() +
-  coord_sf(xlim = c(-1.5,-0.5), ylim = c(44.8, 45.8))
+  coord_sf(xlim = c(-1.5, -0.5), ylim = c(44.8, 45.8))
 ```
 
 We see indeed an explosion of the net primary productivity in the Gironde and
@@ -171,7 +171,7 @@ ggplot(
   geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
   facet_wrap(~year) +
   scale_fill_viridis_c() +
-  coord_sf(xlim = c(-1.5,-0.5), ylim = c(44.8, 45.8))
+  coord_sf(xlim = c(-1.5, -0.5), ylim = c(44.8, 45.8))
 ```
 
 ## Food web structure metrics
@@ -220,7 +220,13 @@ GGally::ggpairs(
   foodweb |>
     filter(year %in% year_vals) |>
     mutate(year = as.factor(year)),
-  columns = c("log_trophic_richness", "connectance", "trophic_length"),
+  columns = c(
+    "log_species_richness",
+    "connectance",
+    "trophic_length",
+    "trophic_breadth_q90",
+    "trophic_breadth_median"
+  ),
   aes(colour = year)
 )
 ```

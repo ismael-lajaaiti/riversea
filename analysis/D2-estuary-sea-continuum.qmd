@@ -83,26 +83,53 @@ district <- tar_read(fw_with_district) |>
 # Food web with environment information.
 environment <- tar_read(fw_with_env) |>
   filter(dist_to_env < 5) |>
-  select(
-    trait,
-    log_species_richness,
-    log_trophic_richness,
-    trophic_length,
-    sali_mean,
-    chl_mean,
-    year,
-    survey,
-    longitude,
-    latitude
-  ) |>
+  select(-foodweb) |>
   mutate(
-    salinity = scale(log10(sali_mean)),
-    chlorophyll = scale(chl_mean)
+    salinity = scale(log10(sali_mean)) |> as.numeric(),
+    chlorophyll = scale(chl_mean) |> as.numeric()
   )
 
 data <- inner_join(district, environment, by = join_by(trait)) |>
-  mutate(log_trophic_richness = scale(log_trophic_richness))
+  mutate(log_trophic_richness = scale(log_trophic_richness) |> as.numeric())
 ```
+
+### SEM
+
+```{r}
+library(piecewiseSEM)
+library(nlme)
+
+data <- data |>
+  select(
+    log_species_richness,
+    salinity,
+    chlorophyll,
+    frac_piscivorous,
+    connectance,
+    trophic_length,
+    year,
+    zone_id,
+    survey
+  ) |>
+  filter_out(is.na(zone_id)) |>
+  mutate(zone_id = as.factor(zone_id))
+
+sem_model <- psem(
+  lme(log_species_richness ~ salinity + chlorophyll + survey,
+      random = ~ 1 | year, data = data),
+  lme(frac_piscivorous ~ salinity + chlorophyll,
+      random = ~ 1 | year, data = data),
+  lme(connectance ~ log_species_richness + frac_piscivorous,
+      random = ~ 1 | year, data = data),
+  lme(trophic_length ~ log_species_richness + frac_piscivorous,
+      random = ~ 1 | year, data = data),
+  data = data
+)
+
+summary(sem_model)
+```
+
+
 
 ### Fit the models
 
@@ -115,7 +142,7 @@ We fit three models to begin with that consider trophic length is shaped by
 library(INLA)
 
 m0 <- inla(
-  trophic_length ~ 1 + salinity +
+  log_species_richness ~ 1 + salinity +
     f(year, model = "iid") + f(survey, model = "iid") +
     f(zone_id, model = "iid"),
   data = data
@@ -123,7 +150,7 @@ m0 <- inla(
 summary(m0)
 
 m1 <- inla(
-  trophic_length ~ 1 + salinity + chlorophyll +
+  log_species_richness ~ 1 + salinity + chlorophyll +
     f(year, model = "iid") + f(survey, model = "iid") +
     f(zone_id, model = "iid"),
   data = data
@@ -131,7 +158,7 @@ m1 <- inla(
 summary(m1)
 
 m2 <- inla(
-  trophic_length ~ 1 + salinity * chlorophyll +
+  log_species_richness ~ 1 + salinity * chlorophyll +
     f(year, model = "iid") + f(survey, model = "iid") +
     f(zone_id, model = "iid"),
   data = data
@@ -139,7 +166,7 @@ m2 <- inla(
 summary(m2)
 
 m3 <- inla(
-  trophic_length ~ 1 + salinity + chlorophyll + log_trophic_richness +
+  log_species_richness ~ 1 + salinity + chlorophyll + log_trophic_richness +
     f(year, model = "iid") + f(survey, model = "iid") +
     f(zone_id, model = "iid"),
   data = data
