@@ -97,11 +97,11 @@ data <- inner_join(district, environment, by = join_by(trait)) |>
 
 ```{r}
 library(piecewiseSEM)
-library(nlme)
 
 data <- data |>
   select(
     log_species_richness,
+    log_trophic_richness,
     salinity,
     chlorophyll,
     frac_piscivorous,
@@ -114,21 +114,94 @@ data <- data |>
   filter_out(is.na(zone_id)) |>
   mutate(zone_id = as.factor(zone_id))
 
+library(glmmTMB)
+
 sem_model <- psem(
-  lme(log_species_richness ~ salinity + chlorophyll + survey,
-      random = ~ 1 | year, data = data),
-  lme(frac_piscivorous ~ salinity + chlorophyll,
-      random = ~ 1 | year, data = data),
-  lme(connectance ~ log_species_richness + frac_piscivorous,
-      random = ~ 1 | year, data = data),
-  lme(trophic_length ~ log_species_richness + frac_piscivorous,
-      random = ~ 1 | year, data = data),
+  glmmTMB(log_species_richness ~ salinity + chlorophyll +
+    (1 | year) + (1 | zone_id), data = data),
+  glmmTMB(frac_piscivorous ~ salinity + chlorophyll +
+    (1 | year) + (1 | zone_id), data = data),
+  glmmTMB(connectance ~ log_species_richness + frac_piscivorous +
+    (1 | year) + (1 | zone_id), data = data),
+  glmmTMB(trophic_length ~ log_species_richness + frac_piscivorous +
+    (1 | year) + (1 | zone_id), data = data),
   data = data
 )
 
 summary(sem_model)
 ```
 
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7
+
+library(tidygraph)
+library(ggraph)
+library(stringr)
+
+# Build coef table.
+coef_table <- coefs(sem_model, standardize = "scale")
+column_name <- names(coef_table)
+column_name[length(column_name)] <- "Significant"
+names(coef_table) <- column_name
+
+# Build graph - edges.
+edges <- coef_table |>
+  select(
+    from = Predictor,
+    to = Response,
+    estimate = Std.Estimate,
+    p = P.Value
+  ) |>
+  mutate(
+    significant = p < 0.05,
+    sign = if_else(estimate > 0, "positive", "negative")
+  )
+
+# Build graph - nodes.
+nodes <- tibble(
+  name = unique(c(edges$from, edges$to)),
+  raw_label = name |> str_replace_all("_", " ") |> str_to_title(),
+  label = case_when (
+    raw_label == "Log Species Richness" ~ "Species\nRichness",
+    raw_label == "Frac Piscivorous" ~ "%\nPiscivorous",
+    TRUE ~ raw_label
+  ),
+  type = case_when(
+    name %in% c("salinity", "chlorophyll") ~ "environment",
+    name %in% c(
+      "log_species_richness",
+      "frac_piscivorous"
+    ) ~ "mediator",
+    TRUE ~ "response"
+  )
+)
+
+# Plot SEM graph.
+graph <- tbl_graph(nodes = nodes, edges = edges, directed = TRUE)
+ggraph(graph, layout = "sugiyama") +
+  geom_edge_link(
+    aes(
+      edge_color = sign,
+      edge_linetype = if_else(significant, "dashed", "solid"),
+      label = if_else(significant, as.character(round(estimate, 2)), "")
+    ),
+    arrow = arrow(length = unit(4, "mm"), type = "closed"),
+    end_cap = rectangle(23, 11, "mm"),
+    angle_calc = "along",
+    label_dodge = unit(2.5, "mm"),
+    label_push = unit(20, "mm")
+  ) +
+  geom_node_label(aes(label = label)) +
+  scale_edge_color_manual(values = c(
+    "positive" = "springgreen3",
+    "negative" = "firebrick3"
+  )) +
+  theme_graph() +
+  theme(legend.position = "none")
+
+```
 
 
 ### Fit the models
@@ -137,6 +210,7 @@ We fit three models to begin with that consider trophic length is shaped by
 1. salinity and chlorophyll
 2. salinity, chlorophyll and their interactions
 3. salinity, chlorophyll and trophic richness (number of nodes in the local web)
+
 
 ```{r}
 library(INLA)
