@@ -111,7 +111,21 @@ env |>
   geom_tile() +
   geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
   scale_fill_viridis_c() +
-  coord_sf(xlim = range(env$x), ylim = range(env$y))
+  coord_sf(xlim = range(env$x), ylim = range(env$y)) +
+  labs(x = NULL, y = NULL)
+```
+
+
+```{r}
+env |>
+  mutate(chlorophyll = chl_mean) |>
+  filter(year == 2023) |>
+  ggplot(aes(x = x, y = y, fill = chlorophyll)) +
+  geom_tile() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_fill_viridis_c() +
+  coord_sf(xlim = range(env$x), ylim = range(env$y)) +
+  labs(x = NULL, y = NULL)
 ```
 
 We see that different environmental variables seem correlated.

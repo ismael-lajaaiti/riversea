@@ -95,6 +95,10 @@ data_targets <- list(
     get_size_extrema(sea_data_imputed$size)
   ),
   tar_target(
+    foodweb_size_info,
+    get_foodweb_size_info(sea_data_imputed$size, diet_and_length)
+  ),
+  tar_target(
     predation_window,
     get_predation_window(diet_and_length)
   ),

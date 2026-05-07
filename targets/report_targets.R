@@ -54,6 +54,11 @@ report_targets <- list(
     "presentations/2026-04-14_wine.qmd",
     quarto_args = c("--embed-resources")
   ),
+  tar_quarto(
+    presentation_ecostat,
+    "presentations/2026-05-26_ecostat.qmd",
+    quarto_args = c("--embed-resources")
+  ),
   # Manuscript.
   tar_quarto(
     manuscript,

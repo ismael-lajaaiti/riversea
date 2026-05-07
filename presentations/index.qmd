@@ -6,3 +6,4 @@ format: html
 This page lists all the presentations of the RIVERSEA project.
 
 - [WINE webinar *2026/04/14*](2026-04-14_wine.qmd)
+- [Journées EcoStat *2026/05/25*](2026-05-26_ecostat.qmd)

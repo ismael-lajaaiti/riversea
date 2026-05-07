@@ -244,3 +244,21 @@ match_with_environment <- function(foodweb, environment) {
     }) |>
     ungroup()
 }
+
+get_foodweb_size_info <- function(size, diet) {
+  size <- size |>
+    select(-c(measured, year)) |>
+    rename(species = species_valid)
+  diet <- diet |>
+    filter(fish == 1) |>
+    select(species, length_min, length_max)
+  size |>
+    inner_join(diet, by = join_by(species), relationship = "many-to-many") |>
+    filter(length >= length_min & length <= length_max) |>
+    group_by(trait) |>
+    summarise(
+      max_fish_size = max(length),
+      mean_fish_size = mean(length),
+    ) |>
+    ungroup()
+}
