@@ -101,14 +101,13 @@ data <- inner_join(district, environment, by = join_by(trait)) |>
 ### SEM
 
 ```{r}
-library(piecewiseSEM)
-
 data <- data |>
   select(
     log_species_richness,
     log_trophic_richness,
     salinity,
     chlorophyll,
+    temp_mean,
     frac_piscivorous,
     connectance,
     trophic_length,
@@ -121,24 +120,12 @@ data <- data |>
   mutate(zone_id = as.factor(zone_id)) |>
   mutate(max_fish_size = max_fish_size |> scale() |> as.numeric())
 
-library(glmmTMB)
-
-sem_model <- psem(
-  glmmTMB(log_species_richness ~ salinity + chlorophyll +
-    (1 | year) + (1 | zone_id), data = data),
-  glmmTMB(frac_piscivorous ~ salinity + chlorophyll +
-    (1 | year) + (1 | zone_id), data = data),
-  glmmTMB(max_fish_size ~ salinity + chlorophyll +
-    (1 | year) + (1 | zone_id), data = data),
-  glmmTMB(connectance ~ log_species_richness + frac_piscivorous + max_fish_size +
-    (1 | year) + (1 | zone_id), data = data),
-  glmmTMB(trophic_length ~ log_species_richness + frac_piscivorous + max_fish_size
-    +
-    (1 | year) + (1 | zone_id), data = data),
-  data = data
-)
-
-summary(sem_model, .progressBar = FALSE)
+observable <- c("salinity", "chlorophyll", "temp_mean")
+mediator <- c("log_species_richness", "max_fish_size", "frac_piscivorous")
+response <- c("trophic_length", "connectance")
+random <- c("(1 | year)", "(1 | zone_id)")
+sem_model <- build_sem(observable, mediator, response, random, data)
+piecewiseSEM::coefs(sem_model)
 ```
 
 
@@ -146,63 +133,7 @@ summary(sem_model, .progressBar = FALSE)
 #| fig-width: 10
 #| fig-height: 7
 
-library(tidygraph)
-library(ggraph)
-library(stringr)
-
-# Build coef table.
-coef_table <- coefs(sem_model, standardize = "scale")
-column_name <- names(coef_table)
-column_name[length(column_name)] <- "Significant"
-names(coef_table) <- column_name
-
-# Build graph - edges.
-edges <- coef_table |>
-  select(
-    from = Predictor,
-    to = Response,
-    estimate = Std.Estimate,
-    p = P.Value
-  ) |>
-  mutate(
-    significant = p < 0.05,
-    sign = if_else(estimate > 0, "positive", "negative")
-  )
-
-# Build graph - nodes.
-nodes <- tibble(
-  name = unique(c(edges$from, edges$to)),
-  raw_label = name |> str_replace_all("_", " ") |> str_to_title(),
-  label = case_when(
-    raw_label == "Log Species Richness" ~ "Species\nRichness",
-    raw_label == "Frac Piscivorous" ~ "%\nPiscivorous",
-    raw_label == "Max Fish Size" ~ "Max\nFish Size",
-    TRUE ~ raw_label
-  )
-)
-
-# Plot SEM graph.
-graph <- tbl_graph(nodes = nodes, edges = edges, directed = TRUE)
-ggraph(graph, layout = "sugiyama") +
-  geom_edge_link(
-    aes(
-      edge_color = sign,
-      edge_linetype = if_else(significant, "dashed", "solid"),
-      label = if_else(significant, as.character(round(estimate, 2)), "")
-    ),
-    arrow = arrow(length = unit(4, "mm"), type = "closed"),
-    end_cap = rectangle(23, 11, "mm"),
-    angle_calc = "along",
-    label_dodge = unit(2.5, "mm"),
-    label_push = unit(20, "mm")
-  ) +
-  geom_node_label(aes(label = label)) +
-  scale_edge_color_manual(values = c(
-    "positive" = "springgreen3",
-    "negative" = "firebrick3"
-  )) +
-  theme_graph() +
-  theme(legend.position = "none")
+plot_sem(sem_model)
 ```
 
 

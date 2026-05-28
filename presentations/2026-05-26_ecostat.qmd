@@ -13,6 +13,7 @@ format:
         embed-resources: true
         theme: simple
         fontsize: 28px
+        self-contained: true
 ---
 
 ```{r}
