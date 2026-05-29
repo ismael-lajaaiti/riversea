@@ -1,19 +1,17 @@
 ---
-title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
-subtitle: "A preliminary case study on the effect of primary productivity along the
-estuary-sea continuum"
-author: "Ismaël Lajaaiti, Alain Danet, Anik Brind'Amour, Eric Edeline"
-date: "05/26/2026"
+title: "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?"
+subtitle: "RIVERSEA Project: How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
+author:
+  - name: Ismaël Lajaaiti
+    affiliations: INRAE
+  - name: Alain Danet
+    affiliations: INRAE
+  - name: Anik Brind'Amour
+    affiliations: IFREMER
+date: "06/10/2026"
 date-format: long
 bibliography: references.bib
-format:
-    revealjs:
-        incremental: true
-        slide-number: true
-        embed-resources: true
-        theme: simple
-        fontsize: 28px
-        self-contained: true
+format: clean-revealjs
 ---
 
 ```{r}
@@ -26,9 +24,9 @@ tar_config_set(
 )
 ```
 
-# Introduction
+# Different but connected ecosystems {background-color="#40666e"}
 
-## The river-estuary-sea continuum
+## Different but connected ecosystems
 
 :::: {.columns}
 
@@ -38,17 +36,57 @@ Garonne estuary -- © CNES 2020
 :::
 
 ::: {.column width=50%}
-- From satellite view, rivers, estuary and sea are obviously connected in space
-  - By flux of nutrients, organic matter
-  - By migratory species (salmon, etc.)
-- Yet rivers, estuaries and seas are often studied separately
-  - Different fields: freshwater vs estuary vs marine ecology
-  - Different surveys, data set, concepts that prevent connexions to be made
-- Need to account for the river-sea continuum as disturbances propagate in space
-  - Algae bloom, dams and migratory species, etc.
+Rivers, estuaries and seas are different ecosystems.
+
+Yet they are connected.
+
+How can we understand disturbances that propagate [**across**]{.alert} these systems?
 :::
 
 ::::
+
+## An integrative approach is needed
+
+:::: {.columns}
+
+::: {.column width=50%}
+![](../assets/algae-bloom.png){height=4in}
+*NASA Earth Observatory*
+
+Algae bloom can be caused by upstream nutrient excess.
+:::
+
+::: {.column width=50%}
+![](assets/dam-impact.png){height=4in}
+*He et al. (2024)*
+
+Dam impact migratory species which in turn impact entire ecosystem.
+:::
+
+::::
+
+## An integrative approach is difficult
+
+Different fields.
+
+Different concepts.
+
+Different interests.
+
+**Different datasets.**
+
+SCREENSHOT OF A SALTY DIVIDE ARTICLE
+
+
+## Different but connected ecosystems
+
+Rivers, estuaries and seas are different ecosystems.
+Yet they are connected.
+Although, often studied separately.
+
+![](assets/garonne-estuary.png)
+Garonne estuary -- © CNES 2020
+
 
 ## The River Continuum Concept
 

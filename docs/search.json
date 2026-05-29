@@ -625,7 +625,7 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#the-river-continuum-concept",
     "href": "presentations/2026-05-26_ecostat.html#the-river-continuum-concept",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "The River Continuum Concept",
     "text": "The River Continuum Concept\n\n\n\nSpecies turnover \\(\\rightarrow\\) function replacement \\(\\rightarrow\\) efficient use of energy input\nFocus on the main stream, ignore the dendritic river network\n\nFood Pulse and River Wave concepts (Junk et al. 1989; Humphries et al. 2014)\n\nIgnore disturbance impacts (dams, nutrients overloads)\n\nSerial Discontinuity Concept (Ward and Stanford 1983)\nMeta-ecosystem theory (Gounand et al. 2018)\n\nStops at the estuary\nPattern of food web structure is largely unknown\n\n\n Vannote et al. (1980)"
   },
@@ -730,16 +730,16 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#references",
     "href": "presentations/2026-05-26_ecostat.html#references",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "References",
     "text": "References\n\n\n\n\nBinzer, Amrei, Christian Guill, Ulrich Brose, and Björn C. Rall. 2012. “The Dynamics of Food Chains Under Climate Change and Nutrient Enrichment.” Philosophical Transactions of the Royal Society B: Biological Sciences 367 (1605): 2935–44. https://doi.org/10.1098/rstb.2012.0230.\n\n\nBonnaffé, Willem, Alain Danet, Camille Leclerc, Victor Frossard, Eric Edeline, and Arnaud Sentis. 2024. “The Interaction Between Warming and Enrichment Accelerates Food-Web Simplification in Freshwater Systems.” Ecology Letters 27 (8): e14480. https://doi.org/10.1111/ele.14480.\n\n\nBonnaffé, Willem, Alain Danet, Stéphane Legendre, and Eric Edeline. 2021. “Comparison of Size-Structured and Species-Level Trophic Networks Reveals Antagonistic Effects of Temperature on Vertical Trophic Diversity at the Population and Species Level.” Oikos 130 (8): 1297–309. https://doi.org/10.1111/oik.08173.\n\n\nGounand, Isabelle, Eric Harvey, Chelsea J. Little, and Florian Altermatt. 2018. “Meta-Ecosystems 2.0: Rooting the Theory into the Field.” Trends in Ecology & Evolution 33 (1): 36–46. https://doi.org/10.1016/j.tree.2017.10.006.\n\n\nHumphries, Paul, Hubert Keckeis, and Brian Finlayson. 2014. “The River Wave Concept: Integrating River Ecosystem Models.” BioScience 64 (10): 870–82. https://doi.org/10.1093/biosci/biu130.\n\n\nJunk, W. J., Peter Bayley, and Richard Sparks. 1989. “The Flood Pulse Concept in River-Floodplain Systems.” Canadian Special Publication of Fisheries and Aquatic Sciences 106 (September): 110–27.\n\n\nOrr, James A., Samuel J. Macaulay, Adriana Mordente, et al. 2024. “Studying Interactions Among Anthropogenic Stressors in Freshwater Ecosystems: A Systematic Review of 2396 Multiple-Stressor Experiments.” Ecology Letters 27 (6): e14463. https://doi.org/10.1111/ele.14463.\n\n\nVannote, Robin L., G. Wayne Minshall, Kenneth W. Cummins, James R. Sedell, and Colbert E. Cushing. 1980. “The River Continuum Concept.” Canadian Journal of Fisheries and Aquatic Sciences 37 (1): 130–37. https://doi.org/10.1139/f80-017.\n\n\nWard, J., and Jack Stanford. 1983. “The Serial Discontinuity Concept of Lotic Ecosystems.” Dynamics of Lotic Ecosystems 10 (January)."
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#the-river-estuary-sea-continuum",
     "href": "presentations/2026-05-26_ecostat.html#the-river-estuary-sea-continuum",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "The river-estuary-sea continuum",
-    "text": "The river-estuary-sea continuum\n\n\n Garonne estuary – © CNES 2020\n\n\nFrom satellite view, rivers, estuary and sea are obviously connected in space\n\nBy flux of nutrients, organic matter\nBy migratory species (salmon, etc.)\n\nYet rivers, estuaries and seas are often studied separately\n\nDifferent fields: freshwater vs estuary vs marine ecology\nDifferent surveys, data set, concepts that prevent connexions to be made\n\nNeed to account for the river-sea continuum as disturbances propagate in space\n\nAlgae bloom, dams and migratory species, etc."
+    "text": "The river-estuary-sea continuum\n\n\n Garonne estuary – © CNES 2020\n\n\nRiver, estuary and sea are different: salinity, turbidity, flow, etc.\nYet they are connected: organic matter, nutrients, species migration"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#case-study-test",
@@ -751,7 +751,7 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#stressors-and-how-they-interact",
     "href": "presentations/2026-05-26_ecostat.html#stressors-and-how-they-interact",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Stressors and how they interact",
     "text": "Stressors and how they interact\n\n\n Orr et al. (2024)\n\n\nWe focus on stressors that impact connexion between ecosystems\n\nDams, nutrient overloads\nA local effect that can ripple throughout the continuum\n\nAnd stressors that can interact with those\n\nTemperature \\(\\times\\) nutrients\nExpected in theory to be antagonistic (Binzer et al. 2012)\nBut not supported by empirical data (Bonnaffé et al. 2024)"
   },
@@ -765,14 +765,14 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#where-we-start-from",
     "href": "presentations/2026-05-26_ecostat.html#where-we-start-from",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Where we start from",
     "text": "Where we start from\n\n\n Map of the sampling points (fishing operation) for the coastal, estuarine and riverine data.\n\n\nRiver survey – Onema\n\nExcluded for the case study\nPreviously processed by Alain Danet\n\nEstuary and coast surveys – Pomet & Nurse\n\nCurrent focus\n\nLong time series, e.g. Nurse survey started in 1980\n\nNot continuous, there are some gaps\nDifferent protocoles: electrofishing vs trawling\n\nSpecies abundances and individual fish size"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#from-this-we-reconstruct-food-web",
     "href": "presentations/2026-05-26_ecostat.html#from-this-we-reconstruct-food-web",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "From this we reconstruct food web",
     "text": "From this we reconstruct food web\n\n\n\nMetaweb approach inspired by (Bonnaffé et al. 2021)\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nDistinguish between juveniles and adults\nNot only species composition but also size distribution affect food web structure\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n3-45% body size window\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\n Sketch of the steps to build the metaweb"
   },
@@ -807,7 +807,7 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#decomposing-environmental-effects-with-a-sem",
     "href": "presentations/2026-05-26_ecostat.html#decomposing-environmental-effects-with-a-sem",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Decomposing environmental effects with a SEM",
     "text": "Decomposing environmental effects with a SEM"
   },
@@ -835,14 +835,14 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#expectation-regarding-food-web-structure-responses",
     "href": "presentations/2026-05-26_ecostat.html#expectation-regarding-food-web-structure-responses",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Expectation regarding food web structure responses",
     "text": "Expectation regarding food web structure responses\n\n\n Expected trends of food web structure with productivity\n\n\nTwo main dimensions of food webs\nWidely used metrics in the literature\nExpectation of their response to environment and stressors\n\nUnimodal relationship between trophic length and primary productivity\n~ reversed relationship for connectance\n\nWe can already identify species richness as a mediator variable"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#standing-questions-and-statistical-challenges",
     "href": "presentations/2026-05-26_ecostat.html#standing-questions-and-statistical-challenges",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Standing questions and statistical challenges",
     "text": "Standing questions and statistical challenges\nHow to …\n\n\n\n… efficiently model such a large dataset\n\nR-INLA sounds promising\n\n… handle temporal autocorrelation\n\nAutoregressif process (AR1)\n\n… handle spatial autocorrelation\n\nBYM – random effect where neighbours share information via adjacency graph\n\n… integrate survey data with different protocoles\n\nInclude in the model as a categorical variable\nCan it be disentangled from the environment?\n\n\n\n Example of autocorrelation graph in La Vilaine Nodes are connected respective to hydrographic distances"
   },
@@ -856,15 +856,78 @@
   {
     "objectID": "presentations/2026-05-26_ecostat.html#environmental-variables-and-our-first-model",
     "href": "presentations/2026-05-26_ecostat.html#environmental-variables-and-our-first-model",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Environmental variables and our first model",
     "text": "Environmental variables and our first model\n\n\n\nSalinity levels in 2023\n\n Chlorophyll levels in 2023\nLinear Model \\[ \\text{structure} \\sim \\text{salinity} + \\text{chlorophyll} +\n\\text{salinity} \\times \\text{chlorophyll} + \\text{year}_i + \\text{zone}_i\\]"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#how-salinity-and-productivity-shape-food-web-structure",
     "href": "presentations/2026-05-26_ecostat.html#how-salinity-and-productivity-shape-food-web-structure",
-    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "How salinity and productivity shape food web structure",
     "text": "How salinity and productivity shape food web structure\n\n\n\n\n\nAccording to expectations\n\nNegative effect of productivity on connectance\nOpposite trends for trophic length\n\nNegative effect of salinity on connectance\n\nCoastal communities richer than estuary ones\n\n\n\nIs the effect driven by richness only? Diet, fish size.\nHow to quantify indirect pathways? SEM (appendix), joint models.\nHow to assess model validity regarding spatiotemporal autocorrelations?"
+  },
+  {
+    "objectID": "presentations/presentations.html#example-slide",
+    "href": "presentations/presentations.html#example-slide",
+    "title": "A title",
+    "section": "Example slide",
+    "text": "Example slide\nThis is a subtitle\nHere we have some text that may run over several lines of the slide frame, depending on how long it is.\n\nfirst item\n\nA sub item\n\n\nNext, we’ll brief review some theme-specific components.\n\nNote that all of the standard Reveal.js features can be used with this theme, even if we don’t highlight them here."
+  },
+  {
+    "objectID": "presentations/presentations.html#additional-theme-classes",
+    "href": "presentations/presentations.html#additional-theme-classes",
+    "title": "A title",
+    "section": "Additional theme classes",
+    "text": "Additional theme classes\nSome extra things you can do with the clean theme\nSpecial classes for emphasis\n\n.alert class for default emphasis, e.g. important note.\n.fg class for custom colour, e.g. important note.\n.bg class for custom background, e.g. important note.\n\nCross-references\n\n.button class provides a Beamer-like button, e.g. Summary"
+  },
+  {
+    "objectID": "presentations/presentations.html#want-more",
+    "href": "presentations/presentations.html#want-more",
+    "title": "A title",
+    "section": "Want more?",
+    "text": "Want more?\nSee our longer demo slides\nWe’ve deliberarely kept this template lean, to get you up and running as fast as possible.\nWe provide a separate demo template, with more examples for integrating code, tables, figures, etc.\n\nSee the live demo slides here."
+  },
+  {
+    "objectID": "presentations/presentations.html#sec-summary",
+    "href": "presentations/presentations.html#sec-summary",
+    "title": "A title",
+    "section": "Summary",
+    "text": "Summary\nA minimalist and elegant presentation theme\nThe Quarto reveal.js clean theme aims to be a minimalist and elegant presention theme. Here are some options to get you started:\nAdd the theme to an existing project.\nquarto install extension grantmcdermott/quarto-revealjs-clean\n… or, create a new project using this slide deck as a lean template.\nquarto use template grantmcdermott/quarto-revealjs-clean\n… or, create a new project using the demo slide deck as a full template.\nquarto use template grantmcdermott/quarto-revealjs-clean-demo"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#different-but-connected-ecosystems-1",
+    "href": "presentations/2026-05-26_ecostat.html#different-but-connected-ecosystems-1",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Different but connected ecosystems",
+    "text": "Different but connected ecosystems\n\n\n Garonne estuary – © CNES 2020\n\nRivers, estuaries and seas are different ecosystems.\nYet they are connected.\nHow can we understand disturbances that propagate across these systems?"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#different-but-connected-ecosystems-2",
+    "href": "presentations/2026-05-26_ecostat.html#different-but-connected-ecosystems-2",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Different but connected ecosystems",
+    "text": "Different but connected ecosystems\nRivers, estuaries and seas are different ecosystems. Yet they are connected. Although, often studied separately.\n Garonne estuary – © CNES 2020"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#why-an-integrative-approach-is-needed",
+    "href": "presentations/2026-05-26_ecostat.html#why-an-integrative-approach-is-needed",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Why an integrative approach is needed",
+    "text": "Why an integrative approach is needed\n\n\n NASA Earth Observatory\nAlgae bloom can be caused by upstream nutrient excess.\n\n He et al. (2024)\nDam impact migratory species which in turn impact entire ecosystem."
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-needed",
+    "href": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-needed",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "An integrative approach is needed",
+    "text": "An integrative approach is needed\n\n\n NASA Earth Observatory\nAlgae bloom can be caused by upstream nutrient excess.\n\n He et al. (2024)\nDam impact migratory species which in turn impact entire ecosystem."
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-difficult",
+    "href": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-difficult",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "An integrative approach is difficult",
+    "text": "An integrative approach is difficult\nDifferent fields.\nDifferent concepts.\nDifferent interests.\nDifferent datasets.\nSCREENSHOT OF A SALTY DIVIDE ARTICLE"
   }
 ]
