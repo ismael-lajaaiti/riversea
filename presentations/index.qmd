@@ -5,5 +5,7 @@ format: html
 
 This page lists all the presentations of the RIVERSEA project.
 
-- [WINE webinar *2026/04/14*](2026-04-14_wine.qmd)
-- [Journées EcoStat *2026/05/25*](2026-05-26_ecostat.qmd)
+- [Project presentation at WINE webinar](https://doi.org/10.6084/m9.figshare.32509098),
+2026.04.14, Rennes
+- [Project presentation at GdR EcoStat](https://doi.org/10.6084/m9.figshare.32509152),
+2026.05.25, Grenoble
