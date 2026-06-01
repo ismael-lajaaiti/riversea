@@ -14,16 +14,6 @@ bibliography: references.bib
 format: clean-revealjs
 ---
 
-```{r}
-library(renv)
-renv::load()
-library(targets)
-library(here)
-tar_config_set(
-  store = here::here("_targets")
-)
-```
-
 # Different but connected ecosystems {background-color="#40666e"}
 
 ## Different but connected ecosystems
@@ -40,7 +30,7 @@ Rivers, estuaries and seas are different ecosystems.
 
 Yet they are connected.
 
-How can we understand disturbances that propagate [**across**]{.alert} these systems?
+How can we understand disturbances that propagate [across]{.alert} these systems?
 :::
 
 ::::
@@ -67,74 +57,136 @@ Dam impact migratory species which in turn impact entire ecosystem.
 
 ## An integrative approach is difficult
 
+:::: {.columns}
+
+::: {.column width=40%}
+![](../assets/salty-divide.png)
+*Kavanaugh et al. (2013)*
+:::
+
+::: {.column width=60%}
 Different fields.
 
 Different concepts.
 
 Different interests.
 
-**Different datasets.**
-
-SCREENSHOT OF A SALTY DIVIDE ARTICLE
-
-
-## Different but connected ecosystems
-
-Rivers, estuaries and seas are different ecosystems.
-Yet they are connected.
-Although, often studied separately.
-
-![](assets/garonne-estuary.png)
-Garonne estuary -- © CNES 2020
-
-
-## The River Continuum Concept
-
-:::: {.columns}
-
-::: {.column width=60%}
-- Species turnover $\rightarrow$ function replacement $\rightarrow$ 
-efficient use of energy input
-- Focus on the main stream, ignore the dendritic river network
-  - Food Pulse and River Wave concepts [@Junk-Bayley-Sparks-1989;
-  @Humphries-Keckeis-Finlayson-2014]
-- Ignore disturbance impacts (dams, nutrients overloads)
-  - Serial Discontinuity Concept [@Ward-Stanford-1983]
-  - Meta-ecosystem theory [@Gounand-etal-2018b]
-- Stops at the estuary
-- **Pattern of food web structure is largely unknown**
-:::
-
-::: {.column width=40%}
-![](../assets/vannote.png){fig-align="center"}
-@Vannote-etal-1980
+[Different datasets.]{.alert}
 :::
 
 ::::
 
-# How disrupted spatial fluxes reshape food web structure along the river–sea continuum
+# How nutrient excess and dams impact food web structure along the river-estuary-sea continuum? {background-color="#40666e"}
 
-# Case study: How primary productivity shape food web structure along the estuary-sea continuum
+## Why food web structure
 
-## Expectation regarding food web structure responses
 
 :::: {.columns}
 
 ::: {.column width=40%}
-![](assets/foodweb-structure.png)
-*Expected trends of food web structure with productivity*
+![](../assets/foodweb.png)
 :::
 
 ::: {.column width=60%}
-- Two main *dimensions* of food webs
-- Widely used metrics in the literature
-- Expectation of their response to environment and stressors
-  - Unimodal relationship between trophic length and primary productivity
-  - ~ reversed relationship for connectance
-- We can already identify species richness as a mediator variable
+Species richness is only descriptor of ecosystem complexity.
+
+Tells little about how the ecosystem functions.
+
+Food web structure captures the vertical complexity and functioning of ecosystems.
 :::
 
 ::::
+
+
+## The datasets we aim to combine
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+**Two marine surveys**
+
+Pomet & Nurse
+
+**One freshwater survey**
+
+ASPE
+
+**Key differences**
+
+- Eletrofishing vs trawley
+- Fish length measurement
+:::
+
+::: {.column width=50%}
+![](assets/map-stations.png)
+*Map of the sampling points (fishing operation) for the coastal, estuarine and
+riverine data.*
+:::
+
+::::
+
+## The datasets we aim to combine
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+**Two marine surveys**
+
+Pomet & Nurse
+
+**One freshwater survey**
+
+ASPE
+
+**Key differences**
+
+- Eletrofishing vs trawley
+- Fish length measurement
+:::
+
+::: {.column width=50%}
+
+| Species | Length | Operation ID | 
+|---------|------|-------|
+| Abramis brama  | 12   |  1 |
+| Salmo trutta  | 15   |  1 |
+| ...     | ...  |   ... |
+
+: The data we work with
+
+Different selectivity
+
+Inconsistencies in fish size measurements
+
+Many species
+:::
+
+::::
+
+## From this we reconstruct food web
+
+:::: {.columns}
+
+::: {.column width=50%}
+- Metaweb approach inspired by [@Bonnaffé-etal-2021]
+- Extract fish diet with `rfishbase`
+- Diet changes with ontogeny
+  - Distinguish between juveniles and adults
+- Piscivorous interaction infered with predation window
+  - Big fish eat little fish
+  - 3-45% body size window
+- From the metaweb, we we infer local food web by subsampling
+:::
+
+::: {.column width=50%}
+![](assets/network-inference-alain.png)
+*Sketch of the steps to build the metaweb*
+:::
+
+::::
+
 
 ## Standing questions and statistical challenges
 ### How to ...
@@ -170,9 +222,6 @@ Nodes are connected respective to **hydrographic** distances*
 :::: {.columns}
 
 ::: {.column width=50%}
-![](assets/map-stations.png)
-*Map of the sampling points (fishing operation) for the coastal, estuarine and
-riverine data.*
 :::
 
 ::: {.column width=50%}
@@ -189,29 +238,6 @@ riverine data.*
 
 ::::
 
-## From this we reconstruct food web
-
-:::: {.columns}
-
-::: {.column width=50%}
-- Metaweb approach inspired by [@Bonnaffé-etal-2021]
-- Extract fish diet with `rfishbase`
-- Diet changes with ontogeny
-  - Distinguish between juveniles and adults
-  - Not only species composition but also size distribution affect
-    food web structure
-- Piscivorous interaction infered with predation window
-  - Big fish eat little fish
-  - 3-45% body size window
-- From the metaweb, we we infer local food web by subsampling
-:::
-
-::: {.column width=50%}
-![](assets/network-inference-alain.png)
-*Sketch of the steps to build the metaweb*
-:::
-
-::::
 
 ## Environmental variables and our first model
 
