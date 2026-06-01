@@ -606,7 +606,7 @@
     "href": "presentations/index.html",
     "title": "Presentations",
     "section": "",
-    "text": "This page lists all the presentations of the RIVERSEA project.\n\nProject presentation at WINE webinar, 2026.04.14, Rennes\nProject presentation at GdR EcoStat, 2026.05.25, Grenoble"
+    "text": "This page lists all the presentations of the RIVERSEA project.\n\nProject presentation at WINE webinar, 2026.04.14, Rennes\nProject presentation at GdR EcoStat, 2026.05.25, Grenoble\nData compilation at AG DECOD, 2026.06.11, St Jacut"
   },
   {
     "objectID": "analysis/D2-estuary-sea-continuum.html#first-models",
@@ -732,7 +732,7 @@
     "href": "presentations/2026-05-26_ecostat.html#references",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "References",
-    "text": "References\n\n\n\n\nBinzer, Amrei, Christian Guill, Ulrich Brose, and Björn C. Rall. 2012. “The Dynamics of Food Chains Under Climate Change and Nutrient Enrichment.” Philosophical Transactions of the Royal Society B: Biological Sciences 367 (1605): 2935–44. https://doi.org/10.1098/rstb.2012.0230.\n\n\nBonnaffé, Willem, Alain Danet, Camille Leclerc, Victor Frossard, Eric Edeline, and Arnaud Sentis. 2024. “The Interaction Between Warming and Enrichment Accelerates Food-Web Simplification in Freshwater Systems.” Ecology Letters 27 (8): e14480. https://doi.org/10.1111/ele.14480.\n\n\nBonnaffé, Willem, Alain Danet, Stéphane Legendre, and Eric Edeline. 2021. “Comparison of Size-Structured and Species-Level Trophic Networks Reveals Antagonistic Effects of Temperature on Vertical Trophic Diversity at the Population and Species Level.” Oikos 130 (8): 1297–309. https://doi.org/10.1111/oik.08173.\n\n\nGounand, Isabelle, Eric Harvey, Chelsea J. Little, and Florian Altermatt. 2018. “Meta-Ecosystems 2.0: Rooting the Theory into the Field.” Trends in Ecology & Evolution 33 (1): 36–46. https://doi.org/10.1016/j.tree.2017.10.006.\n\n\nHumphries, Paul, Hubert Keckeis, and Brian Finlayson. 2014. “The River Wave Concept: Integrating River Ecosystem Models.” BioScience 64 (10): 870–82. https://doi.org/10.1093/biosci/biu130.\n\n\nJunk, W. J., Peter Bayley, and Richard Sparks. 1989. “The Flood Pulse Concept in River-Floodplain Systems.” Canadian Special Publication of Fisheries and Aquatic Sciences 106 (September): 110–27.\n\n\nOrr, James A., Samuel J. Macaulay, Adriana Mordente, et al. 2024. “Studying Interactions Among Anthropogenic Stressors in Freshwater Ecosystems: A Systematic Review of 2396 Multiple-Stressor Experiments.” Ecology Letters 27 (6): e14463. https://doi.org/10.1111/ele.14463.\n\n\nVannote, Robin L., G. Wayne Minshall, Kenneth W. Cummins, James R. Sedell, and Colbert E. Cushing. 1980. “The River Continuum Concept.” Canadian Journal of Fisheries and Aquatic Sciences 37 (1): 130–37. https://doi.org/10.1139/f80-017.\n\n\nWard, J., and Jack Stanford. 1983. “The Serial Discontinuity Concept of Lotic Ecosystems.” Dynamics of Lotic Ecosystems 10 (January)."
+    "text": "References\n\n\n\n\nBinzer, Amrei, Christian Guill, Ulrich Brose, and Björn C. Rall. 2012. “The Dynamics of Food Chains Under Climate Change and Nutrient Enrichment.” Philosophical Transactions of the Royal Society B: Biological Sciences 367 (1605): 2935–44. https://doi.org/10.1098/rstb.2012.0230.\n\n\nBonnaffé, Willem, Alain Danet, Camille Leclerc, Victor Frossard, Eric Edeline, and Arnaud Sentis. 2024. “The Interaction Between Warming and Enrichment Accelerates Food-Web Simplification in Freshwater Systems.” Ecology Letters 27 (8): e14480. https://doi.org/10.1111/ele.14480.\n\n\nOrr, James A., Samuel J. Macaulay, Adriana Mordente, et al. 2024. “Studying Interactions Among Anthropogenic Stressors in Freshwater Ecosystems: A Systematic Review of 2396 Multiple-Stressor Experiments.” Ecology Letters 27 (6): e14463. https://doi.org/10.1111/ele.14463."
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#the-river-estuary-sea-continuum",
@@ -767,14 +767,14 @@
     "href": "presentations/2026-05-26_ecostat.html#where-we-start-from",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Where we start from",
-    "text": "Where we start from\n\n\n Map of the sampling points (fishing operation) for the coastal, estuarine and riverine data.\n\n\nRiver survey – Onema\n\nExcluded for the case study\nPreviously processed by Alain Danet\n\nEstuary and coast surveys – Pomet & Nurse\n\nCurrent focus\n\nLong time series, e.g. Nurse survey started in 1980\n\nNot continuous, there are some gaps\nDifferent protocoles: electrofishing vs trawling\n\nSpecies abundances and individual fish size"
+    "text": "Where we start from\n\n\n\n\n\nRiver survey – Onema\n\nExcluded for the case study\nPreviously processed by Alain Danet\n\nEstuary and coast surveys – Pomet & Nurse\n\nCurrent focus\n\nLong time series, e.g. Nurse survey started in 1980\n\nNot continuous, there are some gaps\nDifferent protocoles: electrofishing vs trawling\n\nSpecies abundances and individual fish size"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#from-this-we-reconstruct-food-web",
     "href": "presentations/2026-05-26_ecostat.html#from-this-we-reconstruct-food-web",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "From this we reconstruct food web",
-    "text": "From this we reconstruct food web\n\n\n\nMetaweb approach inspired by (Bonnaffé et al. 2021)\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nDistinguish between juveniles and adults\nNot only species composition but also size distribution affect food web structure\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n3-45% body size window\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\n Sketch of the steps to build the metaweb"
+    "text": "From this we reconstruct food web\n\n\n\nWe use the metaweb framework\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\nComparison of different ecosytems\n\n\n Sketch of the steps to build the metaweb"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#how-we-quantify-food-web-structure",
@@ -858,7 +858,7 @@
     "href": "presentations/2026-05-26_ecostat.html#environmental-variables-and-our-first-model",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Environmental variables and our first model",
-    "text": "Environmental variables and our first model\n\n\n\nSalinity levels in 2023\n\n Chlorophyll levels in 2023\nLinear Model \\[ \\text{structure} \\sim \\text{salinity} + \\text{chlorophyll} +\n\\text{salinity} \\times \\text{chlorophyll} + \\text{year}_i + \\text{zone}_i\\]"
+    "text": "Environmental variables and our first model\nLinear Model \\[ \\text{structure} \\sim \\text{salinity} + \\text{chlorophyll} +\n\\text{salinity} \\times \\text{chlorophyll} + \\text{year}_i + \\text{zone}_i\\]"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#how-salinity-and-productivity-shape-food-web-structure",
@@ -900,7 +900,7 @@
     "href": "presentations/2026-05-26_ecostat.html#different-but-connected-ecosystems-1",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Different but connected ecosystems",
-    "text": "Different but connected ecosystems\n\n\n Garonne estuary – © CNES 2020\n\nRivers, estuaries and seas are different ecosystems.\nYet they are connected.\nHow can we understand disturbances that propagate across these systems?"
+    "text": "Different but connected ecosystems\n\n\n Garonne estuary – © CNES 2020\n\nRivers, estuaries and seas are\n\ndifferent\n\nsalinity, turbidity, flow\n\nbut connected\n\nflux of nutrients, species migration\n\nthen how disturbances propagate across these ecosystems?"
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#different-but-connected-ecosystems-2",
@@ -921,13 +921,125 @@
     "href": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-needed",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "An integrative approach is needed",
-    "text": "An integrative approach is needed\n\n\n NASA Earth Observatory\nAlgae bloom can be caused by upstream nutrient excess.\n\n He et al. (2024)\nDam impact migratory species which in turn impact entire ecosystem."
+    "text": "An integrative approach is needed\n\n\n\n NASA Earth Observatory\nAlgae bloom can be caused by upstream nutrient excess.\n\n\n\n He et al. (2024)\nDams impact migratory species which impact entire ecosystem."
   },
   {
     "objectID": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-difficult",
     "href": "presentations/2026-05-26_ecostat.html#an-integrative-approach-is-difficult",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "An integrative approach is difficult",
-    "text": "An integrative approach is difficult\nDifferent fields.\nDifferent concepts.\nDifferent interests.\nDifferent datasets.\nSCREENSHOT OF A SALTY DIVIDE ARTICLE"
+    "text": "An integrative approach is difficult\n\n\n Kavanaugh et al. (2013)\n\nAn integrative approach means dealing with different\n\nfields\n\nMarine vs freshwater ecology\n\nDifferent concepts\n\ne.g. River Continuum Concept\n\nDifferent datasets"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#why-food-web-structure",
+    "href": "presentations/2026-05-26_ecostat.html#why-food-web-structure",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Why food web structure",
+    "text": "Why food web structure\n\n\n\n\nFood web structure\n\nis a measure of ecosystem complexity\ncaptures different aspects than species richness\ntells how the ecosystem functions\ncaptures vertical complexity and flux of biomass or energy"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#the-datasets-we-aim-to-combine",
+    "href": "presentations/2026-05-26_ecostat.html#the-datasets-we-aim-to-combine",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "The datasets we aim to combine",
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\n Map of the sampling points (fishing operation) for the coastal, estuarine and riverine data."
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#the-datasets-we-aim-to-combine-1",
+    "href": "presentations/2026-05-26_ecostat.html#the-datasets-we-aim-to-combine-1",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "The datasets we aim to combine",
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\nThe data we work with\n\n\nSpecies\nLength\nOperation ID\n\n\n\n\nAbramis brama\n12\n1\n\n\nSalmo trutta\n15\n1\n\n\n…\n…\n…\n\n\n\n\nDifferent selectivity\nInconsistencies between datasets\nGet info on many species"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#from-this-we-reconstruct-food-web-1",
+    "href": "presentations/2026-05-26_ecostat.html#from-this-we-reconstruct-food-web-1",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "From this we reconstruct food web",
+    "text": "From this we reconstruct food web\n\n\nMany species, different ecosystems\n\n Sketch of the steps to build the metaweb"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#relate-food-web-to-environmental-variables",
+    "href": "presentations/2026-05-26_ecostat.html#relate-food-web-to-environmental-variables",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Relate food web to environmental variables",
+    "text": "Relate food web to environmental variables\n\n\n\nSalinity levels in 2023\n\nEven if the datasets (e.g. abundance) are consistent\n\nEnvironmental variable can be inconsistent\nNot available for every ecosystem\nMeasured in different ways"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#conclusion",
+    "href": "presentations/2026-05-26_ecostat.html#conclusion",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Conclusion",
+    "text": "Conclusion\n\nCombining dataset is useful\n\nCan answer new and important questions\n\nCombining datasets is difficult\n\nInconsistencies between the datasets themselves (e.g. fishing surveys)\nInconsistence between “side” datasets (e.g. environmental drivers)\nHow to compare different ecosystems?\nRequires different expertise\n\nCall for collaborations and the development of common tools"
+  },
+  {
+    "objectID": "presentations/2026-05-26_ecostat.html#conclusions",
+    "href": "presentations/2026-05-26_ecostat.html#conclusions",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Conclusions",
+    "text": "Conclusions\n\nCombining dataset is useful\n\nCan answer new and important questions\n\nCombining datasets is difficult\n\nInconsistencies between the datasets themselves (e.g. fishing surveys)\nInconsistence between “side” datasets (e.g. environmental drivers)\nHow to compare different ecosystems?\nRequires different expertise\n\nCall for collaborations and the development of shared tools"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#different-but-connected-ecosystems-1",
+    "href": "presentations/2026-06-10_ag-decod.html#different-but-connected-ecosystems-1",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Different but connected ecosystems",
+    "text": "Different but connected ecosystems\n\n\n Garonne estuary – © CNES 2020\n\nRivers, estuaries and seas are\n\ndifferent\n\nsalinity, turbidity, flow\n\nbut connected\n\nflux of nutrients, species migration\n\nthen how disturbances propagate across these ecosystems?"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-needed",
+    "href": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-needed",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "An integrative approach is needed",
+    "text": "An integrative approach is needed\n\n\n\n NASA Earth Observatory\nAlgae bloom can be caused by upstream nutrient excess.\n\n\n\n He et al. (2024)\nDams impact migratory species which impact entire ecosystem."
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-difficult",
+    "href": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-difficult",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "An integrative approach is difficult",
+    "text": "An integrative approach is difficult\n\n\n Kavanaugh et al. (2013)\n\nAn integrative approach means dealing with different\n\nfields\n\nMarine vs freshwater ecology\n\nDifferent concepts\n\ne.g. River Continuum Concept\n\nDifferent datasets"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#why-food-web-structure",
+    "href": "presentations/2026-06-10_ag-decod.html#why-food-web-structure",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Why food web structure",
+    "text": "Why food web structure\n\n\n\n\nFood web structure\n\nis a measure of ecosystem complexity\ncaptures different aspects than species richness\ntells how the ecosystem functions\ncaptures vertical complexity and flux of biomass or energy"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#the-datasets-we-aim-to-combine",
+    "href": "presentations/2026-06-10_ag-decod.html#the-datasets-we-aim-to-combine",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "The datasets we aim to combine",
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\n Map of the sampling points (fishing operation) for the coastal, estuarine and riverine data."
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#the-datasets-we-aim-to-combine-1",
+    "href": "presentations/2026-06-10_ag-decod.html#the-datasets-we-aim-to-combine-1",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "The datasets we aim to combine",
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\nThe data we work with\n\n\nSpecies\nLength\nOperation ID\n\n\n\n\nAbramis brama\n12\n1\n\n\nSalmo trutta\n15\n1\n\n\n…\n…\n…\n\n\n\n\nDifferent selectivity\nInconsistencies between datasets\nGet info on many species"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#from-this-we-reconstruct-food-web",
+    "href": "presentations/2026-06-10_ag-decod.html#from-this-we-reconstruct-food-web",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "From this we reconstruct food web",
+    "text": "From this we reconstruct food web\n\n\n\nWe use the metaweb framework\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\nComparison of different ecosytems\n\n\n Sketch of the steps to build the metaweb"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#relate-food-web-to-environmental-variables",
+    "href": "presentations/2026-06-10_ag-decod.html#relate-food-web-to-environmental-variables",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Relate food web to environmental variables",
+    "text": "Relate food web to environmental variables\n\n\n\nSalinity levels in 2023\n\nEven if the datasets (e.g. abundance) are consistent\n\nEnvironmental variable can be inconsistent\nNot available for every ecosystem\nMeasured in different ways"
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#conclusions",
+    "href": "presentations/2026-06-10_ag-decod.html#conclusions",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Conclusions",
+    "text": "Conclusions\n\nCombining dataset is useful\n\nCan answer new and important questions\n\nCombining datasets is difficult\n\nInconsistencies between the datasets themselves (e.g. fishing surveys)\nInconsistence between “side” datasets (e.g. environmental drivers)\nHow to compare different ecosystems?\nRequires different expertise\n\nCall for collaborations and the development of shared tools"
   }
 ]
