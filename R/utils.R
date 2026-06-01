@@ -222,3 +222,21 @@ match_foodweb_district <- function(foodweb, hydro_zone, dist_max = 5) {
 to_sf <- function(x) {
   x |> sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 }
+
+#' Plot data points on the France map
+#'
+#' @param data data frame
+#'
+#' @return plot by ggplot
+#' @export
+plot_data_on_map <- function(data) {
+  coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf")
+  ggplot(data, aes(x = longitude, y = latitude)) +
+    geom_point(size = 1) +
+    geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+    coord_sf(
+      xlim = range(data$longitude),
+      ylim = range(data$latitude)
+    ) +
+    labs(x = NULL, y = NULL)
+}

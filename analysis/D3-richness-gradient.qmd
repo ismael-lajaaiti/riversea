@@ -1,0 +1,217 @@
+---
+title: "How community richness changes along the estuary-sea continuum"
+format:
+  html:
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+We want to model how species richness changes from the estuary to the sea.
+To do so, we will quantify how the species richness changes along the salinity
+gradient.
+
+```{r}
+#| echo: false
+
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+
+library(ggplot2)
+set_theme(theme_minimal())
+library(dplyr)
+library(riversea)
+library(sf)
+```
+
+## Preparing the data
+
+We begin by loading our dataset.
+
+```{r}
+data <- tar_read(fw_with_env) |>
+  filter(dist_to_env < 5) |>
+  mutate(
+    salinity = sali_mean |> log10() |> as.numeric()
+  ) |>
+  select(
+    year,
+    survey,
+    log_species_richness,
+    log_trophic_richness,
+    longitude,
+    latitude,
+    salinity
+  ) |>
+  mutate(is_nurse = if_else(survey == "nurse", 1, 0))
+
+plot_data_on_map(data)
+```
+
+Here is the map of our sampling points.
+
+## Modeling
+
+Next, we want to model how species richness changes with salinity.
+To do that properly with to account for spatial autocorrelation.
+
+```{r}
+library(INLA)
+library(fmesher)
+
+coords <- cbind(data$longitude, data$latitude)
+
+mesh <- fmesher::fm_mesh_2d_inla(
+  loc       = coords,
+  max.edge  = c(0.1, 0.5), # in units of your CRS — adjust!
+  offset    = c(0.1, 0.3),
+  cutoff    = 0.05
+)
+plot(mesh)
+points(coords, col = "red", cex = 0.1, pch = 3) # sanity check: points inside mesh
+```
+
+Using a Spatial Gaussian Random Field on our mesh, we can fit a model that
+accounts for spatial autocorrelation.
+
+```{r}
+spde <- inla.spde2.pcmatern(
+  mesh = mesh,
+  prior.range = c(0.5, 0.5),
+  prior.sigma = c(1, 0.01)
+)
+
+A <- inla.spde.make.A(mesh = mesh, loc = coords)
+
+stk <- inla.stack(
+  data = list(y = data$log_species_richness),
+  A = list(A, 1),
+  effects = list(
+    list(spatial.field = 1:spde$n.spde),
+    list(
+      intercept = rep(1, nrow(data)),
+      salinity = data$salinity,
+      is_nurse = data$is_nurse,
+      year = data$year
+    )
+  ),
+  tag = "obs"
+)
+
+m1 <- inla(
+  y ~ -1 +
+    intercept +
+    salinity +
+    is_nurse +
+    f(year, model = "iid") + f(spatial.field, model = spde),
+  data = inla.stack.data(stk),
+  control.predictor = list(
+    A = inla.stack.A(stk),
+    compute = TRUE
+  ),
+  control.compute = list(
+    waic = TRUE,
+    config = TRUE
+  )
+)
+
+summary(m1)
+```
+
+Next, we can investigate our model.
+
+```{r}
+spde.result <- inla.spde2.result(m1, "spatial.field", spde, do.transf = TRUE)
+
+# Posterior mean of spatial range
+inla.emarginal(function(x) x, spde.result$marginals.range.nominal[[1]])
+
+# Posterior mean of spatial std. deviation
+inla.emarginal(function(x) x, spde.result$marginals.variance.nominal[[1]])
+```
+
+```{r}
+sal_marginal <- m1$marginals.fixed$salinity
+
+# Convert to a data frame for plotting the full posterior density
+sal_df <- as.data.frame(inla.smarginal(sal_marginal))
+
+ggplot(sal_df, aes(x = x, y = y)) +
+  geom_line(linewidth = 1, colour = "#2166ac") +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+  # 95% credible interval shading
+  geom_ribbon(
+    data = subset(sal_df, x >= inla.hpdmarginal(0.95, sal_marginal)[1] &
+      x <= inla.hpdmarginal(0.95, sal_marginal)[2]),
+    aes(ymin = 0, ymax = y), fill = "#2166ac", alpha = 0.2
+  ) +
+  labs(
+    title = "Posterior distribution — salinity effect",
+    x     = "Effect size (log species richness per salinity unit)",
+    y     = "Density"
+  )
+```
+
+```{r}
+n_samples <- 100
+samples <- inla.posterior.sample(n_samples, m1)
+beta_int_samples <- sapply(samples, function(s) s$latent["intercept:1", ])
+beta_sal_samples <- sapply(samples, function(s) s$latent["salinity:1",  ])
+sal_seq <- seq(min(data$salinity), max(data$salinity), length.out = 200)
+
+pred_matrix <- outer(rep(1, 200), beta_int_samples) +
+  outer(sal_seq, beta_sal_samples)
+
+pred_df <- data.frame(
+  salinity = sal_seq,
+  fit      = apply(pred_matrix, 1, median),
+  lwr      = apply(pred_matrix, 1, quantile, probs = 0.045),
+  upr      = apply(pred_matrix, 1, quantile, probs = 0.955)
+)
+
+zones <- data.frame(
+  xmin  = c(-Inf,   log10(0.5), log10(5),  log10(18),   log10(30)),
+  xmax  = c(log10(0.5), log10(5), log10(18),   log10(30),   Inf),
+  label = c("Freshwater", "Oligohaline", "Mesohaline", "Polyhaline", "Euhaline"),
+  fill  = c("#a8d5f5", "#d4edda", "#fff3b0", "#f4a96a", "#e07b7b")
+)
+
+# Clip zones to your actual data range
+x_min_data <- min(data$salinity)
+x_max_data <- max(data$salinity)
+
+zones$xmin <- pmax(zones$xmin, x_min_data)
+zones$xmax <- pmin(zones$xmax, x_max_data)
+
+# Drop zones outside your data range
+zones <- zones[zones$xmin < zones$xmax, ]
+
+ggplot(pred_df, aes(x = salinity)) +
+  geom_point(data = data, aes(x = salinity, y = log_species_richness), 
+    alpha = 0.1) +
+  geom_vline(
+    xintercept = c(log10(5), log10(18), log10(30)),
+    linetype = "dashed", colour = "grey40", linewidth = 0.5
+  ) +
+  geom_text(
+    data = zones,
+    aes(x = (xmin + xmax) / 2, y = Inf, label = label),
+    vjust = 1.5, size = 3.2, colour = "grey30",
+    inherit.aes = FALSE
+  ) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "lightblue", alpha = 0.2) +
+  geom_line(aes(y = fit), colour = "lightblue", linewidth = 1.2) +
+  labs(
+    x = "Log Salinity [PSU]",
+    y = "Log Species Richness"
+  ) 
+```
+
+
+

@@ -48,6 +48,11 @@ report_targets <- list(
     "analysis/D2-estuary-sea-continuum.qmd",
     quarto_args = c("--embed-resources")
   ),
+  tar_quarto(
+    report_D3,
+    "analysis/D3-richness-gradient.qmd",
+    quarto_args = c("--embed-resources")
+  ),
   # Manuscript.
   tar_quarto(
     manuscript,
