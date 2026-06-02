@@ -215,18 +215,26 @@ ggplot(pred_df, aes(x = salinity)) +
   )
 ```
 
-## Modeling gamma-diversity with salinity
+## Modeling alpha, beta and gamma diversity with salinity
 
-Next, we focus on other aspects of species diversity:
+Next, we focus on the different aspects of species diversity
 
-- beta-diversity that is how species composition changes
-- gamma-diversity that is the aggregated diversity
+- alpha-diversity, that is, the diversity of local communities
+- beta-diversity, that is, how species composition changes
+- gamma-diversity, that is, the aggregated diversity
 
-To do so, we need to extract species composition for each community.
+First, we will focus only on the Garonne estuary, to compare sites that are
+comparable.
 
 ```{r}
 data <- tar_read(fw_with_env) |>
-  filter(dist_to_env < 5) |>
+  filter(dist_to_env < 5)
+
+district <- tar_read(fw_with_district) |>
+  select(trait, year, zone_id, district)
+
+data <- data |>
+  left_join(district, by = join_by(trait, year)) |>
   mutate(
     salinity = sali_mean |> as.numeric()
   ) |>
@@ -238,71 +246,112 @@ data <- tar_read(fw_with_env) |>
     longitude,
     latitude,
     salinity,
-    foodweb #  Now kept to extract species composition.
+    foodweb, #  Now kept to extract species composition.
+    district,
+    zone_id
   ) |>
   mutate(is_nurse = if_else(survey == "nurse", 1, 0))
 
-resources <- c(
-  "biofilm",
-  "detritus",
-  "detritus",
-  "phytoplankton",
-  "macrophyte",
-  "worm",
-  "crustacean",
-  "mollusk",
-  "echinoderm",
-  "insect",
-  "zooplankton"
-)
+data <- data |>
+  filter(district == "Ardour-Garonne")
+```
+
+We then compute species composition for each local community to compute the
+three measure of diversity.
+
+```{r}
+resource_list <- tar_read(resource_list)
 
 get_species <- function(web) {
   sub("_.*", "", colnames(web)) |>
     unique() |>
-    setdiff(resources)
+    setdiff(resource_list)
 }
 
 data <- data |>
   mutate(
     species = purrr::map(foodweb, get_species),
     species_richness = purrr::map_dbl(species, length)
-  )
-
-data <- data |>
+  ) |>
   arrange(salinity)
 
-window <- 100
-diversity_df <- purrr::map_dfr(
-  seq_len(nrow(data) - window + 1),
-  function(i) {
-    w <- data[i:(i + window - 1), ]
-    tibble(
-      salinity = mean(w$salinity),
-      gamma = n_distinct(unlist(w$species)),
-      alpha = mean(w$species_richness)
-    )
-  }
-) |>
-  mutate(beta = gamma / alpha) |>
-  tidyr::pivot_longer(cols = c(alpha, beta, gamma), names_to = "diversity")
+plot_rolling_window <- function(data, window) {
+  diversity_df <- purrr::map_dfr(
+    seq_len(nrow(data) - window + 1),
+    function(i) {
+      w <- data[i:(i + window - 1), ]
+      tibble(
+        salinity = mean(w$salinity),
+        gamma = n_distinct(unlist(w$species)),
+        alpha = mean(w$species_richness)
+      )
+    }
+  ) |>
+    mutate(beta = gamma / alpha) |>
+    tidyr::pivot_longer(cols = c(alpha, beta, gamma), names_to = "diversity")
+  ggplot(diversity_df, aes(salinity, value)) +
+    geom_point() +
+    geom_line() +
+    geom_vline(
+      xintercept = c(5, 18, 30),
+      linetype = "dashed", colour = "grey40", linewidth = 0.5
+    ) +
+    facet_wrap("diversity", scales = "free_y") +
+    labs(x = "Salinity [PSU]", y = "Community diversity")
+}
 
+plot_rolling_window(data, 100)
 
-ggplot(diversity_df, aes(salinity, value)) +
-  geom_point() +
-  geom_vline(
-    xintercept = c(5, 18, 30),
-    linetype = "dashed", colour = "grey40", linewidth = 0.5
-  ) +
-  facet_wrap("diversity", scale = "free") +
-  labs(x = "Salinity [PSU]", y = "Species diversity")
+plot_rolling_window(data, 200)
 ```
 
+## Salinity niches
 
 ```{r}
-ggplot(data, aes(x = salinity)) +
-  geom_histogram()
+niche <- data |>
+  select(species, salinity) |>
+  tidyr::unnest(species) |>
+  group_by(species) |>
+  summarise(
+    n = n(),
+    salinity_med = median(salinity),
+    salinity_q10 = quantile(salinity, 0.1),
+    salinity_q90 = quantile(salinity, 0.9),
+    salinity_min = min(salinity),
+    salinity_max = max(salinity)
+  ) |>
+  filter(n > 10)
 ```
 
+```{r}
+niche <- niche |>
+  arrange(salinity_med) |>
+  mutate(
+    species = factor(species, levels = species)
+  )
+```
 
+```{r}
+ggplot(niche, aes(y = species)) +
+  geom_segment(
+    aes(x = salinity_q10, xend = salinity_q90, yend = species), linewidth = 1.5,
+  ) +
+  geom_segment(
+    aes(x = salinity_min, xend = salinity_max, yend = species), linewidth = 0.5,
+  ) +
+  geom_point(aes(x = salinity_med), size = 2) +
+  labs(x = "Salinity [PSU]", y = NULL)
+```
 
+We see that most species have wide salinity niche, meaning that they can endure
+high variability in salinity, these species notably comprise migratory species
+such as the Anguilla or the Alosa.
 
+If we look at the more saline species, we find flatfish close to the Solea.
+
+This analysis invites to couple our food web analysis with species traits to
+better understand what drives food web structure changes.
+In this regard, information about species migratory behaviour and whether they
+are benthic or pelagic.
+For example, change in food web structure could signal the apparition of a
+bentho-pelagic coupling.
