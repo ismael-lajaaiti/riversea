@@ -115,7 +115,7 @@ data_targets <- list(
     resource_list,
     setdiff(
       names(diet_resource),
-      c("light", "fish", "reference")
+      c("light", "fish", "reference", "species")
     )
   ),
   tar_target(n_class_vals, seq(3, 9)),

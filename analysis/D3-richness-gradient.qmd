@@ -38,7 +38,7 @@ We begin by loading our dataset.
 data <- tar_read(fw_with_env) |>
   filter(dist_to_env < 5) |>
   mutate(
-    salinity = sali_mean |> log10() |> as.numeric()
+    salinity = sali_mean |> as.numeric()
   ) |>
   select(
     year,
@@ -56,7 +56,7 @@ plot_data_on_map(data)
 
 Here is the map of our sampling points.
 
-## Modeling
+## Modeling alpha-diversity with salinity
 
 Next, we want to model how species richness changes with salinity.
 To do that properly with to account for spatial autocorrelation.
@@ -162,7 +162,7 @@ ggplot(sal_df, aes(x = x, y = y)) +
 n_samples <- 100
 samples <- inla.posterior.sample(n_samples, m1)
 beta_int_samples <- sapply(samples, function(s) s$latent["intercept:1", ])
-beta_sal_samples <- sapply(samples, function(s) s$latent["salinity:1",  ])
+beta_sal_samples <- sapply(samples, function(s) s$latent["salinity:1", ])
 sal_seq <- seq(min(data$salinity), max(data$salinity), length.out = 200)
 
 pred_matrix <- outer(rep(1, 200), beta_int_samples) +
@@ -176,8 +176,8 @@ pred_df <- data.frame(
 )
 
 zones <- data.frame(
-  xmin  = c(-Inf,   log10(0.5), log10(5),  log10(18),   log10(30)),
-  xmax  = c(log10(0.5), log10(5), log10(18),   log10(30),   Inf),
+  xmin  = c(-Inf, 0.5, 5, 18, 30),
+  xmax  = c(0.5, 5, 18, 30, Inf),
   label = c("Freshwater", "Oligohaline", "Mesohaline", "Polyhaline", "Euhaline"),
   fill  = c("#a8d5f5", "#d4edda", "#fff3b0", "#f4a96a", "#e07b7b")
 )
@@ -193,10 +193,12 @@ zones$xmax <- pmin(zones$xmax, x_max_data)
 zones <- zones[zones$xmin < zones$xmax, ]
 
 ggplot(pred_df, aes(x = salinity)) +
-  geom_point(data = data, aes(x = salinity, y = log_species_richness), 
-    alpha = 0.1) +
+  geom_point(
+    data = data, aes(x = salinity, y = log_species_richness),
+    alpha = 0.1
+  ) +
   geom_vline(
-    xintercept = c(log10(5), log10(18), log10(30)),
+    xintercept = c(5, 18, 30),
     linetype = "dashed", colour = "grey40", linewidth = 0.5
   ) +
   geom_text(
@@ -208,10 +210,99 @@ ggplot(pred_df, aes(x = salinity)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "lightblue", alpha = 0.2) +
   geom_line(aes(y = fit), colour = "lightblue", linewidth = 1.2) +
   labs(
-    x = "Log Salinity [PSU]",
+    x = "Salinity",
     y = "Log Species Richness"
-  ) 
+  )
 ```
+
+## Modeling gamma-diversity with salinity
+
+Next, we focus on other aspects of species diversity:
+
+- beta-diversity that is how species composition changes
+- gamma-diversity that is the aggregated diversity
+
+To do so, we need to extract species composition for each community.
+
+```{r}
+data <- tar_read(fw_with_env) |>
+  filter(dist_to_env < 5) |>
+  mutate(
+    salinity = sali_mean |> as.numeric()
+  ) |>
+  select(
+    year,
+    survey,
+    log_species_richness,
+    log_trophic_richness,
+    longitude,
+    latitude,
+    salinity,
+    foodweb #  Now kept to extract species composition.
+  ) |>
+  mutate(is_nurse = if_else(survey == "nurse", 1, 0))
+
+resources <- c(
+  "biofilm",
+  "detritus",
+  "detritus",
+  "phytoplankton",
+  "macrophyte",
+  "worm",
+  "crustacean",
+  "mollusk",
+  "echinoderm",
+  "insect",
+  "zooplankton"
+)
+
+get_species <- function(web) {
+  sub("_.*", "", colnames(web)) |>
+    unique() |>
+    setdiff(resources)
+}
+
+data <- data |>
+  mutate(
+    species = purrr::map(foodweb, get_species),
+    species_richness = purrr::map_dbl(species, length)
+  )
+
+data <- data |>
+  arrange(salinity)
+
+window <- 100
+diversity_df <- purrr::map_dfr(
+  seq_len(nrow(data) - window + 1),
+  function(i) {
+    w <- data[i:(i + window - 1), ]
+    tibble(
+      salinity = mean(w$salinity),
+      gamma = n_distinct(unlist(w$species)),
+      alpha = mean(w$species_richness)
+    )
+  }
+) |>
+  mutate(beta = gamma / alpha) |>
+  tidyr::pivot_longer(cols = c(alpha, beta, gamma), names_to = "diversity")
+
+
+ggplot(diversity_df, aes(salinity, value)) +
+  geom_point() +
+  geom_vline(
+    xintercept = c(5, 18, 30),
+    linetype = "dashed", colour = "grey40", linewidth = 0.5
+  ) +
+  facet_wrap("diversity", scale = "free") +
+  labs(x = "Salinity [PSU]", y = "Species diversity")
+```
+
+
+```{r}
+ggplot(data, aes(x = salinity)) +
+  geom_histogram()
+```
+
 
 
 
