@@ -101,6 +101,11 @@ through community composition and their function (nutrient cycling).
 gradient in estuaries. As we go to freshwater to brackish water we loose species
 richness, and as we to brackish water to the sea we recover species richness.
 
+- @Elliott-Quintino-2007 argues that it is difficult to detect the effect of
+anthropogenic pressure in estuary as estuaries are already stressed environment.
+In particular, this means thinking about the indicators used to describe
+ecosystem states (diversity, and functionning).
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by
