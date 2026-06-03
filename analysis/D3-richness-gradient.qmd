@@ -69,12 +69,12 @@ coords <- cbind(data$longitude, data$latitude)
 
 mesh <- fmesher::fm_mesh_2d_inla(
   loc       = coords,
-  max.edge  = c(0.1, 0.5), # in units of your CRS — adjust!
+  max.edge  = c(0.1, 0.5),
   offset    = c(0.1, 0.3),
   cutoff    = 0.05
 )
 plot(mesh)
-points(coords, col = "red", cex = 0.1, pch = 3) # sanity check: points inside mesh
+points(coords, col = "red", cex = 0.1, pch = 3)
 ```
 
 Using a Spatial Gaussian Random Field on our mesh, we can fit a model that
@@ -131,10 +131,14 @@ spde.result <- inla.spde2.result(m1, "spatial.field", spde, do.transf = TRUE)
 
 # Posterior mean of spatial range
 inla.emarginal(function(x) x, spde.result$marginals.range.nominal[[1]])
-
-# Posterior mean of spatial std. deviation
-inla.emarginal(function(x) x, spde.result$marginals.variance.nominal[[1]])
 ```
+
+This captures the caracteristic range of the spatial autocorrelation.
+It is quite small, meaning that it acts at a small spatial scale, and our data
+is not too sensitive to this biais. This may be due to the act that our data is
+quite noisy due to fishing operations that may often miss many species. So even
+at the same place, two communities may not be too strongly correlated due to
+the sampling noise.
 
 ```{r}
 sal_marginal <- m1$marginals.fixed$salinity
@@ -223,6 +227,9 @@ Next, we focus on the different aspects of species diversity
 - beta-diversity, that is, how species composition changes
 - gamma-diversity, that is, the aggregated diversity
 
+Here, for simplicity we compute beta diversity as the ratio of gamma to alpha
+diversity.
+
 First, we will focus only on the Garonne estuary, to compare sites that are
 comparable.
 
@@ -239,6 +246,7 @@ data <- data |>
     salinity = sali_mean |> as.numeric()
   ) |>
   select(
+    trait,
     year,
     survey,
     log_species_richness,
@@ -254,6 +262,26 @@ data <- data |>
 
 data <- data |>
   filter(district == "Ardour-Garonne")
+```
+
+First let's plot our sampling points and the salinity gradient on a map.
+
+```{r}
+environment_data <- tar_read(environment_data)
+
+coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf")
+
+e <- c(-0.1, 0.1)
+environment_data |>
+  group_by(year, x, y) |>
+  summarise(salinity = mean(sali_mean), .groups = "drop") |>
+  ggplot(aes(x = x, y = y, fill = salinity)) +
+  geom_tile() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  scale_fill_viridis_c() +
+  geom_point(data, mapping = aes(longitude, latitude), alpha = 0.3) +
+  coord_sf(xlim = range(data$longitude) + e, ylim = range(data$latitude) + e) +
+  labs(x = NULL, y = NULL, fill = "Salinity [PSU]")
 ```
 
 We then compute species composition for each local community to compute the
@@ -300,28 +328,55 @@ plot_rolling_window <- function(data, window) {
     labs(x = "Salinity [PSU]", y = "Community diversity")
 }
 
-plot_rolling_window(data, 100)
-
 plot_rolling_window(data, 200)
 ```
 
+First, we see that both alpha and gamma diversity increases with salinity,
+suggesting that communities become richer through the apparition of marine
+species, and that the brackish diversity is lower. 
+
+We observe two peaks in beta diversitt, respectively around 10 and 30 PSU. Those
+could signals the shift in community due to the transition caused by the
+presence brackish and marine species respectively.
+
 ## Salinity niches
 
+Here we are interested in caracterising species salinity niches, that is,
+the salinity range where they can live. To avoid having to many species, we
+filter the more rare species.
+
 ```{r}
+n_op <- data |>
+  pull(trait) |>
+  unique() |>
+  length()
+
+threshold <- 0.01
+
+occurence <- data |>
+  tidyr::unnest(species) |>
+  group_by(species) |>
+  summarise(n = n(), .groups = "drop")
+
+rare_species <- occurence |>
+  filter(n < threshold * n_op) |>
+  pull(species)
+
 niche <- data |>
   select(species, salinity) |>
   tidyr::unnest(species) |>
+  filter_out(species %in% rare_species) |>
   group_by(species) |>
   summarise(
-    n = n(),
     salinity_med = median(salinity),
     salinity_q10 = quantile(salinity, 0.1),
     salinity_q90 = quantile(salinity, 0.9),
     salinity_min = min(salinity),
-    salinity_max = max(salinity)
-  ) |>
-  filter(n > 10)
+    salinity_max = max(salinity),
+    .groups = "drop"
+  )
 ```
+
 
 ```{r}
 niche <- niche |>
@@ -329,15 +384,15 @@ niche <- niche |>
   mutate(
     species = factor(species, levels = species)
   )
-```
 
-```{r}
 ggplot(niche, aes(y = species)) +
   geom_segment(
-    aes(x = salinity_q10, xend = salinity_q90, yend = species), linewidth = 1.5,
+    aes(x = salinity_q10, xend = salinity_q90, yend = species),
+    linewidth = 1.5,
   ) +
   geom_segment(
-    aes(x = salinity_min, xend = salinity_max, yend = species), linewidth = 0.5,
+    aes(x = salinity_min, xend = salinity_max, yend = species),
+    linewidth = 0.5,
   ) +
   geom_point(aes(x = salinity_med), size = 2) +
   labs(x = "Salinity [PSU]", y = NULL)
@@ -347,11 +402,98 @@ We see that most species have wide salinity niche, meaning that they can endure
 high variability in salinity, these species notably comprise migratory species
 such as the Anguilla or the Alosa.
 
-If we look at the more saline species, we find flatfish close to the Solea.
+We find that most species have a wide salinity niche, which is not surprising
+for species found in estuaries. That said, a few species seem to be marine such
+as
+
+- [Arnoglossus laterna](https://www.fishbase.se/summary/Arnoglossus-laterna.html)
+- [Buglossidium luteum](https://fishbase.se/summary/Buglossidium-luteum)
+
+which are both marine and dermersal species that live on sandy bottoms.
 
 This analysis invites to couple our food web analysis with species traits to
-better understand what drives food web structure changes.
-In this regard, information about species migratory behaviour and whether they
-are benthic or pelagic.
-For example, change in food web structure could signal the apparition of a
-bentho-pelagic coupling.
+better understand what drives food web structure changes. In this regard,
+information about species migratory behaviour and whether they are benthic or
+pelagic. For example, change in food web structure could signal the apparition
+of a bentho-pelagic coupling.
+
+## Community composition ordination
+
+To ordinate communities along the salinity gradient, we first need to build the
+community matrix which indicate presence and absence of the different species
+for each site (or here fishing operation).
+
+```{r}
+community_matrix <- data |>
+  select(trait, species) |>
+  tidyr::unnest(species) |>
+  filter_out(species %in% rare_species) |>
+  mutate(value = 1) |>
+  tidyr::pivot_wider(
+    names_from = species,
+    values_fill = 0
+  )
+```
+
+Then, we use the package `vegan` to do an NMDS using the Jaccard distance to
+measure dissimilarity between communities. Here, we use three dimensions so we
+have a stress inferior to 0.2, meaning that our ordination is somewhat
+acceptable.
+
+```{r}
+#| include: false
+
+library(vegan)
+
+com_std <- decostand(community_matrix, method = "pa")
+nmds <- metaMDS(
+  com_std,
+  distance = "jaccard",
+  binary = TRUE,
+  k = 3
+)
+```
+
+Next, we want to plot our ordinated communities along the salinity gradient, and
+visualise which species are driving the change in community composition.
+Typically, we would expect freshwater and marine species to drive the two ends
+of the gradient.
+
+```{r}
+scores_df <- as.data.frame(scores(nmds, display = "sites"))
+scores_df$salinity <- community_matrix |> 
+  left_join(data, by = join_by(trait)) |>
+  pull(salinity)
+
+sp_scores <- as.data.frame(scores(nmds, display = "species"))
+sp_scores$species <- rownames(sp_scores)
+sp_scores <- sp_scores |>
+  mutate(r2 = NMDS1^2 + NMDS2^2) |>
+  filter(r2 > quantile(r2, 0.8))
+
+ggplot(scores_df, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(colour = salinity)) +
+  geom_segment(
+    data = sp_scores,
+    aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+    arrow = arrow(length = unit(0.2, "cm")),
+    colour = "grey40", linewidth = 0.5
+  ) +
+  geom_text(
+    data = sp_scores,
+    aes(label = species), size = 3, colour = "grey20",
+    nudge_y = 0.02
+  ) +
+  annotate("text",
+    x = Inf, y = -Inf,
+    label = paste("Stress =", round(nmds$stress, 3)),
+    hjust = 1.1, vjust = -0.5, size = 3.5, colour = "grey30"
+  )
+```
+
+First, we see that the main structuring axis of the community is salinity as
+could be expected. Second, we see that marine species (pointing to the right)
+seems to be the more structuring ones, which are the one we identified
+previously with our salinity niches. What is less clear is what is the other
+axis of variation. We could expect the habitat, and so, for example the presence
+of betnhic species to be another structuring axis.
