@@ -16,8 +16,6 @@ pdf-separate-fragments: true
 incremental: true
 ---
 
-# Different but connected ecosystems {background-color="#40666e"}
-
 ## Different but connected ecosystems
 
 :::: {.columns}
@@ -50,7 +48,7 @@ Rivers, estuaries and seas are
 ![](../assets/algae-bloom.png){height=4in}
 *NASA Earth Observatory*
 
-**Algae bloom** can be caused by upstream nutrient excess.
+**Algae blooms** can be caused by upstream nutrient loading.
 :::
 :::
 
@@ -81,12 +79,13 @@ An integrative approach means dealing with different
   - Marine vs freshwater ecology
 - Different concepts
   - e.g. River Continuum Concept
+- Different methods (e.g. statistical models)
 - **Different datasets**
 :::
 
 ::::
 
-# How nutrient excess and dams impact food web structure **along the river-sea continuum**? {background-color="#40666e"}
+# How nutrient loading and dams impact food web structure **along the river-sea continuum**? {background-color="#40666e"}
 
 ## Why food web structure
 
@@ -95,6 +94,7 @@ An integrative approach means dealing with different
 
 ::: {.column width=40%}
 ![](../assets/foodweb.png)
+Who eats who?
 :::
 
 ::: {.column width=60%}
@@ -163,11 +163,9 @@ riverine data.*
 : The data we work with
 
 ::: {.fragment}
-[Different selectivity]{.alert}
-
-[Inconsistencies between datasets]{.alert}
-
-[Get info on many species]{.alert}
+- [Different selectivity]{.alert}
+- [Inconsistencies between datasets]{.alert}
+- [Get info on many species]{.alert}
 :::
 :::
 
@@ -187,7 +185,7 @@ riverine data.*
 - From the metaweb, we we infer local food web by subsampling
 
 ::: {.fragment}
-[Comparison of different ecosytems]{.alert}
+[Are different ecosystems comparable?]{.alert}
 :::
 :::
 

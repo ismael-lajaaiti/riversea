@@ -991,21 +991,21 @@
     "href": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-needed",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "An integrative approach is needed",
-    "text": "An integrative approach is needed\n\n\n\n NASA Earth Observatory\nAlgae bloom can be caused by upstream nutrient excess.\n\n\n\n He et al. (2024)\nDams impact migratory species which impact entire ecosystem."
+    "text": "An integrative approach is needed\n\n\n\n NASA Earth Observatory\nAlgae blooms can be caused by upstream nutrient loading.\n\n\n\n He et al. (2024)\nDams impact migratory species which impact entire ecosystem."
   },
   {
     "objectID": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-difficult",
     "href": "presentations/2026-06-10_ag-decod.html#an-integrative-approach-is-difficult",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "An integrative approach is difficult",
-    "text": "An integrative approach is difficult\n\n\n Kavanaugh et al. (2013)\n\nAn integrative approach means dealing with different\n\nfields\n\nMarine vs freshwater ecology\n\nDifferent concepts\n\ne.g. River Continuum Concept\n\nDifferent datasets"
+    "text": "An integrative approach is difficult\n\n\n Kavanaugh et al. (2013)\n\nAn integrative approach means dealing with different\n\nfields\n\nMarine vs freshwater ecology\n\nDifferent concepts\n\ne.g. River Continuum Concept\n\nDifferent methods (e.g. statistical models)\nDifferent datasets"
   },
   {
     "objectID": "presentations/2026-06-10_ag-decod.html#why-food-web-structure",
     "href": "presentations/2026-06-10_ag-decod.html#why-food-web-structure",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "Why food web structure",
-    "text": "Why food web structure\n\n\n\n\nFood web structure\n\nis a measure of ecosystem complexity\ncaptures different aspects than species richness\ntells how the ecosystem functions\ncaptures vertical complexity and flux of biomass or energy"
+    "text": "Why food web structure\n\n\n Who eats who?\n\nFood web structure\n\nis a measure of ecosystem complexity\ncaptures different aspects than species richness\ntells how the ecosystem functions\ncaptures vertical complexity and flux of biomass or energy"
   },
   {
     "objectID": "presentations/2026-06-10_ag-decod.html#the-datasets-we-aim-to-combine",
@@ -1019,14 +1019,14 @@
     "href": "presentations/2026-06-10_ag-decod.html#the-datasets-we-aim-to-combine-1",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "The datasets we aim to combine",
-    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\nThe data we work with\n\n\nSpecies\nLength\nOperation ID\n\n\n\n\nAbramis brama\n12\n1\n\n\nSalmo trutta\n15\n1\n\n\n…\n…\n…\n\n\n\n\nDifferent selectivity\nInconsistencies between datasets\nGet info on many species"
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\nThe data we work with\n\n\nSpecies\nLength\nOperation ID\n\n\n\n\nAbramis brama\n12\n1\n\n\nSalmo trutta\n15\n1\n\n\n…\n…\n…\n\n\n\n\n\nDifferent selectivity\nInconsistencies between datasets\nGet info on many species"
   },
   {
     "objectID": "presentations/2026-06-10_ag-decod.html#from-this-we-reconstruct-food-web",
     "href": "presentations/2026-06-10_ag-decod.html#from-this-we-reconstruct-food-web",
     "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
     "section": "From this we reconstruct food web",
-    "text": "From this we reconstruct food web\n\n\n\nWe use the metaweb framework\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\nComparison of different ecosytems\n\n\n Sketch of the steps to build the metaweb"
+    "text": "From this we reconstruct food web\n\n\n\nWe use the metaweb framework\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\nAre different ecosystems comparable?\n\n\n Sketch of the steps to build the metaweb"
   },
   {
     "objectID": "presentations/2026-06-10_ag-decod.html#relate-food-web-to-environmental-variables",
@@ -1082,7 +1082,7 @@
     "href": "analysis/D3-richness-gradient.html#modeling-alpha-diversity-with-salinity",
     "title": "How community richness changes along the estuary-sea continuum",
     "section": "Modeling alpha-diversity with salinity",
-    "text": "Modeling alpha-diversity with salinity\nNext, we want to model how species richness changes with salinity. To do that properly with to account for spatial autocorrelation.\n\nlibrary(INLA)\nlibrary(fmesher)\n\ncoords &lt;- cbind(data$longitude, data$latitude)\n\nmesh &lt;- fmesher::fm_mesh_2d_inla(\n  loc       = coords,\n  max.edge  = c(0.1, 0.5),\n  offset    = c(0.1, 0.3),\n  cutoff    = 0.05\n)\nplot(mesh)\npoints(coords, col = \"red\", cex = 0.1, pch = 3)\n\n\n\n\n\n\n\n\nUsing a Spatial Gaussian Random Field on our mesh, we can fit a model that accounts for spatial autocorrelation.\n\nspde &lt;- inla.spde2.pcmatern(\n  mesh = mesh,\n  prior.range = c(0.5, 0.5),\n  prior.sigma = c(1, 0.01)\n)\n\nA &lt;- inla.spde.make.A(mesh = mesh, loc = coords)\n\nstk &lt;- inla.stack(\n  data = list(y = data$log_species_richness),\n  A = list(A, 1),\n  effects = list(\n    list(spatial.field = 1:spde$n.spde),\n    list(\n      intercept = rep(1, nrow(data)),\n      salinity = data$salinity,\n      is_nurse = data$is_nurse,\n      year = data$year\n    )\n  ),\n  tag = \"obs\"\n)\n\nm1 &lt;- inla(\n  y ~ -1 +\n    intercept +\n    salinity +\n    is_nurse +\n    f(year, model = \"iid\") + f(spatial.field, model = spde),\n  data = inla.stack.data(stk),\n  control.predictor = list(\n    A = inla.stack.A(stk),\n    compute = TRUE\n  ),\n  control.compute = list(\n    waic = TRUE,\n    config = TRUE\n  )\n)\n\nsummary(m1)\n\nTime used:\n    Pre = 0.985, Running = 2.36, Post = 0.202, Total = 3.55 \nFixed effects:\n            mean    sd 0.025quant 0.5quant 0.975quant   mode kld\nintercept  2.567 0.070      2.432    2.566      2.710  2.566   0\nsalinity   0.004 0.002     -0.001    0.004      0.008  0.004   0\nis_nurse  -0.047 0.012     -0.072   -0.047     -0.023 -0.047   0\n\nRandom effects:\n  Name    Model\n    year IID model\n   spatial.field SPDE2 model\n\nModel hyperparameters:\n                                           mean     sd 0.025quant 0.5quant\nPrecision for the Gaussian observations  48.391  1.200     45.719   48.507\nPrecision for year                      169.054 50.102     92.065  161.920\nRange for spatial.field                   0.239  0.054      0.154    0.233\nStdev for spatial.field                   0.119  0.014      0.093    0.118\n                                        0.975quant    mode\nPrecision for the Gaussian observations     50.337  49.119\nPrecision for year                         287.481 148.458\nRange for spatial.field                      0.364   0.219\nStdev for spatial.field                      0.148   0.117\n\nWatanabe-Akaike information criterion (WAIC) ...: -4569.57\nEffective number of parameters .................: 138.45\n\nMarginal log-Likelihood:  2126.26 \n is computed \nPosterior summaries for the linear predictor and the fitted values are computed\n(Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')\n\n\nNext, we can investigate our model.\n\nspde.result &lt;- inla.spde2.result(m1, \"spatial.field\", spde, do.transf = TRUE)\n\n# Posterior mean of spatial range\ninla.emarginal(function(x) x, spde.result$marginals.range.nominal[[1]])\n\n[1] 0.2393019\n\n\nThis captures the caracteristic range of the spatial autocorrelation. It is quite small, meaning that it acts at a small spatial scale, and our data is not too sensitive to this biais. This may be due to the act that our data is quite noisy due to fishing operations that may often miss many species. So even at the same place, two communities may not be too strongly correlated due to the sampling noise.\n\nsal_marginal &lt;- m1$marginals.fixed$salinity\n\n# Convert to a data frame for plotting the full posterior density\nsal_df &lt;- as.data.frame(inla.smarginal(sal_marginal))\n\nggplot(sal_df, aes(x = x, y = y)) +\n  geom_line(linewidth = 1, colour = \"#2166ac\") +\n  geom_vline(xintercept = 0, linetype = \"dashed\", colour = \"grey40\") +\n  # 95% credible interval shading\n  geom_ribbon(\n    data = subset(sal_df, x &gt;= inla.hpdmarginal(0.95, sal_marginal)[1] &\n      x &lt;= inla.hpdmarginal(0.95, sal_marginal)[2]),\n    aes(ymin = 0, ymax = y), fill = \"#2166ac\", alpha = 0.2\n  ) +\n  labs(\n    title = \"Posterior distribution — salinity effect\",\n    x     = \"Effect size (log species richness per salinity unit)\",\n    y     = \"Density\"\n  )\n\n\n\n\n\n\n\n\n\nn_samples &lt;- 100\nsamples &lt;- inla.posterior.sample(n_samples, m1)\nbeta_int_samples &lt;- sapply(samples, function(s) s$latent[\"intercept:1\", ])\nbeta_sal_samples &lt;- sapply(samples, function(s) s$latent[\"salinity:1\", ])\nsal_seq &lt;- seq(min(data$salinity), max(data$salinity), length.out = 200)\n\npred_matrix &lt;- outer(rep(1, 200), beta_int_samples) +\n  outer(sal_seq, beta_sal_samples)\n\npred_df &lt;- data.frame(\n  salinity = sal_seq,\n  fit      = apply(pred_matrix, 1, median),\n  lwr      = apply(pred_matrix, 1, quantile, probs = 0.045),\n  upr      = apply(pred_matrix, 1, quantile, probs = 0.955)\n)\n\nzones &lt;- data.frame(\n  xmin  = c(-Inf, 0.5, 5, 18, 30),\n  xmax  = c(0.5, 5, 18, 30, Inf),\n  label = c(\"Freshwater\", \"Oligohaline\", \"Mesohaline\", \"Polyhaline\", \"Euhaline\"),\n  fill  = c(\"#a8d5f5\", \"#d4edda\", \"#fff3b0\", \"#f4a96a\", \"#e07b7b\")\n)\n\n# Clip zones to your actual data range\nx_min_data &lt;- min(data$salinity)\nx_max_data &lt;- max(data$salinity)\n\nzones$xmin &lt;- pmax(zones$xmin, x_min_data)\nzones$xmax &lt;- pmin(zones$xmax, x_max_data)\n\n# Drop zones outside your data range\nzones &lt;- zones[zones$xmin &lt; zones$xmax, ]\n\nggplot(pred_df, aes(x = salinity)) +\n  geom_point(\n    data = data, aes(x = salinity, y = log_species_richness),\n    alpha = 0.1\n  ) +\n  geom_vline(\n    xintercept = c(5, 18, 30),\n    linetype = \"dashed\", colour = \"grey40\", linewidth = 0.5\n  ) +\n  geom_text(\n    data = zones,\n    aes(x = (xmin + xmax) / 2, y = Inf, label = label),\n    vjust = 1.5, size = 3.2, colour = \"grey30\",\n    inherit.aes = FALSE\n  ) +\n  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = \"lightblue\", alpha = 0.2) +\n  geom_line(aes(y = fit), colour = \"lightblue\", linewidth = 1.2) +\n  labs(\n    x = \"Salinity\",\n    y = \"Log Species Richness\"\n  )"
+    "text": "Modeling alpha-diversity with salinity\nNext, we want to model how species richness changes with salinity. To do that properly with to account for spatial autocorrelation.\n\nlibrary(INLA)\nlibrary(fmesher)\n\ncoords &lt;- cbind(data$longitude, data$latitude)\n\nmesh &lt;- fmesher::fm_mesh_2d_inla(\n  loc       = coords,\n  max.edge  = c(0.1, 0.5),\n  offset    = c(0.1, 0.3),\n  cutoff    = 0.05\n)\nplot(mesh)\npoints(coords, col = \"red\", cex = 0.1, pch = 3)\n\n\n\n\n\n\n\n\nUsing a Spatial Gaussian Random Field on our mesh, we can fit a model that accounts for spatial autocorrelation.\n\nspde &lt;- inla.spde2.pcmatern(\n  mesh = mesh,\n  prior.range = c(0.5, 0.5),\n  prior.sigma = c(1, 0.01)\n)\n\nA &lt;- inla.spde.make.A(mesh = mesh, loc = coords)\n\nstk &lt;- inla.stack(\n  data = list(y = data$log_species_richness),\n  A = list(A, 1),\n  effects = list(\n    list(spatial.field = 1:spde$n.spde),\n    list(\n      intercept = rep(1, nrow(data)),\n      salinity = data$salinity,\n      is_nurse = data$is_nurse,\n      year = data$year\n    )\n  ),\n  tag = \"obs\"\n)\n\nm1 &lt;- inla(\n  y ~ -1 +\n    intercept +\n    salinity +\n    is_nurse +\n    f(year, model = \"iid\") + f(spatial.field, model = spde),\n  data = inla.stack.data(stk),\n  control.predictor = list(\n    A = inla.stack.A(stk),\n    compute = TRUE\n  ),\n  control.compute = list(\n    waic = TRUE,\n    config = TRUE\n  )\n)\n\nsummary(m1)\n\nTime used:\n    Pre = 1.08, Running = 2.64, Post = 0.207, Total = 3.93 \nFixed effects:\n            mean    sd 0.025quant 0.5quant 0.975quant   mode kld\nintercept  2.567 0.071      2.432    2.566      2.711  2.566   0\nsalinity   0.004 0.002     -0.001    0.004      0.008  0.004   0\nis_nurse  -0.047 0.012     -0.072   -0.047     -0.023 -0.047   0\n\nRandom effects:\n  Name    Model\n    year IID model\n   spatial.field SPDE2 model\n\nModel hyperparameters:\n                                           mean     sd 0.025quant 0.5quant\nPrecision for the Gaussian observations  48.400  1.196     45.740   48.514\nPrecision for year                      168.955 49.898     91.914  161.966\nRange for spatial.field                   0.239  0.054      0.154    0.233\nStdev for spatial.field                   0.119  0.014      0.093    0.118\n                                        0.975quant    mode\nPrecision for the Gaussian observations     50.344  49.118\nPrecision for year                         286.543 148.814\nRange for spatial.field                      0.364   0.219\nStdev for spatial.field                      0.148   0.117\n\nWatanabe-Akaike information criterion (WAIC) ...: -4569.59\nEffective number of parameters .................: 138.47\n\nMarginal log-Likelihood:  2126.26 \n is computed \nPosterior summaries for the linear predictor and the fitted values are computed\n(Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')\n\n\nNext, we can investigate our model.\n\nspde.result &lt;- inla.spde2.result(m1, \"spatial.field\", spde, do.transf = TRUE)\n\ninla.emarginal(function(x) x, spde.result$marginals.range.nominal[[1]])\n\n[1] 0.2392318\n\n\nThis captures the caracteristic range of the spatial autocorrelation. It is quite small, meaning that it acts at a small spatial scale, and our data is not too sensitive to this biais. This may be due to the act that our data is quite noisy due to fishing operations that may often miss many species. So even at the same place, two communities may not be too strongly correlated due to the sampling noise.\n\nsal_marginal &lt;- m1$marginals.fixed$salinity\n\n# Convert to a data frame for plotting the full posterior density\nsal_df &lt;- as.data.frame(inla.smarginal(sal_marginal))\n\nggplot(sal_df, aes(x = x, y = y)) +\n  geom_line(linewidth = 1, colour = \"#2166ac\") +\n  geom_vline(xintercept = 0, linetype = \"dashed\", colour = \"grey40\") +\n  # 95% credible interval shading\n  geom_ribbon(\n    data = subset(sal_df, x &gt;= inla.hpdmarginal(0.95, sal_marginal)[1] &\n      x &lt;= inla.hpdmarginal(0.95, sal_marginal)[2]),\n    aes(ymin = 0, ymax = y), fill = \"#2166ac\", alpha = 0.2\n  ) +\n  labs(\n    title = \"Posterior distribution — salinity effect\",\n    x     = \"Effect size (log species richness per salinity unit)\",\n    y     = \"Density\"\n  )\n\n\n\n\n\n\n\n\n\nn_samples &lt;- 100\nsamples &lt;- inla.posterior.sample(n_samples, m1)\nbeta_int_samples &lt;- sapply(samples, function(s) s$latent[\"intercept:1\", ])\nbeta_sal_samples &lt;- sapply(samples, function(s) s$latent[\"salinity:1\", ])\nsal_seq &lt;- seq(min(data$salinity), max(data$salinity), length.out = 200)\n\npred_matrix &lt;- outer(rep(1, 200), beta_int_samples) +\n  outer(sal_seq, beta_sal_samples)\n\npred_df &lt;- data.frame(\n  salinity = sal_seq,\n  fit      = apply(pred_matrix, 1, median),\n  lwr      = apply(pred_matrix, 1, quantile, probs = 0.045),\n  upr      = apply(pred_matrix, 1, quantile, probs = 0.955)\n)\n\nzones &lt;- data.frame(\n  xmin  = c(-Inf, 0.5, 5, 18, 30),\n  xmax  = c(0.5, 5, 18, 30, Inf),\n  label = c(\"Freshwater\", \"Oligohaline\", \"Mesohaline\", \"Polyhaline\", \"Euhaline\"),\n  fill  = c(\"#a8d5f5\", \"#d4edda\", \"#fff3b0\", \"#f4a96a\", \"#e07b7b\")\n)\n\n# Clip zones to your actual data range\nx_min_data &lt;- min(data$salinity)\nx_max_data &lt;- max(data$salinity)\n\nzones$xmin &lt;- pmax(zones$xmin, x_min_data)\nzones$xmax &lt;- pmin(zones$xmax, x_max_data)\n\n# Drop zones outside your data range\nzones &lt;- zones[zones$xmin &lt; zones$xmax, ]\n\nggplot(pred_df, aes(x = salinity)) +\n  geom_point(\n    data = data, aes(x = salinity, y = log_species_richness),\n    alpha = 0.1\n  ) +\n  geom_vline(\n    xintercept = c(5, 18, 30),\n    linetype = \"dashed\", colour = \"grey40\", linewidth = 0.5\n  ) +\n  geom_text(\n    data = zones,\n    aes(x = (xmin + xmax) / 2, y = Inf, label = label),\n    vjust = 1.5, size = 3.2, colour = \"grey30\",\n    inherit.aes = FALSE\n  ) +\n  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = \"lightblue\", alpha = 0.2) +\n  geom_line(aes(y = fit), colour = \"lightblue\", linewidth = 1.2) +\n  labs(\n    x = \"Salinity\",\n    y = \"Log Species Richness\"\n  )"
   },
   {
     "objectID": "analysis/D3-richness-gradient.html#modeling-gamma-diversity-with-salinity",
@@ -1111,5 +1111,110 @@
     "title": "How community richness changes along the estuary-sea continuum",
     "section": "Community composition ordination",
     "text": "Community composition ordination\nTo ordinate communities along the salinity gradient, we first need to build the community matrix which indicate presence and absence of the different species for each site (or here fishing operation).\n\ncommunity_matrix &lt;- data |&gt;\n  select(trait, species) |&gt;\n  tidyr::unnest(species) |&gt;\n  filter_out(species %in% rare_species) |&gt;\n  mutate(value = 1) |&gt;\n  tidyr::pivot_wider(\n    names_from = species,\n    values_fill = 0\n  )\n\nThen, we use the package vegan to do an NMDS using the Jaccard distance to measure dissimilarity between communities. Here, we use three dimensions so we have a stress inferior to 0.2, meaning that our ordination is somewhat acceptable.\nNext, we want to plot our ordinated communities along the salinity gradient, and visualise which species are driving the change in community composition. Typically, we would expect freshwater and marine species to drive the two ends of the gradient.\n\nscores_df &lt;- as.data.frame(scores(nmds, display = \"sites\"))\nscores_df$salinity &lt;- community_matrix |&gt; \n  left_join(data, by = join_by(trait)) |&gt;\n  pull(salinity)\n\nsp_scores &lt;- as.data.frame(scores(nmds, display = \"species\"))\nsp_scores$species &lt;- rownames(sp_scores)\nsp_scores &lt;- sp_scores |&gt;\n  mutate(r2 = NMDS1^2 + NMDS2^2) |&gt;\n  filter(r2 &gt; quantile(r2, 0.8))\n\nggplot(scores_df, aes(x = NMDS1, y = NMDS2)) +\n  geom_point(aes(colour = salinity)) +\n  geom_segment(\n    data = sp_scores,\n    aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),\n    arrow = arrow(length = unit(0.2, \"cm\")),\n    colour = \"grey40\", linewidth = 0.5\n  ) +\n  geom_text(\n    data = sp_scores,\n    aes(label = species), size = 3, colour = \"grey20\",\n    nudge_y = 0.02\n  ) +\n  annotate(\"text\",\n    x = Inf, y = -Inf,\n    label = paste(\"Stress =\", round(nmds$stress, 3)),\n    hjust = 1.1, vjust = -0.5, size = 3.5, colour = \"grey30\"\n  )\n\n\n\n\n\n\n\n\nFirst, we see that the main structuring axis of the community is salinity as could be expected. Second, we see that marine species (pointing to the right) seems to be the more structuring ones, which are the one we identified previously with our salinity niches. What is less clear is what is the other axis of variation. We could expect the habitat, and so, for example the presence of betnhic species to be another structuring axis."
+  },
+  {
+    "objectID": "presentations/2026-06-10_ag-decod.html#different-but-connected-ecosystems",
+    "href": "presentations/2026-06-10_ag-decod.html#different-but-connected-ecosystems",
+    "title": "Different ecosystems but common questions: Can integrating multiple datasets advance our understanding?",
+    "section": "Different but connected ecosystems",
+    "text": "Different but connected ecosystems\n\n\n Garonne estuary – © CNES 2020\n\nRivers, estuaries and seas are\n\ndifferent\n\nsalinity, turbidity, flow\n\nbut connected\n\nflux of nutrients, species migration\n\nthen how disturbances propagate across these ecosystems?"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#different-but-connected-ecosystems",
+    "href": "presentations/2026-06-08_amobio.html#different-but-connected-ecosystems",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Different but connected ecosystems",
+    "text": "Different but connected ecosystems\n\n\n Garonne estuary – © CNES 2020\n\nRivers, estuaries and seas are\n\ndifferent\n\nsalinity, turbidity, flow\n\nbut connected\n\nflux of nutrients, species migration\n\nthen how disturbances propagate across these ecosystems?"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#an-integrative-approach-is-needed",
+    "href": "presentations/2026-06-08_amobio.html#an-integrative-approach-is-needed",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "An integrative approach is needed",
+    "text": "An integrative approach is needed\n\n\n\n NASA Earth Observatory\nAlgae blooms can be caused by upstream nutrient loading.\n\n\n\n He et al. (2024)\nDams impact migratory species which impact entire ecosystem."
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#an-integrative-approach-is-difficult",
+    "href": "presentations/2026-06-08_amobio.html#an-integrative-approach-is-difficult",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "An integrative approach is difficult",
+    "text": "An integrative approach is difficult\n\n\n Kavanaugh et al. (2013)\n\nAn integrative approach means dealing with different\n\nfields\n\nMarine vs freshwater ecology\n\nDifferent concepts\n\ne.g. River Continuum Concept\n\nDifferent methods (e.g. statistical models)\nDifferent datasets"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#why-food-web-structure",
+    "href": "presentations/2026-06-08_amobio.html#why-food-web-structure",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Why food web structure",
+    "text": "Why food web structure\n\n\n Who eats who?\n\nFood web structure\n\nis a measure of ecosystem complexity\ncaptures different aspects than species richness\ntells how the ecosystem functions\ncaptures vertical complexity and flux of biomass or energy"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#the-datasets-we-aim-to-combine",
+    "href": "presentations/2026-06-08_amobio.html#the-datasets-we-aim-to-combine",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "The datasets we aim to combine",
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\n Map of the sampling points (fishing operation) for the coastal, estuarine and riverine data."
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#the-datasets-we-aim-to-combine-1",
+    "href": "presentations/2026-06-08_amobio.html#the-datasets-we-aim-to-combine-1",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "The datasets we aim to combine",
+    "text": "The datasets we aim to combine\n\n\n\n2 marine surveys\n\nNurse, IFREMER, Bay of Biscay (1980 - 2023)\nPomet, IFREMER (DCE), Gironde estuary (2005 - 2019)\n\n1 freshwater survey\n\nOnema, DCE, Across France (every year)\n\nKey differences\n\nEletrofishing vs trawley\nFish length measurement\n\n\n\n\nThe data we work with\n\n\nSpecies\nLength\nOperation ID\n\n\n\n\nAbramis brama\n12\n1\n\n\nSalmo trutta\n15\n1\n\n\n…\n…\n…\n\n\n\n\n\nDifferent selectivity\nInconsistencies between datasets\nGet info on many species"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#from-this-we-reconstruct-food-web",
+    "href": "presentations/2026-06-08_amobio.html#from-this-we-reconstruct-food-web",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "From this we reconstruct food web",
+    "text": "From this we reconstruct food web\n\n\n\nWe use the metaweb framework\nExtract fish diet with rfishbase\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\nFrom the metaweb, we we infer local food web by subsampling\n\n\nAre different ecosystems comparable?\n\n\n Sketch of the steps to build the metaweb"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#relate-food-web-to-environmental-variables",
+    "href": "presentations/2026-06-08_amobio.html#relate-food-web-to-environmental-variables",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Relate food web to environmental variables",
+    "text": "Relate food web to environmental variables\n\n\n\nSalinity levels in 2023\n\nEven if the datasets (e.g. abundance) are consistent\n\nEnvironmental variable can be inconsistent\nNot available for every ecosystem\nMeasured in different ways"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#conclusions",
+    "href": "presentations/2026-06-08_amobio.html#conclusions",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Conclusions",
+    "text": "Conclusions\n\nCombining dataset is useful\n\nCan answer new and important questions\n\nCombining datasets is difficult\n\nInconsistencies between the datasets themselves (e.g. fishing surveys)\nInconsistence between “side” datasets (e.g. environmental drivers)\nHow to compare different ecosystems?\nRequires different expertise\n\nCall for collaborations and the development of shared tools"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#depuis-la-dernière-fois",
+    "href": "presentations/2026-06-08_amobio.html#depuis-la-dernière-fois",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Depuis la dernière fois",
+    "text": "Depuis la dernière fois\n\nImpact des barrages et nutriments sur les réseaux trophiques le long du continuum rivière-mer\nReconstruction des réseaux trophiques en estuaire et mer\nRéseaux trophiques en rivière prêt (Alain)\nProchaine étapes\n\nFusionner les rivière et mer pour avoir le gradient complet\nAssocier avec les variables environnementales et de barrages"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#données-spatiales",
+    "href": "presentations/2026-06-08_amobio.html#données-spatiales",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Données spatiales",
+    "text": "Données spatiales\n\nCorrespondance des stations ? OK ?\nBassin hydrographique : quelle forme ? sf object ? recoupement ?\nComment est-ce que la distance à l’embouchure est calculée ?\nDoit être fait aussi pour les stations en estuaire et mer"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#données-barrage",
+    "href": "presentations/2026-06-08_amobio.html#données-barrage",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Données barrage",
+    "text": "Données barrage\n\nQuelles sont les caractériques disponibles ? Hauteur ? Passabilité ?\nDéfinir une notion d’impact cumulatif ?\n\\(\\sum_{i\\in \\text{dams}}h_i \\exp^{\\frac{d_i}{L_i}}\\) where \\(L_i\\) où \\(L_i\\) est la distance d’impact des barrages déterminée par les données\nAmont / Aval ?"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#données-environnementales",
+    "href": "presentations/2026-06-08_amobio.html#données-environnementales",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Données environnementales",
+    "text": "Données environnementales\n\nQuelles variables disponibles : température ? nitrates ? phosphates ?\nQuelle résolution spatiale ?\nQuelle résolution temporelle ?\nMesurée ou modèle ?"
+  },
+  {
+    "objectID": "presentations/2026-06-08_amobio.html#organisation-pour-la-suite",
+    "href": "presentations/2026-06-08_amobio.html#organisation-pour-la-suite",
+    "title": "RIVERSEA x AMOBIO",
+    "section": "Organisation pour la suite",
+    "text": "Organisation pour la suite\n\nPartage des données et du code ?\nProchaine réunion ?"
   }
 ]

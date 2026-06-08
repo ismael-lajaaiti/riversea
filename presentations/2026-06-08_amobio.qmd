@@ -1,0 +1,47 @@
+---
+title: "RIVERSEA x AMOBIO"
+subtitle: "Données de barrages et environnementales"
+date: "06/08/2026"
+date-format: long
+bibliography: references.bib
+format: clean-revealjs
+pdf-separate-fragments: true
+incremental: true
+---
+
+## Depuis la dernière fois
+
+- Impact des barrages et nutriments sur les réseaux trophiques le long du
+continuum rivière-mer
+- Reconstruction des réseaux trophiques en estuaire et mer
+- Réseaux trophiques en rivière prêt (Alain)
+- Prochaine étapes
+  - Fusionner les rivière et mer pour avoir le gradient complet
+  - **Associer avec les variables environnementales et de barrages**
+
+## Données spatiales
+
+- Correspondance des stations ? OK ?
+- Bassin hydrographique : quelle forme ? sf object ? recoupement ?
+- Comment est-ce que la distance à l'embouchure est calculée ?
+- Doit être fait aussi pour les stations en estuaire et mer
+
+## Données barrage
+
+- Quelles sont les caractériques disponibles ? Hauteur ? Passabilité ?
+- Définir une notion d'impact cumulatif ?
+- $\sum_{i\in \text{dams}}h_i \exp^{\frac{d_i}{L_i}}$ where $L_i$ où $L_i$ est
+la distance d'impact des barrages *déterminée par les données*
+- Amont / Aval ?
+
+## Données environnementales
+
+- Quelles variables disponibles : température ? nitrates ? phosphates ?
+- Quelle résolution spatiale ?
+- Quelle résolution temporelle ? 
+- Mesurée ou modèle ?
+
+## Organisation pour la suite
+
+- Partage des données et du code ?
+- Prochaine réunion ?

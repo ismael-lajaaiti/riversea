@@ -129,7 +129,6 @@ Next, we can investigate our model.
 ```{r}
 spde.result <- inla.spde2.result(m1, "spatial.field", spde, do.transf = TRUE)
 
-# Posterior mean of spatial range
 inla.emarginal(function(x) x, spde.result$marginals.range.nominal[[1]])
 ```
 
