@@ -9,4 +9,5 @@ This page lists all the presentations of the RIVERSEA project.
 2026.04.14, Rennes
 - [Project presentation at GdR EcoStat](https://doi.org/10.6084/m9.figshare.32509152),
 2026.05.25, Grenoble
-- [Data compilation at AG DECOD](workinprogress), 2026.06.11, St Jacut
+- [Data compilation at AG DECOD](https://doi.org/10.6084/m9.figshare.32531523),
+2026.06.11, St Jacut

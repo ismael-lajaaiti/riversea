@@ -255,7 +255,18 @@ data <- data |>
     salinity,
     foodweb, #  Now kept to extract species composition.
     district,
-    zone_id
+    zone_id,
+    substrat,
+    bathymetry,
+    sali_perc_90,
+    chl_mean,
+    nppv_mean,
+    substrat,
+    temp_mean,
+    temp_cv,
+    o2_mean,
+    o2_cv,
+    wave_mean
   ) |>
   mutate(is_nurse = if_else(survey == "nurse", 1, 0))
 
@@ -418,13 +429,16 @@ of a bentho-pelagic coupling.
 
 ## Community composition ordination
 
+### Identify the salinity gradient as the main structuring axis
+
 To ordinate communities along the salinity gradient, we first need to build the
 community matrix which indicate presence and absence of the different species
 for each site (or here fishing operation).
 
 ```{r}
 community_matrix <- data |>
-  select(trait, species) |>
+  filter(year > 2000) |>
+  select(trait, species, year) |>
   tidyr::unnest(species) |>
   filter_out(species %in% rare_species) |>
   mutate(value = 1) |>
@@ -444,7 +458,7 @@ acceptable.
 
 library(vegan)
 
-com_std <- decostand(community_matrix, method = "pa")
+com_std <- decostand(community_matrix |> select(-trait, year), method = "pa")
 nmds <- metaMDS(
   com_std,
   distance = "jaccard",
@@ -460,7 +474,12 @@ of the gradient.
 
 ```{r}
 scores_df <- as.data.frame(scores(nmds, display = "sites"))
-scores_df$salinity <- community_matrix |> 
+
+scores_df$salinity <- community_matrix |>
+  left_join(data, by = join_by(trait)) |>
+  pull(salinity)
+
+scores_df$salinity <- community_matrix |>
   left_join(data, by = join_by(trait)) |>
   pull(salinity)
 
@@ -471,7 +490,8 @@ sp_scores <- sp_scores |>
   filter(r2 > quantile(r2, 0.8))
 
 ggplot(scores_df, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(aes(colour = salinity)) +
+  geom_point(aes(colour = salinity), size = 2) +
+  scale_colour_viridis_c() +
   geom_segment(
     data = sp_scores,
     aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
@@ -490,9 +510,96 @@ ggplot(scores_df, aes(x = NMDS1, y = NMDS2)) +
   )
 ```
 
-First, we see that the main structuring axis of the community is salinity as
+We see that the main structuring axis of the community is salinity as
 could be expected. Second, we see that marine species (pointing to the right)
 seems to be the more structuring ones, which are the one we identified
 previously with our salinity niches. What is less clear is what is the other
 axis of variation. We could expect the habitat, and so, for example the presence
-of betnhic species to be another structuring axis.
+of benthic species to be another structuring axis.
+
+We can plot the our community on the map, coloring with NMDS first axis to see
+how are structure are communities in space.
+
+```{r}
+scores_df$latitude <- community_matrix |>
+  left_join(data, by = join_by(trait)) |>
+  pull(latitude)
+scores_df$longitude <- community_matrix |>
+  left_join(data, by = join_by(trait)) |>
+  pull(longitude)
+
+ggplot(scores_df, aes(x = longitude, y = latitude, color = NMDS1)) +
+  geom_point() +
+  scale_colour_viridis_c() +
+  geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+  coord_sf(xlim = range(data$longitude) + e, ylim = range(data$latitude) + e) +
+  labs(x = NULL, y = NULL)
+```
+
+They are struture along the estuary gradient. In particular, to visualise how
+salinity structure communities, we can plot the first axis of the NMDS against
+salinity.
+
+```{r}
+scores_df$log_species_richness <- community_matrix |>
+  left_join(data, by = join_by(trait)) |>
+  pull(log_species_richness)
+
+ggplot(scores_df, aes(x = salinity, y = NMDS1)) +
+  geom_point(aes(colour = log_species_richness), size = 2) +
+  scale_colour_viridis_c() +
+  labs(x = "Salinity", colour = "Log Species\nRichness")
+```
+
+We see a positive association. As suggested by the relative high stress
+of the NMDS (~0.18), the community are difficult to ordinate. This may be due to
+to the noise related to the sampling process, sometimes we do not fish all
+species that are there. It may also be due to the fact that we aggregate points
+over the year and so we have differencies from one year to another.
+
+### Identify structuring variables beyond salinity
+
+We want to do a more general analysis to find which environmental variables
+structure our communities.
+
+```{r}
+env <- data |>
+  select(
+    trait, salinity, bathymetry, o2_mean, chl_mean, nppv_mean,
+    temp_mean, year
+  ) |>
+  right_join(community_matrix |> select(trait, year), by = join_by(trait, year)) |>
+  select(-c(trait, year))
+
+fit <- envfit(nmds, env)
+
+fit_df <- as.data.frame(scores(fit, display = "vectors"))
+fit_df$variable <- rownames(fit_df)
+fit_df$r2 <- fit$vectors$r
+fit_df$p <- fit$vectors$pvals
+fit_df <- fit_df |> filter(p <= 0.05)
+
+ggplot(scores_df, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(colour = log_species_richness), size = 2, alpha = 0.7) +
+  scale_colour_viridis_c() +
+  geom_segment(
+    data = fit_df,
+    aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+    arrow = arrow(length = unit(0.25, "cm")),
+    colour = "black", linewidth = 0.7
+  ) +
+  geom_label(
+    data = fit_df,
+    aes(
+      x = NMDS1 * 1.15, y = NMDS2 * 1.15,
+      label = paste0(variable, "\nR²=", round(r2, 2))
+    ),
+    size = 3, fill = "white", label.size = 0.2
+  ) +
+  labs(colour = "Log Species Richness")
+```
+
+We recover that most of the structure is driven by the salinity gradient and the
+correlated variable.
+
+
