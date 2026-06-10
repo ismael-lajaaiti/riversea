@@ -106,6 +106,9 @@ anthropogenic pressure in estuary as estuaries are already stressed environment.
 In particular, this means thinking about the indicators used to describe
 ecosystem states (diversity, and functionning).
 
+- @Lechêne-etal-2018 @Olli-etal-2019 and @Freitas-Araújo-2025 study how
+communities change along environmental gradient in estuaries.
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by
