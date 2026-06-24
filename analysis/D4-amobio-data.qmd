@@ -1,0 +1,144 @@
+---
+title: "Overview of AMOBIO data"
+format:
+  html:
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+Here, we investigate what is in the data of the AMOBIO project.
+
+```{r}
+#| echo: false
+
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+
+library(ggplot2)
+library(hrbrthemes)
+theme_set(theme_ipsum())
+library(dplyr)
+library(riversea)
+library(sf)
+```
+
+We begin by loading the files containing the information.
+
+First, we have a file containing many metrics measured at many different points
+that is, at different nodes.
+
+```{r}
+metric_file <- here("data", "amobio", "METRICS_AMOBIO.Rdata")
+base::load(metric_file)
+df_metric <- WP3_MATRIX_FULL
+```
+
+Second, we have a file containing geographical information about the nodes,
+where they are and how they are connected to one another.
+
+To begin with, we want to focus on the nodes corresponding to station where fish
+were sampled.
+
+```{r}
+network_file <- here("data", "amobio", "NETWORK_AMOBIO.Rdata")
+base::load(network_file)
+nodes <- network_AMOBIO_uptate |>
+  sfnetworks::activate("nodes") |>
+  sf::st_as_sf() |>
+  select(node_id, geometry, IS_OE, OE_ID) |>
+  filter(IS_OE == "OE") |>
+  select(-IS_OE)
+
+network_AMOBIO_uptate |>
+  sfnetworks::activate("nodes") |>
+  st_as_sf() |>
+  str()
+```
+
+Then, we plot the stations on a map of France.
+
+```{r}
+crs <- st_crs(fish_nodes)
+
+coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") |>
+  st_transform(crs)
+
+boundaries <- st_bbox(fish_nodes)
+
+ggplot() +
+  geom_sf(data = coastline) +
+  geom_sf(data = fish_nodes, size = 0.5) +
+  coord_sf(
+    xlim = boundaries[c("xmin", "xmax")],
+    ylim = boundaries[c("ymin", "ymax")]
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+```{r}
+fish_metrics <- fish_nodes |>
+  st_drop_geometry() |>
+  left_join(
+    df_metric |> mutate(node_id = as.integer(node_id)),
+    by = join_by(node_id)
+  )
+
+str(fish_metrics)
+```
+
+```{r}
+dam_nodes <- network_AMOBIO_uptate |>
+  sfnetworks::activate("nodes") |>
+  sf::st_as_sf() |>
+  select(node_id, geometry, IS_OE) |>
+  filter(IS_OE == "OE") |>
+  select(-IS_OE)
+
+ggplot() +
+  geom_sf(data = coastline) +
+  geom_sf(data = dam_nodes, size = 0.5) +
+  coord_sf(
+    xlim = boundaries[c("xmin", "xmax")],
+    ylim = boundaries[c("ymin", "ymax")]
+  ) +
+  labs(x = NULL, y = NULL)
+```
+
+
+```{r}
+dam_metrics <- dam_nodes |>
+  st_drop_geometry() |>
+  left_join(
+    df_metric |> mutate(node_id = as.integer(node_id)),
+    by = join_by(node_id)
+  ) |>
+  filter_out(is.na(POE_BH1_L4))
+```
+
+## Station mismatch
+
+```{r}
+station_bastien <- fish_nodes |>
+  mutate(sandre_code = FISH_ID)
+
+base::load( # Load station_aspe object.
+  here("data", "amobio", "station_operation_filtered_aspe.rda")
+)
+
+station_bastien |>
+  st_drop_geometry() |>
+  inner_join(
+    station_aspe |> st_drop_geometry(),
+    by = join_by(sandre_code)
+  )
+```
+
+I wanted to identify the station that do not match between Alain's and Bastien's
+data but I failed to retrieve the Sandre code in Bastien data set.

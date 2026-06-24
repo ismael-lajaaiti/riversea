@@ -424,7 +424,7 @@
     "href": "index.html#d.-environmental-driver-of-food-web-structures",
     "title": "Analysis",
     "section": "D. Environmental driver of food web structures",
-    "text": "D. Environmental driver of food web structures\n\nData overview\nHow eutrophisation affect food web structures along the estuary-sea continuum\nHow community richness changes along the estuary-sea continuum"
+    "text": "D. Environmental driver of food web structures\n\nData overview\nHow eutrophisation affect food web structures along the estuary-sea continuum\nHow community richness changes along the estuary-sea continuum\nOverview of AMOBIO data"
   },
   {
     "objectID": "analysis/A2-define-model.html",
@@ -1216,5 +1216,12 @@
     "title": "RIVERSEA x AMOBIO",
     "section": "Organisation pour la suite",
     "text": "Organisation pour la suite\n\nPartage des données et du code ?\nProchaine réunion ?"
+  },
+  {
+    "objectID": "analysis/D4-amobio-data.html",
+    "href": "analysis/D4-amobio-data.html",
+    "title": "Overview of AMOBIO data",
+    "section": "",
+    "text": "Here, we investigate what is in the data of the AMOBIO project.\nWe begin by loading the files containing the information.\nFirst, we have a file containing many metrics measured at many different points that is, at different nodes.\n\nmetric_file &lt;- here(\"data\", \"amobio\", \"METRICS_AMOBIO.Rdata\")\nbase::load(metric_file)\ndf_metric &lt;- WP3_MATRIX_FULL\n\nSecond, we have a file containing geographical information about the nodes, where they are and how they are connected to one another.\nTo begin with, we want to focus on the nodes corresponding to station where fish were sampled.\n\nnetwork_file &lt;- here(\"data\", \"amobio\", \"NETWORK_AMOBIO.Rdata\")\nbase::load(network_file)\nfish_nodes &lt;- network_AMOBIO_uptate |&gt;\n  sfnetworks::activate(\"nodes\") |&gt;\n  sf::st_as_sf() |&gt;\n  select(node_id, geometry, IS_FISH) |&gt;\n  filter(IS_FISH == \"FISH\") |&gt;\n  select(-IS_FISH)\n\nThen, we plot the stations on a map of France.\n\ncrs &lt;- st_crs(fish_nodes)\n\ncoastline &lt;- rnaturalearth::ne_coastline(scale = \"large\", returnclass = \"sf\") |&gt;\n  st_transform(crs)\n\nboundaries &lt;- st_bbox(fish_nodes)\n\nggplot() +\n  geom_sf(data = coastline) +\n  geom_sf(data = fish_nodes, size = 0.5) +\n  coord_sf(\n    xlim = boundaries[c(\"xmin\", \"xmax\")],\n    ylim = boundaries[c(\"ymin\", \"ymax\")]\n  ) +\n  labs(x = NULL, y = NULL)"
   }
 ]
