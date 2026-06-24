@@ -110,6 +110,9 @@ ecosystem states (diversity, and functionning).
 @Freitas-Araújo-2025 study how communities change along environmental gradient
 in estuaries.
 
+- @Attrill-2002 critiques Remane diagram and proposes and quantitive, testable
+alternative that consider salinity ranges instead of salinity.
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by
@@ -209,6 +212,12 @@ interaction were important individual contributors to explaining local
 species richness of aquatic insects [@Altermatt-Seymour-Martinez-2013].
 Effect of connectivity on richness supported experimentally 
 [@Carrara-etal-2012].
+
+### Decomposing spatio-temporal patterns
+
+- @Frelat-etal-2022 decompose change in food web structure and species
+composition across space and time using a tensor decomposition. We could
+probably try the method for our work.
 
 
 ### Dams

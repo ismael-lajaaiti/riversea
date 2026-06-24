@@ -24,7 +24,8 @@ tar_config_set(
 )
 
 library(ggplot2)
-set_theme(theme_minimal())
+library(hrbrthemes)
+theme_set(theme_ipsum())
 library(dplyr)
 library(riversea)
 library(sf)
