@@ -9,6 +9,7 @@ data/river/web_in_web.rda
 data/sea/
 data/geo/
 data/*.zip
+data/amobio
 docs/site_libs/
 _freeze/
 
