@@ -52,7 +52,7 @@ base::load(network_file)
 nodes <- network_AMOBIO_uptate |>
   sfnetworks::activate("nodes") |>
   sf::st_as_sf() |>
-  select(node_id, geometry, IS_OE, OE_ID) |>
+  select(node_id, geometry, IS_OE, OE_ID, FISH_ID) |>
   filter(IS_OE == "OE") |>
   select(-IS_OE)
 
@@ -65,16 +65,16 @@ network_AMOBIO_uptate |>
 Then, we plot the stations on a map of France.
 
 ```{r}
-crs <- st_crs(fish_nodes)
+crs <- st_crs(nodes)
 
 coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") |>
   st_transform(crs)
 
-boundaries <- st_bbox(fish_nodes)
+boundaries <- st_bbox(nodes)
 
 ggplot() +
   geom_sf(data = coastline) +
-  geom_sf(data = fish_nodes, size = 0.5) +
+  geom_sf(data = nodes, size = 0.5) +
   coord_sf(
     xlim = boundaries[c("xmin", "xmax")],
     ylim = boundaries[c("ymin", "ymax")]
@@ -83,7 +83,7 @@ ggplot() +
 ```
 
 ```{r}
-fish_metrics <- fish_nodes |>
+fish_metrics <- nodes |>
   st_drop_geometry() |>
   left_join(
     df_metric |> mutate(node_id = as.integer(node_id)),
@@ -125,7 +125,7 @@ dam_metrics <- dam_nodes |>
 ## Station mismatch
 
 ```{r}
-station_bastien <- fish_nodes |>
+station_bastien <- nodes |>
   mutate(sandre_code = FISH_ID)
 
 base::load( # Load station_aspe object.

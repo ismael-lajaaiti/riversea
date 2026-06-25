@@ -244,6 +244,10 @@ regulated river:
   1) a longer, thermal gradient of around 100 km;
   2) a shorter resource subsidy gradient of around 1-4 km.
 
+### Nutrients
+
+- @Mwanake-etal- DOC-to-nutrient ratios in river decline worldwide
+
 ## Methods
 
 ### Food web inference
