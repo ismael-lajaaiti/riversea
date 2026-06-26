@@ -219,6 +219,8 @@ Effect of connectivity on richness supported experimentally
 composition across space and time using a tensor decomposition. We could
 probably try the method for our work.
 
+- @Kortsch-etal-2021 investigates change in food web in the Baltic Sea using
+weighted and unweighted structural metrics.
 
 ### Dams
 
@@ -246,7 +248,7 @@ regulated river:
 
 ### Nutrients
 
-- @Mwanake-etal- DOC-to-nutrient ratios in river decline worldwide
+- @Mwanake-etal-2026 DOC-to-nutrient ratios in river decline worldwide
 
 ## Methods
 

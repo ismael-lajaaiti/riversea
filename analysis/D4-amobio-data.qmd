@@ -51,30 +51,49 @@ network_file <- here("data", "amobio", "NETWORK_AMOBIO.Rdata")
 base::load(network_file)
 nodes <- network_AMOBIO_uptate |>
   sfnetworks::activate("nodes") |>
-  sf::st_as_sf() |>
-  select(node_id, geometry, IS_OE, OE_ID, FISH_ID) |>
-  filter(IS_OE == "OE") |>
-  select(-IS_OE)
+  as_tibble() |>
+  as_tibble()
 
-network_AMOBIO_uptate |>
-  sfnetworks::activate("nodes") |>
-  st_as_sf() |>
-  str()
+
 ```
+
+```{r}
+df_metric |> 
+  mutate(node_id = node_id |> as.character() |> as.integer()) |> 
+  filter(node_id == 27)
+```
+
+
+
+
+```{r}
+node_oe <- left_join(
+  nodes,
+  df_metric |> mutate(node_id = as.integer(as.character(node_id))), by = join_by(node_id)
+) |>
+  select(node_id, POE_DDAM_L2_DAM) |>
+  mutate(metric = POE_DDAM_L2_DAM) |>
+  filter_out(is.na(metric)) |>
+  distinct()
+
+str(node_oe)
+```
+
+
 
 Then, we plot the stations on a map of France.
 
 ```{r}
-crs <- st_crs(nodes)
+crs <- st_crs(node_oe)
 
 coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") |>
   st_transform(crs)
 
-boundaries <- st_bbox(nodes)
+boundaries <- st_bbox(node_oe)
 
 ggplot() +
   geom_sf(data = coastline) +
-  geom_sf(data = nodes, size = 0.5) +
+  geom_sf(data = node_oe, aes(color = metric), size = 2) +
   coord_sf(
     xlim = boundaries[c("xmin", "xmax")],
     ylim = boundaries[c("ymin", "ymax")]
@@ -89,8 +108,6 @@ fish_metrics <- nodes |>
     df_metric |> mutate(node_id = as.integer(node_id)),
     by = join_by(node_id)
   )
-
-str(fish_metrics)
 ```
 
 ```{r}
@@ -103,7 +120,7 @@ dam_nodes <- network_AMOBIO_uptate |>
 
 ggplot() +
   geom_sf(data = coastline) +
-  geom_sf(data = dam_nodes, size = 0.5) +
+  geom_sf(data = dam_nodes, size = 0.2, alpha  = 0.5) +
   coord_sf(
     xlim = boundaries[c("xmin", "xmax")],
     ylim = boundaries[c("ymin", "ymax")]
