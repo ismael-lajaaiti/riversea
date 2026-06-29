@@ -175,5 +175,13 @@ data_targets <- list(
     amobio_paths,
     download_amobio_data(here("data", "amobio"), verbose = TRUE),
     format = "file"
+  ),
+  tar_target(
+    amobio_metrics,
+    extract_metrics_amobio(amobio_paths)
+  ),
+  tar_target(
+    amobio_nodes,
+    extract_nodes_amobio(amobio_paths)
   )
 )
