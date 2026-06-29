@@ -2,6 +2,9 @@
 title: "Overview of AMOBIO data"
 format:
   html:
+    theme: cosmo
+    code-fold: true     # hidden but clickable to reveal, best of both worlds
+    toc: true
     embed-resources: true
 execute:
     message: false
@@ -10,9 +13,9 @@ execute:
 
 Here, we investigate what is in the data of the AMOBIO project.
 
-```{r}
-#| echo: false
+## Setup
 
+```{r}
 library(renv)
 renv::load()
 library(targets)
@@ -23,11 +26,20 @@ tar_config_set(
 
 library(ggplot2)
 library(hrbrthemes)
-theme_set(theme_ipsum())
+theme_set(
+  theme_ipsum() +
+    theme(
+      plot.background = element_rect(fill = "#FAFAF8", color = NA),
+      panel.background = element_rect(fill = "#FAFAF8", color = NA),
+      legend.position = "bottom"
+    )
+)
 library(dplyr)
 library(riversea)
 library(sf)
 ```
+
+## Stations mismatch
 
 We begin by loading the files containing the information.
 
@@ -37,7 +49,6 @@ that is, at different nodes.
 ```{r}
 metric_file <- here("data", "amobio", "METRICS_AMOBIO.Rdata")
 base::load(metric_file)
-df_metric <- WP3_MATRIX_FULL
 ```
 
 Second, we have a file containing geographical information about the nodes,
@@ -53,109 +64,80 @@ nodes <- network_AMOBIO_uptate |>
   sfnetworks::activate("nodes") |>
   as_tibble() |>
   as_tibble()
-
-
 ```
 
 ```{r}
-df_metric |> 
-  mutate(node_id = node_id |> as.character() |> as.integer()) |> 
-  filter(node_id == 27)
-```
+nodes <- nodes |>
+  filter(IS_FISH == "FISH") |>
+  select(node_id, geometry)
 
-
-
-
-```{r}
-node_oe <- left_join(
-  nodes,
-  df_metric |> mutate(node_id = as.integer(as.character(node_id))), by = join_by(node_id)
-) |>
-  select(node_id, POE_DDAM_L2_DAM) |>
-  mutate(metric = POE_DDAM_L2_DAM) |>
-  filter_out(is.na(metric)) |>
-  distinct()
-
-str(node_oe)
-```
-
-
-
-Then, we plot the stations on a map of France.
-
-```{r}
-crs <- st_crs(node_oe)
-
-coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") |>
-  st_transform(crs)
-
-boundaries <- st_bbox(node_oe)
-
-ggplot() +
-  geom_sf(data = coastline) +
-  geom_sf(data = node_oe, aes(color = metric), size = 2) +
-  coord_sf(
-    xlim = boundaries[c("xmin", "xmax")],
-    ylim = boundaries[c("ymin", "ymax")]
-  ) +
-  labs(x = NULL, y = NULL)
-```
-
-```{r}
-fish_metrics <- nodes |>
-  st_drop_geometry() |>
-  left_join(
-    df_metric |> mutate(node_id = as.integer(node_id)),
-    by = join_by(node_id)
-  )
-```
-
-```{r}
-dam_nodes <- network_AMOBIO_uptate |>
-  sfnetworks::activate("nodes") |>
-  sf::st_as_sf() |>
-  select(node_id, geometry, IS_OE) |>
-  filter(IS_OE == "OE") |>
-  select(-IS_OE)
-
-ggplot() +
-  geom_sf(data = coastline) +
-  geom_sf(data = dam_nodes, size = 0.2, alpha  = 0.5) +
-  coord_sf(
-    xlim = boundaries[c("xmin", "xmax")],
-    ylim = boundaries[c("ymin", "ymax")]
-  ) +
-  labs(x = NULL, y = NULL)
-```
-
-
-```{r}
-dam_metrics <- dam_nodes |>
-  st_drop_geometry() |>
-  left_join(
-    df_metric |> mutate(node_id = as.integer(node_id)),
-    by = join_by(node_id)
-  ) |>
-  filter_out(is.na(POE_BH1_L4))
-```
-
-## Station mismatch
-
-```{r}
-station_bastien <- nodes |>
-  mutate(sandre_code = FISH_ID)
+df_metric <- WP3_MATRIX_FULL |>
+  mutate(node_id = node_id |> as.character() |> as.integer()) |>
+  select(node_id, ID, POE_DB1_L4) |>
+  mutate(metric = POE_DB1_L4, sandre_code = ID) |>
+  select(-POE_DB1_L4) |>
+  filter_out(is.na(metric))
 
 base::load( # Load station_aspe object.
   here("data", "amobio", "station_operation_filtered_aspe.rda")
 )
 
-station_bastien |>
-  st_drop_geometry() |>
-  inner_join(
-    station_aspe |> st_drop_geometry(),
-    by = join_by(sandre_code)
+df_metric <- df_metric |>
+  mutate(
+    sandre_code = as.character(sandre_code)
+    |> stringr::str_pad(8, pad = "0")
   )
+
+sandre_code_amobio <- df_metric |>
+  pull(sandre_code) |>
+  unique()
+
+station_aspe <- station_aspe |>
+  mutate(in_amobio = sandre_code %in% sandre_code_amobio)
 ```
 
-I wanted to identify the station that do not match between Alain's and Bastien's
-data but I failed to retrieve the Sandre code in Bastien data set.
+Then, we plot the stations on a map of France.
+
+```{r}
+crs <- st_crs(station_aspe)
+
+coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") |>
+  st_transform(crs)
+
+boundaries <- st_bbox(st_as_sf(nodes))
+
+ggplot() +
+  geom_sf(data = coastline) +
+  geom_sf(data = station_aspe, size = 0.8, color = "black", alpha = 0.7) +
+  geom_sf(
+    data = station_aspe |> mutate(in_amobio = if_else(in_amobio, "Yes", "No")),
+    aes(color = in_amobio),
+    size = 0.5
+  ) +
+  coord_sf(
+    xlim = boundaries[c("xmin", "xmax")],
+    ylim = boundaries[c("ymin", "ymax")]
+  ) +
+  labs(x = "Latitude", y = "Longitude", color = "In AMOBIO database?")
+```
+
+
+```{r}
+base::load(here("data", "river", "station.rda"))
+base::load(here("data", "river", "op.rda"))
+head(op)
+
+op |>
+  mutate(id = station) |>
+  left_join(
+    station |> select(id, sandre_code),
+    by = join_by(id)
+  ) |>
+  filter(sandre_code %in% sandre_code_amobio)
+
+station |> filter(sandre_code %in% sandre_code_amobio)
+station |> filter_out(sandre_code %in% sandre_code_amobio)
+```
+
+
+
