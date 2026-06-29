@@ -170,5 +170,10 @@ data_targets <- list(
   tar_target(
     fw_with_district,
     match_foodweb_district(local_foodwebs, hydrographic_area)
+  ),
+  tar_target(
+    amobio_paths,
+    download_amobio_data(here("data", "amobio"), verbose = TRUE),
+    format = "file"
   )
 )

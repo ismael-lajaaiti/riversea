@@ -1326,7 +1326,7 @@
     },
     "broom": {
       "Package": "broom",
-      "Version": "1.0.12",
+      "Version": "1.0.13",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Convert Statistical Objects into Tidy Tibbles",
@@ -1653,6 +1653,49 @@
       "Maintainer": "Brad Price <brad.price@mail.wvu.edu>",
       "Repository": "CRAN"
     },
+    "checkmate": {
+      "Package": "checkmate",
+      "Version": "2.3.4",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Fast and Versatile Argument Checks",
+      "Description": "Tests and assertions to perform frequent argument checks. A substantial part of the package was written in C to minimize any worries about execution time overhead.",
+      "Authors@R": "c( person(\"Michel\", \"Lang\", NULL, \"michellang@gmail.com\", role = c(\"cre\", \"aut\"), comment = c(ORCID = \"0000-0001-9754-0393\")), person(\"Bernd\", \"Bischl\", NULL, \"bernd_bischl@gmx.net\", role = \"ctb\"), person(\"Dénes\", \"Tóth\", NULL, \"toth.denes@kogentum.hu\", role = \"ctb\", comment = c(ORCID = \"0000-0003-4262-3217\")) )",
+      "URL": "https://mllg.github.io/checkmate/, https://github.com/mllg/checkmate",
+      "URLNote": "https://github.com/mllg/checkmate",
+      "BugReports": "https://github.com/mllg/checkmate/issues",
+      "NeedsCompilation": "yes",
+      "ByteCompile": "yes",
+      "Encoding": "UTF-8",
+      "Depends": [
+        "R (>= 3.0.0)"
+      ],
+      "Imports": [
+        "backports (>= 1.1.0)",
+        "utils"
+      ],
+      "Suggests": [
+        "R6",
+        "fastmatch",
+        "data.table (>= 1.9.8)",
+        "devtools",
+        "ggplot2",
+        "knitr",
+        "magrittr",
+        "microbenchmark",
+        "rmarkdown",
+        "testthat (>= 3.0.4)",
+        "tinytest (>= 1.1.0)",
+        "tibble"
+      ],
+      "License": "BSD_3_clause + file LICENSE",
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.3.3",
+      "Collate": "'AssertCollection.R' 'allMissing.R' 'anyInfinite.R' 'anyMissing.R' 'anyNaN.R' 'asInteger.R' 'assert.R' 'helper.R' 'makeExpectation.R' 'makeTest.R' 'makeAssertion.R' 'checkAccess.R' 'checkArray.R' 'checkAtomic.R' 'checkAtomicVector.R' 'checkCharacter.R' 'checkChoice.R' 'checkClass.R' 'checkComplex.R' 'checkCount.R' 'checkDataFrame.R' 'checkDataTable.R' 'checkDate.R' 'checkDirectoryExists.R' 'checkDisjunct.R' 'checkDouble.R' 'checkEnvironment.R' 'checkFALSE.R' 'checkFactor.R' 'checkFileExists.R' 'checkFlag.R' 'checkFormula.R' 'checkFunction.R' 'checkInt.R' 'checkInteger.R' 'checkIntegerish.R' 'checkList.R' 'checkLogical.R' 'checkMatrix.R' 'checkMultiClass.R' 'checkNamed.R' 'checkNames.R' 'checkNull.R' 'checkNumber.R' 'checkNumeric.R' 'checkOS.R' 'checkPOSIXct.R' 'checkPathForOutput.R' 'checkPermutation.R' 'checkR6.R' 'checkRaw.R' 'checkScalar.R' 'checkScalarNA.R' 'checkSetEqual.R' 'checkString.R' 'checkSubset.R' 'checkTRUE.R' 'checkTibble.R' 'checkVector.R' 'coalesce.R' 'isIntegerish.R' 'matchArg.R' 'qassert.R' 'qassertr.R' 'vname.R' 'wfwl.R' 'zzz.R'",
+      "Author": "Michel Lang [cre, aut] (ORCID: <https://orcid.org/0000-0001-9754-0393>), Bernd Bischl [ctb], Dénes Tóth [ctb] (ORCID: <https://orcid.org/0000-0003-4262-3217>)",
+      "Maintainer": "Michel Lang <michellang@gmail.com>",
+      "Repository": "CRAN"
+    },
     "cheddar": {
       "Package": "cheddar",
       "Version": "0.1-639",
@@ -1733,10 +1776,10 @@
     },
     "cli": {
       "Package": "cli",
-      "Version": "3.6.5",
+      "Version": "3.6.6",
       "Source": "Repository",
       "Title": "Helpers for Developing Command Line Interfaces",
-      "Authors@R": "c( person(\"Gábor\", \"Csárdi\", , \"gabor@posit.co\", role = c(\"aut\", \"cre\")), person(\"Hadley\", \"Wickham\", role = \"ctb\"), person(\"Kirill\", \"Müller\", role = \"ctb\"), person(\"Salim\", \"Brüggemann\", , \"salim-b@pm.me\", role = \"ctb\", comment = c(ORCID = \"0000-0002-5329-5987\")), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")) )",
+      "Authors@R": "c( person(\"Gábor\", \"Csárdi\", , \"gabor@posit.co\", role = c(\"aut\", \"cre\")), person(\"Hadley\", \"Wickham\", role = \"ctb\"), person(\"Kirill\", \"Müller\", role = \"ctb\"), person(\"Salim\", \"Brüggemann\", , \"salim-b@pm.me\", role = \"ctb\", comment = c(ORCID = \"0000-0002-5329-5987\")), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"), comment = c(ROR = \"03wc8by49\")) )",
       "Description": "A suite of tools to build attractive command line interfaces ('CLIs'), from semantic elements: headings, lists, alerts, paragraphs, etc. Supports custom themes via a 'CSS'-like language. It also contains a number of lower level 'CLI' elements: rules, boxes, trees, and 'Unicode' symbols with 'ASCII' alternatives. It support ANSI colors and text styles as well.",
       "License": "MIT + file LICENSE",
       "URL": "https://cli.r-lib.org, https://github.com/r-lib/cli",
@@ -1771,12 +1814,13 @@
       ],
       "Config/Needs/website": "r-lib/asciicast, bench, brio, cpp11, decor, desc, fansi, prettyunits, sessioninfo, tidyverse/tidytemplate, usethis, vctrs",
       "Config/testthat/edition": "3",
+      "Config/usethis/last-upkeep": "2025-04-25",
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.2",
+      "RoxygenNote": "7.3.2.9000",
       "NeedsCompilation": "yes",
-      "Author": "Gábor Csárdi [aut, cre], Hadley Wickham [ctb], Kirill Müller [ctb], Salim Brüggemann [ctb] (<https://orcid.org/0000-0002-5329-5987>), Posit Software, PBC [cph, fnd]",
+      "Author": "Gábor Csárdi [aut, cre], Hadley Wickham [ctb], Kirill Müller [ctb], Salim Brüggemann [ctb] (ORCID: <https://orcid.org/0000-0002-5329-5987>), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Gábor Csárdi <gabor@posit.co>",
-      "Repository": "CRAN"
+      "Repository": "https://packagemanager.posit.co/cran/__linux__/noble/latest"
     },
     "clipr": {
       "Package": "clipr",
@@ -2213,9 +2257,51 @@
       "Maintainer": "Tyson Barrett <t.barrett88@gmail.com>",
       "Repository": "CRAN"
     },
+    "dataverse": {
+      "Package": "dataverse",
+      "Version": "0.3.16",
+      "Source": "Repository",
+      "Title": "Client for Dataverse 4+ Repositories",
+      "Authors@R": "c(person(given = \"Shiro\",  family = \"Kuriwaki\", role = c(\"aut\", \"cre\"), email = \"shirokuriwaki@gmail.com\", comment = c(ORCID = \"0000-0002-5687-2647\")), person(given = \"Will\",  family = \"Beasley\", role=c(\"aut\"), email=\"wibeasley@hotmail.com\", comment = c(ORCID = \"0000-0002-5613-5006\")), person(given = \"Thomas J.\",  family = \"Leeper\", role = c(\"aut\"), email = \"thosjleeper@gmail.com\", comment = c(ORCID = \"0000-0003-4097-6326\")), person(given = \"Philip\",  family = \"Durbin\", role = c(\"aut\"), email = \"philipdurbin@gmail.com\", comment = c(ORCID = \"0000-0002-9528-9470\")), person(given = \"Sebastian\",  family = \"Karcher\", role = c(\"aut\"), email = \"karcher@u.northwestern.edu\", comment = c(ORCID = \"0000-0001-8249-7388\")), person(given = \"Jan\",  family = \"Kanis\",  role = \"ctb\"), person(given = \"Edward\",  family = \"Jee\",  role = \"ctb\"), person(given = \"Johannes\",  family = \"Gruber\", role = c(\"ctb\"), email = \"JohannesB.Gruber@gmail.com\", comment = c(ORCID = \"0000-0001-9177-1772\")), person(given = \"Martin\", family = \"Morgan\", role = \"ctb\", email = \"mtmorgan.xyz@gmail.com\", comment = c(ORCID = \"0000-0002-5874-8148\")), person(given = \"Konrad\", family = \"Oberwimmer\", role = \"ctb\", email = \"konrad.oberwimmer@gmail.com\"))",
+      "Imports": [
+        "checkmate",
+        "httr",
+        "memoise",
+        "cachem",
+        "jsonlite",
+        "readr",
+        "stats",
+        "utils",
+        "tools",
+        "xml2"
+      ],
+      "Suggests": [
+        "covr",
+        "haven",
+        "knitr",
+        "purrr",
+        "rmarkdown",
+        "testthat",
+        "devtools",
+        "tibble",
+        "yaml"
+      ],
+      "Description": "Provides access to Dataverse APIs <https://dataverse.org/> (versions 4-5), enabling data search, retrieval, and deposit. For Dataverse versions <= 3.0, use the archived 'dvn' package <https://cran.r-project.org/package=dvn>.",
+      "License": "GPL-2",
+      "URL": "https://iqss.github.io/dataverse-client-r/, https://dataverse.org/, https://github.com/iqss/dataverse-client-r",
+      "BugReports": "https://github.com/iqss/dataverse-client-r/issues",
+      "VignetteBuilder": "knitr",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "Config/testthat/edition": "3",
+      "NeedsCompilation": "no",
+      "Author": "Shiro Kuriwaki [aut, cre] (ORCID: <https://orcid.org/0000-0002-5687-2647>), Will Beasley [aut] (ORCID: <https://orcid.org/0000-0002-5613-5006>), Thomas J. Leeper [aut] (ORCID: <https://orcid.org/0000-0003-4097-6326>), Philip Durbin [aut] (ORCID: <https://orcid.org/0000-0002-9528-9470>), Sebastian Karcher [aut] (ORCID: <https://orcid.org/0000-0001-8249-7388>), Jan Kanis [ctb], Edward Jee [ctb], Johannes Gruber [ctb] (ORCID: <https://orcid.org/0000-0001-9177-1772>), Martin Morgan [ctb] (ORCID: <https://orcid.org/0000-0002-5874-8148>), Konrad Oberwimmer [ctb]",
+      "Maintainer": "Shiro Kuriwaki <shirokuriwaki@gmail.com>",
+      "Repository": "CRAN"
+    },
     "datawizard": {
       "Package": "datawizard",
-      "Version": "1.3.0",
+      "Version": "1.3.1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Easy Data Wrangling and Statistical Transformations",
@@ -2229,7 +2315,7 @@
         "R (>= 4.0)"
       ],
       "Imports": [
-        "insight (>= 1.4.2)",
+        "insight (>= 1.4.6)",
         "stats",
         "utils"
       ],
@@ -2243,6 +2329,7 @@
         "dplyr (>= 1.1)",
         "effectsize",
         "emmeans",
+        "fixest",
         "gamm4",
         "ggplot2 (>= 3.5.0)",
         "gt",
@@ -2253,6 +2340,7 @@
         "mediation",
         "modelbased",
         "nanoparquet",
+        "openssl",
         "parameters (>= 0.21.7)",
         "performance (>= 0.14.0)",
         "poorman (>= 0.2.7)",
@@ -3030,15 +3118,14 @@
       ],
       "VignetteBuilder": "knitr",
       "Config/testthat/edition": "3",
+      "Author": "Jane Doe [aut, cre]",
+      "Maintainer": "Jane Doe <jane@example.com>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "foodwebbuilder",
       "RemoteUsername": "Fellows-of-the-Fish-Food-Webs-F3W",
       "RemoteRef": "HEAD",
-      "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894",
-      "NeedsCompilation": "no",
-      "Author": "Jane Doe [aut, cre]",
-      "Maintainer": "Jane Doe <jane@example.com>"
+      "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894"
     },
     "forcats": {
       "Package": "forcats",
@@ -3166,7 +3253,7 @@
     },
     "fs": {
       "Package": "fs",
-      "Version": "2.0.1",
+      "Version": "2.1.0",
       "Source": "Repository",
       "Title": "Cross-Platform File System Operations Based on 'libuv'",
       "Authors@R": "c( person(\"Jim\", \"Hester\", role = \"aut\"), person(\"Hadley\", \"Wickham\", role = \"aut\"), person(\"Gábor\", \"Csárdi\", role = \"aut\"), person(\"Jeroen\", \"Ooms\", , \"jeroenooms@gmail.com\", role = \"cre\"), person(\"libuv project contributors\", role = \"cph\", comment = \"libuv library\"), person(\"Joyent, Inc. and other Node contributors\", role = \"cph\", comment = \"libuv library\"), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"), comment = c(ROR = \"03wc8by49\")) )",
@@ -3204,7 +3291,7 @@
       "NeedsCompilation": "yes",
       "Author": "Jim Hester [aut], Hadley Wickham [aut], Gábor Csárdi [aut], Jeroen Ooms [cre], libuv project contributors [cph] (libuv library), Joyent, Inc. and other Node contributors [cph] (libuv library), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
-      "Repository": "CRAN"
+      "Repository": "https://packagemanager.posit.co/cran/__linux__/noble/latest"
     },
     "gdtools": {
       "Package": "gdtools",
@@ -4621,7 +4708,7 @@
     },
     "insight": {
       "Package": "insight",
-      "Version": "1.4.6",
+      "Version": "1.5.1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Easy Access to Model Information for Various Model Objects",
@@ -4647,6 +4734,7 @@
         "BayesFactor",
         "bayestestR",
         "bbmle",
+        "BSDA",
         "bdsmatrix",
         "betareg",
         "biglm",
@@ -4743,6 +4831,7 @@
         "quantreg",
         "Rcpp",
         "RcppEigen",
+        "reformulas",
         "recipes",
         "rmarkdown",
         "rms",
@@ -4751,6 +4840,7 @@
         "rpart",
         "rstanarm (>= 2.21.1)",
         "rstantools (>= 2.1.0)",
+        "rstpm2",
         "rstudioapi",
         "RWiener",
         "sandwich",
@@ -4778,11 +4868,11 @@
       "VignetteBuilder": "knitr",
       "Encoding": "UTF-8",
       "Language": "en-US",
-      "RoxygenNote": "7.3.3",
       "Config/testthat/edition": "3",
       "Config/testthat/parallel": "true",
       "Config/Needs/website": "easystats/easystatstemplate",
       "Config/Needs/check": "stan-dev/cmdstanr",
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "no",
       "Author": "Daniel Lüdecke [aut, cre] (ORCID: <https://orcid.org/0000-0002-8895-3206>), Dominique Makowski [aut, ctb] (ORCID: <https://orcid.org/0000-0001-5375-9967>), Indrajeet Patil [aut, ctb] (ORCID: <https://orcid.org/0000-0003-1995-6531>), Philip Waggoner [aut, ctb] (ORCID: <https://orcid.org/0000-0002-7825-7573>), Mattan S. Ben-Shachar [aut, ctb] (ORCID: <https://orcid.org/0000-0002-4287-4801>), Brenton M. Wiernik [aut, ctb] (ORCID: <https://orcid.org/0000-0001-9560-6336>), Vincent Arel-Bundock [aut, ctb] (ORCID: <https://orcid.org/0000-0003-2042-7063>), Etienne Bacher [aut, ctb] (ORCID: <https://orcid.org/0000-0002-9271-5075>), Alex Hayes [rev] (ORCID: <https://orcid.org/0000-0002-4985-5160>), Grant McDermott [ctb] (ORCID: <https://orcid.org/0000-0001-7883-8573>), Rémi Thériault [ctb] (ORCID: <https://orcid.org/0000-0003-4315-6788>), Alex Reinhart [ctb] (ORCID: <https://orcid.org/0000-0002-6658-514X>)",
       "Repository": "CRAN"
@@ -6007,14 +6097,15 @@
     },
     "mvtnorm": {
       "Package": "mvtnorm",
-      "Version": "1.3-7",
+      "Version": "1.4-1",
       "Source": "Repository",
       "Title": "Multivariate Normal and t Distributions",
-      "Date": "2026-04-14",
+      "Date": "2026-06-06",
       "Authors@R": "c(person(\"Alan\", \"Genz\", role = \"aut\"), person(\"Frank\", \"Bretz\", role = \"aut\"), person(\"Tetsuhisa\", \"Miwa\", role = \"aut\"), person(\"Xuefei\", \"Mi\", role = \"aut\"), person(\"Friedrich\", \"Leisch\", role = \"ctb\"), person(\"Fabian\", \"Scheipl\", role = \"ctb\"), person(\"Bjoern\", \"Bornkamp\", role = \"ctb\", comment = c(ORCID = \"0000-0002-6294-8185\")), person(\"Martin\", \"Maechler\", role = \"ctb\", comment = c(ORCID = \"0000-0002-8685-9910\")), person(\"Torsten\", \"Hothorn\", role = c(\"aut\", \"cre\"), email = \"Torsten.Hothorn@R-project.org\", comment = c(ORCID = \"0000-0001-8301-0471\")))",
       "Description": "Computes multivariate normal and t probabilities, quantiles, random deviates,  and densities. Log-likelihoods for multivariate Gaussian models and Gaussian copulae  parameterised by Cholesky factors of covariance or precision matrices are implemented  for interval-censored and exact data, or a mix thereof. Score functions for these  log-likelihoods are available. A class representing multiple lower triangular matrices  and corresponding methods are part of this package.",
       "Imports": [
-        "stats"
+        "stats",
+        "utils"
       ],
       "Depends": [
         "R(>= 3.5.0)"
@@ -6025,7 +6116,7 @@
         "bibtex"
       ],
       "License": "GPL-2",
-      "URL": "http://mvtnorm.R-forge.R-project.org",
+      "URL": "https://codeberg.org/thothorn/mvtnorm",
       "NeedsCompilation": "yes",
       "Author": "Alan Genz [aut], Frank Bretz [aut], Tetsuhisa Miwa [aut], Xuefei Mi [aut], Friedrich Leisch [ctb], Fabian Scheipl [ctb], Bjoern Bornkamp [ctb] (ORCID: <https://orcid.org/0000-0002-6294-8185>), Martin Maechler [ctb] (ORCID: <https://orcid.org/0000-0002-8685-9910>), Torsten Hothorn [aut, cre] (ORCID: <https://orcid.org/0000-0001-8301-0471>)",
       "Maintainer": "Torsten Hothorn <Torsten.Hothorn@R-project.org>",
@@ -6321,7 +6412,7 @@
     },
     "performance": {
       "Package": "performance",
-      "Version": "0.16.0",
+      "Version": "0.17.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Assessment of Regression Models Performance",
@@ -6336,8 +6427,8 @@
       ],
       "Imports": [
         "bayestestR (>= 0.17.0)",
-        "insight (>= 1.4.4)",
-        "datawizard (>= 1.3.0)",
+        "insight (>= 1.5.0)",
+        "datawizard (>= 1.3.1)",
         "stats",
         "methods",
         "utils"
@@ -6423,11 +6514,11 @@
       ],
       "Encoding": "UTF-8",
       "Language": "en-US",
-      "RoxygenNote": "7.3.3",
       "Config/testthat/edition": "3",
       "Config/testthat/parallel": "true",
       "Config/Needs/website": "rstudio/bslib, r-lib/pkgdown, easystats/easystatstemplate",
       "Config/rcmdcheck/ignore-inconsequential-notes": "true",
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "no",
       "Author": "Daniel Lüdecke [aut, cre] (ORCID: <https://orcid.org/0000-0002-8895-3206>), Dominique Makowski [aut, ctb] (ORCID: <https://orcid.org/0000-0001-5375-9967>), Mattan S. Ben-Shachar [aut, ctb] (ORCID: <https://orcid.org/0000-0002-4287-4801>), Indrajeet Patil [aut, ctb] (ORCID: <https://orcid.org/0000-0003-1995-6531>), Philip Waggoner [aut, ctb] (ORCID: <https://orcid.org/0000-0002-7825-7573>), Brenton M. Wiernik [aut, ctb] (ORCID: <https://orcid.org/0000-0001-9560-6336>), Rémi Thériault [aut, ctb] (ORCID: <https://orcid.org/0000-0003-4315-6788>), Vincent Arel-Bundock [ctb] (ORCID: <https://orcid.org/0000-0003-2042-7063>), Martin Jullum [rev], gjo11 [rev], Etienne Bacher [ctb] (ORCID: <https://orcid.org/0000-0002-9271-5075>), Joseph Luchman [ctb] (ORCID: <https://orcid.org/0000-0002-8886-9717>)",
       "Repository": "CRAN"
@@ -6469,7 +6560,7 @@
     "piecewiseSEM": {
       "Package": "piecewiseSEM",
       "Version": "2.3.1",
-      "Source": "GitHub",
+      "Source": "Repository",
       "Type": "Package",
       "Title": "Piecewise Structural Equation Modeling",
       "Date": "2025-09-02",
@@ -6503,14 +6594,9 @@
         "rmarkdown"
       ],
       "VignetteBuilder": "knitr",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "piecewiseSEM",
-      "RemoteUsername": "jslefche",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "e8d7d4555d501b07e2bbbae0ec87a3616dd1287f",
       "NeedsCompilation": "no",
-      "Author": "Jon Lefcheck [aut, cre], Jarrett Byrnes [aut], James Grace [aut]"
+      "Author": "Jon Lefcheck [aut, cre], Jarrett Byrnes [aut], James Grace [aut]",
+      "Repository": "CRAN"
     },
     "pillar": {
       "Package": "pillar",
@@ -7336,7 +7422,7 @@
     },
     "rlang": {
       "Package": "rlang",
-      "Version": "1.1.7",
+      "Version": "1.2.0",
       "Source": "Repository",
       "Title": "Functions for Base Types and Core R and 'Tidyverse' Features",
       "Description": "A toolbox for working with base types, core R features like the condition system, and core 'Tidyverse' features like tidy evaluation.",
@@ -7364,7 +7450,7 @@
         "pkgload",
         "rmarkdown",
         "stats",
-        "testthat (>= 3.2.0)",
+        "testthat (>= 3.3.2)",
         "tibble",
         "usethis",
         "vctrs (>= 0.2.3)",
@@ -7383,7 +7469,7 @@
       "NeedsCompilation": "yes",
       "Author": "Lionel Henry [aut, cre], Hadley Wickham [aut], mikefc [cph] (Hash implementation based on Mike's xxhashlite), Yann Collet [cph] (Author of the embedded xxHash library), Posit, PBC [cph, fnd]",
       "Maintainer": "Lionel Henry <lionel@posit.co>",
-      "Repository": "CRAN"
+      "Repository": "https://packagemanager.posit.co/cran/latest"
     },
     "rmarkdown": {
       "Package": "rmarkdown",
@@ -7538,13 +7624,12 @@
       "RoxygenNote": "7.3.1",
       "Encoding": "UTF-8",
       "Repository": "https://ropensci.r-universe.dev",
-      "NeedsCompilation": "no",
-      "Author": "Andy South [aut, cre] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
-      "Maintainer": "Andy South <southandy@gmail.com>",
-      "RemoteType": "repository",
       "RemoteUrl": "https://github.com/ropensci/rnaturalearthhires",
       "RemoteRef": "main",
-      "RemoteSha": "e4736f636baa1c013d77d2ba028dd5bc334defee"
+      "RemoteSha": "e4736f636baa1c013d77d2ba028dd5bc334defee",
+      "NeedsCompilation": "no",
+      "Author": "Andy South [aut, cre] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
+      "Maintainer": "Andy South <southandy@gmail.com>"
     },
     "rprojroot": {
       "Package": "rprojroot",
