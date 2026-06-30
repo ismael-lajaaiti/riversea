@@ -183,5 +183,9 @@ data_targets <- list(
   tar_target(
     amobio_nodes,
     extract_nodes_amobio(amobio_paths)
+  ),
+  tar_target(
+    combined_amobio_data,
+    combine_amobio_data(amobio_metrics, amobio_nodes)
   )
 )

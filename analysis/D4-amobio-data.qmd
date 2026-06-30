@@ -3,7 +3,7 @@ title: "Overview of AMOBIO data"
 format:
   html:
     theme: cosmo
-    code-fold: true     # hidden but clickable to reveal, best of both worlds
+    code-fold: true
     toc: true
     embed-resources: true
 execute:
@@ -11,7 +11,7 @@ execute:
     warning: false
 ---
 
-Here, we investigate what is in the data of the AMOBIO project.
+Let's get an overview of the AMOBIO dataset.
 
 ## Setup
 
@@ -39,105 +39,142 @@ library(riversea)
 library(sf)
 ```
 
-## Stations mismatch
-
-We begin by loading the files containing the information.
-
-First, we have a file containing many metrics measured at many different points
-that is, at different nodes.
+We have cleaned and filtered variables of interest in a single object that
+contains our biological stations, their ID, geographical positions and the
+metrics measuring the impacts of dam and nutrients.
 
 ```{r}
-metric_file <- here("data", "amobio", "METRICS_AMOBIO.Rdata")
-base::load(metric_file)
+amobio_data <- tar_read(combined_amobio_data)
 ```
 
-Second, we have a file containing geographical information about the nodes,
-where they are and how they are connected to one another.
+## Elevation
 
-To begin with, we want to focus on the nodes corresponding to station where fish
-were sampled.
+To begin with, let's plot our points and their elevation.
 
 ```{r}
-network_file <- here("data", "amobio", "NETWORK_AMOBIO.Rdata")
-base::load(network_file)
-nodes <- network_AMOBIO_uptate |>
-  sfnetworks::activate("nodes") |>
-  as_tibble() |>
-  as_tibble()
-```
+#| fig-width: 5
+#| fig-height: 7
 
-```{r}
-nodes <- nodes |>
-  filter(IS_FISH == "FISH") |>
-  select(node_id, geometry)
-
-df_metric <- WP3_MATRIX_FULL |>
-  mutate(node_id = node_id |> as.character() |> as.integer()) |>
-  select(node_id, ID, POE_DB1_L4) |>
-  mutate(metric = POE_DB1_L4, sandre_code = ID) |>
-  select(-POE_DB1_L4) |>
-  filter_out(is.na(metric))
-
-base::load( # Load station_aspe object.
-  here("data", "amobio", "station_operation_filtered_aspe.rda")
+riversea::plot_amobio_metric(
+  amobio_data,
+  "elevation",
+  title = "Station elevations",
+  subtitle = "Of stations from AMOBIO database.",
+  legend = "Elevation [m]"
 )
-
-df_metric <- df_metric |>
-  mutate(
-    sandre_code = as.character(sandre_code)
-    |> stringr::str_pad(8, pad = "0")
-  )
-
-sandre_code_amobio <- df_metric |>
-  pull(sandre_code) |>
-  unique()
-
-station_aspe <- station_aspe |>
-  mutate(in_amobio = sandre_code %in% sandre_code_amobio)
 ```
 
-Then, we plot the stations on a map of France.
+
+## Dam impacts
+
+We can also visualise the impact of dams across our stations.
+
+The impact of dam can be quantified with the distance to the closest dam.
 
 ```{r}
-crs <- st_crs(station_aspe)
+#| fig-width: 5
+#| fig-height: 7
 
-coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf") |>
-  st_transform(crs)
+riversea::plot_amobio_metric(
+  amobio_data,
+  "poe_ddam_l2_dam",
+  title = "Distance of closest dam",
+  subtitle = "First upstream obstacle.",
+  legend = "Distance [m]",
+  f_transform = log10,
+)
+```
 
-boundaries <- st_bbox(st_as_sf(nodes))
+Or a measure of the barrier effect accounting for dam heights.
 
-ggplot() +
-  geom_sf(data = coastline) +
-  geom_sf(data = station_aspe, size = 0.8, color = "black", alpha = 0.7) +
-  geom_sf(
-    data = station_aspe |> mutate(in_amobio = if_else(in_amobio, "Yes", "No")),
-    aes(color = in_amobio),
-    size = 0.5
-  ) +
-  coord_sf(
-    xlim = boundaries[c("xmin", "xmax")],
-    ylim = boundaries[c("ymin", "ymax")]
-  ) +
-  labs(x = "Latitude", y = "Longitude", color = "In AMOBIO database?")
+```{r}
+#| fig-width: 5
+#| fig-height: 7
+
+riversea::plot_amobio_metric(
+  amobio_data,
+  "poe_bh5_l4",
+  title = "Mean height",
+  subtitle = "Of closest dams.",
+  legend = "Height [m]",
+  f_transform = log10,
+)
+```
+
+## Nutrient concentrations
+
+```{r}
+#| fig-width: 5
+#| fig-height: 7
+
+riversea::plot_amobio_metric(
+  amobio_data,
+  "pc_n_ptotal_s1_1y",
+  title = "Phosphorus concentration",
+  subtitle = "Year 2019. Total phosporus concentration averaged\nover one year.",
+  legend = "Concentration\n[microgram/L]",
+  f_transform = log10,
+  year = 2019
+)
 ```
 
 
 ```{r}
-base::load(here("data", "river", "station.rda"))
-base::load(here("data", "river", "op.rda"))
-head(op)
+#| fig-width: 5
+#| fig-height: 7
 
-op |>
-  mutate(id = station) |>
-  left_join(
-    station |> select(id, sandre_code),
-    by = join_by(id)
-  ) |>
-  filter(sandre_code %in% sandre_code_amobio)
-
-station |> filter(sandre_code %in% sandre_code_amobio)
-station |> filter_out(sandre_code %in% sandre_code_amobio)
+riversea::plot_amobio_metric(
+  amobio_data,
+  "pc_n_nh4_s1_1y",
+  title = "Ammonium concentration",
+  subtitle = "Year 2019. Ammonium concentration averaged\nover one year.",
+  legend = "Concentration\n[microgram/L]",
+  f_transform = log10,
+  year = 2019
+)
 ```
 
+```{r}
+#| fig-width: 5
+#| fig-height: 7
 
+riversea::plot_amobio_metric(
+  amobio_data,
+  "pc_n_no2_s1_1y",
+  title = "Nitrite concentration",
+  subtitle = "Year 2019. Nitrite concentration averaged\nover one year.",
+  legend = "Concentration\n[microgram/L]",
+  f_transform = log10,
+  year = 2019
+)
+```
 
+```{r}
+#| fig-width: 5
+#| fig-height: 7
+
+riversea::plot_amobio_metric(
+  amobio_data,
+  "pc_n_nkj_s1_1y",
+  title = "Kjedahl nitrogen",
+  subtitle = "Year 2019. Kjedahl nitrogen concentration averaged\nover one year.",
+  legend = "Concentration\n[microgram/L]",
+  f_transform = log10,
+  year = 2019
+)
+```
+
+```{r}
+#| fig-width: 5
+#| fig-height: 7
+
+riversea::plot_amobio_metric(
+  amobio_data,
+  "pc_n_no3_s1_1y",
+  title = "Nitrate concentration",
+  subtitle = "Year 2019. Nitrate concentration averaged\nover one year.",
+  legend = "Concentration\n[microgram/L]",
+  f_transform = log10,
+  year = 2019
+)
+```
