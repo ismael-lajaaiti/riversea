@@ -113,6 +113,11 @@ in estuaries.
 - @Attrill-2002 critiques Remane diagram and proposes and quantitive, testable
 alternative that consider salinity ranges instead of salinity.
 
+- Macado 2022: Food webs are simpler during the dry season than the rainy season
+in the estuarine and neritic zones. During the rainy season, the food web of the
+neritic is largely shaped by migratory species from the estuarine and oceanic
+areas.
+
 ### Freshwater ecosystems
 
 - The River Continuum Concept has shaped the freshwater ecology researsh by
