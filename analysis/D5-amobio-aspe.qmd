@@ -1,0 +1,175 @@
+---
+title: "Merge AMOBIO and ASPE data"
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal is to merge our two datasets. On one side, we have the AMOBIO dataset
+that contains information about the impact of dams and nutrients for the
+biological stations. On the other hand, we have the ASPE dataset that contains
+the information about the state of the fish community at the stations.
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(riversea)
+library(sf)
+riversea::nice_theme()
+```
+
+From ASPE data, we want to extract information about the food web structure, and
+the fishing operation (ID, date, sandre code). Here is the structure of the
+dataframe we get.
+
+```{r}
+web <- get(base::load(here("data", "river", "output_size2webs.rda")))
+metrics <- web$tab_local_foodwebs_summary_metrics |>
+  mutate(operation_id = as.integer(operation_id))
+
+size <- get(base::load(here("data", "river", "output_individual_fish.rda")))
+operation_sandre <- left_join(
+  size$fishing_operation |> select(operation_id, site_id, date),
+  size$station |> select(site_id, sandre_code),
+  by = join_by(site_id)
+)
+
+aspe_data <- metrics |>
+  left_join(operation_sandre, by = join_by(operation_id))
+str(aspe_data)
+```
+
+## Map trophic structure
+
+```{r}
+#| fig-width: 5
+#| fig-height: 7
+
+amobio_data <- tar_read(combined_amobio_data)
+
+data <- amobio_data |>
+  inner_join(aspe_data, by = join_by(sandre_code, date))
+
+riversea::plot_amobio_metric(
+  data,
+  "S",
+  year = 2019,
+  title = "Species richness",
+  subtitle = "Year 2019.",
+  legend = "S"
+)
+
+riversea::plot_amobio_metric(
+  data,
+  "C",
+  year = 2019,
+  title = "Connectance",
+  subtitle = "Year 2019.",
+  legend = "C"
+)
+
+riversea::plot_amobio_metric(
+  data,
+  "maxTL",
+  year = 2019,
+  title = "Max. trophic level",
+  subtitle = "Year 2019.",
+  legend = "max TL"
+)
+```
+
+## Link food web structure to environment
+
+
+```{r}
+#| fig-width: 5
+#| fig-height: 4
+
+ggplot(data, aes(x = elevation, y = S)) +
+  geom_point(alpha = 0.01) +
+  labs(
+    x = "Elevation [m]", 
+    y = "Species richness",
+    title = "Richness and elevation",
+    subtitle = "All years put together."
+  )
+
+ggplot(data, aes(x = log10(poe_ddam_l3_dam), y = S)) +
+  geom_point(alpha = 0.05) +
+  geom_smooth() +
+  labs(
+    x = "Distance to closest dam [km]", 
+    y = "Species richness",
+    title = "Dam proximity and richness",
+    subtitle = "Downstream distance. All years put together."
+  )
+
+ggplot(data, aes(x = log10(poe_ddam_l2_dam), y = S)) +
+geom_point(alpha = 0.05) +
+  geom_smooth() +
+  labs(
+    x = "Distance to closest dam [km]", 
+    y = "Species richness",
+    title = "Dam proximity and richness",
+    subtitle = "Upstream distance. All years put together."
+  )
+```
+
+## Statistical models
+
+
+```{r}
+library(INLA)
+
+data_inla <- data |>
+  st_drop_geometry() |>
+  mutate(
+    year = as.integer(lubridate::year(date)),
+    site_id = as.integer(sandre_code),
+    log_dist_dam_up_std = scale(poe_ddam_l3_dam),
+    log_dist_dam_down_std = scale(poe_ddam_l2_dam),
+    log_phosphorus_std = scale(pc_n_ptotal_s1_1y),
+    elevation_std = scale(elevation)
+  ) |>
+  select(
+    S,
+    year,
+    site_id,
+    log_dist_dam_up_std,
+    log_dist_dam_down_std,
+    log_phosphorus_std,
+    elevation_std
+  ) |>
+  tidyr::drop_na()
+
+m_S <- inla(
+   S ~ log_dist_dam_up_std + log_dist_dam_down_std + log_phosphorus_std +
+    elevation_std +
+    f(site_id, model = "iid") +
+    f(year, model = "iid"),
+  family = "nbinomial",
+  data = data_inla
+)
+
+summary(m_S)
+```
+
+
+
+

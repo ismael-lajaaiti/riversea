@@ -113,7 +113,7 @@ in estuaries.
 - @Attrill-2002 critiques Remane diagram and proposes and quantitive, testable
 alternative that consider salinity ranges instead of salinity.
 
-- Macado 2022: Food webs are simpler during the dry season than the rainy season
+- @Macedo-etal-2021 Food webs are simpler during the dry season than the rainy season
 in the estuarine and neritic zones. During the rainy season, the food web of the
 neritic is largely shaped by migratory species from the estuarine and oceanic
 areas.
@@ -255,9 +255,8 @@ regulated river:
 
 - @Mwanake-etal-2026 DOC-to-nutrient ratios in river decline worldwide
 
-- Ma 2026 (UPDATE REF WITH ZOTCITE WHEN FIXED) finds that human impacts
-destabilize riverine fish communities, but habitat complexity buffers this
-destabilizing effect.
+- @Ma-etal-2026 finds that human impact destabilize riverine fish communities,
+but habitat complexity buffers this destabilizing effect.
 
 ## Methods
 
