@@ -240,3 +240,20 @@ plot_data_on_map <- function(data) {
     ) +
     labs(x = NULL, y = NULL)
 }
+
+#' Theme for plots of the RIVERSEA project
+#'
+#' Based on hrbrthemes.
+#'
+#' @return nothing
+#' @export
+nice_theme <- function() {
+  ggplot2::theme_set(
+    hrbrthemes::theme_ipsum() +
+      ggplot2::theme(
+        plot.background = element_rect(fill = "#FAFAF8", color = NA),
+        panel.background = element_rect(fill = "#FAFAF8", color = NA),
+        legend.position = "bottom"
+      )
+  )
+}

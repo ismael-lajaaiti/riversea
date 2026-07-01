@@ -4080,7 +4080,10 @@ vertical-align: -.125em;
   <li><a href="#setup" id="toc-setup" class="nav-link active" data-scroll-target="#setup">Setup</a></li>
   <li><a href="#elevation" id="toc-elevation" class="nav-link" data-scroll-target="#elevation">Elevation</a></li>
   <li><a href="#dam-impacts" id="toc-dam-impacts" class="nav-link" data-scroll-target="#dam-impacts">Dam impacts</a></li>
-  <li><a href="#nutrient-concentrations" id="toc-nutrient-concentrations" class="nav-link" data-scroll-target="#nutrient-concentrations">Nutrient concentrations</a></li>
+  <li><a href="#nutrient-concentrations" id="toc-nutrient-concentrations" class="nav-link" data-scroll-target="#nutrient-concentrations">Nutrient concentrations</a>
+  <ul class="collapse">
+  <li><a href="#phosphorus" id="toc-phosphorus" class="nav-link" data-scroll-target="#phosphorus">Phosphorus</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -4106,7 +4109,7 @@ vertical-align: -.125em;
 </header>
 
 
-<p>Let’s get an overview of the AMOBIO dataset.</p>
+<p>Let’s get an overview of the AMOBIO dataset. We will simply plot the different variables of interest for our study on a map to visualise their spatial distribution.</p>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <div class="cell">
@@ -4119,20 +4122,12 @@ vertical-align: -.125em;
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_config_set</span>(</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">store =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;_targets&quot;</span>)</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(hrbrthemes)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>() <span class="sc">+</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;#FAFAF8&quot;</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;#FAFAF8&quot;</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(riversea)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(hrbrthemes)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(riversea)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>riversea<span class="sc">::</span><span class="fu">nice_theme</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <p>We have cleaned and filtered variables of interest in a single object that contains our biological stations, their ID, geographical positions and the metrics measuring the impacts of dam and nutrients.</p>
@@ -4165,11 +4160,12 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>This makes sense. Altitude is higher in the Jura, Massif Central, Pyrenees and Alps. It is reassuring the data cleaning steps didn’t corrupt the data. We also see that biological stations have high cover across France. That said, we will have to filter most of the stations as we will focus on the hydrographic bassin that are either connected to the Atlantic or the Manche.</p>
 </section>
 <section id="dam-impacts" class="level2">
 <h2 class="anchored" data-anchor-id="dam-impacts">Dam impacts</h2>
-<p>We can also visualise the impact of dams across our stations.</p>
-<p>The impact of dam can be quantified with the distance to the closest dam.</p>
+<p>We can also visualise the impact of dams across our stations. Dam impacts can be measured in different ways. Here, we focus on two.</p>
+<p>First, the impact of dam can be quantified with the distance to the closest dam.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4190,7 +4186,8 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
-<p>Or a measure of the barrier effect accounting for dam heights.</p>
+<p>Downstream distance to the closest dam can give a measure of a reservoir effect, where the area is converted from a lotic to a lentic environment. The food web structure can be strongly influenced by the change in the waterflow and sediment deposition. Conversely, the upstream distance can give and idea of how the site is influenced by the discharge, change of flow and temperature caused by the dam.</p>
+<p>Second, we can measure the barrier effect accounting for accumulated dam heights.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4211,9 +4208,14 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>Accumulated dam heights, or averaged, measure that isolation of the biological stations from the coast. It then can give a measure of how migration is hampered.</p>
 </section>
 <section id="nutrient-concentrations" class="level2">
 <h2 class="anchored" data-anchor-id="nutrient-concentrations">Nutrient concentrations</h2>
+<p>Next, we investigate the concentration of different nutrients, which are derivatives of nitrogen and phosphorus. These nutrients come primarily through agricultural runoff (fertilisers, livestock effluents), urban wastewater, and atmospheric deposition. High concentrations can drive eutrophication. That is, the excessive growth of algae and aquatic plants that depletes oxygen, reduces light penetration, and ultimately simplifies aquatic food webs.</p>
+<section id="phosphorus" class="level3">
+<h3 class="anchored" data-anchor-id="phosphorus">Phosphorus</h3>
+<p>Total phosphorus is the primary limiting nutrient for primary production in most freshwater systems. Even small increases in phosphorus concentration can trigger algal blooms, particularly in slow-flowing. Concentrations above 0.1 mg/L are generally considered a sign of eutrophic conditions.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4235,6 +4237,7 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>Ammonium (NH₄⁺) is a direct product of organic matter decomposition and is the dominant form of nitrogen excreted by animals. It is thus a sensitive indicator of organic pollution. High concentrations typically point to nearby wastewater discharge, livestock effluents, or decomposing algal biomass. Unlike nitrate, ammonium is directly toxic to fish at elevated concentrations (above ~1 mg/L at high pH).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4256,6 +4259,7 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>Nitrite (NO₂⁻) is an intermediate in the nitrification cycle, produced during the bacterial oxidation of ammonium to nitrate. It is typically present at low concentrations in well-oxygenated systems, but accumulates when nitrification is incomplete. It is often due to low dissolved oxygen, high organic load, or inhibitory conditions for nitrifying bacteria. Nitrite is acutely toxic to fish even at very low concentrations (above ~0.1 mg/L).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4277,6 +4281,7 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>Kjeldahl nitrogen (NKJ) is an aggregate measure of organic nitrogen and ammonium, named after the digestion method used to quantify it. It captures the total “reduced” nitrogen pool — both the dissolved organic forms (amino acids, urea) and ammonium — making it a broader indicator of organic enrichment than ammonium alone. High Kjeldahl nitrogen values are characteristic of systems receiving untreated or partially treated wastewater, agricultural drainage, or significant inputs of decomposing organic matter.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4298,6 +4303,7 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
+<p>Nitrate (NO₃⁻) is the most oxidised and stable form of dissolved inorganic nitrogen, and typically the dominant nitrogen species in well-oxygenated rivers. It is the end product of nitrification and enters freshwater systems predominantly through agricultural runoff from nitrogen-fertilised soils — making it one of the most widespread indicators of diffuse agricultural pollution. Unlike ammonium and nitrite, nitrate is relatively non-toxic to most aquatic fauna at environmentally relevant concentrations, but its role as a primary nutrient driving eutrophication downstream makes it a critical variable for understanding the land-sea nutrient continuum.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4321,6 +4327,7 @@ vertical-align: -.125em;
 </div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

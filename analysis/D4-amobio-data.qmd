@@ -12,6 +12,8 @@ execute:
 ---
 
 Let's get an overview of the AMOBIO dataset.
+We will simply plot the different variables of interest for our study on a map
+to visualise their spatial distribution.
 
 ## Setup
 
@@ -23,20 +25,12 @@ library(here)
 tar_config_set(
   store = here::here("_targets")
 )
-
 library(ggplot2)
 library(hrbrthemes)
-theme_set(
-  theme_ipsum() +
-    theme(
-      plot.background = element_rect(fill = "#FAFAF8", color = NA),
-      panel.background = element_rect(fill = "#FAFAF8", color = NA),
-      legend.position = "bottom"
-    )
-)
 library(dplyr)
 library(riversea)
 library(sf)
+riversea::nice_theme()
 ```
 
 We have cleaned and filtered variables of interest in a single object that
@@ -64,12 +58,18 @@ riversea::plot_amobio_metric(
 )
 ```
 
+This makes sense. Altitude is higher in the Jura, Massif Central, Pyrenees and
+Alps. It is reassuring the data cleaning steps didn't corrupt the data. We also
+see that biological stations have high cover across France. That said, we will
+have to filter most of the stations as we will focus on the hydrographic bassin
+that are either connected to the Atlantic or the Manche.
 
 ## Dam impacts
 
 We can also visualise the impact of dams across our stations.
+Dam impacts can be measured in different ways. Here, we focus on two.
 
-The impact of dam can be quantified with the distance to the closest dam.
+First, the impact of dam can be quantified with the distance to the closest dam.
 
 ```{r}
 #| fig-width: 5
@@ -85,7 +85,15 @@ riversea::plot_amobio_metric(
 )
 ```
 
-Or a measure of the barrier effect accounting for dam heights.
+Downstream distance to the closest dam can give a measure of a reservoir effect,
+where the area is converted from a lotic to a lentic environment. The food web
+structure can be strongly influenced by the change in the waterflow and sediment
+deposition. Conversely, the upstream distance can give and idea of how the site
+is influenced by the discharge, change of flow and temperature caused by the
+dam.
+
+Second, we can measure the barrier effect accounting for accumulated dam
+heights.
 
 ```{r}
 #| fig-width: 5
@@ -101,7 +109,25 @@ riversea::plot_amobio_metric(
 )
 ```
 
+Accumulated dam heights, or averaged, measure that isolation of the biological
+stations from the coast. It then can give a measure of how migration is
+hampered.
+
 ## Nutrient concentrations
+
+Next, we investigate the concentration of different nutrients, which are
+derivatives of nitrogen and phosphorus. These nutrients come primarily through
+agricultural runoff (fertilisers, livestock effluents), urban wastewater, and
+atmospheric deposition. High concentrations can drive eutrophication. That is,
+the excessive growth of algae and aquatic plants that depletes oxygen, reduces
+light penetration, and ultimately simplifies aquatic food webs.
+
+### Phosphorus
+
+Total phosphorus is the primary limiting nutrient for primary production in most
+freshwater systems. Even small increases in phosphorus concentration can trigger
+algal blooms, particularly in slow-flowing. Concentrations above 0.1 mg/L are
+generally considered a sign of eutrophic conditions.
 
 ```{r}
 #| fig-width: 5
@@ -118,6 +144,12 @@ riversea::plot_amobio_metric(
 )
 ```
 
+Ammonium (NH₄⁺) is a direct product of organic matter decomposition and is the
+dominant form of nitrogen excreted by animals. It is thus a sensitive indicator
+of organic pollution. High concentrations typically point to nearby wastewater
+discharge, livestock effluents, or decomposing algal biomass. Unlike nitrate,
+ammonium is directly toxic to fish at elevated concentrations (above ~1 mg/L at
+high pH).
 
 ```{r}
 #| fig-width: 5
@@ -134,6 +166,13 @@ riversea::plot_amobio_metric(
 )
 ```
 
+Nitrite (NO₂⁻) is an intermediate in the nitrification cycle, produced during
+the bacterial oxidation of ammonium to nitrate. It is typically present at low
+concentrations in well-oxygenated systems, but accumulates when nitrification
+is incomplete. It is often due to low dissolved oxygen, high organic load, or
+inhibitory conditions for nitrifying bacteria. Nitrite is acutely toxic to fish
+even at very low concentrations (above ~0.1 mg/L).
+
 ```{r}
 #| fig-width: 5
 #| fig-height: 7
@@ -148,6 +187,14 @@ riversea::plot_amobio_metric(
   year = 2019
 )
 ```
+
+Kjeldahl nitrogen (NKJ) is an aggregate measure of organic nitrogen and
+ammonium, named after the digestion method used to quantify it. It captures the
+total "reduced" nitrogen pool — both the dissolved organic forms (amino acids,
+urea) and ammonium — making it a broader indicator of organic enrichment than
+ammonium alone. High Kjeldahl nitrogen values are characteristic of systems
+receiving untreated or partially treated wastewater, agricultural drainage, or
+significant inputs of decomposing organic matter.
 
 ```{r}
 #| fig-width: 5
@@ -164,6 +211,16 @@ riversea::plot_amobio_metric(
 )
 ```
 
+Nitrate (NO₃⁻) is the most oxidised and stable form of dissolved inorganic
+nitrogen, and typically the dominant nitrogen species in well-oxygenated rivers.
+It is the end product of nitrification and enters freshwater systems
+predominantly through agricultural runoff from nitrogen-fertilised soils —
+making it one of the most widespread indicators of diffuse agricultural
+pollution. Unlike ammonium and nitrite, nitrate is relatively non-toxic to most
+aquatic fauna at environmentally relevant concentrations, but its role as a
+primary nutrient driving eutrophication downstream makes it a critical variable
+for understanding the land-sea nutrient continuum.
+
 ```{r}
 #| fig-width: 5
 #| fig-height: 7
@@ -178,3 +235,5 @@ riversea::plot_amobio_metric(
   year = 2019
 )
 ```
+
+

@@ -10,7 +10,8 @@ plot_amobio_metric(
   title = NULL,
   subtitle = NULL,
   legend = NULL,
-  log_transform = FALSE
+  f_transform = function(x) x,
+  year = NA
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ plot_amobio_metric(
 \item{subtitle}{string giving the subtitle of the plot}
 
 \item{legend}{string giving the legend (color caption) of the plot}
+
+\item{year}{string to select point of a given year}
 
 \item{log_transform}{whether or not to log transform the metric}
 }
