@@ -16,6 +16,17 @@ that contains information about the impact of dams and nutrients for the
 biological stations. On the other hand, we have the ASPE dataset that contains
 the information about the state of the fish community at the stations.
 
+## Todo
+
+
+- [x] Check join between AMOBIO and ASPE data
+- [ ] Make a table of the number of points (once merged), and NAs per
+environmental variables
+- [ ] Check colinarity between variables
+- [ ] Check for extreme values in environmental variables (in particular,
+nutrients)
+- [ ] Compute the distance to river mouth
+
 ## Setup
 
 ```{r}
@@ -52,6 +63,7 @@ operation_sandre <- left_join(
 
 aspe_data <- metrics |>
   left_join(operation_sandre, by = join_by(operation_id))
+
 str(aspe_data)
 ```
 
@@ -104,7 +116,7 @@ riversea::plot_amobio_metric(
 ggplot(data, aes(x = elevation, y = S)) +
   geom_point(alpha = 0.01) +
   labs(
-    x = "Elevation [m]", 
+    x = "Elevation [m]",
     y = "Species richness",
     title = "Richness and elevation",
     subtitle = "All years put together."
@@ -114,17 +126,17 @@ ggplot(data, aes(x = log10(poe_ddam_l3_dam), y = S)) +
   geom_point(alpha = 0.05) +
   geom_smooth() +
   labs(
-    x = "Distance to closest dam [km]", 
+    x = "Distance to closest dam [km]",
     y = "Species richness",
     title = "Dam proximity and richness",
     subtitle = "Downstream distance. All years put together."
   )
 
 ggplot(data, aes(x = log10(poe_ddam_l2_dam), y = S)) +
-geom_point(alpha = 0.05) +
+  geom_point(alpha = 0.05) +
   geom_smooth() +
   labs(
-    x = "Distance to closest dam [km]", 
+    x = "Distance to closest dam [km]",
     y = "Species richness",
     title = "Dam proximity and richness",
     subtitle = "Upstream distance. All years put together."
@@ -160,11 +172,11 @@ data_inla <- data |>
     barrier_down_std,
     log_phosphorus_std,
     elevation_std
-  ) 
+  )
 
 
 m_S <- inla(
-   S ~ log_dist_dam_up_std + log_dist_dam_down_std +
+  S ~ log_dist_dam_up_std + log_dist_dam_down_std +
     barrier_up_std + barrier_down_std +
     log_phosphorus_std +
     elevation_std +

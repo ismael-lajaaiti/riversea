@@ -56,6 +56,31 @@ extract_nodes_amobio <- function(paths) {
     dplyr::rename(dplyr::any_of(rename_amobio()))
 }
 
+#' Deduplicate AMOBIO metrics on (sandre_code, date).
+#'
+#' Some nodes have several candidate physicochemical stations
+#' (`METADATA_PC_CdStation`) for the same date, which is dropped upstream.
+#' This leaves rows that share `(sandre_code, date)` but disagree on the
+#' `pc_n_*` nutrient columns, so those are averaged across candidates while
+#' every other column (identical across candidates) is kept as is.
+#'
+#' @param metrics tibble
+#'
+#' @return tibble with one row per (sandre_code, date)
+dedup_amobio_metrics <- function(metrics) {
+  pc_cols <- names(metrics) |> stringr::str_subset("^pc_n_")
+  other_cols <- setdiff(names(metrics), c(pc_cols, "sandre_code", "date"))
+
+  metrics |>
+    dplyr::summarise(dplyr::across(
+      dplyr::all_of(pc_cols),
+        \(x) if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+      ),
+      dplyr::across(dplyr::all_of(other_cols), dplyr::first),
+      .by = c(sandre_code, date)
+    )
+}
+
 #' Combine the AMOBIO tibble in a single one.
 #'
 #' @param metrics tibble
@@ -64,7 +89,7 @@ extract_nodes_amobio <- function(paths) {
 #' @return sf object CRS Lambert-93
 #' @export
 combine_amobio_data <- function(metrics, nodes) {
-  left_join(nodes, metrics, by = join_by(node_id)) |>
+  inner_join(nodes, metrics, by = join_by(node_id)) |>
     sf::st_as_sf()
 }
 
