@@ -20,6 +20,7 @@ the information about the state of the fish community at the stations.
 
 
 - [x] Check join between AMOBIO and ASPE data
+- [x] Select variable of interest
 - [ ] Make a table of the number of points (once merged), and NAs per
 environmental variables
 - [ ] Check colinarity between variables
@@ -122,7 +123,7 @@ ggplot(data, aes(x = elevation, y = S)) +
     subtitle = "All years put together."
   )
 
-ggplot(data, aes(x = log10(poe_ddam_l3_dam), y = S)) +
+ggplot(data, aes(x = log10(dam_distance_downstream), y = S)) +
   geom_point(alpha = 0.05) +
   geom_smooth() +
   labs(
@@ -132,7 +133,7 @@ ggplot(data, aes(x = log10(poe_ddam_l3_dam), y = S)) +
     subtitle = "Downstream distance. All years put together."
   )
 
-ggplot(data, aes(x = log10(poe_ddam_l2_dam), y = S)) +
+ggplot(data, aes(x = log10(dam_distance_upstream), y = S)) +
   geom_point(alpha = 0.05) +
   geom_smooth() +
   labs(
@@ -151,15 +152,15 @@ library(INLA)
 
 data_inla <- data |>
   st_drop_geometry() |>
-  filter_out(poe_ddam_l2_dam == 0) |>
+  filter_out(dam_distance_downstream == 0) |>
   mutate(
     year = as.integer(lubridate::year(date)),
     site_id = as.integer(sandre_code),
-    log_dist_dam_up_std = scale(log10(poe_ddam_l3_dam)),
-    log_dist_dam_down_std = scale(log10(poe_ddam_l2_dam)),
-    barrier_up_std = scale(poe_bh5_l6),
-    barrier_down_std = scale(poe_bh5_l5),
-    log_phosphorus_std = scale(log10(pc_n_ptotal_s1_1y)),
+    log_dist_dam_up_std = scale(log10(dam_distance_upstream)),
+    log_dist_dam_down_std = scale(log10(dam_distance_downstream)),
+    barrier_up_std = scale(barrier_upstream),
+    barrier_down_std = scale(barrier_downstream),
+    log_phosphorus_std = scale(log10(total_phosphorus)),
     elevation_std = scale(elevation)
   ) |>
   select(

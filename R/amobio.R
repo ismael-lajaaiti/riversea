@@ -25,18 +25,18 @@ download_amobio_data <- function(dir, verbose = FALSE) {
   paths
 }
 
-extract_metrics_amobio <- function(paths) {
+extract_metrics_amobio <- function(paths, average_time) {
   metric_file <- paths[grepl("METRICS_AMOBIO.Rdata", paths)]
-  df_metric <- get(load(metric_file))
-  df_metric |>
-    dplyr::select(
-      -matches(
-        "B_FISH_|B_DIA_|B_INV_|NC_|H_|HM_|T_|P_|IS_|COMPARTMENT|META"
-      ),
-      -matches("^PC_(?!N_)", perl = TRUE)
-    ) |>
+  df_metric <- get(base::load(metric_file))
+  pc_x_cols <- names(df_metric) |> stringr::str_subset("^PC_X")
+  df_metric <- df_metric |>
+    dplyr::select(-dplyr::any_of(pc_x_cols)) |>
     dplyr::rename_with(tolower) |>
-    dplyr::rename(dplyr::any_of(rename_amobio())) |>
+    dplyr::select(
+      node_id, id, date_operation,
+      dplyr::any_of(amobio_selected_vars(average_time))
+    ) |>
+    dplyr::rename(dplyr::any_of(rename_amobio(average_time))) |>
     dplyr::mutate(
       node_id = as.integer(as.character(node_id)),
       sandre_code = stringr::str_pad(as.character(sandre_code), 8, pad = "0")
@@ -72,8 +72,9 @@ dedup_amobio_metrics <- function(metrics) {
   other_cols <- setdiff(names(metrics), c(pc_cols, "sandre_code", "date"))
 
   metrics |>
-    dplyr::summarise(dplyr::across(
-      dplyr::all_of(pc_cols),
+    dplyr::summarise(
+      dplyr::across(
+        dplyr::all_of(pc_cols),
         \(x) if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
       ),
       dplyr::across(dplyr::all_of(other_cols), dplyr::first),
@@ -82,6 +83,8 @@ dedup_amobio_metrics <- function(metrics) {
 }
 
 #' Combine the AMOBIO tibble in a single one.
+#'
+#' Also select variables of interest.
 #'
 #' @param metrics tibble
 #' @param nodes tibble
@@ -114,7 +117,6 @@ plot_amobio_metric <- function(
   f_transform = \(x) x,
   year = NA
 ) {
-
   data <- amobio_data |>
     select(all_of(metric), date) |>
     filter(!is.na(.data[[metric]])) |>
@@ -151,16 +153,48 @@ plot_amobio_metric <- function(
     )
 }
 
-#' Dictionnary of renamed columns in the AMOBIO database.
+#' Environmental variables from the AMOBIO databsed selected for the analysis
 #'
-#' To keep track of the renaming and ensure consistency.
+#' @param average_time string indicating the duration of the average for
+#' chemical variabels. Possible values are "1y" (one year), "3m" (three months),
+#' "5y" (five years) and "all" (all available points).
 #'
-#' @return named vector
+#' @return vector of string
 #' @export
-rename_amobio <- function() {
+amobio_selected_vars <- function(average_time) {
+  c(
+    "elevation",
+    "poe_ddam_l3_dam",
+    "poe_ddam_l2_dam",
+    "poe_bh5_l6",
+    "poe_bh5_l5",
+    paste("pc_n_ptotal_s1", average_time, sep = "_"),
+    paste("pc_n_orthophosp_s1", average_time, sep = "_"),
+    paste("pc_n_no3_s1", average_time, sep = "_"),
+    paste("pc_n_no2_s1", average_time, sep = "_"),
+    paste("pc_n_nh4_s1", average_time, sep = "_"),
+    paste("pc_n_nkj_s1", average_time, sep = "_")
+  )
+}
+
+#' Rename selected environmental variables of the AMOBIO database.
+#'
+#' @return vector of strings.
+#' @export
+rename_amobio <- function(average_time = "1y") {
   c(
     "date" = "date_operation",
     "sandre_code" = "id",
-    "elevation" = "elevation_ign25m"
+    "elevation" = "elevation_ign25m",
+    "dam_distance_upstream" = "poe_ddam_l3_dam",
+    "dam_distance_downstream" = "poe_ddam_l2_dam",
+    "barrier_downstream" = "poe_bh5_l5",
+    "barrier_upstream" = "poe_bh5_l6",
+    "total_phosphorus" = paste("pc_n_ptotal_s1", average_time, sep = "_"),
+    "phosphate" = paste("pc_n_orthophosp_s1", average_time, sep = "_"),
+    "ammonium" = paste("pc_n_nh4_s1", average_time, sep = "_"),
+    "nitrite" = paste("pc_n_no2_s1", average_time, sep = "_"),
+    "nitrate" = paste("pc_n_no3_s1", average_time, sep = "_"),
+    "kjeldahl_nitrogen" = paste("pc_n_nkj_s1", average_time, sep = "_")
   )
 }

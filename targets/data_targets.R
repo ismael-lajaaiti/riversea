@@ -176,9 +176,10 @@ data_targets <- list(
     download_amobio_data(here("data", "amobio"), verbose = TRUE),
     format = "file"
   ),
+  tar_target(average_time, "1y"),
   tar_target(
     amobio_metrics,
-    extract_metrics_amobio(amobio_paths)
+    extract_metrics_amobio(amobio_paths, average_time)
   ),
   tar_target(
     amobio_metrics_dedup,

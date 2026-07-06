@@ -2,13 +2,13 @@
 % Please edit documentation in R/amobio.R
 \name{rename_amobio}
 \alias{rename_amobio}
-\title{Dictionnary of renamed columns in the AMOBIO database.}
+\title{Rename selected environmental variables of the AMOBIO database.}
 \usage{
-rename_amobio()
+rename_amobio(average_time = "1y")
 }
 \value{
-named vector
+vector of strings.
 }
 \description{
-To keep track of the renaming and ensure consistency.
+Rename selected environmental variables of the AMOBIO database.
 }

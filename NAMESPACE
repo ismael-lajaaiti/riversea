@@ -2,6 +2,7 @@
 
 export(add_larvae)
 export(add_observation_number)
+export(amobio_selected_vars)
 export(build_sem)
 export(clean_name)
 export(clean_sea_data)

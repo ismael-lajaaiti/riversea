@@ -15,5 +15,5 @@ combine_amobio_data(metrics, nodes)
 sf object CRS Lambert-93
 }
 \description{
-Combine the AMOBIO tibble in a single one.
+Also select variables of interest.
 }
