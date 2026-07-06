@@ -254,12 +254,24 @@ regulated river:
   1) a longer, thermal gradient of around 100 km;
   2) a shorter resource subsidy gradient of around 1-4 km.
 
+- @Zhu-etal-2026b shows that dam areas show lowest richness and highest
+connectance, while areas with dam removed show highest richness but lowest
+connectance.
+
 ### Nutrients
 
 - @Mwanake-etal-2026 DOC-to-nutrient ratios in river decline worldwide
 
 - @Ma-etal-2026 finds that human impact destabilize riverine fish communities,
 but habitat complexity buffers this destabilizing effect.
+
+### Meta-ecosystems
+
+- @Loreau-Mouquet-Holt-2003a fundational paper that defines the concept of
+meta-ecosystem.
+
+- @Polis-Anderson-Holt-1997 founding synthesis of how spatial subsidy, flux of
+consumer and resources reorganise food webs.
 
 ## Methods
 
