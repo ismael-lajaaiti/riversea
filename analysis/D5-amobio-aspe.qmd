@@ -139,12 +139,15 @@ library(INLA)
 
 data_inla <- data |>
   st_drop_geometry() |>
+  filter_out(poe_ddam_l2_dam == 0) |>
   mutate(
     year = as.integer(lubridate::year(date)),
     site_id = as.integer(sandre_code),
-    log_dist_dam_up_std = scale(poe_ddam_l3_dam),
-    log_dist_dam_down_std = scale(poe_ddam_l2_dam),
-    log_phosphorus_std = scale(pc_n_ptotal_s1_1y),
+    log_dist_dam_up_std = scale(log10(poe_ddam_l3_dam)),
+    log_dist_dam_down_std = scale(log10(poe_ddam_l2_dam)),
+    barrier_up_std = scale(poe_bh5_l6),
+    barrier_down_std = scale(poe_bh5_l5),
+    log_phosphorus_std = scale(log10(pc_n_ptotal_s1_1y)),
     elevation_std = scale(elevation)
   ) |>
   select(
@@ -153,13 +156,17 @@ data_inla <- data |>
     site_id,
     log_dist_dam_up_std,
     log_dist_dam_down_std,
+    barrier_up_std,
+    barrier_down_std,
     log_phosphorus_std,
     elevation_std
-  ) |>
-  tidyr::drop_na()
+  ) 
+
 
 m_S <- inla(
-   S ~ log_dist_dam_up_std + log_dist_dam_down_std + log_phosphorus_std +
+   S ~ log_dist_dam_up_std + log_dist_dam_down_std +
+    barrier_up_std + barrier_down_std +
+    log_phosphorus_std +
     elevation_std +
     f(site_id, model = "iid") +
     f(year, model = "iid"),
@@ -167,9 +174,26 @@ m_S <- inla(
   data = data_inla
 )
 
-summary(m_S)
+extract_fixed <- function(model, model_name) {
+  model$summary.fixed |>
+    tibble::rownames_to_column("term") |>
+    filter(term != "(Intercept)") |>
+    mutate(model = model_name)
+}
+
+fixed <- extract_fixed(m_S, "Richness")
+
+ggplot(fixed, aes(x = mean, y = term)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_linerange(aes(xmin = `0.025quant`, xmax = `0.975quant`),
+    position = position_dodge(width = 0.5)
+  ) +
+  geom_point(aes(x = `0.5quant`),
+    size = 3,
+    position = position_dodge(width = 0.5)
+  ) +
+  labs(x = "Effect size", y = NULL, color = NULL) +
+  theme(legend.position = "bottom")
 ```
-
-
 
 
