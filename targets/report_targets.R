@@ -58,6 +58,11 @@ report_targets <- list(
     "analysis/D4-amobio-data.qmd",
     quarto_args = c("--embed-resources")
   ),
+  tar_quarto(
+    report_D5,
+    "analysis/D5-amobio-aspe.qmd",
+    quarto_args = c("--embed-resources")
+  ),
   # Manuscript.
   tar_quarto(
     manuscript,

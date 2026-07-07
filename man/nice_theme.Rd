@@ -4,11 +4,16 @@
 \alias{nice_theme}
 \title{Theme for plots of the RIVERSEA project}
 \usage{
-nice_theme()
+nice_theme(base_size = 11)
+}
+\arguments{
+\item{base_size}{base font size, in points.}
 }
 \value{
-nothing
+nothing, sets the theme globally via \code{\link[ggplot2:get_theme]{ggplot2::theme_set()}}.
 }
 \description{
-Based on hrbrthemes.
+A clean, minimalist theme suitable for scientific publication: sober
+typography, thin axis lines instead of a panel border, faint horizontal
+gridlines only, and unobtrusive facet strips and legends.
 }

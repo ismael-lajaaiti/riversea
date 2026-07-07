@@ -192,5 +192,20 @@ data_targets <- list(
   tar_target(
     combined_amobio_data,
     combine_amobio_data(amobio_metrics_dedup, amobio_nodes)
+  ),
+  tar_target(
+    aspe_file_foodweb,
+    here::here("data", "river", "output_size2webs.rda"),
+    format = "file"
+  ),
+  tar_target(
+    aspe_file_code,
+    here::here("data", "river", "output_individual_fish.rda"),
+    format = "file"
+  ),
+  tar_target(aspe_data, get_aspe_data(aspe_file_foodweb, aspe_file_code)),
+  tar_target(
+    amobio_aspe_data,
+    join_amobio_aspe(combined_amobio_data, aspe_data)
   )
 )

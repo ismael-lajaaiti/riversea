@@ -6,6 +6,10 @@ This page lists all the analyses of the RIVERSEA project.
 
 # Reports
 
+## Todo
+
+- [ ] Compute the distance to river mouth
+
 ## A. Method and model selection
 
 1. [Model eel abundance using INLA](analysis/A1-model-eel-abundance.qmd)

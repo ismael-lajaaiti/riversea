@@ -1,0 +1,7 @@
+variable,seq_eau_parameter,unit,tres_bon_max,bon_max,moyen_max,mediocre_max,mauvais_min
+total_phosphorus,Phosphore total (P),mg/L P,0.05,0.2,0.5,1,1
+phosphate,Orthophosphates (PO4 3-),mg/L PO4,0.1,0.5,1,2,2
+ammonium,Ammonium (NH4+),mg/L NH4,0.1,0.5,2,5,5
+nitrite,Nitrites (NO2-),mg/L NO2,0.03,0.3,0.5,1,1
+nitrate,Nitrates (NO3-),mg/L NO3,2,10,25,50,50
+kjeldahl_nitrogen,Azote Kjeldahl (NKJ),mg/L N,1,2,4,10,10

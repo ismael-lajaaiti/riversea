@@ -243,17 +243,54 @@ plot_data_on_map <- function(data) {
 
 #' Theme for plots of the RIVERSEA project
 #'
-#' Based on hrbrthemes.
+#' A clean, minimalist theme suitable for scientific publication: sober
+#' typography, thin axis lines instead of a panel border, faint horizontal
+#' gridlines only, and unobtrusive facet strips and legends.
 #'
-#' @return nothing
+#' @param base_size base font size, in points.
+#'
+#' @return nothing, sets the theme globally via [ggplot2::theme_set()].
 #' @export
-nice_theme <- function() {
+nice_theme <- function(base_size = 11) {
+  ink <- "grey20"
+  muted <- "grey45"
+  faint <- "grey85"
   ggplot2::theme_set(
-    hrbrthemes::theme_ipsum() +
+    ggplot2::theme_minimal(base_size = base_size) +
       ggplot2::theme(
-        plot.background = element_rect(fill = "#FAFAF8", color = NA),
-        panel.background = element_rect(fill = "#FAFAF8", color = NA),
-        legend.position = "bottom"
+        # Text
+        plot.title = ggplot2::element_text(
+          face = "bold", size = ggplot2::rel(1.15), color = ink,
+          margin = ggplot2::margin(b = 4)
+        ),
+        plot.subtitle = ggplot2::element_text(
+          color = muted, size = ggplot2::rel(0.95),
+          margin = ggplot2::margin(b = 10)
+        ),
+        plot.caption = ggplot2::element_text(
+          color = muted, size = ggplot2::rel(0.75), hjust = 0
+        ),
+        axis.title = ggplot2::element_text(color = ink, size = ggplot2::rel(0.95)),
+        axis.text = ggplot2::element_text(color = muted, size = ggplot2::rel(0.85)),
+        # Axes and grid: thin axis lines instead of a panel border, only
+        # faint horizontal gridlines to guide the eye across the plot.
+        axis.line = ggplot2::element_line(color = ink, linewidth = 0.3),
+        axis.ticks = ggplot2::element_line(color = ink, linewidth = 0.3),
+        panel.grid.minor = ggplot2::element_blank(),
+        panel.grid.major.x = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = faint, linewidth = 0.3),
+        # Facets
+        strip.text = ggplot2::element_text(
+          face = "bold", color = ink, size = ggplot2::rel(0.9)
+        ),
+        strip.background = ggplot2::element_blank(),
+        # Legend
+        legend.position = "bottom",
+        legend.title = ggplot2::element_text(color = ink, size = ggplot2::rel(0.9)),
+        legend.text = ggplot2::element_text(color = muted, size = ggplot2::rel(0.85)),
+        legend.key = ggplot2::element_blank(),
+        # Backgrounds and margins
+        plot.margin = ggplot2::margin(t = 10, r = 15, b = 10, l = 15)
       )
   )
 }

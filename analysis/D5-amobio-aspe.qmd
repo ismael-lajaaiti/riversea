@@ -11,22 +11,27 @@ execute:
     warning: false
 ---
 
-The goal is to merge our two datasets. On one side, we have the AMOBIO dataset
-that contains information about the impact of dams and nutrients for the
-biological stations. On the other hand, we have the ASPE dataset that contains
-the information about the state of the fish community at the stations.
+We merge the AMOBIO and ASPE datasets. AMOBIO contains information about
+environmental stressors, and in particular, nutrients and dam impacts. ASPE
+contains information about local food web structure. By merging these two
+datasets we can relate food web structure to environmental stressors.
 
 ## Todo
 
-
 - [x] Check join between AMOBIO and ASPE data
 - [x] Select variable of interest
-- [ ] Make a table of the number of points (once merged), and NAs per
+- [x] Function to join AMOBIO and ASPE data from files
+- [x] Improve figure theme
+- [x] Make a table of the number of points (once merged), and NAs per
 environmental variables
-- [ ] Check colinarity between variables
-- [ ] Check for extreme values in environmental variables (in particular,
+- [x] Check colinarity between variables
+- [x] Check for extreme values in environmental variables (in particular,
 nutrients)
-- [ ] Compute the distance to river mouth
+- [x] Add regulatory nutrient thresholds
+- [ ] Make an synthetic variabel for chemical compounds (if relevant) that would
+be a proxy of eutrophication
+- [ ] Update and improve spatial visualisation of structure metrics
+- [ ] Update and improve statistical model
 
 ## Setup
 
@@ -41,32 +46,98 @@ tar_config_set(
 library(ggplot2)
 library(hrbrthemes)
 library(dplyr)
-library(riversea)
 library(sf)
+devtools::load_all()
 riversea::nice_theme()
 ```
 
-From ASPE data, we want to extract information about the food web structure, and
-the fishing operation (ID, date, sandre code). Here is the structure of the
-dataframe we get.
+Here is the merged dataframe, which contains information food web structure and
+environmental stressors.
 
 ```{r}
-web <- get(base::load(here("data", "river", "output_size2webs.rda")))
-metrics <- web$tab_local_foodwebs_summary_metrics |>
-  mutate(operation_id = as.integer(operation_id))
-
-size <- get(base::load(here("data", "river", "output_individual_fish.rda")))
-operation_sandre <- left_join(
-  size$fishing_operation |> select(operation_id, site_id, date),
-  size$station |> select(site_id, sandre_code),
-  by = join_by(site_id)
-)
-
-aspe_data <- metrics |>
-  left_join(operation_sandre, by = join_by(operation_id))
-
-str(aspe_data)
+data <- tar_read(amobio_aspe_data)
+str(data)
 ```
+
+## Data completeness
+
+### Missing values
+
+The merged dataset has `r nrow(data)` points. Here is the number and share of
+missing values for each environmental variable, along with the range of
+observed values.
+
+```{r}
+riversea::summarise_env_na(data) |>
+  knitr::kable(digits = 2)
+```
+
+### Temporal coverage
+
+Here is the the number of observation (removing NAs) per variable, by year.
+
+```{r}
+#| fig-width: 7
+#| fig-height: 4
+
+riversea::plot_env_temporal_coverage(data)
+```
+
+We see that we have good temporal coverage, in particular since 2005. We can
+also note that we have a lower coverage in 2018.
+
+## Collinearity between environmental variables
+
+Before fitting statistical models, we check whether environmental variables
+are correlated with each other, which would make it hard to separate their
+individual effects. We subsample points to keep the pair plot readable and
+fast to render.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 10
+
+env_vars <- setdiff(names(riversea::rename_amobio()), c("date", "sandre_code"))
+
+data |>
+  st_drop_geometry() |>
+  select(all_of(env_vars)) |>
+  slice_sample(n = 5000) |>
+  GGally::ggpairs(columns = env_vars)
+```
+
+## Extreme values
+
+We check for extreme values in the nutrient variables (phosphorus and nitrogen
+derivatives). Values are flagged as extreme using Tukey's fences (below `Q1 -
+1.5 * IQR` or above `Q3 + 1.5 * IQR`), computed on the log10 scale.
+
+```{r}
+riversea::summarise_env_outliers(data) |>
+  knitr::kable(digits = 3)
+```
+
+We have also extracted threshold data to have an idea when the nutrient
+concentration is harmful for living organisms. The data is taken from
+[here](https://rhin-meuse.eaufrance.fr/IMG/pdf/grilles-seq-eau-v2.pdf).
+
+```{r}
+seq_eau_file <- here("data", "river", "seq_eau_nutrient_thresholds.csv")
+data_seq_eau <- readr::read_csv(seq_eau_file)
+data_seq_eau |>
+  knitr::kable(digits = 3)
+```
+
+Next, we plot the distribution of the nutrient concentrations and overlay the
+threshold values corresponding to a "mauvais" water health state.
+
+```{r}
+#| fig-width: 7
+#| fig-height: 5
+
+riversea::plot_env_boxplot(data, thresholds = data_seq_eau)
+```
+
 
 ## Map trophic structure
 
@@ -74,17 +145,12 @@ str(aspe_data)
 #| fig-width: 5
 #| fig-height: 7
 
-amobio_data <- tar_read(combined_amobio_data)
-
-data <- amobio_data |>
-  inner_join(aspe_data, by = join_by(sandre_code, date))
-
 riversea::plot_amobio_metric(
   data,
   "S",
   year = 2019,
   title = "Species richness",
-  subtitle = "Year 2019.",
+  subtitle = "Year 2019",
   legend = "S"
 )
 

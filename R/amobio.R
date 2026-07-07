@@ -153,6 +153,38 @@ plot_amobio_metric <- function(
     )
 }
 
+get_aspe_data <- function(aspe_file_foodweb, aspe_file_code) {
+
+  aspe_file_foodweb <- here("data", "river", "output_size2webs.rda")
+  aspe_file_code <- here("data", "river", "output_individual_fish.rda")
+
+  foodweb <-
+    get(base::load(aspe_file_foodweb))$tab_local_foodwebs_summary_metrics |>
+    mutate(operation_id = as.integer(operation_id))
+
+  code <- get(base::load(aspe_file_code))
+  clean_code <- code$fishing_operation |>
+    select(operation_id, site_id, date) |>
+      left_join(
+        code$station |> select(site_id, sandre_code),
+        by = join_by(site_id)
+      )
+
+  foodweb |>
+    left_join(clean_code, by = join_by(operation_id))
+}
+
+#' Join AMOBIO and ASPE datasets
+#'
+#' @param amobio dataframe
+#' @param aspe dataframe
+#'
+#' @return dataframe
+#' @export
+join_amobio_aspe <- function(amobio, aspe) {
+  inner_join(amobio, aspe, by = join_by(sandre_code, date))
+}
+
 #' Environmental variables from the AMOBIO databsed selected for the analysis
 #'
 #' @param average_time string indicating the duration of the average for
@@ -197,4 +229,233 @@ rename_amobio <- function(average_time = "1y") {
     "nitrate" = paste("pc_n_no3_s1", average_time, sep = "_"),
     "kjeldahl_nitrogen" = paste("pc_n_nkj_s1", average_time, sep = "_")
   )
+}
+
+#' Summarise completeness of environmental variables
+#'
+#' For each environmental variable, report the number of observations, the
+#' number and share of missing values, and the range of observed (non-NA)
+#' values. Useful to spot variables with poor coverage before modelling.
+#'
+#' @param data tibble containing the environmental variables as columns.
+#' @param vars character vector of variable names to summarise. Defaults to
+#' the AMOBIO environmental variables (see [rename_amobio()]).
+#'
+#' @return tibble with one row per variable.
+#' @export
+summarise_env_na <- function(
+  data,
+  vars = setdiff(names(rename_amobio()), c("date", "sandre_code"))
+) {
+  n_total <- nrow(data)
+  purrr::map(vars, \(v) {
+    x <- data[[v]]
+    n_na <- sum(is.na(x))
+    tibble::tibble(
+      variable = v,
+      n = n_total,
+      n_na = n_na,
+      pct_na = round(100 * n_na / n_total, 1),
+      min = suppressWarnings(min(x, na.rm = TRUE)),
+      median = suppressWarnings(stats::median(x, na.rm = TRUE)),
+      max = suppressWarnings(max(x, na.rm = TRUE))
+    )
+  }) |>
+    purrr::list_rbind()
+}
+
+#' Summarise temporal coverage of environmental variables
+#'
+#' For each year and environmental variable, count the number of
+#' non-missing observations, out of the number of points sampled that year.
+#' Useful to spot years or variables with poor sampling coverage.
+#'
+#' @param data tibble containing a `date` column and the environmental
+#' variables as columns.
+#' @param vars character vector of variable names to summarise. Defaults to
+#' the AMOBIO environmental variables (see [rename_amobio()]).
+#'
+#' @return tibble with one row per (year, variable).
+#' @export
+summarise_env_temporal_coverage <- function(
+  data,
+  vars = setdiff(names(rename_amobio()), c("date", "sandre_code"))
+) {
+  data |>
+    sf::st_drop_geometry() |>
+    dplyr::mutate(year = lubridate::year(date)) |>
+    dplyr::reframe(
+      dplyr::across(dplyr::all_of(vars), \(x) sum(!is.na(x))),
+      n = dplyr::n(),
+      .by = year
+    ) |>
+    tidyr::pivot_longer(
+      dplyr::all_of(vars),
+      names_to = "variable",
+      values_to = "n_obs"
+    ) |>
+    dplyr::mutate(
+      pct_obs = 100 * n_obs / n,
+      variable = factor(variable, levels = rev(vars))
+    ) |>
+    dplyr::arrange(year, variable)
+}
+
+#' Plot temporal coverage of environmental variables
+#'
+#' Heatmap of the share of non-missing observations for each environmental
+#' variable, across years.
+#'
+#' @param data tibble containing a `date` column and the environmental
+#' variables as columns.
+#' @param vars character vector of variable names to summarise. Defaults to
+#' the AMOBIO environmental variables (see [rename_amobio()]).
+#'
+#' @return ggplot
+#' @export
+plot_env_temporal_coverage <- function(
+  data,
+  vars = setdiff(names(rename_amobio()), c("date", "sandre_code"))
+) {
+  coverage <- summarise_env_temporal_coverage(data, vars)
+
+  ggplot2::ggplot(
+    coverage,
+    ggplot2::aes(x = year, y = variable, fill = n_obs)
+  ) +
+    ggplot2::geom_tile(color = "#FAFAF8", linewidth = 0.6) +
+    ggplot2::scale_x_continuous(breaks = scales::breaks_pretty()) +
+    ggplot2::scale_fill_viridis_c() +
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_blank(),
+      panel.grid.major.y = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank()
+    )
+}
+
+#' Summarise extreme values in environmental variables
+#'
+#' Flags extreme values using Tukey's fences (values below
+#' `Q1 - 1.5 * IQR` or above `Q3 + 1.5 * IQR` are flagged), computed on the
+#' log10 scale by default since nutrient concentrations are typically
+#' right-skewed. Non-positive values are excluded from the log-scale fences
+#' (reported separately) since they cannot be log-transformed.
+#'
+#' @param data tibble containing the environmental variables as columns.
+#' @param vars character vector of variable names to check. Defaults to the
+#' nutrient variables (phosphorus and nitrogen derivatives).
+#' @param log_transform whether to compute the fences on the log10 scale.
+#'
+#' @return tibble with one row per variable.
+#' @export
+summarise_env_outliers <- function(
+  data,
+  vars = c(
+    "total_phosphorus", "phosphate", "ammonium",
+    "nitrite", "nitrate", "kjeldahl_nitrogen"
+  ),
+  log_transform = TRUE
+) {
+  purrr::map(vars, \(v) {
+    x <- data[[v]]
+    x <- x[!is.na(x)]
+    x_pos <- if (log_transform) x[x > 0] else x
+    x_t <- if (log_transform) log10(x_pos) else x_pos
+
+    q <- stats::quantile(x_t, c(0.25, 0.75))
+    iqr <- q[[2]] - q[[1]]
+    lower <- q[[1]] - 1.5 * iqr
+    upper <- q[[2]] + 1.5 * iqr
+    is_outlier <- x_t < lower | x_t > upper
+
+    tibble::tibble(
+      variable = v,
+      n = length(x),
+      n_outlier = sum(is_outlier),
+      pct_outlier = round(100 * sum(is_outlier) / length(x_t), 2),
+      fence_low = if (log_transform) 10^lower else lower,
+      fence_high = if (log_transform) 10^upper else upper,
+      min = min(x),
+      max = max(x)
+    )
+  }) |>
+    purrr::list_rbind()
+}
+
+#' Boxplot of environmental variable distributions
+#'
+#' Boxplots on a log10 scale to visually spot extreme values: points beyond
+#' the whiskers are flagged as outliers using Tukey's fences (1.5 * IQR),
+#' the same convention as [summarise_env_outliers()] and
+#' [ggplot2::geom_boxplot()]. Non-positive values are dropped since they
+#' cannot be shown on a log scale. Optionally overlays a per-variable
+#' reference threshold, e.g. a regulatory quality-class boundary.
+#'
+#' @param data tibble containing the environmental variables as columns.
+#' @param vars character vector of variable names to plot. Defaults to the
+#' nutrient variables (phosphorus and nitrogen derivatives).
+#' @param thresholds optional tibble with a `variable` column (matching
+#' `vars`) and a `threshold_col` column giving the reference value to
+#' overlay for each variable, e.g. the SEQ-Eau grid (see
+#' `data/river/seq_eau_nutrient_thresholds.csv`).
+#' @param threshold_col name of the column in `thresholds` holding the
+#' reference value.
+#' @param threshold_label legend label for the threshold reference line.
+#'
+#' @return ggplot
+#' @export
+plot_env_boxplot <- function(
+  data,
+  vars = c(
+    "total_phosphorus", "phosphate", "ammonium",
+    "nitrite", "nitrate", "kjeldahl_nitrogen"
+  ),
+  thresholds = NULL,
+  threshold_col = "mauvais_min",
+  threshold_label = "SEQ-Eau \"mauvais\" threshold"
+) {
+  p <- data |>
+    sf::st_drop_geometry() |>
+    dplyr::select(dplyr::all_of(vars)) |>
+    tidyr::pivot_longer(
+      dplyr::everything(),
+      names_to = "variable", values_to = "value"
+    ) |>
+    dplyr::filter(!is.na(value), value > 0) |>
+    ggplot2::ggplot(ggplot2::aes(x = variable, y = value)) +
+    ggplot2::geom_boxplot(
+      fill = "#cde2fb", color = "#104281",
+      outlier.color = "#db8474", outlier.alpha = 0.5
+    )
+
+  if (!is.null(thresholds)) {
+    thresholds_plot <- thresholds |>
+      dplyr::filter(variable %in% vars) |>
+      dplyr::rename(
+        threshold = dplyr::all_of(threshold_col)
+      )
+
+    p <- p +
+      ggplot2::geom_errorbar(
+        data = thresholds_plot,
+        ggplot2::aes(
+          x = variable, ymin = threshold, ymax = threshold,
+          color = threshold_label
+        ),
+        inherit.aes = FALSE,
+        linewidth = 0.8, width = 0.7
+      ) +
+      ggplot2::scale_color_manual(
+        name = NULL,
+        values = stats::setNames("#9f66b3", threshold_label)
+      )
+  }
+
+  p +
+    ggplot2::scale_y_log10() +
+    ggplot2::labs(x = NULL, y = "Concentration [log10 scale]") +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+    )
 }
