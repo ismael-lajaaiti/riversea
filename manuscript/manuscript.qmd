@@ -272,6 +272,9 @@ meta-ecosystem.
 - @Polis-Anderson-Holt-1997 founding synthesis of how spatial subsidy, flux of
 consumer and resources reorganise food webs.
 
+- @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
+Jacobian. Discuss when two ecosystems can be separated or not.
+
 ## Methods
 
 ### Food web inference
