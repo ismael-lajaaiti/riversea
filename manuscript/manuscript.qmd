@@ -257,6 +257,10 @@ regulated river:
 connectance, while areas with dam removed show highest richness but lowest
 connectance.
 
+- @Dolan-etal-2026 Meta-analysis shows that native and non-native species
+increased after barrier removal, but the positive effect was strongest for
+native species
+
 ### Nutrients
 
 - @Mwanake-etal-2026 DOC-to-nutrient ratios in river decline worldwide
@@ -273,7 +277,7 @@ meta-ecosystem.
 consumer and resources reorganise food webs.
 
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
-Jacobian. Discuss when two ecosystems can be separated or not.
+Jacobian.
 
 ## Methods
 
