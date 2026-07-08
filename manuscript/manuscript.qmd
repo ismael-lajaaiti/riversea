@@ -279,6 +279,11 @@ consumer and resources reorganise food webs.
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
 Jacobian.
 
+### Traits
+
+- @Brosse-etal-2021 FISHMORPH database which contains 10 morphological traits
+for around 50% of freshwater fish species worldwide.
+
 ## Methods
 
 ### Food web inference

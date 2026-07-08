@@ -1,0 +1,192 @@
+---
+title: "Overview of REPHY data"
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+We investigate the [REPHY database](https://www.seanoe.org/data/00361/47248/).
+See [user manual](https://archimer.ifremer.fr/doc/00409/52017/52675.pdf).
+
+## Todo
+
+- [x] Download REPHY data
+- [x] Read REPHY data
+- [x] Clean and extract nutrients
+- [x] Get an overview of the data - spatial and temporal coverage
+- [x] Fix figure size
+- [x] Fix NA coverage (either go wide, either remove na cols)
+- [x] Plot time series of nutrient grouped by areas/regions
+- [ ] Convert units so they are consistent between REPHY and AMOBIO
+- [ ] Compute NO3+NO2 in AMOBIO
+- [ ] Check for consistency between datasets in nutrient and oxygen value
+- [ ] Also extract O2 in AMOBIO
+- [ ] Interpolate + yearly average at fishing sites
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(sf)
+devtools::load_all()
+riversea::nice_theme()
+```
+
+We begin by reading the `.csv` file, which is not an easy step because of the
+formatting issue. One it's done we can have a look at the data structure.
+
+```{r}
+raw_data <- tar_read(rephy_raw_data)
+str(raw_data)
+```
+
+In particular, we can look at the what parameters are recorded.
+
+```{r}
+raw_data |>
+  select("Résultat : Code paramètre", "Résultat : Libellé paramètre") |>
+  distinct() |>
+  print(n = 40)
+```
+
+Here are the parameters that are relevant for our study.
+
+```{r}
+raw_data |>
+  select("Résultat : Code paramètre", "Résultat : Libellé paramètre") |>
+  distinct() |>
+  filter(`Résultat : Code paramètre` %in% rephy_nutrient_codes())
+```
+
+Next, we clean the table. Rename and select the relevant columns. Filter for the
+parameters above.
+
+```{r}
+data <- tar_read(rephy_data)
+str(data)
+```
+
+## Data completeness
+
+For each nutrient parameter, here is the number of observations,
+the number of distinct sampling sites, and the covered date range.
+
+```{r}
+riversea::summarise_rephy_coverage(data) |>
+  knitr::kable(digits = 1)
+```
+
+We notice that we have more than twice as many points for the oxygen than for
+the nutrients. The number of points for the other nutrients are closed to one
+another, suggesting that when one nutrient is measured the others are too.
+
+## Spatial coverage
+
+We map the distinct sampling sites to get a sense of the spatial resolution
+of the REPHY network.
+
+```{r}
+#| fig-width: 6
+#| fig-height: 9.15
+
+riversea::plot_rephy_map(data, facet = FALSE)
+```
+
+Grouping by parameter shows that spatial coverage is fairly consistent
+across the four nutrients: sites are not more likely to be missing one
+nutrient than another.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 13
+
+riversea::plot_rephy_map(data, facet = TRUE)
+```
+
+Interstingly we see that concentration of nitrogen derivatives, ammonium and
+nitrite + nitrate, are higher on Britany coast. This could be expected because
+of agricultural nutrient runoff.
+
+## Temporal coverage
+
+Here is the number of observations per parameter, by year.
+
+```{r}
+#| fig-width: 7
+#| fig-height: 3
+
+riversea::plot_rephy_temporal_coverage(data)
+```
+
+Nitrate + nitrite (`NO3+NO2`) is only reported from 1998 onwards, and
+sampling effort increases markedly from 2009 for all parameters. We should
+keep this in mind when comparing periods.
+
+## Temporal trends by district
+
+To plot a yearly time series per nutrient we need a geographic grouping.
+We reuse the DCE hydrographic districts already used for the river food web
+(`hydrographic_area`, built from the SANDRE coastal/transitional water body
+shapefiles), so that river and coastal analyses stay on the same spatial
+units. Each site is joined to the district it falls in, dropping the few
+sites too far from any polygon to be matched reliably.
+
+```{r}
+district_data <- tar_read(rephy_district_data)
+
+sites <- data |>
+  distinct(site_id, longitude, latitude) |>
+  mutate(matched = site_id %in% district_data$site_id)
+
+hydro_area <- tar_read(hydrographic_area) |>
+  filter(district %in% unique(district_data$district))
+```
+
+```{r}
+#| fig-width: 6
+#| fig-height: 9
+
+ggplot() +
+  geom_sf(data = hydro_area, aes(fill = district),  alpha = 0.5) +
+  geom_point(data = sites, aes(x = longitude, y = latitude, color = matched)) +
+  coord_sf(xlim = range(sites$longitude), ylim = range(sites$latitude)) +
+  scale_color_manual(values = c(`TRUE` = "grey20", `FALSE` = "red")) +
+  labs(fill = "District", color = "Matched", x = "Longitude", y = "Latitude") +
+  theme(legend.box = "vertical")
+```
+
+`{r} nrow(data) - nrow(district_data)` points out of `{r} nrow(data)` could not
+be matched to a district and were dropped. We then average nutrient
+concentrations by year and district.
+
+```{r}
+yearly <- tar_read(rephy_yearly)
+str(yearly)
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6
+
+riversea::plot_rephy_temporal_trend(yearly |> filter(year >= 2000))
+```
+
+The Loire district stands out with clearly higher nitrate + nitrite and
+phosphate concentrations, consistent with agricultural nutrient runoff from
+the Loire basin. We filter early years because we have very few observations.
+

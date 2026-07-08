@@ -207,5 +207,31 @@ data_targets <- list(
   tar_target(
     amobio_aspe_data,
     join_amobio_aspe(combined_amobio_data, aspe_data)
+  ),
+  tar_target(rephy_dir, download_rephy(), format = "file"),
+  tar_target(
+    rephy_files,
+    list.files(rephy_dir, pattern = "^REPHY.*\\.csv$", full.names = TRUE),
+    format = "file"
+  ),
+  tar_target(
+    rephy_file_atlantic,
+    stringr::str_subset(rephy_files, "Atlantique")
+  ),
+  tar_target(
+    rephy_raw_data,
+    purrr::map_dfr(rephy_file_atlantic, read_rephy)
+  ),
+  tar_target(
+    rephy_data,
+    extract_nutrients_rephy(rephy_raw_data)
+  ),
+  tar_target(
+    rephy_district_data,
+    match_rephy_district(rephy_data, hydrographic_area)
+  ),
+  tar_target(
+    rephy_yearly,
+    summarise_rephy_yearly(rephy_district_data)
   )
 )

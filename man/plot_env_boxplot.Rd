@@ -7,7 +7,10 @@
 plot_env_boxplot(
   data,
   vars = c("total_phosphorus", "phosphate", "ammonium", "nitrite", "nitrate",
-    "kjeldahl_nitrogen")
+    "kjeldahl_nitrogen"),
+  thresholds = NULL,
+  threshold_col = "mauvais_min",
+  threshold_label = "SEQ-Eau \\"mauvais\\" threshold"
 )
 }
 \arguments{
@@ -15,6 +18,16 @@ plot_env_boxplot(
 
 \item{vars}{character vector of variable names to plot. Defaults to the
 nutrient variables (phosphorus and nitrogen derivatives).}
+
+\item{thresholds}{optional tibble with a \code{variable} column (matching
+\code{vars}) and a \code{threshold_col} column giving the reference value to
+overlay for each variable, e.g. the SEQ-Eau grid (see
+\code{data/river/seq_eau_nutrient_thresholds.csv}).}
+
+\item{threshold_col}{name of the column in \code{thresholds} holding the
+reference value.}
+
+\item{threshold_label}{legend label for the threshold reference line.}
 }
 \value{
 ggplot
@@ -24,5 +37,6 @@ Boxplots on a log10 scale to visually spot extreme values: points beyond
 the whiskers are flagged as outliers using Tukey's fences (1.5 * IQR),
 the same convention as \code{\link[=summarise_env_outliers]{summarise_env_outliers()}} and
 \code{\link[ggplot2:geom_boxplot]{ggplot2::geom_boxplot()}}. Non-positive values are dropped since they
-cannot be shown on a log scale.
+cannot be shown on a log scale. Optionally overlays a per-variable
+reference threshold, e.g. a regulatory quality-class boundary.
 }
