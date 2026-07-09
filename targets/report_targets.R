@@ -9,10 +9,10 @@ report_targets <- list(
     "presentations/index.qmd",
     quarto_args = c("--embed-resources")
   ),
-  tar_quarto(report_A1,
-    "analysis/A1-model-eel-abundance.qmd",
-    quarto_args = c("--embed-resources")
-  ),
+  # tar_quarto(report_A1,
+  #   "analysis/A1-model-eel-abundance.qmd",
+  #   quarto_args = c("--embed-resources")
+  # ),
   tar_quarto(
     report_A2,
     "analysis/A2-define-model.qmd",

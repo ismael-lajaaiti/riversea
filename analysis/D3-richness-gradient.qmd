@@ -13,10 +13,13 @@ To do so, we will quantify how the species richness changes along the salinity
 gradient.
 
 ```{r}
-#| echo: false
-
+#| eval: false
 library(renv)
 renv::load()
+```
+
+```{r}
+#| echo: false
 library(targets)
 library(here)
 tar_config_set(
@@ -27,9 +30,11 @@ library(ggplot2)
 library(hrbrthemes)
 theme_set(theme_ipsum())
 library(dplyr)
-library(riversea)
+devtools::load_all()
 library(sf)
 ```
+
+
 
 ## Preparing the data
 

@@ -13,8 +13,12 @@ execute:
 
 ```{r}
 #| output: false
+#| eval: false
 library(renv)
 renv::load()
+```
+```{r}
+#| output: false
 library(targets)
 library(here)
 tar_config_set(
@@ -24,9 +28,11 @@ tar_config_set(
 library(ggplot2)
 set_theme(theme_minimal())
 library(dplyr)
-library(riversea)
+devtools::load_all()
 library(sf)
 ```
+
+
 
 ## Estuary classification
 

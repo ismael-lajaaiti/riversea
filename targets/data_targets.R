@@ -7,21 +7,21 @@ data_targets <- list(
     )
   ),
   # Workshop river data.
-  tar_target(
-    workshop_zip,
-    download_workshop_data(workshop_dir),
-    format = "file"
-  ),
+  # tar_target(
+  #   workshop_zip,
+  #   download_workshop_data(workshop_dir),
+  #   format = "file"
+  # ),
   tar_target(
     solper_reftax,
     here(sea_data_raw, "Reftax_SIH.txt"),
     format = "file"
   ),
-  tar_target(
-    workshop_unzipped,
-    unzip_workshop(workshop_zip, workshop_dir),
-    format = "file"
-  ),
+  # tar_target(
+  #   workshop_unzipped,
+  #   unzip_workshop(workshop_zip, workshop_dir),
+  #   format = "file"
+  # ),
   # Sea survey data.
   tar_target(
     sea_data_tidy,
