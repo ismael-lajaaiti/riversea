@@ -18,6 +18,7 @@ In this notebook, we
 
 ```{r}
 #| output: false
+#| eval: false
 library(renv)
 renv::load()
 renv::restore() # Install missing librairies.

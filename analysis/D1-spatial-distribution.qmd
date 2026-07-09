@@ -12,21 +12,25 @@ execute:
 
 ```{r}
 #| output: false
+#| eval: false
 library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
-
+```
+```{r}
+#| output: false
 library(targets)
 library(here)
 tar_config_set(
   store = here::here("_targets")
 )
-
 library(ggplot2)
 set_theme(theme_minimal())
 library(dplyr)
 ```
+
+
 
 ## Sea survey data
 

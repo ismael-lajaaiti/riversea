@@ -36,8 +36,13 @@ be a proxy of eutrophication
 ## Setup
 
 ```{r}
+#| output: false
+#| eval: false
 library(renv)
 renv::load()
+```
+
+```{r}
 library(targets)
 library(here)
 tar_config_set(
@@ -50,6 +55,8 @@ library(sf)
 devtools::load_all()
 riversea::nice_theme()
 ```
+
+
 
 Here is the merged dataframe, which contains information food web structure and
 environmental stressors.

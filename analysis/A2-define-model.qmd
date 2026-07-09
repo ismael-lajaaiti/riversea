@@ -29,11 +29,14 @@ Directed Acyclic Graph are a common and graphical way to write the causal relati
 
 ```{r}
 #| output: false
+#| eval: false
 library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
+```
 
+```{r}
 library(targets)
 library(here)
 tar_config_set(
@@ -44,6 +47,8 @@ library(dplyr)
 library(ggplot2)
 theme_set(theme_minimal())
 ```
+
+
 
 To begin with, we consider the following general relationships, where environmental variables are aggregated within a single node ("Env."), these includes: water temperature, nutrient concentrations, salinity, etc.
 

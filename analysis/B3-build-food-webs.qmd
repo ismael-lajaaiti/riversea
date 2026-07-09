@@ -10,10 +10,14 @@ execute:
 
 ```{r}
 #| output: false
+#| eval: false
 library(renv)
 renv::load()
 renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
+```
+```{r}
+#| output: false
 library(targets)
 library(here)
 tar_config_set(
@@ -22,11 +26,13 @@ tar_config_set(
 library(foodwebbuilder)
 library(dplyr)
 library(tibble)
-library(riversea)
+devtools::load_all()
 library(ggplot2)
 set_theme(theme_minimal())
 library(INLA)
 ```
+
+
 
 ## Build the metaweb
 
@@ -35,7 +41,7 @@ To build the metaweb, we need the following.
 The diet table for fish species considered.
 
 ```{r}
-diet_fish <- tar_read(diet_size)
+diet_fish <- tar_read(diet_and_length)
 head(diet_fish)
 ```
 

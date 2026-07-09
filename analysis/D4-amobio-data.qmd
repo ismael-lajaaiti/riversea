@@ -18,8 +18,13 @@ to visualise their spatial distribution.
 ## Setup
 
 ```{r}
+#| output: false
+#| eval: false
 library(renv)
 renv::load()
+```
+
+```{r}
 library(targets)
 library(here)
 tar_config_set(
@@ -28,10 +33,12 @@ tar_config_set(
 library(ggplot2)
 library(hrbrthemes)
 library(dplyr)
-library(riversea)
+devtools::load_all()
 library(sf)
 riversea::nice_theme()
 ```
+
+
 
 We have cleaned and filtered variables of interest in a single object that
 contains our biological stations, their ID, geographical positions and the
@@ -48,7 +55,6 @@ To begin with, let's plot our points and their elevation.
 ```{r}
 #| fig-width: 5
 #| fig-height: 7
-
 riversea::plot_amobio_metric(
   amobio_data,
   "elevation",

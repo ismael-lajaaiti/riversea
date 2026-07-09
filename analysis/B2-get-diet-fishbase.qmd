@@ -18,6 +18,7 @@ In this notebook we
 
 ```{r}
 #| output: false
+#| eval: false
 library(renv)
 renv::load()
 renv::restore()
@@ -31,7 +32,7 @@ library(DiagrammeR)
 library(targets)
 library(dplyr)
 library(rfishbase)
-library(riversea)
+devtools::load_all()
 ```
 
 # 1. Extract the diet table
@@ -234,7 +235,7 @@ sizes |> filter(maturity_length > length_max | maturity_length < length_min)
 Maybe only juveniles are captured?
 
 ```{r}
-diet_full <- tar_read(diet_size)
+diet_full <- tar_read(diet_and_length)
 head(diet_full)
 ```
 

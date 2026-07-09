@@ -24,19 +24,24 @@ crossref:
 
 ```{r}
 #| output: false
-#| echo: false
+#| eval: false
 library(renv)
 renv::load()
 renv::restore()
 renv::status()
-
+```
+```{r}
+#| output: false
 library(here)
 library(DiagrammeR)
 library(targets)
 tar_config_set(
   store = here::here("_targets")
 )
+devtools::load_all()
 ```
+
+
 
 ## Abstract
 
