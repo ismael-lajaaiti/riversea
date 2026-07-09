@@ -71,6 +71,10 @@ While patterns in community change within river network have been well studied,
 these studies have mostly focus on specise richness [@Bonnaffé-etal-2024b], or
 roughly defined functional composition [@Vannote-etal-1980].
 
+- @Barnes-etal-2026 food web complexity mediates diversity-functioning
+relationship. Interesting metric of trophic complementarity, could be used for
+our study if we can formulate clear hypothesis of stressors on that metric.
+
 ### River-estuary-sea continuum
 
 - @Xenopoulos-etal-2017 highlights the importance of accounting for the full
@@ -369,6 +373,14 @@ will eat the very same things.
 #### Subsampling the metaweb to get local food webs
 
 ## Results
+
+![](../assets/fig1-dag-hypothesis.png)
+
+
+![](../assets/fig2-maps.png)
+
+
+![](../assets/fig3-results.png)
 
 ## Discussion
 
