@@ -22,4 +22,7 @@ not be matched within \code{dist_max} are dropped.
 Joins each site to the coastal/transitional water body it falls within
 (see \code{\link[=format_hydrographic_area]{format_hydrographic_area()}}); sites falling outside every polygon
 are matched to the nearest district, provided it is within \code{dist_max} km.
+A given \code{site_id} sometimes carries slightly different coordinates across
+visits (rounding differences); only the first coordinate pair is used so
+each site is matched exactly once.
 }

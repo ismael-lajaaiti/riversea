@@ -23,8 +23,18 @@ See [user manual](https://archimer.ifremer.fr/doc/00409/52017/52675.pdf).
 - [x] Fix figure size
 - [x] Fix NA coverage (either go wide, either remove na cols)
 - [x] Plot time series of nutrient grouped by areas/regions
+- [x] Plot seasonality of different nutrient variables
+- [x] Check sampling methods
+- [x] Plot raw time series of different nutrients
+- [x] Check "niveau de qualité"
+- [x] Remove "douteux" samples
+- [x] Check levels in the water column
+- [ ] Filter only surface depth sampling
 - [ ] Convert units so they are consistent between REPHY and AMOBIO
 - [ ] Compute NO3+NO2 in AMOBIO
+- [ ] Correct nitrogen by salinity
+
+  ## Todo but not here
 - [ ] Check for consistency between datasets in nutrient and oxygen value
 - [ ] Also extract O2 in AMOBIO
 - [ ] Interpolate + yearly average at fishing sites
@@ -137,7 +147,9 @@ Nitrate + nitrite (`NO3+NO2`) is only reported from 1998 onwards, and
 sampling effort increases markedly from 2009 for all parameters. We should
 keep this in mind when comparing periods.
 
-## Temporal trends by district
+
+
+## Yearly trends by district
 
 To plot a yearly time series per nutrient we need a geographic grouping.
 We reuse the DCE hydrographic districts already used for the river food web
@@ -162,7 +174,7 @@ hydro_area <- tar_read(hydrographic_area) |>
 #| fig-height: 9
 
 ggplot() +
-  geom_sf(data = hydro_area, aes(fill = district),  alpha = 0.5) +
+  geom_sf(data = hydro_area, aes(fill = district), alpha = 0.5) +
   geom_point(data = sites, aes(x = longitude, y = latitude, color = matched)) +
   coord_sf(xlim = range(sites$longitude), ylim = range(sites$latitude)) +
   scale_color_manual(values = c(`TRUE` = "grey20", `FALSE` = "red")) +
@@ -189,4 +201,226 @@ riversea::plot_rephy_temporal_trend(yearly |> filter(year >= 2000))
 The Loire district stands out with clearly higher nitrate + nitrite and
 phosphate concentrations, consistent with agricultural nutrient runoff from
 the Loire basin. We filter early years because we have very few observations.
+
+## Seasonal trends
+
+### Distribution of overall sampling effort
+
+```{r}
+site_sampling_effort <- data |>
+  group_by(site_id) |>
+  summarise(sampling_effort = n()) |>
+  arrange(desc(sampling_effort))
+
+ggplot(site_sampling_effort, aes(x = sampling_effort)) +
+  geom_histogram()
+```
+
+### Station most sampled
+
+We see clear seasonal pattern with a clear peak of nitrites and nitrates after
+summer that decreases in autumn. We also notice that ammonium seems to peak just
+before, or long after nitrites and nitrates. This could be explained by the
+lifecycle of nitrogen compounds (check references).
+
+```{r}
+site_most_point <- site_sampling_effort |>
+  slice(1) |>
+  pull(site_id) |>
+  first()
+
+data_most_point <- data |>
+  filter(site_id == site_most_point) |>
+  filter(lubridate::year(date) > 2015)
+
+ggplot(data_most_point, aes(x = date, y = value, color = parameter_code)) +
+  geom_point() +
+  geom_line()
+```
+
+### Station sampled randomly
+
+We sample random stations and plot their 2020 seasonal trend,
+to get an idea of the sampling effort during the year, per variable.
+
+```{r}
+data_2020 <- data |>
+  filter(lubridate::year(date) == 2020)
+
+selected_sites <- data_2020 |>
+  pull(site_id) |>
+  unique() |>
+  sample(9)
+
+selected_data <- data_2020 |>
+  filter(site_id %in% selected_sites)
+
+ggplot(selected_data, aes(x = date, y = value, color = parameter_code)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~site_id, scales = "free")
+
+ggplot(
+  selected_data |> filter(parameter_code %in% c("NH4", "PO4")),
+  aes(x = date, y = value, color = parameter_code)
+) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~site_id, scales = "free")
+```
+
+We can also have an idea of the average sampling effort per month per variable,
+to assess whether some nutrients are sampled during specific period each year,
+or not.
+
+```{r}
+sampling_per_month <- data |>
+  mutate(month = as.factor(lubridate::month(date, label = TRUE))) |>
+  left_join(
+    data |>
+      group_by(parameter_code) |>
+      summarise(n_tot = n(), .groups = "drop"),
+    by = join_by(parameter_code)
+  ) |>
+  group_by(parameter_code, month, n_tot) |>
+  summarise(sampling_effort = n(), .groups = "drop") |>
+  mutate(
+    rel_sampling_effort = sampling_effort / n_tot
+  )
+
+ggplot(
+  sampling_per_month,
+  aes(x = month, y = rel_sampling_effort, color = parameter_code, group = parameter_code)
+) +
+  geom_point() +
+  geom_line() +
+  labs(color = "Parameter", x = "Month", y = "Average sampling effort")
+```
+
+The average sampling effort appears to be relatively even for nutrients.
+
+## Sampling methods
+
+### Overview over all stations
+
+Raw yearly counts per method are dominated by the sampling effort trend
+above, which makes method changes hard to spot. We instead look at the
+share of observations per method each year, for each parameter.
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6
+
+method_share <- riversea::summarise_rephy_method_share(raw_data) |>
+  mutate(method = stringr::str_replace(
+    method,
+    "Spectrophotométrie",
+    "Sp."
+  )) |>
+  filter(year >= 2000)
+
+riversea::plot_rephy_method_share(
+  method_share |>
+    filter(parameter_code == "NH4")
+)
+
+riversea::plot_rephy_method_share(
+  method_share |>
+    filter(parameter_code == "NO3+NO2")
+)
+
+riversea::plot_rephy_method_share(
+  method_share |>
+    filter(parameter_code == "OXYGENE")
+)
+
+riversea::plot_rephy_method_share(
+  method_share |>
+    filter(parameter_code == "PO4")
+)
+```
+
+We notice a change in measurement methods for all parameters around 2006.
+
+### Focus on one station
+
+We can try to see if this change of method is reflected in nutrient
+concentration by looking at a station where the change occurred.
+
+```{r}
+site <- site_most_point
+
+data_site <- raw_data |>
+  filter(`Lieu de surveillance : Identifiant` == site)
+
+method_share_site <- riversea::summarise_rephy_method_share(data_site) |>
+  mutate(method = stringr::str_replace(
+    method,
+    "Spectrophotométrie",
+    "Sp."
+  )) |>
+  filter(year >= 2000)
+
+riversea::plot_rephy_method_share(method_share_site)
+```
+
+So for this station there is a clear change in sampling method. Let's see if it
+is reflected in nutrient values.
+
+```{r}
+data_most_point <- data |>
+  filter(site_id == site_most_point) |>
+  filter(lubridate::year(date) >= 2003 & lubridate::year(date) <= 2012)
+
+ggplot(data_most_point, aes(x = date, y = value, color = parameter_code)) +
+  geom_point() +
+  geom_line()
+```
+
+Luckily, we see that the change of methods doesn't seem to cause a change in
+nutrient values.
+
+## Sampling quality
+
+We inspect that quality of the data collected across the year.
+
+```{r}
+raw_data |>
+  summarise_rephy_quality_share() |>
+  plot_rephy_quality_share()
+```
+
+We see that most has good quality. We remove samples whose quality is "douteux".
+
+## Depth
+
+Now we investigate the distrubtion of the depths at which variable are measured.
+
+```{r}
+data |>
+  filter_out(is.na(level)) |>
+  group_by(parameter_code, level) |>
+  summarise(n = n()) |>
+  arrange(parameter_code, desc(n)) |>
+  print(n = 30)
+
+ggplot(data |> filter_out(is.na(depth)), aes(x = depth)) +
+  geom_histogram() +
+  facet_wrap(~level)
+```
+
+We see that apart from oxygene variables are mainly measured at the surface.
+That means we can focus on this depth, and remove other depths.
+
+For more details, we can check how variable change with depth.
+
+```{r}
+ggplot(data, aes(x = depth, y = value)) +
+  geom_point(alpha = 0.1) +
+  facet_wrap(~parameter_code, scales = "free_y")
+```
+
+We see that oxygen is relatively constant meaning that using the surface
+concentration is representative of the rest of the water column.
+
 

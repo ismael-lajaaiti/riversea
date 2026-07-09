@@ -152,6 +152,9 @@ extract_nutrients_rephy <- function(data) {
     dplyr::filter(
       .data[["Résultat : Code paramètre"]] %in% rephy_nutrient_codes()
     ) |>
+    dplyr::filter_out(
+      .data[["Résultat : Niveau de qualité"]] == "Douteux"
+    ) |>
     dplyr::select(dplyr::all_of(rename_rephy())) |>
     dplyr::mutate(
       date = lubridate::dmy(date),
@@ -352,4 +355,78 @@ plot_rephy_temporal_trend <- function(data) {
     ggplot2::geom_point(size = 0.8) +
     ggplot2::facet_wrap(~parameter_code, scales = "free_y") +
     ggplot2::labs(x = NULL, y = "Yearly mean concentration", color = NULL)
+}
+
+#' Summarise REPHY measurement method share by year and parameter
+#'
+#' For each nutrient parameter and year, the share of observations recorded
+#' with each measurement method. Expressing counts as a share (rather than
+#' raw counts) makes method changes visible independently of the sampling
+#' effort trend (see [plot_rephy_temporal_coverage()]), which otherwise
+#' dominates raw counts and masks method switches in low-effort years.
+#'
+#' @param raw_data tibble as returned by [read_rephy()] (must still have the
+#'   method column, which [extract_nutrients_rephy()] drops).
+#'
+#' @return tibble with one row per (year, parameter_code, method), giving the
+#'   observation count and its share of that (year, parameter_code) total.
+#' @export
+summarise_rephy_method_share <- function(raw_data) {
+  raw_data |>
+    dplyr::transmute(
+      parameter_code = .data[["Résultat : Code paramètre"]],
+      method = .data[["Résultat : Libellé méthode"]],
+      year = .data[["Passage : Année"]]
+    ) |>
+    dplyr::filter(parameter_code %in% rephy_nutrient_codes()) |>
+    dplyr::summarise(n = dplyr::n(), .by = c(parameter_code, method, year)) |>
+    dplyr::mutate(share = n / sum(n), .by = c(parameter_code, year)) |>
+    dplyr::arrange(parameter_code, year, dplyr::desc(share))
+}
+
+summarise_rephy_quality_share <- function(raw_data) {
+  raw_data |>
+    dplyr::transmute(
+      parameter_code = .data[["Résultat : Code paramètre"]],
+      quality = .data[["Résultat : Niveau de qualité"]],
+      year = .data[["Passage : Année"]]
+    ) |>
+    dplyr::filter(parameter_code %in% rephy_nutrient_codes()) |>
+    dplyr::summarise(n = dplyr::n(), .by = c(parameter_code, quality, year)) |>
+    dplyr::mutate(share = n / sum(n), .by = c(parameter_code, year)) |>
+    dplyr::arrange(parameter_code, year, dplyr::desc(share))
+}
+
+#' Plot REPHY measurement method share by year and parameter
+#'
+#' Stacked bar chart of the share of observations per method, for each
+#' nutrient parameter and year. Useful to spot method changes over time
+#' that could introduce artificial breaks in the concentration time series.
+#'
+#' @param data tibble as returned by [summarise_rephy_method_share()].
+#'
+#' @return ggplot
+#' @export
+plot_rephy_method_share <- function(data) {
+  ggplot2::ggplot(
+    data,
+    ggplot2::aes(x = year, y = share, fill = method)
+  ) +
+    ggplot2::geom_col() +
+    ggplot2::facet_wrap(~parameter_code) +
+    ggplot2::scale_x_continuous(breaks = scales::breaks_pretty()) +
+    ggplot2::scale_y_continuous(labels = scales::percent) +
+    ggplot2::labs(x = NULL, y = "Share of observations", fill = "Method")
+}
+
+plot_rephy_quality_share <- function(data) {
+  ggplot2::ggplot(
+    data,
+    ggplot2::aes(x = year, y = share, fill = quality)
+  ) +
+    ggplot2::geom_col() +
+    ggplot2::facet_wrap(~parameter_code) +
+    ggplot2::scale_x_continuous(breaks = scales::breaks_pretty()) +
+    ggplot2::scale_y_continuous(labels = scales::percent) +
+    ggplot2::labs(x = NULL, y = "Share of observations", fill = "Quality")
 }
