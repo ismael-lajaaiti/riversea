@@ -4,19 +4,23 @@ project:
     - index.qmd
     - analysis/*.qmd
     - presentations/*.qmd
-    - manuscript/manuscript.qmd
+    - output/*.qmd
   output-dir: docs
 
 website:
   title: "Riversea Project"
-  navbar: 
-    left: 
-      - text: Analysis
+  navbar:
+    left:
+      - text: Home
         href: index.qmd
+      - text: Lab notebooks
+        href: analysis/index.qmd
       - text: Presentations
         href: presentations/index.qmd
       - text: Manuscript
-        href: manuscript/manuscript.qmd
+        href: output/manuscript.qmd
+      - text: Reports
+        href: output/index.qmd
 
 format:
   html:

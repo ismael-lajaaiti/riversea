@@ -5,8 +5,18 @@ report_targets <- list(
     quarto_args = c("--embed-resources")
   ),
   tar_quarto(
+    index_analysis,
+    "analysis/index.qmd",
+    quarto_args = c("--embed-resources")
+  ),
+  tar_quarto(
     index_presentation,
     "presentations/index.qmd",
+    quarto_args = c("--embed-resources")
+  ),
+  tar_quarto(
+    index_output,
+    "output/index.qmd",
     quarto_args = c("--embed-resources")
   ),
   tar_quarto(report_A1,
@@ -66,7 +76,7 @@ report_targets <- list(
   # Manuscript.
   tar_quarto(
     manuscript,
-    "manuscript/manuscript.qmd",
+    "output/manuscript.qmd",
     quarto_args = c("--embed-resources")
   )
 )

@@ -1,0 +1,5 @@
+---
+title: "Reports"
+---
+
+Synthetic report documenting the analysis pipeline.

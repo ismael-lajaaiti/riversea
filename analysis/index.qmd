@@ -1,0 +1,41 @@
+---
+title: "Lab notebooks"
+---
+
+This page lists all the lab notebooks of the RIVERSEA project. They keep track
+of the analysis performed. They are intended to be exploratory, unpolished,
+traces of what has been done. Synthetic reports will be produced separately
+to be shared publicly (see the [Output](../output/manuscript.qmd) section).
+
+# Notebooks
+
+## Todo
+
+- [ ] Compute the distance to river mouth
+
+## A. Method and model selection
+
+1. [Model eel abundance using INLA](A1-model-eel-abundance.qmd)
+2. [Define the statistical model](A2-define-model.qmd)
+
+## B. Diet information
+
+1. [Identify and get missing feeding information](B1-identify-diet.qmd)
+2. [Extract diet table from fishbase](B2-get-diet-fishbase.qmd)
+3. [Build food webs](B3-build-food-webs.qmd)
+
+## C. Fish sizes
+
+1. [Explore coastal data and fish size measurement](C1-explore-coast-data.qmd)
+2. [Infer missing fish sizes](C2-get-fish-sizes.qmd)
+
+## D. Environmental driver of food web structures
+1. [Data overview](D1-spatial-distribution.qmd)
+2. [How eutrophisation affect food web structures along the estuary-sea
+   continuum](D2-estuary-sea-continuum.qmd)
+3. [How community richness changes along the estuary-sea continuum](D3-richness-gradient.qmd)
+4. [Overview of AMOBIO data](D4-amobio-data.qmd)
+5. [Merge AMOBIO and ASPE datasets](D5-amobio-aspe.qmd)
+6. [Overview of REPHY data](D6-rephy.qmd)
+
+## E. Invasive species and dams

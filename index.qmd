@@ -1,36 +1,14 @@
 ---
-title: "Analysis"
+title: "RIVERSEA Project"
 ---
 
-This page lists all the analyses of the RIVERSEA project.
+This site gathers the work of the RIVERSEA project, quantifying how dams and
+nutrient loading affect fish food web structure along the river-estuary-sea
+continuum in France.
 
-# Reports
-
-## Todo
-
-- [ ] Compute the distance to river mouth
-
-## A. Method and model selection
-
-1. [Model eel abundance using INLA](analysis/A1-model-eel-abundance.qmd)
-2. [Define the statistical model](analysis/A2-define-model.qmd)
-
-## B. Diet information
-
-1. [Identify and get missing feeding information](analysis/B1-identify-diet.qmd)
-2. [Extract diet table from fishbase](analysis/B2-get-diet-fishbase.qmd)
-3. [Build food webs](analysis/B3-build-food-webs.qmd)
-
-## C. Fish sizes
-
-1. [Explore coastal data and fish size measurement](analysis/C1-explore-coast-data.qmd)
-2. [Infer missing fish sizes](analysis/C2-get-fish-sizes.qmd)
-
-## D. Environmental driver of food web structures
-1. [Data overview](analysis/D1-spatial-distribution.qmd)
-2. [How eutrophisation affect food web structures along the estuary-sea
-   continuum](analysis/D2-estuary-sea-continuum.qmd)
-3. [How community richness changes along the estuary-sea continuum](analysis/D3-richness-gradient.qmd)
-4. [Overview of AMOBIO data](analysis/D4-amobio-data.qmd)
-5. [Merge AMOBIO and ASPE datasets](analysis/D5-amobio-aspe.qmd)
-6. [Overview of REPHY data](analysis/D6-rephy.qmd)
+- [**Lab notebooks**](analysis/index.qmd) — notebooks tracking the
+  exploratory, day-to-day analysis of the project.
+- [**Reports**](output/index.qmd) — the manuscript and, in time, synthetic
+  reports documenting the finalized analysis pipeline.
+- [**Presentations**](presentations/index.qmd) — slides presented at meetings
+  and conferences.

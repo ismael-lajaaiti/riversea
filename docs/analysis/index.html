@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Presentations – Riversea Project</title>
+<title>Lab notebooks – Riversea Project</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -4019,11 +4019,11 @@ vertical-align: -.125em;
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../analysis/index.html"> 
+    <a class="nav-link active" href="../analysis/index.html" aria-current="page"> 
 <span class="menu-text">Lab notebooks</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="../presentations/index.html" aria-current="page"> 
+    <a class="nav-link" href="../presentations/index.html"> 
 <span class="menu-text">Presentations</span></a>
   </li>  
   <li class="nav-item">
@@ -4045,15 +4045,29 @@ vertical-align: -.125em;
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#notebooks" id="toc-notebooks" class="nav-link active" data-scroll-target="#notebooks">Notebooks</a>
+  <ul class="collapse">
+  <li><a href="#todo" id="toc-todo" class="nav-link" data-scroll-target="#todo">Todo</a></li>
+  <li><a href="#a.-method-and-model-selection" id="toc-a.-method-and-model-selection" class="nav-link" data-scroll-target="#a.-method-and-model-selection">A. Method and model selection</a></li>
+  <li><a href="#b.-diet-information" id="toc-b.-diet-information" class="nav-link" data-scroll-target="#b.-diet-information">B. Diet information</a></li>
+  <li><a href="#c.-fish-sizes" id="toc-c.-fish-sizes" class="nav-link" data-scroll-target="#c.-fish-sizes">C. Fish sizes</a></li>
+  <li><a href="#d.-environmental-driver-of-food-web-structures" id="toc-d.-environmental-driver-of-food-web-structures" class="nav-link" data-scroll-target="#d.-environmental-driver-of-food-web-structures">D. Environmental driver of food web structures</a></li>
+  <li><a href="#e.-invasive-species-and-dams" id="toc-e.-invasive-species-and-dams" class="nav-link" data-scroll-target="#e.-invasive-species-and-dams">E. Invasive species and dams</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Presentations</h1>
+<h1 class="title">Lab notebooks</h1>
 </div>
 
 
@@ -4070,14 +4084,54 @@ vertical-align: -.125em;
 </header>
 
 
-<p>This page lists all the presentations of the RIVERSEA project.</p>
-<ul>
-<li><a href="https://doi.org/10.6084/m9.figshare.32509098">Project presentation at WINE webinar</a>, 2026.04.14, Rennes</li>
-<li><a href="https://doi.org/10.6084/m9.figshare.32509152">Project presentation at GdR EcoStat</a>, 2026.05.25, Grenoble</li>
-<li><a href="https://doi.org/10.6084/m9.figshare.32531523">Data compilation at AG DECOD</a>, 2026.06.11, St Jacut</li>
+<p>This page lists all the lab notebooks of the RIVERSEA project. They keep track of the analysis performed. They are intended to be exploratory, unpolished, traces of what has been done. Synthetic reports will be produced separately to be shared publicly (see the <a href="../output/manuscript.html">Output</a> section).</p>
+<section id="notebooks" class="level1">
+<h1>Notebooks</h1>
+<section id="todo" class="level2">
+<h2 class="anchored" data-anchor-id="todo">Todo</h2>
+<ul class="task-list">
+<li><label><input type="checkbox">Compute the distance to river mouth</label></li>
 </ul>
+</section>
+<section id="a.-method-and-model-selection" class="level2">
+<h2 class="anchored" data-anchor-id="a.-method-and-model-selection">A. Method and model selection</h2>
+<ol type="1">
+<li><a href="../analysis/A1-model-eel-abundance.html">Model eel abundance using INLA</a></li>
+<li><a href="../analysis/A2-define-model.html">Define the statistical model</a></li>
+</ol>
+</section>
+<section id="b.-diet-information" class="level2">
+<h2 class="anchored" data-anchor-id="b.-diet-information">B. Diet information</h2>
+<ol type="1">
+<li><a href="../analysis/B1-identify-diet.html">Identify and get missing feeding information</a></li>
+<li><a href="../analysis/B2-get-diet-fishbase.html">Extract diet table from fishbase</a></li>
+<li><a href="../analysis/B3-build-food-webs.html">Build food webs</a></li>
+</ol>
+</section>
+<section id="c.-fish-sizes" class="level2">
+<h2 class="anchored" data-anchor-id="c.-fish-sizes">C. Fish sizes</h2>
+<ol type="1">
+<li><a href="../analysis/C1-explore-coast-data.html">Explore coastal data and fish size measurement</a></li>
+<li><a href="../analysis/C2-get-fish-sizes.html">Infer missing fish sizes</a></li>
+</ol>
+</section>
+<section id="d.-environmental-driver-of-food-web-structures" class="level2">
+<h2 class="anchored" data-anchor-id="d.-environmental-driver-of-food-web-structures">D. Environmental driver of food web structures</h2>
+<ol type="1">
+<li><a href="../analysis/D1-spatial-distribution.html">Data overview</a></li>
+<li><a href="../analysis/D2-estuary-sea-continuum.html">How eutrophisation affect food web structures along the estuary-sea continuum</a></li>
+<li><a href="../analysis/D3-richness-gradient.html">How community richness changes along the estuary-sea continuum</a></li>
+<li><a href="../analysis/D4-amobio-data.html">Overview of AMOBIO data</a></li>
+<li><a href="../analysis/D5-amobio-aspe.html">Merge AMOBIO and ASPE datasets</a></li>
+<li><a href="../analysis/D6-rephy.html">Overview of REPHY data</a></li>
+</ol>
+</section>
+<section id="e.-invasive-species-and-dams" class="level2">
+<h2 class="anchored" data-anchor-id="e.-invasive-species-and-dams">E. Invasive species and dams</h2>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

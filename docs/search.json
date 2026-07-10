@@ -394,35 +394,35 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Analysis",
+    "title": "RIVERSEA Project",
     "section": "",
-    "text": "This page lists all the analyses of the RIVERSEA project."
+    "text": "This site gathers the work of the RIVERSEA project, quantifying how dams and nutrient loading affect fish food web structure along the river-estuary-sea continuum in France.\n\nLab notebooks — notebooks tracking the exploratory, day-to-day analysis of the project.\nReports — the manuscript and, in time, synthetic reports documenting the finalized analysis pipeline.\nPresentations — slides presented at meetings and conferences."
   },
   {
     "objectID": "index.html#a.-method-and-model-selection",
     "href": "index.html#a.-method-and-model-selection",
-    "title": "Analysis",
+    "title": "Lab notebooks",
     "section": "A. Method and model selection",
     "text": "A. Method and model selection\n\nModel eel abundance using INLA\nDefine the statistical model"
   },
   {
     "objectID": "index.html#b.-diet-information",
     "href": "index.html#b.-diet-information",
-    "title": "Analysis",
+    "title": "Lab notebooks",
     "section": "B. Diet information",
     "text": "B. Diet information\n\nIdentify and get missing feeding information\nExtract diet table from fishbase\nBuild food webs"
   },
   {
     "objectID": "index.html#c.-fish-sizes",
     "href": "index.html#c.-fish-sizes",
-    "title": "Analysis",
+    "title": "Lab notebooks",
     "section": "C. Fish sizes",
     "text": "C. Fish sizes\n\nExplore coastal data and fish size measurement\nInfer missing fish sizes"
   },
   {
     "objectID": "index.html#d.-environmental-driver-of-food-web-structures",
     "href": "index.html#d.-environmental-driver-of-food-web-structures",
-    "title": "Analysis",
+    "title": "Lab notebooks",
     "section": "D. Environmental driver of food web structures",
     "text": "D. Environmental driver of food web structures\n\nData overview\nHow eutrophisation affect food web structures along the estuary-sea continuum\nHow community richness changes along the estuary-sea continuum\nOverview of AMOBIO data\nMerge AMOBIO and ASPE datasets\nOverview of REPHY data"
   },
@@ -1332,7 +1332,7 @@
   {
     "objectID": "index.html#todo",
     "href": "index.html#todo",
-    "title": "Analysis",
+    "title": "Lab notebooks",
     "section": "Todo",
     "text": "Todo\n\nCompute the distance to river mouth"
   },
@@ -1447,5 +1447,145 @@
     "title": "RIVERSEA x AMOBIO",
     "section": "",
     "text": "Impact des barrages et nutriments sur les réseaux trophiques le long du continuum rivière-mer\nReconstruction des réseaux trophiques en estuaire et mer\nRéseaux trophiques en rivière prêt (Alain)\nProchaine étapes\n\nFusionner les rivière et mer pour avoir le gradient complet\nAssocier avec les variables environnementales et de barrages"
+  },
+  {
+    "objectID": "index.html#e.-invasive-species-and-dams",
+    "href": "index.html#e.-invasive-species-and-dams",
+    "title": "Lab notebooks",
+    "section": "E. Invasive species and dams",
+    "text": "E. Invasive species and dams"
+  },
+  {
+    "objectID": "analysis/index.html",
+    "href": "analysis/index.html",
+    "title": "Lab notebooks",
+    "section": "",
+    "text": "This page lists all the lab notebooks of the RIVERSEA project. They keep track of the analysis performed. They are intended to be exploratory, unpolished, traces of what has been done. Synthetic reports will be produced separately to be shared publicly (see the Output section)."
+  },
+  {
+    "objectID": "analysis/index.html#todo",
+    "href": "analysis/index.html#todo",
+    "title": "Lab notebooks",
+    "section": "Todo",
+    "text": "Todo\n\nCompute the distance to river mouth"
+  },
+  {
+    "objectID": "analysis/index.html#a.-method-and-model-selection",
+    "href": "analysis/index.html#a.-method-and-model-selection",
+    "title": "Lab notebooks",
+    "section": "A. Method and model selection",
+    "text": "A. Method and model selection\n\nModel eel abundance using INLA\nDefine the statistical model"
+  },
+  {
+    "objectID": "analysis/index.html#b.-diet-information",
+    "href": "analysis/index.html#b.-diet-information",
+    "title": "Lab notebooks",
+    "section": "B. Diet information",
+    "text": "B. Diet information\n\nIdentify and get missing feeding information\nExtract diet table from fishbase\nBuild food webs"
+  },
+  {
+    "objectID": "analysis/index.html#c.-fish-sizes",
+    "href": "analysis/index.html#c.-fish-sizes",
+    "title": "Lab notebooks",
+    "section": "C. Fish sizes",
+    "text": "C. Fish sizes\n\nExplore coastal data and fish size measurement\nInfer missing fish sizes"
+  },
+  {
+    "objectID": "analysis/index.html#d.-environmental-driver-of-food-web-structures",
+    "href": "analysis/index.html#d.-environmental-driver-of-food-web-structures",
+    "title": "Lab notebooks",
+    "section": "D. Environmental driver of food web structures",
+    "text": "D. Environmental driver of food web structures\n\nData overview\nHow eutrophisation affect food web structures along the estuary-sea continuum\nHow community richness changes along the estuary-sea continuum\nOverview of AMOBIO data\nMerge AMOBIO and ASPE datasets\nOverview of REPHY data"
+  },
+  {
+    "objectID": "analysis/index.html#e.-invasive-species-and-dams",
+    "href": "analysis/index.html#e.-invasive-species-and-dams",
+    "title": "Lab notebooks",
+    "section": "E. Invasive species and dams",
+    "text": "E. Invasive species and dams"
+  },
+  {
+    "objectID": "output/manuscript.html",
+    "href": "output/manuscript.html",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "",
+    "text": "Anthropic disturbances and ecosystem processes transcend the artificial boundaries between land, freshwater, and sea. While these systems are interconnected through species and material fluxes, they are often studied in isolation. In response, the concept of metaecosystem has emerged as a powerful framework to understand how fluxes among ecosystems shape their functions and dynamics. Disrupting these fluxes can have dramatic consequences that ripple across entire landscapes. In aquatic systems, dams and nutrient pollution are known to strongly affect fish communities. Yet, little is still known about how these effects propagate and potentially accumulate, through hydrographic basins and ultimately to the sea. Using bayesian spatio-temporal statistical models (R-INLA), we aim to analyse existing data on food-web structure across France, combined with environmental variables (dams, nutrients, …), to quantify how breaking or increasing fluxes among systems disturbs food-web structure locally and how these disturbances spread throughout the metaecosystem.\nKeywords: foodweb ecology, stream network, spatial autocorrelation, bayesian statistics."
+  },
+  {
+    "objectID": "output/manuscript.html#abstract",
+    "href": "output/manuscript.html#abstract",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "",
+    "text": "Anthropic disturbances and ecosystem processes transcend the artificial boundaries between land, freshwater, and sea. While these systems are interconnected through species and material fluxes, they are often studied in isolation. In response, the concept of metaecosystem has emerged as a powerful framework to understand how fluxes among ecosystems shape their functions and dynamics. Disrupting these fluxes can have dramatic consequences that ripple across entire landscapes. In aquatic systems, dams and nutrient pollution are known to strongly affect fish communities. Yet, little is still known about how these effects propagate and potentially accumulate, through hydrographic basins and ultimately to the sea. Using bayesian spatio-temporal statistical models (R-INLA), we aim to analyse existing data on food-web structure across France, combined with environmental variables (dams, nutrients, …), to quantify how breaking or increasing fluxes among systems disturbs food-web structure locally and how these disturbances spread throughout the metaecosystem.\nKeywords: foodweb ecology, stream network, spatial autocorrelation, bayesian statistics."
+  },
+  {
+    "objectID": "output/manuscript.html#introduction",
+    "href": "output/manuscript.html#introduction",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Introduction",
+    "text": "Introduction\nWhile patterns in community change within river network have been well studied, these studies have mostly focus on specise richness (Bonnaffé et al. 2024), or roughly defined functional composition (Vannote et al. 1980).\n\nBarnes et al. (2026) food web complexity mediates diversity-functioning relationship. Interesting metric of trophic complementarity, could be used for our study if we can formulate clear hypothesis of stressors on that metric.\n\n\nRiver-estuary-sea continuum\n\nXenopoulos et al. (2017) highlights the importance of accounting for the full gradient from headwater to the sea. Freshwater and coastal ecosystems are connected by flux of carbone and nutrients (N, P), as well as, movement of migratory species. Reviews work connecting river and sea, that said, most of them focus on chemical fluxes, remain relatively local, and none of them focused on the food web structure.\nCatchment land-use impacts macro-invertebrates along the river-sea continuum with no dilution effect (Bierschenk et al. 2017).\nThe Land-to-Ocean Continuum (LOAC) concept has been used to study carbon fluxes between land and ocean, and how these fluxes, and feedback loop influence the carbon storage by oceans (Regnier et al. 2022).\nHong et al. (2015) Editorial overview of studies investigating the impact of human pressure along the river-estuary-sea continuum, more focused toward biochemistry than ecology.\nOuellet et al. (2022) provides a conceptual model (DWOC) to advance a more holistic management of diadromous species across the watersheds-ocean continuum.\nTee et al. (2021) studies the river-to-sea continuum of microbial communities through community composition and their function (nutrient cycling).\nWhitfield et al. (2024) reviews how species richness changes along the salinity gradient in estuaries. As we go to freshwater to brackish water we loose species richness, and as we to brackish water to the sea we recover species richness.\nElliott and Quintino (2007) argues that it is difficult to detect the effect of anthropogenic pressure in estuary as estuaries are already stressed environment. In particular, this means thinking about the indicators used to describe ecosystem states (diversity, and functionning).\nLittle et al. (2017) Lechêne et al. (2018) Olli et al. (2019) and Freitas and Araújo (2025) study how communities change along environmental gradient in estuaries.\nAttrill (2002) critiques Remane diagram and proposes and quantitive, testable alternative that consider salinity ranges instead of salinity.\nMacedo et al. (2021) Food webs are simpler during the dry season than the rainy season in the estuarine and neritic zones. During the rainy season, the food web of the neritic is largely shaped by migratory species from the estuarine and oceanic areas.\nÁlvarez-Romero et al. (2015) proposes an integrated framework to include land-use change in cactchement in the impact on coastal biodiversity.\n\n\n\nFreshwater ecosystems\n\nThe River Continuum Concept has shaped the freshwater ecology researsh by links physical gradients along rivers to predictable changes in community structure, energy sources, and ecosystem functioning (Vannote et al. 1980; Doretto et al. 2020).\nSerial Discontinuity Concept is a framework to predict the impact of discontinuities, such as dams, on biotic and abiotic variables along the river continuum (Ward and Stanford 1995).\nThe Flood Pulse Concept (FPC) complements the RCC as it focuses on the lateral dimension of rivers and its role in explaining community productivity, while the RCC focused on the longitudinal aspect. The FPC states that its the rythm of flood and recession – that is, the pulse – which structures ecosystem productivity, not the flow (Junk et al. 1989).\n\nTerrestrial organic matter (leaf litter, vegetation, soil nutrients) gets dissolved and mobilized into the water\nAquatic plants and algae explode in productivity in the shallow, sunlit floodwaters\nFish and invertebrates move onto the floodplain to feed and reproduce\nWhen waters recede, nutrients and organic matter flush back into the main channel\n\nThe River Wave concept as unifying framework of different concepts of freshwater ecology (Humphries et al. 2014).\nCommunity richness and hence food web structure is expected to be driven by nutrient availability (Ho et al. 2023).\n\n\n\nMultiple stressors\n\nSynergistic and antagonistic effects of multiple stressors (Jackson et al. 2021; Orr et al. 2024).\nTemperature can interact with nutrients and impact food web structure in a nonlinear way Binzer et al. (2012).\n(Danet et al. 2021; Bonnaffé et al. 2024).\n\n\n\nConnectivity\n\nSmall dispersal stabilizes through spatial structure and asynchrony (LeCraw et al. 2014; McCann et al. 2005; Pillai et al. 2011).\nA metaecosystem model shows that dispersal of living organisms (that consume nutrients) is stabilising,while dispersal of non-living compartments such as nutrients or detritus is destabilising (Gounand et al. 2014).\nPrey switching of mobile top predators can stabilize connected food webs through ‘spatial coupling’ (LeCraw et al. 2014; McCann et al. 2005; Pillai et al. 2011).\nAt high dispersal/connectivity the stabilizing effect wanes as strongly connected patches behave as a single patch (LeCraw et al. 2014; McCann et al. 2005).\nStudies between pairs of the following connectivity, complexity and stability are common. However, studies investigating how these are interconnected are rare (LeCraw et al. 2014).\nConnectivity has 4 dimensions: longitudinal, lateral, vertical and temporal (Grill et al. 2019).\nWe identified five pressure factors to represent the main human interferences within the four dimensions of fluvial or river connectivity (Grill et al. 2019):\n\nriver fragmentation (longitudinal);\nflow regulation (lateral and temporal);\nsediment trapping (longitudinal, lateral and vertical);\nwater consumption (lateral, vertical and temporal);\ninfrastructure development in riparian areas and floodplains (lateral and longitudinal).\n\nIn freshwater system, fish dispersal is limited. A meta-analysis found that the mean dispersal kernel is around 10km (Comte and Olden 2018).\nNeutral metacommunity model explains biodiversity pattern in the Mississipi river, showing the key role of dispersal in explaining community structure along the river continuum (Muneepeerakul et al. 2008).\nConnectivity structures and mititgates effect of drying events in macroinvertebrates communities (Chalmandrier et al. 2025).\nIt is key to adopt a network perspective to understand how diversity is created and maintained within riverine ecosystems (Altermatt 2013). With this perspective one can account for the dendritic network and so the spatial processes that shape diversity.\nFrom points (Death and Winterbourn 1995)… to lines (RCC, SDC)… to dendritic networks (Shepherd and Ellis 1997).\nRiver network characteristics, local network properties and their interaction were important individual contributors to explaining local species richness of aquatic insects (Altermatt et al. 2013). Effect of connectivity on richness supported experimentally (Carrara et al. 2012).\n\n\n\nDecomposing spatio-temporal patterns\n\nFrelat et al. (2022) decompose change in food web structure and species composition across space and time using a tensor decomposition. We could probably try the method for our work.\nKortsch et al. (2021) investigates change in food web in the Baltic Sea using weighted and unweighted structural metrics.\n\n\n\nDams\n\nDecrease river connectivity / reduce migration (Dean et al. 2023; He et al. 2024; Pedersen et al. 2012).\nReservoir, lotic from lentic conditions, can result in hypoxic conditions. Favor phytoplancktons and macrophytes (Ding et al. 2026; Dean et al. 2023). Facilitate the spread of invasive species (Johnson et al. 2008).\nReservoir increase residence time of nutrients upstream and decrease the downstream output, which can result in a decrease in primary productivity.\nHydropeaking - that is, the sudden release of large water to answer the higher electric demand - can harm riverine community due to sudden change in water level and water flow.\nCumulative impact of dams can reduce the nutrient input in deltas (Dean et al. 2023).\nA review (Ellis and Jones 2013) suggests that two recovery gradients exist in regulated river:\n\na longer, thermal gradient of around 100 km;\na shorter resource subsidy gradient of around 1-4 km.\n\nZhu et al. (2024) shows that dam areas show lowest richness and highest connectance, while areas with dam removed show highest richness but lowest connectance.\nDolan et al. (2026) Meta-analysis shows that native and non-native species increased after barrier removal, but the positive effect was strongest for native species\n\n\n\nNutrients\n\nMwanake et al. (2026) DOC-to-nutrient ratios in river decline worldwide\nMa et al. (2026) finds that human impact destabilize riverine fish communities, but habitat complexity buffers this destabilizing effect.\n\n\n\nMeta-ecosystems\n\nLoreau et al. (2003) fundational paper that defines the concept of meta-ecosystem.\nPolis et al. (1997) founding synthesis of how spatial subsidy, flux of consumer and resources reorganise food webs.\nSpaak et al. (2026) provide a metric of coupling between ecosystems based on the Jacobian.\n\n\n\nTraits\n\nBrosse et al. (2021) FISHMORPH database which contains 10 morphological traits for around 50% of freshwater fish species worldwide."
+  },
+  {
+    "objectID": "output/manuscript.html#hypotheses",
+    "href": "output/manuscript.html#hypotheses",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Hypotheses",
+    "text": "Hypotheses\nBuilding on the causal structure below (Fig. 1) and the literature reviewed above, we formulate four hypotheses.\n\nWe focus on three structural metrics with well-developed theoretical expectations: connectance, mean trophic level, and a trophic complementarity metric following Barnes et al. (2026).\nH1 — Nutrients have a unimodal effect on food web structure. Moderate nutrient enrichment should increase local productivity and prey availability, supporting more diverse and complex food webs (Ho et al. 2023). Beyond a threshold, excess nutrients are expected to degrade food web structure through hypoxia, algal dominance, and turbidity (Ding et al. 2026; Dean et al. 2023). This is consistent with the classic paradox of enrichment (Rosenzweig 1971), and with Bonnaffé et al. (2024)’s more recent finding that richness and food-web structure jointly shape community stability: enrichment destabilizes predator-prey dynamics, and the resulting loss of destabilized interactions/species is one mechanism that could simplify food web structure at high nutrient loads.\nH2 — Dam impact affects food web structure through (at least) two distinct pathways, at two different spatial scales, which we predict act on different metrics. We distinguish a local pathway (distance to nearest dam) from a global pathway (cumulative barrier effect / basin-wide fragmentation, per AMOBIO’s existing metrics). At the basin scale, cumulative fragmentation is expected to reduce species richness and mean trophic level, through loss of migratory and piscivorous species that depend on longitudinal connectivity (Dean et al. 2023; He et al. 2024). At the same time, dams are known to facilitate the spread of invasive species (Johnson et al. 2008), including generalist invasive predators such as wels catfish (Silurus glanis) — reservoirs can provide favorable larval-rearing habitat that promotes range expansion, and the species is known to reshape recipient fish communities once established (Encina et al. 2024; Bylak et al. 2023). If such generalists establish disproportionately in impounded reaches, we would predict connectance to increase as richness and trophic complementarity trophic level decline.\nH3 — Part of the dam and nutrient effects on food web structure is mediated by species richness, but we expect a direct effect too. Consistent with the DAG above, candidate direct-effect mechanisms — i.e. effects on structure that don’t operate simply by adding or removing species — in particular the compositional/identity effect described in H2, where an invasive generalist changes connectance through its trophic role rather than through a change in richness per se. Methodologically, we plan to fit two linked INLA models — richness ~ dam + nutrients + spatial structure, and structure ~ dam + nutrients + richness + spatial structure — and compute the indirect effect as the product of posterior samples of the relevant coefficients across the two fits. This gives a fully Bayesian direct/indirect decomposition inside the INLA framework itself, with the (Bayesian) SEM run alongside as an independent cross-check rather than the sole source of the decomposition.\nH4 — A site’s position along the river-to-sea continuum modulates its sensitivity to both stressors, and we expect this sensitivity to peak in the estuarine transition zone; both stressors may also propagate over long distances rather than acting only locally. Upstream (riverine) and downstream (marine) sites differ systematically in baseline connectivity, salinity, and community composition (Whitfield et al. 2024; Attrill 2002). We predict that the slope of the nutrient effect (and possibly the dam-impact effect) on food web structure — i.e. an interaction between continuum position and stressor magnitude — is not uniform along the continuum. Specifically, because estuaries are naturally physiologically stressful environments (fluctuating salinity, turbidity, low baseline diversity), resident communities may already sit closer to their tolerance limits and hence be more sensitive to added anthropogenic pressure (Elliott and Quintino 2007) — consistent with synergistic rather than additive multiple-stressor dynamics in already-stressed systems (Jackson et al. 2021). This contrasts with a simple monotonic view in which sensitivity would only increase or decrease steadily from headwater to sea. Note this pairs naturally with the local/global distinction in H2: the basin-wide barrier effect and nutrient loading are both plausibly long-distance-acting pressures, which is part of why we model both a local (distance) and a global (cumulative) dam metric rather than distance alone."
+  },
+  {
+    "objectID": "output/manuscript.html#methods",
+    "href": "output/manuscript.html#methods",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Methods",
+    "text": "Methods\n\nFood web inference\nTo infer local food web structure, we used a metaweb approach. That is, we build a web compiling the potential feeding interactions between all species of the dataset. Importantly, our metaweb takes into account intra-specific variation in species diet. We did so by defining trophic interactions at different life stages for each species.\n\nMetaweb nodes\nThe nodes of our metaweb represent a species at a given lifestage. Specifically, fish species were divided into nine body class sizes evenly distributed. Each body size class within a given species is what we call a ‘trophic species’ assuming that conspecifics of the same body size class share similar trophic interactions because trophic interactions are largely determined by predator–prey body size ratio in freshwater ecosystems (Brose et al. 2006).\nIn addition of fish species, seven basal nodes (resources) were added at the base of the metaweb: detritus, biofilm, phytoplanckton, zooplanckton, macrophytes and zoobenthos. We represent the basal food web structure in the Appendix (see Figure S1). We assumed that these resources were present at all sampling sites.\n\n\nInfer missing fish lengths\nMost length of fishes are measured but not all. Yet, we need individual fish length to determine their diet based on their ontogeny. We infer missing fish size using information on the given fishing operation. When there are more than three observations of the fish species, we use a truncated normal distribution (package truncdist; Nadarajah and Kotz (2006)). The mean and variance are given by the modes of the observed distribution of the fishing operation. The minimum and maximum of the distribution are given by the minimal and maximal length observed on the entire data set for that species. We do so to avoid infering irrealistic lengths.\n\n\nGet fish diet\nWe use fishbase as a primary source to extract fish diet at their different life stages, to get on which basal categories species feed on and whether they are piscivorous or not. We detail in the Supporting Information how made the correspondance between our categories and the one of fishbase. We remove species that have an occurence lower than 10 in the entire dataset which comprise 69 species. This enable to avoid retrieving diet information of species that will have a minimal impact on food web structure due to their rarity. We add a larvae stage when missing, assuming that fish larvae feed on zooplankton (Dabrowski 1984). We assume that fish individuals are larvae if they measure less than 2 cm. To classify individuals as juvenile or adult we use the length at maturity of the species as a threshold. When this information was not available we used a single stage (combined) by merging the diets of the two stages. We did not consider a recruit stage.\n\n\nThe metaweb\nPredation window are assumed to be 0.03 to 0.45 of individual body size for piscivorous species. We then use the package foodwebbuilder to build the metaweb and the local food webs through subsampling. We investigated the effect of the number of size classes on the structure of the reconstructed metaweb. We observed little influence of the number of size classes on the metaweb connectance Figure S3. So, we decided to split each species 5 size classes as in Bonnaffé et al. (2024).\n\n\n\n\n\n\nNote\n\n\n\nThe choice of a constant predation window has an important implication. It implies that what only matters in terms of ecosystem functioning is the individual size (once the species is known to be piscivorous). In this setting, two piscivorous individual of different species but same size will eat the very same things.\n\n\n\n\nSubsampling the metaweb to get local food webs"
+  },
+  {
+    "objectID": "output/manuscript.html#results",
+    "href": "output/manuscript.html#results",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Results",
+    "text": "Results"
+  },
+  {
+    "objectID": "output/manuscript.html#discussion",
+    "href": "output/manuscript.html#discussion",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Discussion",
+    "text": "Discussion\n\nLimitations\nRegarding food web structure, we have simplified the base of the web and exclude macro-invertebrates. This choice naturally emphasizes the functional role of fishes in shaping food web structures. Yet, it would be valuable to include macro-invertebrates within the food web to get a more exhaustive picture of how aquatic community respond to stressors along the riversea continuum."
+  },
+  {
+    "objectID": "output/manuscript.html#structure-of-the-food-web-base",
+    "href": "output/manuscript.html#structure-of-the-food-web-base",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Structure of the food web base",
+    "text": "Structure of the food web base\n\n\n\n\n\n\nFigure S1: Assumed structure of the food web base."
+  },
+  {
+    "objectID": "output/manuscript.html#model-dag",
+    "href": "output/manuscript.html#model-dag",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Model DAG",
+    "text": "Model DAG\nPut model DAG here using targets."
+  },
+  {
+    "objectID": "output/manuscript.html#venn-diagramm",
+    "href": "output/manuscript.html#venn-diagramm",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Venn diagramm",
+    "text": "Venn diagramm\n\n\n\n\n\n\nFigure S2: Venn diagram of common species between surveys."
+  },
+  {
+    "objectID": "output/manuscript.html#number-of-size-classes-and-metaweb-structure",
+    "href": "output/manuscript.html#number-of-size-classes-and-metaweb-structure",
+    "title": "How disrupted spatial fluxes reshape food web structure along the river–sea continuum",
+    "section": "Number of size classes and metaweb structure",
+    "text": "Number of size classes and metaweb structure\n\n\n\n\ntargets::tar_read(plot_metaweb_connectance)\n\n\n\n\n\n\n\n\n\n\nFigure S3: How metaweb connectance varies with the number of size classes."
+  },
+  {
+    "objectID": "output/index.html",
+    "href": "output/index.html",
+    "title": "Reports",
+    "section": "",
+    "text": "Synthetic report documenting the analysis pipeline."
   }
 ]
