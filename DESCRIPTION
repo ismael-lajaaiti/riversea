@@ -1,9 +1,14 @@
 Package: riversea
-Title: What the Package Does (One Line, Title Case)
+Title: Analysis Pipeline for the RIVERSEA Project
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("Ismael", "Lajaaiti", , "ismael.lajaaiti@gmail.com", role = c("aut", "cre"))
-Description: Package for the RIVERSEA project to model the impact of dams on fish communities.
+Description: Analysis pipeline for the RIVERSEA project, quantifying how dams
+    and nutrient loading affect fish food web structure along the
+    river-estuary-sea continuum in France. Provides functions to build
+    metawebs and local food webs from fish survey data, infer missing fish
+    sizes and diets, process AMOBIO and REPHY environmental data, and fit
+    structural equation models of environmental drivers on food web structure.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

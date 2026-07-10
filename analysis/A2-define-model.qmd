@@ -258,23 +258,23 @@ Let's see for what parameters of the beta distribution we can generate such shap
 
 
 ```{r}
-mu  <- 0.2
+mu <- 0.2
 phi_vals <- c(20, 40, 60, 80)
 
 x <- seq(0, 1, length = 1000)
 
 df <- expand_grid(
-    x = x,
-    phi = phi_vals
+  x = x,
+  phi = phi_vals
 ) |> mutate(
-    alpha = mu * phi,
-    beta = (1 - mu) * phi,
-    density = dbeta(x, alpha, beta)
+  alpha = mu * phi,
+  beta = (1 - mu) * phi,
+  density = dbeta(x, alpha, beta)
 )
 
 ggplot(df, aes(x = x, y = density, colour = factor(phi))) +
-    geom_line() +
-    labs(x = "Connectance", y = "Density", colour = expression(phi))
+  geom_line() +
+  labs(x = "Connectance", y = "Density", colour = expression(phi))
 ```
 
 We see that the beta distribution can surely capture the emprical distribution food web connectance.

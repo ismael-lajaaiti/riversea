@@ -35,7 +35,7 @@ To build the metaweb, we need the following.
 The diet table for fish species considered.
 
 ```{r}
-diet_fish <- tar_read(diet_size)
+diet_fish <- tar_read(diet_and_length)
 head(diet_fish)
 ```
 

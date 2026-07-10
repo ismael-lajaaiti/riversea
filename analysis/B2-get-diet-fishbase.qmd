@@ -234,7 +234,7 @@ sizes |> filter(maturity_length > length_max | maturity_length < length_min)
 Maybe only juveniles are captured?
 
 ```{r}
-diet_full <- tar_read(diet_size)
+diet_full <- tar_read(diet_and_length)
 head(diet_full)
 ```
 
