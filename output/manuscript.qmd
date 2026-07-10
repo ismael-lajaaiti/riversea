@@ -1,6 +1,7 @@
 ---
 title: "How disrupted spatial fluxes reshape food web structure along the river–sea continuum"
 author: "Ismaël Lajaaiti, Eric Edeline, Anik Brind'Amour, Alain Danet"
+license: "CC BY-NC"
 bibliography: ../references.bib
 prefer-html: true
 format:
@@ -41,22 +42,19 @@ tar_config_set(
 ## Abstract
 
 Anthropic disturbances and ecosystem processes transcend the artificial
-boundaries between land, freshwater, and sea.
-While these systems are interconnected through species and material fluxes,
-they are often studied in isolation.
-In response, the concept of metaecosystem has emerged as a powerful framework
-to understand how fluxes among ecosystems shape their functions and dynamics.
-Disrupting these fluxes can have dramatic consequences that ripple across
-entire landscapes.
-In aquatic systems, dams and nutrient pollution are known to strongly affect
-fish communities. Yet, little is still known about how these effects propagate
-and potentially accumulate, through hydrographic basins and ultimately to the
-sea.
-Using bayesian spatio-temporal statistical models (R-INLA), we aim to analyse
-existing data on food-web structure across France, combined with environmental
-variables (dams, nutrients, …), to quantify how breaking or increasing fluxes
-among systems disturbs food-web structure locally and how these disturbances
-spread throughout the metaecosystem.
+boundaries between land, freshwater, and sea. While these systems are
+interconnected through species and material fluxes, they are often studied in
+isolation. In response, the concept of metaecosystem has emerged as a powerful
+framework to understand how fluxes among ecosystems shape their functions and
+dynamics. Disrupting these fluxes can have dramatic consequences that ripple
+across entire landscapes. In aquatic systems, dams and nutrient pollution are
+known to strongly affect fish communities. Yet, little is still known about how
+these effects propagate and potentially accumulate, through hydrographic basins
+and ultimately to the sea. Using bayesian spatio-temporal statistical models
+(R-INLA), we aim to analyse existing data on food-web structure across France,
+combined with environmental variables (dams, nutrients, …), to quantify how
+breaking or increasing fluxes among systems disturbs food-web structure locally
+and how these disturbances spread throughout the metaecosystem.
 
 **Keywords:**
 *foodweb ecology,

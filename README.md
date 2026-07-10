@@ -31,3 +31,9 @@ below.
 
 Package dependencies are managed with [`renv`](https://rstudio.github.io/renv/).
 Run `renv::restore()` to install them.
+
+## License
+
+Code (`R/`, `targets/`) is licensed under GPL-3 (see `LICENSE.md`). The
+manuscript (`output/manuscript.qmd`) is licensed under
+[CC BY-NC](https://creativecommons.org/licenses/by-nc/4.0/).
