@@ -257,7 +257,7 @@ regulated river:
   1) a longer, thermal gradient of around 100 km;
   2) a shorter resource subsidy gradient of around 1-4 km.
 
-- @Zhu-etal-2026b shows that dam areas show lowest richness and highest
+- @Zhu-etal-2024 shows that dam areas show lowest richness and highest
 connectance, while areas with dam removed show highest richness but lowest
 connectance.
 
@@ -287,6 +287,94 @@ Jacobian.
 
 - @Brosse-etal-2021 FISHMORPH database which contains 10 morphological traits
 for around 50% of freshwater fish species worldwide.
+
+## Hypotheses
+
+Building on the causal structure below (Fig. 1) and the literature reviewed
+above, we formulate four hypotheses.
+
+![](../assets/fig1-dag-hypothesis.png)
+
+We focus on three structural metrics with well-developed theoretical
+expectations: **connectance**, **mean trophic level**, and a **trophic
+complementarity** metric following @Barnes-etal-2026.
+
+**H1 — Nutrients have a unimodal effect on food web structure.**
+Moderate nutrient enrichment should increase local productivity and prey
+availability, supporting more diverse and complex food webs
+[@Ho-Altermatt-Carraro-2023]. Beyond a threshold, excess nutrients are expected
+to degrade food web structure through hypoxia, algal dominance, and turbidity
+[@Ding-etal-2026; @Dean-etal-2023b]. This is consistent with the classic
+*paradox of enrichment* [@Rosenzweig-1971], and with @Bonnaffé-etal-2024b's more
+recent finding that richness and food-web structure jointly shape community
+stability: enrichment destabilizes predator-prey dynamics, and the resulting
+loss of destabilized interactions/species is one mechanism that could simplify
+food web structure at high nutrient loads.
+
+**H2 — Dam impact affects food web structure through (at least) two distinct
+pathways, at two different spatial scales, which we predict act on different
+metrics.** We distinguish a *local* pathway (distance to nearest dam) from a
+*global* pathway (cumulative barrier effect / basin-wide fragmentation, per
+AMOBIO's existing metrics). At the basin scale, cumulative fragmentation is
+expected to reduce species richness and mean trophic level, through loss of
+migratory and piscivorous species that depend on longitudinal connectivity
+[@Dean-etal-2023b; @He-etal-2024]. At the same time, dams are known to
+facilitate the spread of invasive species [@Johnson-Olden-VanderZanden-2008b],
+including generalist invasive predators such as wels catfish (*Silurus glanis*)
+— reservoirs can provide favorable larval-rearing habitat that promotes range
+expansion, and the species is known to reshape recipient fish communities once
+established [@Encina-etal-2024; @Bylak-etal-2023]. If such generalists
+establish disproportionately in impounded reaches, we would predict connectance
+to *increase* as richness and trophic complementarity trophic level decline.
+
+
+**H3 — Part of the dam and nutrient effects on food web structure is mediated
+by species richness, but we expect a direct effect too.** Consistent with the
+DAG above, candidate direct-effect mechanisms — i.e. effects on structure that
+don't operate simply by adding or removing species — in particular  the
+compositional/identity effect described in H2, where an invasive generalist
+changes connectance through its trophic role rather than through a change in
+richness per se. Methodologically, we plan to fit two linked INLA models —
+richness ~ dam + nutrients + spatial structure, and structure ~ dam + nutrients
++ richness + spatial structure — and compute the indirect effect as the product
+of posterior samples of the relevant coefficients across the two fits. This
+gives a fully Bayesian direct/indirect decomposition inside the INLA framework
+itself, with the (Bayesian) SEM run alongside as an independent cross-check
+rather than the sole source of the decomposition.
+
+**H4 — A site's position along the river-to-sea continuum modulates its
+sensitivity to both stressors, and we expect this sensitivity to peak in the
+estuarine transition zone; both stressors may also propagate over long
+distances rather than acting only locally.** Upstream (riverine) and downstream
+(marine) sites differ systematically in baseline connectivity, salinity, and
+community composition [@Whitfield-etal-2024; @Attrill-2002]. We predict that
+the *slope* of the nutrient effect (and possibly the dam-impact effect) on food
+web structure — i.e. an interaction between continuum position and stressor
+magnitude — is not uniform along the continuum. Specifically, because estuaries
+are naturally physiologically stressful environments (fluctuating salinity,
+turbidity, low baseline diversity), resident communities may already sit closer
+to their tolerance limits and hence be more sensitive to added anthropogenic
+pressure [@Elliott-Quintino-2007] — consistent with synergistic rather than
+additive multiple-stressor dynamics in already-stressed systems
+[@Jackson-Pawar-Woodward-2021a]. This contrasts with a simple monotonic view in
+which sensitivity would only increase or decrease steadily from headwater to
+sea. Note this pairs naturally with the local/global distinction in H2: the
+basin-wide barrier effect and nutrient loading are both plausibly
+long-distance-acting pressures, which is part of why we model both a local
+(distance) and a global (cumulative) dam metric rather than distance alone.
+
+<!-- TODO on stress-gradient framing: the classic Stress Gradient Hypothesis
+(facilitation replacing competition under high abiotic stress) is a different
+mechanism than "already-stressed systems are more sensitive to an added
+stressor" — worth treating as a conceptual parallel rather than a direct
+citation match. More mechanistically apt candidates found via a quick search,
+not yet in references.bib: a bioRxiv preprint "Ecological theory predicts
+ecosystem stressor interactions in freshwater ecosystems" and "Interactive
+effects of multiple stressors vary with consumer interactions, stressor
+dynamics and magnitude" — both on non-additive/synergistic stressor effects in
+freshwater systems specifically. Worth checking these against
+@Jackson-Pawar-Woodward-2021a and @Orr-etal-2024a (already cited) for overlap
+before adding. -->
 
 ## Methods
 
@@ -373,9 +461,6 @@ will eat the very same things.
 #### Subsampling the metaweb to get local food webs
 
 ## Results
-
-![](../assets/fig1-dag-hypothesis.png)
-
 
 ![](../assets/fig2-maps.png)
 
