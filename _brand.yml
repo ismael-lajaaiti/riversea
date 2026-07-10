@@ -1,0 +1,17 @@
+color:
+  palette:
+    teal: "#00a3a6"
+    purple: "#423089"
+    green: "#9dc544"
+  primary: teal
+  secondary: purple
+  success: green
+
+typography:
+  fonts:
+    - family: Atkinson Hyperlegible
+      source: google
+    - family: Libre Baskerville
+      source: google
+  base: Atkinson Hyperlegible
+  headings: Libre Baskerville

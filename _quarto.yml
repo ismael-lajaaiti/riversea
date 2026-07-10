@@ -8,8 +8,10 @@ project:
   output-dir: docs
 
 website:
-  title: "Riversea Project"
+  title: "RIVERSEA"
   navbar:
+    background: primary
+    foreground: light
     left:
       - text: Home
         href: index.qmd
@@ -25,4 +27,4 @@ website:
 format:
   html:
     toc: true
-    theme: cosmo
+    theme: [cosmo, brand]

@@ -1,5 +1,5 @@
 ---
-title: "RIVERSEA Project"
+title: "RIVERSEA project"
 ---
 
 This site gathers the work of the RIVERSEA project, quantifying how dams and

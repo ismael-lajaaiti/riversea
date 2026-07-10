@@ -7,12 +7,6 @@ of the analysis performed. They are intended to be exploratory, unpolished,
 traces of what has been done. Synthetic reports will be produced separately
 to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 
-# Notebooks
-
-## Todo
-
-- [ ] Compute the distance to river mouth
-
 ## A. Method and model selection
 
 1. [Model eel abundance using INLA](A1-model-eel-abundance.qmd)
