@@ -12,3 +12,48 @@ continuum in France.
   reports documenting the finalized analysis pipeline.
 - [**Presentations**](presentations/index.qmd) — slides presented at meetings
   and conferences.
+
+## Current priorities
+
+*Last updated 2026-07-10.*
+
+**Data pipeline & analysis**
+
+- [ ] Finish AMOBIO×ASPE×REPHY merge (unit harmonization, distance-to-mouth)
+- [ ] Decide nutrient composite variable (individual vs. TN+TP+ratio vs. PCA —
+let RF pre-screening decide)
+- [ ] Validate FishBase diets against literature
+- [ ] Refine predation window per species
+- [ ] New notebook: invasive species × dams (*Silurus glanis*, Tedesco et al.
+2017 native/non-native status, NMDS vs. distance-to-dam)
+
+**Statistical modeling**
+
+- [ ] Gear-effect sensitivity analysis (electrofishing vs. trawl)
+- [ ] Bayesian SEM as a robustness check alongside INLA
+- [ ] RF pre-screening to inform INLA specification
+- [ ] Decide INLA spatial structure across the continuum (hydrologic-distance
+tail-down covariance + marine SPDE — to discuss with co-authors)
+- [ ] Counterfactual scenario approach
+- [ ] Use spatial blocked cross-validation
+
+**Writing**
+
+- [ ] **(in progress)** Draft formal hypotheses (H1-H4)
+- [ ] Write novelty/positioning paragraph (vs. Zhu, Ma, Barnes 2026)
+- [ ] Rewrite Introduction bullets into prose, section by section
+- [ ] Refine paper title and conceptual hook
+- [ ] Integrate the "position as currency" identity into the manuscript
+
+**Reproducibility & open science**
+
+- [ ] **(in progress)** Reproducibility hygiene: `DESCRIPTION`, tests, CI
+- [ ] Reorganize analysis notebooks into a public-facing reports (data
+provenance, methods, sensitivity analyses)
+
+**Outreach**
+
+- [ ] Draft Planète-Vie piece on community structure along the river-sea
+continuum
+- [ ] Maintain a regular (not high-frequency), milestone-triggered outreach
+pipeline (The Conversation FR, Science Ouest, international outlets)

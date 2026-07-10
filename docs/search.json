@@ -396,7 +396,7 @@
     "href": "index.html",
     "title": "RIVERSEA project",
     "section": "",
-    "text": "This site gathers the work of the RIVERSEA project, quantifying how dams and nutrient loading affect fish food web structure along the river-estuary-sea continuum in France.\n\nLab notebooks — notebooks tracking the exploratory, day-to-day analysis of the project.\nReports — the manuscript and, in time, synthetic reports documenting the finalized analysis pipeline.\nPresentations — slides presented at meetings and conferences."
+    "text": "This site gathers the work of the RIVERSEA project, quantifying how dams and nutrient loading affect fish food web structure along the river-estuary-sea continuum in France."
   },
   {
     "objectID": "index.html#a.-method-and-model-selection",
@@ -1587,5 +1587,12 @@
     "title": "Reports",
     "section": "",
     "text": "Synthetic report documenting the analysis pipeline."
+  },
+  {
+    "objectID": "index.html#current-priorities",
+    "href": "index.html#current-priorities",
+    "title": "RIVERSEA project",
+    "section": "Current priorities",
+    "text": "Current priorities\nLast updated 2026-07-10.\nData pipeline & analysis\n\nFinish AMOBIO×ASPE×REPHY merge (unit harmonization, distance-to-mouth)\nDecide nutrient composite variable (individual vs. TN+TP+ratio vs. PCA — let RF pre-screening decide)\nValidate FishBase diets against literature\nRefine predation window per species\nNew notebook: invasive species × dams (Silurus glanis, Tedesco et al. 2017 native/non-native status, NMDS vs. distance-to-dam)\n\nStatistical modeling\n\nGear-effect sensitivity analysis (electrofishing vs. trawl)\nBayesian SEM as a robustness check alongside INLA\nRF pre-screening to inform INLA specification\nDecide INLA spatial structure across the continuum (hydrologic-distance tail-down covariance + marine SPDE — to discuss with co-authors)\nCounterfactual scenario approach\nUse spatial blocked cross-validation\n\nWriting\n\n(in progress) Draft formal hypotheses (H1-H4)\nWrite novelty/positioning paragraph (vs. Zhu, Ma, Barnes 2026)\nRewrite Introduction bullets into prose, section by section\nRefine paper title and conceptual hook\nIntegrate the “position as currency” identity into the manuscript\n\nReproducibility & open science\n\n(in progress) Reproducibility hygiene: DESCRIPTION, tests, CI\nReorganize analysis notebooks into a public-facing reports (data provenance, methods, sensitivity analyses)\n\nOutreach\n\nDraft Planète-Vie piece on community structure along the river-sea continuum\nMaintain a regular (not high-frequency), milestone-triggered outreach pipeline (The Conversation FR, Science Ouest, international outlets)"
   }
 ]
