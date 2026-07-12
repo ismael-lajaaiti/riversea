@@ -1,4 +1,6 @@
-# RIVERSEA project
+<p align="center">
+  <img src="assets/logo.svg" alt="RIVERSEA" width="500">
+</p>
 
 Analysis pipeline and manuscript for the RIVERSEA project, quantifying how
 dams and nutrient loading affect fish food web structure along the
