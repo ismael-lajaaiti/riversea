@@ -283,8 +283,22 @@ Jacobian.
 
 ### Traits
 
+::: {.callout-note}
+This section may not be relevant for the current manuscript. It may however be
+useful resource for future extension of the project that may include trait
+space analysis.
+:::
+
 - @Brosse-etal-2021 FISHMORPH database which contains 10 morphological traits
 for around 50% of freshwater fish species worldwide.
+
+- @Su-etal-2023 in North American freshwater, invasive species are often highly
+fecund, long-lived and large. Invaded community on the other hand exhibit a
+high functional distance between the species it comprises leaving empty
+functional space for potential invaders.
+
+- @Toussaint-etal-2018 Non-native species led to marked shifts in functional
+diversity of the world freshwater fish faunas
 
 ## Hypotheses
 
