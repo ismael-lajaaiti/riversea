@@ -1,5 +1,6 @@
 ---
 title: "RIVERSEA project"
+engine: knitr
 ---
 
 This site gathers the work of the RIVERSEA project, quantifying how dams and
@@ -15,7 +16,7 @@ continuum in France.
 
 ## Current priorities
 
-*Last updated `{r} lubridate::today()`.*
+*Last updated `r lubridate::today()`.*
 
 **Data pipeline & analysis**
 
