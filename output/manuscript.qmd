@@ -309,84 +309,151 @@ above, we formulate four hypotheses.
 
 We focus on three structural metrics with well-developed theoretical
 expectations: **connectance**, **mean trophic level**, and a **trophic
-complementarity** metric following @Barnes-etal-2026.
+complementarity** metric following @Barnes-etal-2026. Because connectance, and
+potentially other structural metric, are mechanically linked to species
+richness [@Cohen-Briand-1984; @Martinez-1992] we will incorporate richness as
+mediator variable to separate direct and richness-mediated effects .
 
-**H1 — Nutrients have a unimodal effect on food web structure.**
-Moderate nutrient enrichment should increase local productivity and prey
-availability, supporting more diverse and complex food webs
-[@Ho-Altermatt-Carraro-2023]. Beyond a threshold, excess nutrients are expected
-to degrade food web structure through hypoxia, algal dominance, and turbidity
-[@Ding-etal-2026; @Dean-etal-2023b]. This is consistent with the classic
-*paradox of enrichment* [@Rosenzweig-1971], and with @Bonnaffé-etal-2024b's more
-recent finding that richness and food-web structure jointly shape community
-stability: enrichment destabilizes predator-prey dynamics, and the resulting
-loss of destabilized interactions/species is one mechanism that could simplify
-food web structure at high nutrient loads.
+### H1: Nutrients have a unimodal effect on food web structure
 
-**H2 — Dam impact affects food web structure through (at least) two distinct
-pathways, at two different spatial scales, which we predict act on different
-metrics.** We distinguish a *local* pathway (distance to nearest dam) from a
-*global* pathway (cumulative barrier effect / basin-wide fragmentation, per
-AMOBIO's existing metrics). At the basin scale, cumulative fragmentation is
-expected to reduce species richness and mean trophic level, through loss of
-migratory and piscivorous species that depend on longitudinal connectivity
-[@Dean-etal-2023b; @He-etal-2024]. At the same time, dams are known to
-facilitate the spread of invasive species [@Johnson-Olden-VanderZanden-2008b],
-including generalist invasive predators such as wels catfish (*Silurus glanis*)
-— reservoirs can provide favorable larval-rearing habitat that promotes range
-expansion, and the species is known to reshape recipient fish communities once
-established [@Encina-etal-2024; @Bylak-etal-2023]. If such generalists
-establish disproportionately in impounded reaches, we would predict connectance
-to *increase* as richness and trophic complementarity trophic level decline.
+We expect an overall humped relationship between nutrient availability (proxy
+of productivity) and food web structure [@Mittelbach-etal-2001]. Moderate
+nutrient enrichment should increase local productivity and prey availability,
+supporting more diverse and complex food webs [@Ho-Altermatt-Carraro-2023; but
+see @Post-2002]. Beyond a threshold, excess nutrients are expected to degrade
+food web structure through hypoxia, algal dominance, and turbidity
+[@Ding-etal-2026; @Dean-etal-2023b], or through the destabilization of higher
+trophic level as predicted by the *paradox of enrichment* [@Rosenzweig-1971].
+This is consistent with @Bonnaffé-etal-2024's recent finding that temperature
+and nutrient interact magnifying food web simplification. In sum, we expect
+mean trophic level and trophic complementarity to rise then fall with nutrient
+concentration, and connectance to follow the opposite pattern (mostly through
+richness-mediated effect).
+
+### H2: Dams fragment the lanscape but homogeneize biotic community
+
+We distinguish a *local* pathway (distance to nearest dam) from a *global*
+pathway (cumulative barrier effect / basin-wide fragmentation). At the (global)
+basin scale, cumulative (linear) downstream fragmentation is expected to reduce
+species richness, mean trophic level and trophic complementarity, through loss
+of migratory and piscivorous species that depend on longitudinal connectivity
+[@Dean-etal-2023b; @He-etal-2024]. On the other hand, the upstream cumultative
+fragmentation homogeneize hydrological conditions resulting in more similar
+biotic community [@Poff-etal-2007]. As a result, cumulative (dendritic)
+upstream fragmentation is expected to reduce trophic complementarity and
+increase connectance through the promotion of generalist -- sometimes invasive
+-- species [@Johnson-Olden-VanderZanden-2008b; @Encina-etal-2024;
+@Bylak-etal-2023]. At a local scale, this phenomenon is expected to increase
+near reservoir and so should be come stronger as the distance to the nearest
+downstream dam decreases. Conversely, we expect the opposite effect of the
+distance to the nearest upstream dam because of the negative effect of sediment
+starvation and hydropeaking on productivity [@Ellis-Jones-2013b].
+
+### H3: The effect of dams and nutrients on food web structure is partly mediated by species richness
+
+Dams and nutrients can impact species richness (as described above), which in
+turn impacts food web structure. This is an indirect pathway through which
+stressors can reshape food web. In addition, we predict candidate direct-effect
+mechanisms to operate. In particular, the impact of invasive species (described
+in H2) operates both indirectly and directly on food web structure. Indirectly
+through the potential exclusion of native species, directly through its unique
+generalist diet. We note, as a limitation, that the mediated effect from
+richness to food web structure may also capture the impact of other confounding
+factors acting on species richness and food web structure independently of
+stressors (such as habitat complexity).
 
 
-**H3 — Part of the dam and nutrient effects on food web structure is mediated
-by species richness, but we expect a direct effect too.** Consistent with the
-DAG above, candidate direct-effect mechanisms — i.e. effects on structure that
-don't operate simply by adding or removing species — in particular  the
-compositional/identity effect described in H2, where an invasive generalist
-changes connectance through its trophic role rather than through a change in
-richness per se. Methodologically, we plan to fit two linked INLA models —
-richness ~ dam + nutrients + spatial structure, and structure ~ dam + nutrients
-+ richness + spatial structure — and compute the indirect effect as the product
-of posterior samples of the relevant coefficients across the two fits. This
-gives a fully Bayesian direct/indirect decomposition inside the INLA framework
-itself, with the (Bayesian) SEM run alongside as an independent cross-check
-rather than the sole source of the decomposition.
+### H4: Stressor impacts change along the river-estuary-sea continuum, and peak in estuaries
 
-**H4 — A site's position along the river-to-sea continuum modulates its
-sensitivity to both stressors, and we expect this sensitivity to peak in the
-estuarine transition zone; both stressors may also propagate over long
-distances rather than acting only locally.** Upstream (riverine) and downstream
-(marine) sites differ systematically in baseline connectivity, salinity, and
-community composition [@Whitfield-etal-2024; @Attrill-2002]. We predict that
-the *slope* of the nutrient effect (and possibly the dam-impact effect) on food
-web structure — i.e. an interaction between continuum position and stressor
-magnitude — is not uniform along the continuum. Specifically, because estuaries
-are naturally physiologically stressful environments (fluctuating salinity,
-turbidity, low baseline diversity), resident communities may already sit closer
-to their tolerance limits and hence be more sensitive to added anthropogenic
-pressure [@Elliott-Quintino-2007] — consistent with synergistic rather than
-additive multiple-stressor dynamics in already-stressed systems
-[@Jackson-Pawar-Woodward-2021a]. This contrasts with a simple monotonic view in
-which sensitivity would only increase or decrease steadily from headwater to
-sea. Note this pairs naturally with the local/global distinction in H2: the
-basin-wide barrier effect and nutrient loading are both plausibly
-long-distance-acting pressures, which is part of why we model both a local
-(distance) and a global (cumulative) dam metric rather than distance alone.
+We predict that stressor impacts (nutrient and dams) on food web structure —
+i.e. an interaction between continuum position and stressor magnitude — is not
+uniform along the continuum. Specifically, because estuaries are naturally
+stressful environments (fluctuating salinity, turbidity, low baseline
+diversity), resident communities may already sit closer to their tolerance
+limits and hence be more sensitive to added anthropogenic pressure
+[@Elliott-Quintino-2007].
 
-<!-- TODO on stress-gradient framing: the classic Stress Gradient Hypothesis
-(facilitation replacing competition under high abiotic stress) is a different
-mechanism than "already-stressed systems are more sensitive to an added
-stressor" — worth treating as a conceptual parallel rather than a direct
-citation match. More mechanistically apt candidates found via a quick search,
-not yet in references.bib: a bioRxiv preprint "Ecological theory predicts
-ecosystem stressor interactions in freshwater ecosystems" and "Interactive
-effects of multiple stressors vary with consumer interactions, stressor
-dynamics and magnitude" — both on non-additive/synergistic stressor effects in
-freshwater systems specifically. Worth checking these against
-@Jackson-Pawar-Woodward-2021a and @Orr-etal-2024a (already cited) for overlap
-before adding. -->
+### H5: Nutrient impact on food web structure is magnified in lentic, dam-impounded reaches
+
+We predict a true stressor-by-stressor interaction: the effect of nutrient
+concentration on food web structure (H1) is amplified in sites closer to
+downstream dam because of longer residence time. Impoundment slows water
+transit, giving phytoplankton more time to take up available nutrients and
+convert them into biomass rather than being flushed downstream
+[@Chen-etal-2020]. We therefore expect the nutrient effect on species richness,
+connectance, mean trophic level and trophic complementarity to strengthen as
+distance to the nearest downstream dam decreases, i.e. a nutrient ×
+local-downstream-dam interaction. This tests for a synergestic interaction
+between nutrient and dam impacts [@Jackson-Pawar-Woodward-2021a;
+@Orr-etal-2024a].
+
+## Statistical model
+
+We formalise H1–H5 as two linked Bayesian spatial models fit in INLA, following
+the mediation structure introduced in H3. Structural metrics (connectance, mean
+trophic level, trophic complementarity) are fit as separate response models
+sharing the same covariate structure. Site-level covariates are: `nutrient`
+(nutrient concentration or composite index, H1); `dam_down_local` and
+`dam_down_global` (distance to nearest downstream dam, and cumulative
+downstream fragmentation, H2); `dam_up_local` and `dam_up_global` (distance to
+nearest upstream dam, and cumulative upstream fragmentation, H2); `richness`
+(local species richness, H3); and `habitat` (categorical variable
+distinguishing *river*, *estuary* and *sea* sites). `S(site)` denotes the
+spatial random effect.
+
+
+::: {.callout-note}
+
+`S(site)` can be a Whittle–Matérn field on the river [metric
+graph](https://davidbolin.github.io/MetricGraph/articles/MetricGraph.html)
+[@Bolin-Simas-Wallin-2023] for river sites, and a standard 2D SPDE field for
+coastal sites (if needed, maybe a metric graph will be sufficient if sites are
+close enough to the river mouth).
+
+:::
+
+::: {.callout-note}
+
+We use a categorical variable to caracterise site position along the continuum
+to avoid identifiability issue. As a continuous variable (e.g. distance to
+river mouth) may already be captured by the spatial random effect, making the
+model unable to disentangle the two.
+
+:::
+
+```
+structure ~ nutrient + nutrient^2 # H1
+            + dam_down_local + dam_down_global # H2
+            + dam_up_local + dam_up_global # H2
+            + nutrient:dam_down_local # H5
+            + habitat:nutrient # H4
+            + habitat:dam # H4
+            + richness # H3
+            + S(site) # Handle spatial auto-correlation
+
+# H3 - Model richness as a mediator variable
+richness ~ nutrient + nutrient^2
+           + dam_down_local + dam_down_global
+           + dam_up_local + dam_up_global
+           + nutrient:dam_down_local
+           + habitat:nutrient
+           + habitat:dam
+           + S(site)
+```
+
+::: {.callout-note}
+
+The `structure` and `richness` equations above are not a single joint model.
+Instead, we fit the two models separately. For H3's mediated pathway, we draw
+matched posterior samples of the relevant stressor coefficient from the
+`richness` fit and the `richness` coefficient from the `structure` fit,  and
+multiply them to obtain a posterior distribution for the indirect effect. The
+direct effect is read directly from the `structure` model's stressor
+coefficient, and the total effect is the sum of the two. This approach is
+common practice in Bayesian mediation, but it is important to note that it does
+not fully propagate joint uncertainty.
+
+:::
 
 ## Methods
 

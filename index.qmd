@@ -15,7 +15,7 @@ continuum in France.
 
 ## Current priorities
 
-*Last updated 2026-07-10.*
+*Last updated `{r} lubridate::today()`.*
 
 **Data pipeline & analysis**
 
@@ -39,7 +39,7 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 
 **Writing**
 
-- [ ] **(in progress)** Draft formal hypotheses (H1-H4)
+- [x] Draft formal hypotheses
 - [ ] Write novelty/positioning paragraph (vs. Zhu, Ma, Barnes 2026)
 - [ ] Rewrite Introduction bullets into prose, section by section
 - [ ] Refine paper title and conceptual hook
