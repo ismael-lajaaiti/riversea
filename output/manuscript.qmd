@@ -278,6 +278,10 @@ meta-ecosystem.
 - @Polis-Anderson-Holt-1997 founding synthesis of how spatial subsidy, flux of
 consumer and resources reorganise food webs.
 
+- @Nakano-Murakami-2001 shows the seasonal coupling between a forest and
+stream, where subidies flux alternate between season. Flux from aquatic to
+terrestrial peaked in spring, while the reciprocal flux peaked in summer.
+
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
 Jacobian.
 
