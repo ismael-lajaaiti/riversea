@@ -29,6 +29,18 @@ get_diet_category <- function(species) {
     arrange(species, stage)
 }
 
+get_missing_diet <- function(species_init, diet, sea_data) {
+  species_with_info <- diet |>
+    filter_out(is.na(prey_category)) |>
+    pull(species) |>
+    unique()
+  species_no_info <- sort(setdiff(species_init, species_with_info))
+  sea_data$catch |>
+    filter(species %in% species_no_info) |>
+    group_by(species) |>
+    summarise(occurence = n(), .groups = "drop")
+}
+
 mutate_prey_category <- function(df) {
   df |>
     mutate(

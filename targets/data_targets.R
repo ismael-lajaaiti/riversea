@@ -42,6 +42,10 @@ data_targets <- list(
     get_diet_category(species_list)
   ),
   tar_target(
+    species_no_diet_info,
+    get_missing_diet(species_list, diet, sea_data_tidy)
+  ),
+  tar_target(
     diet_wide,
     widen_diet_category(diet)
   ),

@@ -150,7 +150,13 @@ productivity, not the flow [@Junk-Bayley-Sparks-1989].
 - The River Wave concept as unifying framework of different concepts of
 freshwater ecology [@Humphries-Keckeis-Finlayson-2014].
 
-- Community richness and hence food web structure is expected to be driven by nutrient availability [@Ho-Altermatt-Carraro-2023].
+- Community richness and hence food web structure is expected to be driven by
+nutrient availability [@Ho-Altermatt-Carraro-2023].
+
+- @Carraro-Ho-2025 link river shapes community diversity and food web structure
+using a numerical approach. Higher spatial heterogeneity and lower biomass in
+elongated rivers than compact ones, driven by higher variability in nutrient
+input load.
 
 ### Multiple stressors
 
