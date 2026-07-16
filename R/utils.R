@@ -132,7 +132,7 @@ download_hydrographic_files <- function(dir) {
     coast = "https://services.sandre.eaufrance.fr/telechargement/geo/MDO/MasseDEau/vrap_2022/MasseDEauCotiere/MasseDEauCotiere_FRA-shp.zip"
   )
   if (!dir.exists(dir)) {
-    dir.create(dir)
+    dir.create(dir, recursive = TRUE)
   }
   purrr::walk2(
     url_sea_polygones, names(url_sea_polygones),
