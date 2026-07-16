@@ -2,6 +2,8 @@
   <img src="assets/logo.svg" alt="RIVERSEA" width="300">
 </p>
 
+[![R-CMD-check](https://github.com/ismael-lajaaiti/riversea/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ismael-lajaaiti/riversea/actions/workflows/R-CMD-check.yaml)
+
 Analysis pipeline and manuscript for the RIVERSEA project, quantifying how
 dams and nutrient loading affect fish food web structure along the
 river-estuary-sea continuum in France. The project website (built with
