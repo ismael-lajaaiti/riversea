@@ -1,0 +1,4 @@
+.git
+renv/library
+data/**/raw
+*.Rproj.user
