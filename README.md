@@ -29,10 +29,42 @@ below.
 - `index.qmd` / `_quarto.yml` — the project website: landing page and
   Quarto site configuration.
 
-## Setup
+## Reproducing the pipeline
 
-Package dependencies are managed with [`renv`](https://rstudio.github.io/renv/).
-Run `renv::restore()` to install them.
+The pipeline is containerized so it runs the same everywhere: R version,
+system libraries, Quarto, and R package versions (via
+[`renv`](https://rstudio.github.io/renv/)) are all pinned in the
+`Dockerfile`.
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. Build the image once from the repository root (~15-20 min):
+   ```sh
+   docker build -t riversea .
+   ```
+3. Run a container, mounting the repo so data and rendered outputs are
+   saved back to your machine:
+   ```sh
+   docker run --rm -it -v "$(pwd)":/project riversea
+   ```
+4. In the R console that opens, run the pipeline:
+   ```r
+   targets::tar_make()
+   ```
+
+Have R installed locally and prefer to skip Docker? Run `renv::restore()`
+to install the pinned package versions, then step 4 directly (you'll also
+need the system libraries and Quarto version listed in the `Dockerfile`).
+
+## Collaborating
+
+No Docker knowledge beyond the commands above is needed:
+
+- Edit code (`R/`, `targets/`, `.qmd` files).
+- Re-run `targets::tar_make()` to regenerate affected data, figures, and
+  rendered documents.
+- Commit code changes and any outputs meant for publishing (`docs/`,
+  `output/`); `data/` is local-only and gitignored.
+- Open a PR against `main`.
 
 ## License
 
