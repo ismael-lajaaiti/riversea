@@ -39,8 +39,6 @@ tar_source()
 
 lapply(list.files("targets", full.names = TRUE), source)
 
-workshop_dir <- "data/river_workshop"
-sea_data_raw <- "data/sea/raw"
 station_file <- "data/river/station_analysis.csv"
 
 list(

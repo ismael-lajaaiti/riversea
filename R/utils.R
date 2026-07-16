@@ -294,3 +294,21 @@ nice_theme <- function(base_size = 11) {
       )
   )
 }
+
+download_sea_raw_data <- function(dest_dir = "data/sea/raw") {
+  parent_dir <- dirname(dest_dir)
+  dir.create(parent_dir, recursive = TRUE, showWarnings = FALSE)
+
+  zip_path <- file.path(parent_dir, "sea.zip")
+
+  zen4R::download_zenodo(
+    doi = "10.5281/zenodo.21395668",
+    path = parent_dir,
+    files = "sea.zip"
+  )
+
+  unzip(zip_path, exdir = parent_dir)
+  file.remove(zip_path)
+
+  dest_dir
+}
