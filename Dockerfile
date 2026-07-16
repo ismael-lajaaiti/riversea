@@ -21,11 +21,14 @@ RUN curl -LO https://github.com/quarto-dev/quarto-cli/releases/download/v${QUART
 
 WORKDIR /project
 
+ENV RENV_PATHS_LIBRARY=/renv/library
+
 COPY renv.lock renv.lock
 COPY renv/activate.R renv/activate.R
 COPY .Rprofile .Rprofile
 
-RUN R -e " \
+RUN R -e "install.packages('renv', repos = 'https://cloud.r-project.org')" \
+  && R -e " \
   options(renv.config.repos.override = c( \
     CRAN     = 'https://packagemanager.posit.co/cran/latest', \
     INLA     = 'https://inla.r-inla-download.org/R/stable', \
