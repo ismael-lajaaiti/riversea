@@ -37,4 +37,6 @@ RUN R -e " \
 
 COPY . .
 
+RUN R -e "renv::install('.', dependencies = FALSE)"
+
 CMD ["R"]
