@@ -158,6 +158,9 @@ using a numerical approach. Higher spatial heterogeneity and lower biomass in
 elongated rivers than compact ones, driven by higher variability in nutrient
 input load.
 
+- @Harris-etal-2026b mobile consumers (fish, birds) use heterogeneous resources
+in braided river, New Zealand.
+
 ### Multiple stressors
 
 - Synergistic and antagonistic effects of multiple stressors
