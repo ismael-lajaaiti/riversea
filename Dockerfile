@@ -5,6 +5,7 @@ FROM rocker/geospatial:${R_VERSION}
 
 # Required by zen4R.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     libxml2-dev \
     libsecret-1-dev \
     git \
