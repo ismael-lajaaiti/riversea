@@ -155,8 +155,8 @@ plot_amobio_metric <- function(
 
 get_aspe_data <- function(aspe_file_foodweb, aspe_file_code) {
 
-  aspe_file_foodweb <- here("data", "river", "output_size2webs.rda")
-  aspe_file_code <- here("data", "river", "output_individual_fish.rda")
+  aspe_file_foodweb <- here::here("data", "river", "output_size2webs.rda")
+  aspe_file_code <- here::here("data", "river", "output_individual_fish.rda")
 
   foodweb <-
     get(base::load(aspe_file_foodweb))$tab_local_foodwebs_summary_metrics |>

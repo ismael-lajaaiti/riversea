@@ -48,7 +48,7 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 
 **Reproducibility & open science**
 
-- [ ] **(in progress)** Reproducibility hygiene: `DESCRIPTION`, tests, CI
+- [x] Reproducibility hygiene: `DESCRIPTION`, Docker, CI
 - [ ] Reorganize analysis notebooks into a public-facing reports (data
 provenance, methods, sensitivity analyses)
 

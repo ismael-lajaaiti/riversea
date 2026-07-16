@@ -8,7 +8,7 @@ load_raw_sea_data <- function(data_folder) {
   out <- list(nurse = list(), pomet = list(), solper = list())
 
   read_file <- function(file_name) {
-    read.csv(file.path(data_folder, file_name), sep = ";")
+    utils::read.csv(file.path(data_folder, file_name), sep = ";")
   }
 
   out$pomet$catch <- read_file("poisson_pomet.csv")
@@ -76,8 +76,8 @@ clean_sea_data <- function(raw_data) {
       batch_size = Nind_esp_taille
     ) |>
     filter(!is.na(length)) |>
-    uncount(batch_size) |>
-    mutate(length = length |> str_replace(",", ".") |> as.numeric()) |>
+    tidyr::uncount(batch_size) |>
+    mutate(length = length |> stringr::str_replace(",", ".") |> as.numeric()) |>
     mutate(length = length / 10) # Convert to cm.
   # Pomet - Trait.
   clean_data$pomet$trait <- raw_data$pomet$trait |>
@@ -100,10 +100,10 @@ clean_sea_data <- function(raw_data) {
       y_end = Coord_Fin_ymin,
     ) |>
     mutate(
-      x_start = x_start |> str_replace(",", ".") |> as.numeric(),
-      x_end = x_end |> str_replace(",", ".") |> as.numeric(),
-      y_start = y_start |> str_replace(",", ".") |> as.numeric(),
-      y_end = y_end |> str_replace(",", ".") |> as.numeric(),
+      x_start = x_start |> stringr::str_replace(",", ".") |> as.numeric(),
+      x_end = x_end |> stringr::str_replace(",", ".") |> as.numeric(),
+      y_start = y_start |> stringr::str_replace(",", ".") |> as.numeric(),
+      y_end = y_end |> stringr::str_replace(",", ".") |> as.numeric(),
       longitude = (x_start + x_end) / 2,
       latitude = (y_start + y_end) / 2
     ) |>
@@ -146,8 +146,8 @@ clean_sea_data <- function(raw_data) {
       batch_size = Nombre
     ) |>
     filter(!is.na(length)) |>
-    uncount(batch_size) |>
-    mutate(length = length |> str_replace(",", ".") |> as.numeric())
+    tidyr::uncount(batch_size) |>
+    mutate(length = length |> stringr::str_replace(",", ".") |> as.numeric())
   # Nurse - Trait
   clean_data$nurse$trait <- raw_data$nurse$trait |>
     select(
@@ -197,8 +197,8 @@ clean_sea_data <- function(raw_data) {
       batch_size = Nombre
     ) |>
     filter(!is.na(length)) |>
-    uncount(batch_size) |>
-    mutate(length = length |> str_replace(",", ".") |> as.numeric())
+    tidyr::uncount(batch_size) |>
+    mutate(length = length |> stringr::str_replace(",", ".") |> as.numeric())
   # Solper - Trait.
   clean_data$solper$trait <- NA # For now, we exclude SOLPER survey.
 
@@ -280,7 +280,7 @@ clean_name <- function(df, solper_reftax) {
 #' @export
 transform_solper_name <- function(df, fname, solper = FALSE) {
   if (solper) {
-    solper_reftax <- read.csv2(fname) |>
+    solper_reftax <- utils::read.csv2(fname) |>
       select(C_VALIDE, L_VALIDE) |>
       rename(code = C_VALIDE, scientific_name = L_VALIDE)
     df_solper <- df |> filter(survey == "solper")
@@ -356,7 +356,7 @@ impute_size <- function(data) {
     group_by(trait, year, species_valid, survey) |>
     summarise(
       mu = mean(length),
-      sigma = sd(length),
+      sigma = stats::sd(length),
       .groups = "drop"
     ) |>
     left_join(data$catch) |>
@@ -383,7 +383,7 @@ impute_size <- function(data) {
       )
     ) |>
     select(-c(n_missing, mu, sigma, size_min, size_max)) |>
-    unnest(length) |>
+    tidyr::unnest(length) |>
     mutate(measured = FALSE)
   data$size <- data$size |>
     mutate(measured = TRUE)

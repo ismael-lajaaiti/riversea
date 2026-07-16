@@ -51,16 +51,16 @@ get_metaweb <- function(
     filter_out(species_code == "fish")
   predation_window <- predation_window |> rename(species_code = species)
   # Clean data.
-  size_clean <- remove_missing_species(
+  size_clean <- foodwebbuilder::remove_missing_species(
     ind_measure = size_table,
     fish_diet_shift = diet_fish,
     pred_win = predation_window
   )
-  size_classes <- compute_size_classes(
+  size_classes <- foodwebbuilder::compute_size_classes(
     ind_measure = size_clean,
     num_classes = num_classes
   )
-  metaweb <- build_metaweb(
+  metaweb <- foodwebbuilder::build_metaweb(
     tab_size_classes = size_classes,
     pred_win = predation_window,
     fish_diet_shift = diet_fish,
@@ -70,7 +70,7 @@ get_metaweb <- function(
   )
   res <- list(metaweb = metaweb, size_class = size_classes)
   if (local) {
-    res$local <- build_local_foodweb(
+    res$local <- foodwebbuilder::build_local_foodweb(
       ind_measure = size_clean,
       local_id = local_id,
       metaweb = metaweb,
@@ -160,7 +160,7 @@ get_trophic_length <- function(web, tl_method = "ChainAveragedTL") {
   links <- web |>
     as.data.frame() |>
     mutate(resource = rownames(web)) |>
-    pivot_longer(-one_of("resource"), names_to = "consumer") |>
+    tidyr::pivot_longer(-one_of("resource"), names_to = "consumer") |>
     filter(value == 1) |>
     select(-value)
   # trophic_length <-
@@ -178,24 +178,24 @@ get_trophic_length <- function(web, tl_method = "ChainAveragedTL") {
 plot_sizeclass_connectance <- function(metaweb_table) {
   metaweb_table |>
     mutate(connectance = purrr::map_dbl(metaweb, get_connectance)) |>
-    ggplot(aes(num_classes, connectance)) +
-    geom_point() +
-    geom_line() +
-    labs(x = "Number of size classes", y = "Metaweb connectance")
+    ggplot2::ggplot(ggplot2::aes(num_classes, connectance)) +
+    ggplot2::geom_point() +
+    ggplot2::geom_line() +
+    ggplot2::labs(x = "Number of size classes", y = "Metaweb connectance")
 }
 
 get_trophic_breadth <- function(web) {
   breadth_values <- apply(web, 2, mean)
   list(
-    median = median(breadth_values),
+    median = stats::median(breadth_values),
     mean = mean(breadth_values),
     max = max(breadth_values),
-    q90 = quantile(breadth_values, 0.9)[[1]]
+    q90 = stats::quantile(breadth_values, 0.9)[[1]]
   )
 }
 
 prepare_local_foodwebs <- function(web_list, sea_data_tidy, resource) {
-  foodweb <- enframe(web_list$local, name = "trait", value = "foodweb") |>
+  foodweb <- tibble::enframe(web_list$local, name = "trait", value = "foodweb") |>
     mutate(
       log_trophic_richness = log(purrr::map_dbl(foodweb, get_trophic_richness)),
       log_species_richness = log(purrr::map_dbl(foodweb, get_species_richness)),
@@ -223,9 +223,9 @@ match_with_environment <- function(foodweb, environment) {
     group_modify(~ {
       env_year <- environment |>
         filter(year == .y$year) |>
-        st_as_sf(coords = c("x", "y"), crs = 4326)
+        sf::st_as_sf(coords = c("x", "y"), crs = 4326)
       fw_year <- .x |>
-        st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+        sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
       idx <- st_nearest_feature(fw_year, env_year)
       env_matched <- env_year |>
         slice(idx) |>

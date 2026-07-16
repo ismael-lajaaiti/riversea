@@ -25,7 +25,7 @@ build_sem <- function(observable, mediator, response, random, data) {
 
 make_formula <- function(response, predictor, random) {
   rhs <- paste(c(predictor, random), collapse = "+")
-  as.formula(paste(response, "~", rhs))
+  stats::as.formula(paste(response, "~", rhs))
 }
 
 build_sem_graph <- function(model) {
@@ -116,38 +116,38 @@ plot_sem <- function(model) {
   graph <- build_sem_graph(model)
   p_graph <- ggraph::ggraph(graph, layout = "sugiyama") +
     ggraph::geom_edge_link(
-      aes(
+      ggplot2::aes(
         edge_color = sign,
         edge_linetype = if_else(significant, "solid", "dashed"),
         label = if_else(significant, as.character(round(estimate, 2)), "")
       ),
-      arrow = arrow(length = unit(4, "mm"), type = "closed"),
+      arrow = grid::arrow(length = grid::unit(4, "mm"), type = "closed"),
       end_cap = ggraph::rectangle(23, 11, "mm"),
       angle_calc = "along",
-      label_dodge = unit(2.5, "mm"),
-      label_push = unit(20, "mm")
+      label_dodge = grid::unit(2.5, "mm"),
+      label_push = grid::unit(20, "mm")
     ) +
-    ggraph::geom_node_label(aes(label = label)) +
+    ggraph::geom_node_label(ggplot2::aes(label = label)) +
     ggraph::scale_edge_color_manual(values = c(
       "positive" = "springgreen3",
       "negative" = "firebrick3"
     )) +
     ggraph::theme_graph() +
-    theme(legend.position = "none")
+    ggplot2::theme(legend.position = "none")
   net_effects <- get_sem_net_effects(model)
-  p_effects <- ggplot(
+  p_effects <- ggplot2::ggplot(
     net_effects,
-    aes(x = total, y = from_label, fill = sign)
+    ggplot2::aes(x = total, y = from_label, fill = sign)
   ) +
-    geom_col() +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
-    facet_wrap(~to_label, ncol = 1, scales = "free_x") +
-    scale_fill_manual(values = c(
+    ggplot2::geom_col() +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
+    ggplot2::facet_wrap(~to_label, ncol = 1, scales = "free_x") +
+    ggplot2::scale_fill_manual(values = c(
       "positive" = "springgreen3",
       "negative" = "firebrick3"
     )) +
-    labs(x = "Net effect", y = NULL) +
-    theme_minimal() +
-    theme(legend.position = "none")
+    ggplot2::labs(x = "Net effect", y = NULL) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "none")
   patchwork::wrap_plots(p_graph, p_effects)
 }

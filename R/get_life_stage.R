@@ -46,7 +46,7 @@ get_life_stage_length <- function(
   maturity_length,
   epsilon = 1e-6
 ) {
-  df <- read.csv2(life_stage_file) |>
+  df <- utils::read.csv2(life_stage_file) |>
     rename(
       species = Espece,
       lg0_max = LG0max,
@@ -73,7 +73,7 @@ get_life_stage_length <- function(
       adult_length_min = juvenile_length_max + epsilon,
       adult_length_max = Inf
     ) |>
-    pivot_longer(
+    tidyr::pivot_longer(
       -species,
       names_to = c("stage", ".value"),
       names_sep = "_length_"
@@ -92,7 +92,7 @@ merge_diet_length <- function(diet, length, epsilon = 1e-6) {
         TRUE ~ stage
       )
     ) |>
-    pivot_longer(!c(species, stage), names_to = "category", values_to = "eat") |>
+    tidyr::pivot_longer(!c(species, stage), names_to = "category", values_to = "eat") |>
     filter_out(eat == 0) |>
     distinct() |>
     pivot_wider(

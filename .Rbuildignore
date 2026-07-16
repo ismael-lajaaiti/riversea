@@ -7,3 +7,9 @@
 ^data/
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^backup-data/
+^_freeze/
+^\.claude/
+^\.github/
+^\.dockerignore$
+^\.renvignore$

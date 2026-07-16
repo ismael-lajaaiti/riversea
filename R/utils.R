@@ -19,7 +19,7 @@ download_workshop_data <- function(dir) {
 #' @return Path of the unzipped directory.
 #' @export
 unzip_workshop <- function(zip_file, dir) {
-  unzip(zip_file, exdir = dir)
+  utils::unzip(zip_file, exdir = dir)
   file.path(dir, "zenodo")
 }
 
@@ -31,7 +31,7 @@ unzip_workshop <- function(zip_file, dir) {
 #' @return ggplot
 #' @export
 create_plot_dag <- function() {
-  dag <- dagify(
+  dag <- ggdag::dagify(
     TL ~ S + Comp + Env,
     S ~ Env,
     Comp ~ Env,
@@ -45,7 +45,7 @@ create_plot_dag <- function() {
       Env = "Environment"
     )
   )
-  ggdag(dag, use_labels = "label") + theme_dag()
+  ggdag::ggdag(dag, use_labels = "label") + ggdag::theme_dag()
 }
 
 #' Plot venn diagram of common species between surveys
@@ -58,9 +58,9 @@ plot_venn_diagram <- function(df) {
   df |>
     distinct(species_valid, survey) |>
     group_split(survey) |>
-    setNames(unique(df$survey)) |>
+    stats::setNames(unique(df$survey)) |>
     lapply(\(x) x$species_valid) |>
-    ggVennDiagram()
+    ggVennDiagram::ggVennDiagram()
 }
 
 #' Get relative path.
@@ -84,43 +84,43 @@ to_rel <- function(x) {
 plot_sampling <- function(sea_data, station_file) {
   d_trait <- sea_data$trait
   d_sf <- d_trait |>
-    st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
   france <- rnaturalearth::ne_countries(
     geounit = "france",
     type = "map_units",
     scale = "medium",
     returnclass = "sf"
   )
-  rivers <- ne_download(
+  rivers <- rnaturalearth::ne_download(
     scale = 10, type = "rivers_lake_centerlines", category = "physical",
     returnclass = "sf"
   )
-  rivers_fr <- st_intersection(rivers, france)
-  d_station <- read.csv(station_file, sep = ";") |>
-    st_as_sf(coords = c("lat", "long"), crs = 4326)
+  rivers_fr <- sf::st_intersection(rivers, france)
+  d_station <- utils::read.csv(station_file, sep = ";") |>
+    sf::st_as_sf(coords = c("lat", "long"), crs = 4326)
   d_sampling <- rbind(
     d_sf |> select(survey, geometry),
     d_station |> mutate(survey = "onema") |> select(survey, geometry)
   )
-  ggplot() +
-    geom_sf(data = france) +
-    geom_sf(data = rivers_fr, color = "grey") +
-    geom_sf(data = d_sampling, aes(color = survey))
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = france) +
+    ggplot2::geom_sf(data = rivers_fr, color = "grey") +
+    ggplot2::geom_sf(data = d_sampling, ggplot2::aes(color = survey))
 }
 
 plot_network_groups <- function(diet_resource) {
   adj <- t(as.matrix(diet_resource |> select(-c(light, species, reference))))
   colnames(adj) <- diet_resource$species
   g <- igraph::graph_from_adjacency_matrix(adj, mode = "directed")
-  build_metanet(metaweb = g) |>
-    compute_TL() |>
-    ggmetanet()
+  metanetwork::build_metanet(metaweb = g) |>
+    metanetwork::compute_TL() |>
+    metanetwork::ggmetanet()
 }
 
 read_environment_data <- function(dir, year_start = 1993, year_end = 2023) {
   year_vals <- seq(year_start, year_end)
   purrr::map(year_vals, function(year) {
-    read.csv(here(dir, paste0("Environment_QM_", year, ".csv"))) |>
+    utils::read.csv(here::here(dir, paste0("Environment_QM_", year, ".csv"))) |>
       mutate(year = year)
   }) |>
     purrr::list_rbind()
@@ -138,8 +138,8 @@ download_hydrographic_files <- function(dir) {
     url_sea_polygones, names(url_sea_polygones),
     \(url, name) {
       zip_file <- here::here(dir, paste0(name, ".zip"))
-      download.file(url, destfile = zip_file)
-      unzip(zipfile = zip_file, exdir = here::here(dir))
+      utils::download.file(url, destfile = zip_file)
+      utils::unzip(zipfile = zip_file, exdir = here::here(dir))
       file.remove(zip_file)
     }
   )
@@ -180,8 +180,8 @@ match_foodweb_district <- function(foodweb, hydro_zone, dist_max = 5) {
       connectance,
       trophic_length
     )) |>
-    st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
-    st_join(hydro_zone, join = sf::st_within)
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+    sf::st_join(hydro_zone, join = sf::st_within)
 
   # Food web within zone.
   fw_within <- fw_sf |>
@@ -231,14 +231,14 @@ to_sf <- function(x) {
 #' @export
 plot_data_on_map <- function(data) {
   coastline <- rnaturalearth::ne_coastline(scale = "large", returnclass = "sf")
-  ggplot(data, aes(x = longitude, y = latitude)) +
-    geom_point(size = 1) +
-    geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
-    coord_sf(
+  ggplot2::ggplot(data, ggplot2::aes(x = longitude, y = latitude)) +
+    ggplot2::geom_point(size = 1) +
+    ggplot2::geom_sf(data = coastline, inherit.aes = FALSE, linewidth = 0.3) +
+    ggplot2::coord_sf(
       xlim = range(data$longitude),
       ylim = range(data$latitude)
     ) +
-    labs(x = NULL, y = NULL)
+    ggplot2::labs(x = NULL, y = NULL)
 }
 
 #' Theme for plots of the RIVERSEA project
@@ -307,7 +307,7 @@ download_sea_raw_data <- function(dest_dir = "data/sea/raw") {
     files = "sea.zip"
   )
 
-  unzip(zip_path, exdir = parent_dir)
+  utils::unzip(zip_path, exdir = parent_dir)
   file.remove(zip_path)
 
   dest_dir

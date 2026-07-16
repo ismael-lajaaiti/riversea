@@ -254,8 +254,8 @@ plot_rephy_map <- function(data, facet = TRUE) {
   p <- ggplot2::ggplot(sites, ggplot2::aes(x = longitude, y = latitude))
   if (facet) {
     p <- p +
-      ggplot2::geom_point(mapping = aes(color = value), alpha = 0.8) +
-      scale_color_viridis_c()
+      ggplot2::geom_point(mapping = ggplot2::aes(color = value), alpha = 0.8) +
+      ggplot2::scale_color_viridis_c()
   } else {
     p <- p +
       ggplot2::geom_point(alpha = 0.8)
@@ -268,7 +268,7 @@ plot_rephy_map <- function(data, facet = TRUE) {
     ) +
     ggplot2::labs(x = NULL, y = NULL)
   if (facet) p <- p + ggplot2::facet_wrap(~parameter_code) +
-    labs(color = "Scaled value [log10 scale]")
+    ggplot2::labs(color = "Scaled value [log10 scale]")
   p
 }
 
