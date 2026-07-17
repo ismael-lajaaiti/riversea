@@ -12,24 +12,23 @@ below.
 
 ## Repository structure
 
-- `analysis/` — lab notebooks (Quarto `.qmd`). Exploratory, unpolished
-  traces of the analysis as it happens, meant for internal/private use.
-  Listed in `analysis/index.qmd`.
-- `output/` — the manuscript, and in time synthetic reports meant to
-  cleanly document the finalized pipeline for public sharing.
+- `analysis/` — lab notebooks (Quarto `.qmd`). Exploratory traces of the
+  analysis as it happens, meant for internal use. Listed in `analysis/index.qmd`.
+- `output/` — the manuscript, and in time synthetic reports meant to cleanly
+  document the finalized pipeline for public sharing.
 - `presentations/` — slides (Quarto) presented at meetings and conferences.
 - `R/` — package functions used throughout the analysis (data
   download/preprocessing, food web construction, SEM fitting, plotting).
   Documented in `man/` (roxygen-generated).
-- `targets/` and `_targets.R` — the [`targets`](https://books.ropensci.org/targets/)
-  pipeline: `data_targets.R` (data download/processing), `plot_targets.R`
-  (figures), `report_targets.R` (rendering notebooks/manuscript to
-  `docs/`).
+- `targets/` and `_targets.R` — the
+  [`targets`](https://books.ropensci.org/targets/) pipeline: `data_targets.R`
+  (data download/processing), `plot_targets.R` (figures), `report_targets.R`
+  (rendering notebooks/manuscript to `docs/`).
 - `data/` — raw and intermediate data (gitignored; not versioned).
 - `assets/` and `figures/` — images used in notebooks, the manuscript, and
   presentations.
-- `index.qmd` / `_quarto.yml` — the project website: landing page and
-  Quarto site configuration.
+- `index.qmd` / `_quarto.yml` — the project website: landing page and Quarto
+  site configuration.
 
 ## Reproducing the pipeline
 
@@ -38,8 +37,8 @@ system libraries, Quarto, and R package versions (via
 [`renv`](https://rstudio.github.io/renv/)) are all pinned in the
 `Dockerfile`.
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-2. Build the image once from the repository root (~15-20 min):
+1. Install [Docker](https://www.docker.com/products/docker-desktop/).
+2. Build the image once from the repository root (~10 min):
    ```sh
    docker build -t riversea .
    ```
@@ -59,7 +58,8 @@ need the system libraries and Quarto version listed in the `Dockerfile`).
 
 ## Collaborating
 
-No Docker knowledge beyond the commands above is needed:
+No Docker knowledge beyond the commands above is needed. To collaborate, here is
+how to proceed:
 
 - Edit code (`R/`, `targets/`, `.qmd` files).
 - Re-run `targets::tar_make()` to regenerate affected data, figures, and
