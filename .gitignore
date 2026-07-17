@@ -15,7 +15,6 @@ data/rephy/
 data/*.zip
 data/amobio
 backup-data/
-docs/site_libs/
 _freeze/
 
 _targets/
