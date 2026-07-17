@@ -52,6 +52,21 @@ system libraries, Quarto, and R package versions (via
    targets::tar_make()
    ```
 
+Prefer an IDE over the bare console? The image bundles RStudio Server:
+
+```sh
+docker run --rm -p 8787:8787 \
+  -e DISABLE_AUTH=true -e USERID=$(id -u) -e GROUPID=$(id -g) \
+  -v "$(pwd)":/project \
+  -v "$(pwd)/docker/rsession.conf":/etc/rstudio/rsession.conf \
+  riversea /init
+```
+
+Then open `localhost:8787` in your browser. `USERID`/`GROUPID` match the
+container's `rstudio` user to your own, so files created through the IDE
+(including quarto's `.quarto/` cache) keep sane ownership/permissions on
+the mounted repo.
+
 Have R installed locally and prefer to skip Docker? Run `renv::restore()`
 to install the pinned package versions, then step 4 directly (you'll also
 need the system libraries and Quarto version listed in the `Dockerfile`).
