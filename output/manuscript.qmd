@@ -171,6 +171,8 @@ nonlinear way [@Bonnaffé-etal-2024b, @Binzer-etal-2012].
 
 - [@Danet-etal-2021b; @Bonnaffé-etal-2024b].
 
+- @Zhang-etal-2026a precipitation modulates human impacts on riverine food webs
+
 ### Connectivity
 
 - Small dispersal stabilizes through spatial structure and asynchrony
