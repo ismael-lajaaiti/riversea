@@ -22,6 +22,7 @@ RUN curl -LO https://github.com/quarto-dev/quarto-cli/releases/download/v${QUART
 WORKDIR /project
 
 ENV RENV_PATHS_LIBRARY=/renv/library
+ENV RENV_PATHS_CACHE=/renv/cache
 
 COPY renv.lock renv.lock
 COPY renv/activate.R renv/activate.R
@@ -38,5 +39,10 @@ RUN R -e " \
 COPY . .
 
 RUN R -e "renv::install('.', dependencies = FALSE)"
+
+# Package cache/library are built as root; make them readable so an
+# RStudio Server session (running as the non-root `rstudio` user) can
+# still follow renv's symlinks into the cache.
+RUN chmod -R a+rX /renv
 
 CMD ["R"]
