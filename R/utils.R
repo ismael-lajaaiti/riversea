@@ -312,3 +312,12 @@ download_sea_raw_data <- function(dest_dir = "data/sea/raw") {
 
   dest_dir
 }
+
+#' Get coastline from rnaturalearth package.
+#'
+#'
+#' @return sf object
+#' @export
+coastline <- function() {
+  rnaturalearth::ne_coastline(scale = "large", returnclass = "sf")
+}

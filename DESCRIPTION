@@ -27,6 +27,7 @@ Imports:
     here,
     hrbrthemes,
     igraph,
+    INLA,
     lubridate,
     metanetwork,
     patchwork,
@@ -46,3 +47,4 @@ Imports:
     zen4R
 Remotes:
     Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder
+Additional_repositories: https://inla.r-inla-download.org/R/stable

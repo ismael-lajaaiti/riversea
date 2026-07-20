@@ -31,5 +31,6 @@ to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 4. [Overview of AMOBIO data](D4-amobio-data.qmd)
 5. [Merge AMOBIO and ASPE datasets](D5-amobio-aspe.qmd)
 6. [Overview of REPHY data](D6-rephy.qmd)
+7. [Interpolation of REPHY data](D7-rephy-interpolation.qmd)
 
 ## E. Invasive species and dams

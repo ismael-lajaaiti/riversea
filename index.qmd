@@ -18,6 +18,14 @@ continuum in France.
 
 *Last updated `r lubridate::today()`.*
 
+**Nutrients**
+
+- [ ] **(in progress)** Interpolate + yearly average at fishing sites
+- [ ] Convert units so they are consistent between REPHY and AMOBIO
+- [ ] Compute NO3+NO2 in AMOBIO
+- [ ] Check for consistency between datasets in nutrient and oxygen value
+- [ ] Also extract O2 in AMOBIO
+
 **Data pipeline & analysis**
 
 - [ ] **(in progress)** Validate FishBase diets against literature

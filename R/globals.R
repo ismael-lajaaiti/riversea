@@ -22,5 +22,5 @@ utils::globalVariables(c(
   "stage", "Std.Estimate", "survey", "threshold", "to", "to_plot",
   "total", "trait", "Trait", "trophic_length", "unit", "value",
   "variable", "with_juvenile", "x_end", "x_start", "y_end", "y_start",
-  "year", "zone_id"
+  "year", "zone_id", "depth", "level"
 ))

@@ -267,8 +267,10 @@ plot_rephy_map <- function(data, facet = TRUE) {
       ylim = range(sites$latitude)
     ) +
     ggplot2::labs(x = NULL, y = NULL)
-  if (facet) p <- p + ggplot2::facet_wrap(~parameter_code) +
-    ggplot2::labs(color = "Scaled value [log10 scale]")
+  if (facet) {
+    p <- p + ggplot2::facet_wrap(~parameter_code) +
+      ggplot2::labs(color = "Scaled value [log10 scale]")
+  }
   p
 }
 
@@ -429,4 +431,10 @@ plot_rephy_quality_share <- function(data) {
     ggplot2::scale_x_continuous(breaks = scales::breaks_pretty()) +
     ggplot2::scale_y_continuous(labels = scales::percent) +
     ggplot2::labs(x = NULL, y = "Share of observations", fill = "Quality")
+}
+
+filter_surface_rephy <- function(rephy_data, depth_max = 1) {
+  rephy_data |>
+    dplyr::filter(depth <= depth_max) |>
+    dplyr::select(-level)
 }

@@ -1,0 +1,225 @@
+---
+title: "Interpolation of REPHY data"
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal is to interpolate REPHY data -- nutrient and oxygen concentrations --
+when and where fishing operation occured. It means interpolate the variables of
+interest in space and time. We intend to do so using the Bayesian framework
+INLA.
+
+## Todo
+
+- [x] Setup notebook
+- [x] Plot REPHY stations and fishing operations together (space and time)
+- [x] Fit additive spatio-temporal SPDE model (space + year + cyclic month) for
+one parameter
+- [x] Leave-station-out cross-validation for PO4
+- [x] Diagnose limited CV skill (outliers? under-sampled folds?)
+- [ ] Extend to the other three parameters
+- [ ] Compare interpolation methods with cross-validation
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(sf)
+devtools::load_all()
+riversea::nice_theme()
+```
+
+## Presentation of the data
+
+Here is the REPHY data that we have collected and cleaned. 
+
+```{r}
+rephy_data <- tar_read(rephy_data_surface)
+str(rephy_data)
+```
+
+For more information see [Overview of REPHY data](D6-rephy.qmd). And, here is
+the fishing operation data.
+
+```{r}
+foodwebs <- tar_read(local_foodwebs)
+```
+
+Before interpolating anything, we start with a simple picture of where and when
+the two datasets overlap: REPHY nutrient and oxygen stations on one side, fishing
+operations from the food web data on the other.
+
+### Spatial coverage
+
+```{r}
+#| fig-width: 6
+#| fig-height: 9
+
+sites <- dplyr::bind_rows(
+  rephy_data |>
+    dplyr::distinct(longitude, latitude) |>
+    dplyr::mutate(source = "REPHY station"),
+  foodwebs |>
+    dplyr::distinct(longitude, latitude) |>
+    dplyr::mutate(source = "Fishing operation")
+)
+
+ggplot(sites, aes(x = longitude, y = latitude, color = source)) +
+  geom_point() +
+  geom_sf(data = coastline(), inherit.aes = FALSE, linewidth = 0.3) +
+  coord_sf(xlim = range(sites$longitude), ylim = range(sites$latitude)) +
+  labs(x = NULL, y = NULL, color = NULL)
+```
+
+Fishing operations are much more numerous and spatially diffuse than REPHY
+stations, which are fixed monitoring points. Interpolation will need to be based
+on REPHY stations that are reasonably close to fishing operations.
+
+### Temporal coverage
+
+```{r}
+#| fig-width: 7
+#| fig-height: 3
+
+yearly_counts <- dplyr::bind_rows(
+  rephy_data |>
+    dplyr::mutate(year = lubridate::year(date)) |>
+    dplyr::count(year, name = "n") |>
+    dplyr::mutate(source = "REPHY station"),
+  foodwebs |>
+    dplyr::count(year, name = "n") |>
+    dplyr::mutate(source = "Fishing operation")
+)
+
+ggplot(yearly_counts, aes(x = year, y = n, fill = source)) +
+  geom_col(position = "identity") +
+  scale_x_continuous(breaks = scales::breaks_pretty()) +
+  labs(x = NULL, y = "Number of observations", fill = NULL)
+```
+
+Both datasets have good overlap from 2000 onwarrds, which is where we should
+expect the interpolation to be best supported.
+
+## Interpolation model
+
+Each REPHY parameter is interpolated with an additive spatio-temporal model,
+fit with INLA: a spatial Matérn field (via the SPDE approximation), a smooth
+year trend, and a cyclic month effect to capture seasonality. Values are
+modelled on the log scale, since concentrations are strictly positive and
+right-skewed. We restrict to 2000 onward.
+
+```{r}
+rephy_filtered <- tar_read(rephy_data_recent)
+```
+
+### Spatial mesh
+
+We build a single mesh, shared across parameters, from all filtered REPHY
+stations. Its boundary follows the coastline (a non-convex hull) rather than
+the convex hull of the stations, which would otherwise span the land between
+the Atlantic and Channel clusters.
+
+```{r}
+mesh <- build_rephy_mesh(rephy_filtered)
+plot(mesh, main = "")
+points(
+  foodwebs$longitude,
+  foodwebs$latitude,
+  col = "coral",
+  pch = 19,
+  cex = 0.5
+)
+points(
+  rephy_filtered$longitude,
+  rephy_filtered$latitude,
+  col = "cyan3",
+  pch = 19,
+  cex = 0.5
+)
+legend(
+  "bottomright",
+  legend = c("REPHY station", "Fishing operation"),
+  col = c("coral", "cyan3"),
+  pch = 19,
+  bty = "n"
+)
+```
+
+### Cross-validation: phosphate
+
+We evaluate the model on phosphate with leave-station-out k-fold
+cross-validation: stations are split into 10 groups, and each group is predicted
+from a model trained on the other stations only. This tests spatial
+generalization and doesn't let a station's other-year data leak into its own
+training set.
+
+RMSE and MAE in isolation don't mean much. They need a reference to be
+interpretable. For that reason, we compare our model resuts against a naive
+baseline prediction: the training fold's geometric mean.
+
+```{r}
+po4 <- rephy_filtered |> dplyr::filter(parameter_code == "PO4")
+
+set.seed(1)
+cv <- cv_rephy_spde(po4, mesh, k = 10)
+metrics <- rephy_cv_metrics(cv)
+baseline <- rephy_cv_metrics(cv, pred_col = "pred_baseline")
+
+data.frame(
+  model = c("SPDE", "Naive baseline"),
+  rmse = c(metrics$rmse, baseline$rmse),
+  mae = c(metrics$mae, baseline$mae),
+  cor = c(metrics$cor, baseline$cor)
+) |>
+  knitr::kable(digits = 2)
+```
+
+The SPDE model cuts log-scale RMSE by about a quarter relative to the naive
+baseline, and correlates with observed values (`{r} round(metrics$cor, 2)`)
+where the baseline is essentially uncorrelated (`{r} round(baseline$cor, 2)`).
+The spatio-temporal structure is clearly adding information, even
+if there's room to improve.
+
+```{r}
+#| fig-width: 6
+#| fig-height: 6
+
+cv <- cv |>
+  dplyr::mutate(
+    highlight = ifelse(
+      site_id == 22044027 & year %in% 2011:2013,
+      "Pont St Maurice (2011-2013)", "Other"
+    )
+  )
+
+ggplot(cv, aes(x = value, y = pred, color = highlight)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(slope = 1, intercept = 0) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_manual(
+    values = c("Other" = "grey40", "Pont St Maurice (2011-2013)" = "#d95f02")
+  ) +
+  labs(x = "Observed PO4", y = "Predicted PO4 (held-out station)", color = NULL)
+```
+
+The highlighted points show an anomaly at the station Pont St Maurice, that
+cannot be predicted by its nearest neighbour. This shows that this point cannot
+be predicted by a smooth model as they are very localized in space and time.
+Excluding these, we see that the predictions of our model are quite reasonnable.

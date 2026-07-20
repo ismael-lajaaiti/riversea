@@ -29,15 +29,7 @@ See [user manual](https://archimer.ifremer.fr/doc/00409/52017/52675.pdf).
 - [x] Check "niveau de qualité"
 - [x] Remove "douteux" samples
 - [x] Check levels in the water column
-- [ ] Filter only surface depth sampling
-- [ ] Convert units so they are consistent between REPHY and AMOBIO
-- [ ] Compute NO3+NO2 in AMOBIO
-- [ ] Correct nitrogen by salinity
-
-  ## Todo but not here
-- [ ] Check for consistency between datasets in nutrient and oxygen value
-- [ ] Also extract O2 in AMOBIO
-- [ ] Interpolate + yearly average at fishing sites
+- [x] Filter only surface depth sampling
 
 ## Setup
 
@@ -421,6 +413,10 @@ ggplot(data, aes(x = depth, y = value)) +
 ```
 
 We see that oxygen is relatively constant meaning that using the surface
-concentration is representative of the rest of the water column.
+concentration is representative of the rest of the water column. We keep only
+surface measurements in the following dataframe.
 
+```{r}
+str(tar_read(rephy_data_surface))
+```
 
