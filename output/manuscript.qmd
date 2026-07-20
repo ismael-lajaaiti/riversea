@@ -274,6 +274,10 @@ connectance.
 increased after barrier removal, but the positive effect was strongest for
 native species
 
+- @Chan-etal-2025b dam have negative impact on diadromous fish species. The
+installation of fish passes didn't have a positive effect. Dam removal had a
+positive effect.
+
 ### Nutrients
 
 - @Mwanake-etal-2026 DOC-to-nutrient ratios in river decline worldwide
@@ -292,6 +296,10 @@ consumer and resources reorganise food webs.
 - @Nakano-Murakami-2001 shows the seasonal coupling between a forest and
 stream, where subidies flux alternate between season. Flux from aquatic to
 terrestrial peaked in spring, while the reciprocal flux peaked in summer.
+
+- @Leibold-etal-2004b provides a definition for the concept of meta-community
+and present different paradigms: patch dynamic, species sorting, mass effect and
+neutral perspective.
 
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
 Jacobian.
