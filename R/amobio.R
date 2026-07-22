@@ -56,6 +56,123 @@ extract_nodes_amobio <- function(paths) {
     dplyr::rename(dplyr::any_of(rename_amobio()))
 }
 
+extract_river_mouth_amobio <- function(paths) {
+  network_file <- paths[grepl("NETWORK_AMOBIO.Rdata", paths)]
+  network <- get(base::load(network_file))
+  network |>
+    sfnetworks::activate("nodes") |>
+    tibble::as_tibble() |>
+    tibble::as_tibble() |>
+    dplyr::filter(IS_RIVERMOUTH_LEVEL1 == "RIVERMOUTH_LEVEL1") |>
+    dplyr::select(node_id, geometry)
+}
+
+match_mouth_district <- function(river_mouth, district, dist_max) {
+  district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
+  hydro_kept <- district |>
+    filter(district %in% district_kept)
+
+  river_mouth_sf <- river_mouth |>
+    sf::st_as_sf() |>
+    sf::st_transform(4326)
+
+  joined <- river_mouth_sf |>
+    sf::st_join(hydro_kept["district"], join = sf::st_within)
+  matched <- joined |>
+    dplyr::filter(!is.na(district)) |>
+    dplyr::mutate(dist_km = 0)
+  unmatched <- joined |> dplyr::filter(is.na(district))
+
+  nearest_idx <- sf::st_nearest_feature(unmatched, hydro_kept)
+  unmatched <- unmatched |>
+    dplyr::mutate(
+      district = hydro_kept$district[nearest_idx],
+      dist_km = as.numeric(units::set_units(
+        sf::st_distance(
+          unmatched,
+          hydro_kept[nearest_idx, ],
+          by_element = TRUE
+        ),
+        "km"
+      ))
+    )
+
+  river_mouth_district <- dplyr::bind_rows(matched, unmatched) |>
+    dplyr::mutate(matched = dist_km <= dist_max)
+}
+
+#' Load the AMOBIO river network topology, stripped down to the minimum
+#'
+#' The raw network is ~1GB on disk / ~2.9GB in memory (1M nodes, 1.1M edges,
+#' ~80 columns each - mostly links to unrelated monitoring networks, plus
+#' full edge geometries). Keeps only what a shortest-path distance
+#' computation needs: node geometry and the river-mouth flag, and edge
+#' topology with the precomputed length (dropping edge geometry, which is
+#' most of the memory).
+#'
+#' @param paths character vector of AMOBIO file paths.
+#'
+#' @return list(nodes, edges): `nodes` has `node_id`, `geometry`,
+#'   `is_river_mouth`; `edges` has `from`, `to`, `length` (meters).
+#' @export
+extract_amobio_network <- function(paths) {
+  network_file <- paths[grepl("NETWORK_AMOBIO.Rdata", paths)]
+  network <- get(base::load(network_file))
+
+  nodes <- network |>
+    sfnetworks::activate("nodes") |>
+    tibble::as_tibble() |>
+    tibble::as_tibble() |>
+    dplyr::transmute(
+      node_id,
+      geometry,
+      is_river_mouth = IS_RIVERMOUTH_LEVEL1 %in% "RIVERMOUTH_LEVEL1"
+    )
+
+  edges <- network |>
+    sfnetworks::activate("edges") |>
+    tibble::as_tibble() |>
+    tibble::as_tibble() |>
+    dplyr::select(from, to, length = length_meters_num)
+
+  list(nodes = nodes, edges = edges)
+}
+
+#' Restrict the AMOBIO network to within `max_dist` of the kept river mouths
+#'
+#' Grows the network outward (channel length, not straight-line) from every
+#' matched river mouth at once, using a single Dijkstra run from a virtual
+#' source connected to all of them with zero-weight edges - much cheaper than
+#' one shortest-path search per mouth.
+#'
+#' @param network list(nodes, edges), see [extract_amobio_network()].
+#' @param river_mouth tibble with `node_id`, `matched`, e.g. from
+#'   [match_mouth_district()].
+#' @param max_dist maximum channel-length distance to keep, in meters.
+#'
+#' @return list(nodes, edges) restricted to nodes within `max_dist`.
+#' @export
+restrict_amobio_network <- function(network, river_mouth, max_dist) {
+  g <- igraph::graph_from_edgelist(
+    as.matrix(network$edges[c("from", "to")]),
+    directed = FALSE
+  )
+  igraph::E(g)$weight <- network$edges$length
+
+  seeds <- river_mouth$node_id[river_mouth$matched]
+  source <- igraph::vcount(g) + 1L
+  g <- igraph::add_vertices(g, 1)
+  g <- igraph::add_edges(g, as.vector(rbind(source, as.integer(seeds))), weight = 0)
+
+  dist <- igraph::distances(g, v = source, weights = igraph::E(g)$weight)[1, ]
+  kept_id <- setdiff(which(dist <= max_dist), source)
+
+  list(
+    nodes = dplyr::filter(network$nodes, node_id %in% kept_id),
+    edges = dplyr::filter(network$edges, from %in% kept_id & to %in% kept_id)
+  )
+}
+
 #' Deduplicate AMOBIO metrics on (sandre_code, date).
 #'
 #' Some nodes have several candidate physicochemical stations
@@ -154,7 +271,6 @@ plot_amobio_metric <- function(
 }
 
 get_aspe_data <- function(aspe_file_foodweb, aspe_file_code) {
-
   aspe_file_foodweb <- here::here("data", "river", "output_size2webs.rda")
   aspe_file_code <- here::here("data", "river", "output_individual_fish.rda")
 
@@ -165,10 +281,10 @@ get_aspe_data <- function(aspe_file_foodweb, aspe_file_code) {
   code <- get(base::load(aspe_file_code))
   clean_code <- code$fishing_operation |>
     select(operation_id, site_id, date) |>
-      left_join(
-        code$station |> select(site_id, sandre_code),
-        by = join_by(site_id)
-      )
+    left_join(
+      code$station |> select(site_id, sandre_code),
+      by = join_by(site_id)
+    )
 
   foodweb |>
     left_join(clean_code, by = join_by(operation_id))

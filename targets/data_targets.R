@@ -6,7 +6,9 @@ data_targets <- list(
       occurence_min = 10,
       depth_max_rephy = 1, # Meter.
       year_min = 2000,
-      sampling_min = 20
+      distance_match_max = 10, # Kilometers.
+      sampling_min = 20,
+      river_network_max_dist = 100 # Kilometers.
     )
   ),
   tar_target(
@@ -189,6 +191,30 @@ data_targets <- list(
   tar_target(
     amobio_nodes,
     extract_nodes_amobio(amobio_paths)
+  ),
+  tar_target(
+    amobio_river_mouth,
+    extract_river_mouth_amobio(amobio_paths)
+  ),
+  tar_target(
+    river_mouth_district,
+    match_mouth_district(
+      amobio_river_mouth,
+      hydrographic_area,
+      params$distance_match_max
+    )
+  ),
+  tar_target(
+    amobio_network,
+    extract_amobio_network(amobio_paths)
+  ),
+  tar_target(
+    amobio_network_restricted,
+    restrict_amobio_network(
+      amobio_network,
+      river_mouth_district,
+      params$river_network_max_dist * 1000
+    )
   ),
   tar_target(
     combined_amobio_data,
