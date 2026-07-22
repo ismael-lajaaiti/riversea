@@ -1,0 +1,66 @@
+---
+title: "Overview of REPHY data"
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+```{r}
+#| echo: false
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(sf)
+devtools::load_all()
+riversea::nice_theme()
+```
+
+```{r}
+tar_load(rephy_data)
+tar_load(amobio_aspe_data)
+tar_load(sea_data_imputed)
+sea_data_imputed$catch |>
+  as_tibble()
+trait_data <- tar_read(sea_data_tidy)$trait |>
+  as_tibble()
+```
+
+```{r}
+rephy_data <- rephy_data |>
+  mutate(across(.cols = c(site_id, sample_id), .fns = as.integer)) |>
+  filter(date > "1995-01-01", level == "Surface (0-1m)")
+rephy_site <- rephy_data |>
+  group_by(site_id) |>
+  summarise(
+    site_label = unique(site_label),
+    latitude = mean(latitude),
+    longitude = mean(longitude)
+  )
+rephy_site_sf <- site |>
+  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+plot(rephy_site_sf)
+```
+
+## Test interpolation with one year
+
+TODO:
+- [] Compute a year average on REPHY
+- [] Select the site (trait) sampled that year (or we can keep all the sites too)
+- [] Perform IDW interpolation and cross-validation and RMSE
+
+```{r}
+site_sea <- trait_data
+```
+
+
