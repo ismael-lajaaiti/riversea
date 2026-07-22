@@ -433,8 +433,46 @@ plot_rephy_quality_share <- function(data) {
     ggplot2::labs(x = NULL, y = "Share of observations", fill = "Quality")
 }
 
+#' Filter rephy data keeping samples above depth_max
+#'
+#' @param rephy_data data.frame
+#' @param depth_max double
+#'
+#' @return data.frame filtered
+#' @export
 filter_surface_rephy <- function(rephy_data, depth_max = 1) {
   rephy_data |>
     dplyr::filter(depth <= depth_max) |>
     dplyr::select(-level)
+}
+
+#' Filter rephy data keeping stations with non-small sampling effort
+#'
+#' Station with less samples than sampling_min are removed.
+#'
+#' @param rephy_data data tibble
+#' @param sampling_min minimum sampling to be kept
+#'
+#' @return data.frame filtered
+#' @export
+filter_sampling_rephy <- function(rephy_data, sampling_min = 20) {
+  station_n <- table(rephy_data$site_id)
+  rephy_data |>
+    dplyr::filter(station_n[as.character(site_id)] >= sampling_min)
+}
+
+#' Drop years with little from REPHY data
+#'
+#' @param data tibble.
+#' @param year_min minimum year to be kept
+#'
+#' @return data tibble filtered.
+#' @export
+filter_year_rephy <- function(data, year_min = 2000) {
+  data |>
+    dplyr::mutate(
+      year = lubridate::year(date),
+      month = lubridate::month(date)
+    ) |>
+    dplyr::filter(year >= year_min)
 }

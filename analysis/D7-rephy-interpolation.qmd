@@ -1,5 +1,6 @@
 ---
 title: "Interpolation of REPHY data"
+bibliography: ../references.bib
 format:
   html:
     theme: cosmo
@@ -24,8 +25,16 @@ INLA.
 one parameter
 - [x] Leave-station-out cross-validation for PO4
 - [x] Diagnose limited CV skill (outliers? under-sampled folds?)
-- [ ] Extend to the other three parameters
-- [ ] Compare interpolation methods with cross-validation
+- [x] Write interpolation model
+- [x] Extend to the other three parameters
+- [x] Diagnose model performence on oxygen
+- [x] Diagnose model performence on nitrite and nitrate
+- [x] Diagnose model performence on ammonium
+- [x] Compare interpolation methods with cross-validation
+- [x] Plot model performence on yearly average
+- [x] Check spatial structure of residuals
+- [ ] **(waiting for distance-to-river mouth)** Inteprolate value at fishing
+operations, remove stations too uncertain
 
 ## Setup
 
@@ -38,7 +47,6 @@ tar_config_set(
   store = here::here("_targets")
 )
 library(ggplot2)
-library(hrbrthemes)
 library(dplyr)
 library(sf)
 devtools::load_all()
@@ -122,18 +130,25 @@ Each REPHY parameter is interpolated with an additive spatio-temporal model,
 fit with INLA: a spatial Matérn field (via the SPDE approximation), a smooth
 year trend, and a cyclic month effect to capture seasonality. Values are
 modelled on the log scale, since concentrations are strictly positive and
-right-skewed. We restrict to 2000 onward.
+right-skewed. 
+
+$$
+\log(\text{nutrient}) = \text{SPDE}_\text{2D} + \text{year}_\text{RW} 
+                       + \text{month}_\text{RW}
+$$
+
+We restrict the data to 2000 onward.
 
 ```{r}
-rephy_filtered <- tar_read(rephy_data_recent)
+rephy_filtered <- tar_read(rephy_data_sample)
 ```
 
 ### Spatial mesh
 
-We build a single mesh, shared across parameters, from all filtered REPHY
-stations. Its boundary follows the coastline (a non-convex hull) rather than
-the convex hull of the stations, which would otherwise span the land between
-the Atlantic and Channel clusters.
+We build a mesh, shared across parameters, from all filtered REPHY stations. Its
+boundary follows the coastline (a non-convex hull) rather than the convex hull
+of the stations, which would otherwise span the land between the Atlantic and
+Channel clusters.
 
 ```{r}
 mesh <- build_rephy_mesh(rephy_filtered)
@@ -161,65 +176,207 @@ legend(
 )
 ```
 
-### Cross-validation: phosphate
-
-We evaluate the model on phosphate with leave-station-out k-fold
-cross-validation: stations are split into 10 groups, and each group is predicted
-from a model trained on the other stations only. This tests spatial
-generalization and doesn't let a station's other-year data leak into its own
-training set.
-
-RMSE and MAE in isolation don't mean much. They need a reference to be
-interpretable. For that reason, we compare our model resuts against a naive
-baseline prediction: the training fold's geometric mean.
+### Cross-validation
 
 ```{r}
-po4 <- rephy_filtered |> dplyr::filter(parameter_code == "PO4")
+n_fold <- 5
+```
 
+We evaluate the model on each of the four parameters with leave-station-out
+k-fold cross-validation. Stations are split into `r n_fold` groups, and each
+group is predicted from a model trained on the other stations only. This
+tests spatial generalization and doesn't let a station's other-year data leak
+into the test fold.
+
+We compare our model performence (RMSE, MAE and correlation) against a naive
+baseline prediction: the training fold's mean.
+
+```{r}
 set.seed(1)
-cv <- cv_rephy_spde(po4, mesh, k = 10)
-metrics <- rephy_cv_metrics(cv)
-baseline <- rephy_cv_metrics(cv, pred_col = "pred_baseline")
+cv_all <- purrr::map_dfr(unique(rephy_filtered$parameter_code), \(parameter) {
+  d_param <- rephy_filtered |> dplyr::filter(parameter_code == parameter)
+  cv <- cv_rephy_spde(d_param, mesh, k = n_fold)
+  cv$parameter_code <- parameter
+  cv
+})
 
-data.frame(
-  model = c("SPDE", "Naive baseline"),
-  rmse = c(metrics$rmse, baseline$rmse),
-  mae = c(metrics$mae, baseline$mae),
-  cor = c(metrics$cor, baseline$cor)
-) |>
+cv_all |>
+  dplyr::group_by(parameter_code) |>
+  dplyr::group_modify(\(cv, ...) {
+    metrics <- rephy_cv_metrics(cv)
+    baseline <- rephy_cv_metrics(cv, pred_col = "pred_baseline")
+    data.frame(
+      model = c("SPDE", "Naive baseline"),
+      rmse = c(metrics$rmse, baseline$rmse),
+      mae = c(metrics$mae, baseline$mae),
+      cor = c(metrics$cor, baseline$cor)
+    )
+  }) |>
+  dplyr::ungroup() |>
   knitr::kable(digits = 2)
 ```
 
-The SPDE model cuts log-scale RMSE by about a quarter relative to the naive
-baseline, and correlates with observed values (`{r} round(metrics$cor, 2)`)
-where the baseline is essentially uncorrelated (`{r} round(baseline$cor, 2)`).
-The spatio-temporal structure is clearly adding information, even
-if there's room to improve.
+Across parameters, the SPDE model has lower log-scale RMSE than the naive
+baseline and correlates positively with observed values, where the baseline
+is essentially uncorrelated by construction. The spatio-temporal structure is
+clearly adding information, even if there's room to improve.
 
 ```{r}
-#| fig-width: 6
-#| fig-height: 6
+#| fig-width: 8
+#| fig-height: 8
 
-cv <- cv |>
+cv_all <- cv_all |>
   dplyr::mutate(
-    highlight = ifelse(
-      site_id == 22044027 & year %in% 2011:2013,
-      "Pont St Maurice (2011-2013)", "Other"
+    highlight = dplyr::case_when(
+      parameter_code == "PO4" & site_id == 22044027 & year %in% 2011:2013 ~
+        "Pont St Maurice (2011-2013)",
+      parameter_code == "OXYGENE" & value < 2 * 1.42903 ~ "Hypoxia (< 2 ml/L)",
+      TRUE ~ "Other"
     )
   )
 
-ggplot(cv, aes(x = value, y = pred, color = highlight)) +
+ggplot(cv_all, aes(x = value, y = pred, color = highlight)) +
   geom_point(alpha = 0.4) +
   geom_abline(slope = 1, intercept = 0) +
   scale_x_log10() +
   scale_y_log10() +
   scale_color_manual(
-    values = c("Other" = "grey40", "Pont St Maurice (2011-2013)" = "#d95f02")
+    values = c(
+      "Other" = "grey40",
+      "Pont St Maurice (2011-2013)" = "#d95f02",
+      "Hypoxia (< 2 ml/L)" = "#7570b3"
+    )
   ) +
-  labs(x = "Observed PO4", y = "Predicted PO4 (held-out station)", color = NULL)
+  facet_wrap(~parameter_code, scales = "free") +
+  labs(x = "Observed", y = "Predicted (held-out station)", color = NULL)
 ```
 
-The highlighted points show an anomaly at the station Pont St Maurice, that
-cannot be predicted by its nearest neighbour. This shows that this point cannot
-be predicted by a smooth model as they are very localized in space and time.
-Excluding these, we see that the predictions of our model are quite reasonnable.
+The highlighted points, on the PO4 panel, show an anomaly at the station
+Pont St Maurice, that cannot be predicted by its nearest neighbour. This
+shows that this point cannot be predicted by a smooth model as they are very
+localized in space and time. Excluding these, we see that the predictions of
+our model are quite reasonnable.
+
+On the OXYGENE panel, the highlighted points are hypoxia events (< 2 ml/L, i.e.
+< 2.86 mg/L @Diaz-Rosenberg-2008) unpredictable from neighbouring stations when
+the station itself is held out.
+
+We will use yearly averages rather than raw values in the next modelling steps,
+we also plot the same predictions averaged per year (observed and predicted).
+
+```{r}
+#| fig-width: 8
+#| fig-height: 8
+
+cv_yearly <- cv_all |>
+  dplyr::summarise(
+    value = mean(value),
+    pred = mean(pred),
+    .by = c(parameter_code, site_id, site_label, year)
+  ) |>
+  dplyr::mutate(
+    highlight = dplyr::case_when(
+      parameter_code == "PO4" & site_id == 22044027 & year %in% 2011:2013 ~
+        "Pont St Maurice (2011-2013)",
+      parameter_code == "OXYGENE" & value < 2 * 1.42903 ~ "Hypoxia (< 2 ml/L)",
+      TRUE ~ "Other"
+    )
+  )
+
+ggplot(cv_yearly, aes(x = value, y = pred, color = highlight)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(slope = 1, intercept = 0) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_manual(
+    values = c(
+      "Other" = "grey40",
+      "Pont St Maurice (2011-2013)" = "#d95f02",
+      "Hypoxia (< 2 ml/L)" = "#7570b3"
+    )
+  ) +
+  facet_wrap(~parameter_code, scales = "free") +
+  labs(
+    x = "Observed (yearly mean)", 
+    y = "Predicted (yearly mean, held-out station)", 
+    color = NULL
+  )
+```
+
+We see that mechanically averaging per year remove most of the noise. On yearly
+average our model performs more than fine so we will use this interpolation
+model to get environmental values at our fishing operations. But before doing
+so, we will check the structure of the model residuals.
+
+### Residual structure
+
+#### Temporal structure
+
+We check whether the CV residuals still carry spatial or temporal structure. 
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4
+
+cv_resid <- cv_all |>
+  dplyr::filter(value > 0) |>
+  dplyr::mutate(resid = log(pred) - log(value))
+
+year_resid <- cv_resid |> dplyr::summarise(resid = mean(resid), .by = c(parameter_code, year))
+month_resid <- cv_resid |> dplyr::summarise(resid = mean(resid), .by = c(parameter_code, month))
+
+ggplot(year_resid, aes(x = year, y = resid)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~parameter_code, scales = "free_y") +
+  labs(x = NULL, y = "Mean log-residual")
+
+ggplot(month_resid, aes(x = month, y = resid)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = 1:12) +
+  facet_wrap(~parameter_code, scales = "free_y") +
+  labs(x = "Month", y = "Mean log-residual")
+```
+
+All four parameters show a large residual change in 2000-2003 that then flattens
+out. it looks like a coverage artifact of the year random walk rather than a
+missed trend. Month residuals are flat everywhere: the cyclic month term
+captures seasonality well.
+
+#### Spatial structure
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+station_resid <- cv_resid |>
+  dplyr::summarise(
+    resid = mean(resid),
+    n = dplyr::n(),
+    .by = c(parameter_code, site_id, longitude, latitude)
+  )
+
+ggplot(station_resid, aes(x = longitude, y = latitude, color = resid, size = n)) +
+  geom_point(alpha = 1) +
+  geom_sf(data = coastline(), inherit.aes = FALSE, linewidth = 0.3) +
+  coord_sf(
+    xlim = range(station_resid$longitude), ylim = range(station_resid$latitude)
+  ) +
+  scale_color_gradient2(
+    low = "steelblue",
+    mid = "grey90",
+    high = "firebrick",
+    midpoint = 0
+  ) +
+  facet_wrap(~parameter_code) +
+  labs(x = NULL, y = NULL, color = "Mean log-resid", size = "n")
+```
+
+There is no broad geographic gradient, but a set of estuarine stations are
+consistently under-predicted. This point to an unmodeled driver of local
+nutrient-loading that could bias our analysis afterwards. For that reason, we
+should certainly include distance to the river mouth as covariate to better
+predict nutrient concentrations at those sites.

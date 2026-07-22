@@ -1,18 +1,3 @@
-#' Drop years with little from REPHY data
-#'
-#' @param data tibble.
-#' @param year_min minimum year to be kept
-#'
-#' @return data tibble filtered.
-#' @export
-filter_year_rephy <- function(data, year_min = 2000) {
-  data |>
-    dplyr::mutate(
-      year = lubridate::year(date),
-      month = lubridate::month(date)
-    ) |>
-    dplyr::filter(year >= year_min)
-}
 
 #' Build a spatial mesh over REPHY station locations
 #'
@@ -103,18 +88,13 @@ predict_rephy_spde <- function(train, newdata, mesh) {
 #'
 #' Splits stations (`site_id`) into `k` groups; for each, fits
 #' [predict_rephy_spde()] on the other stations and predicts at the held-out
-#' stations' observations. Tests spatial generalization to unseen locations,
-#' rather than leave-one-observation-out, which would let a station's other
-#' readings leak into its own training set.
 #'
 #' @param data tibble for one parameter, e.g. from [filter_year_rephy()].
 #' @param mesh `inla.mesh`, e.g. from [build_rephy_mesh()].
 #' @param k number of folds.
 #'
 #' @return `data` with added `pred` and `pred_baseline` columns.
-#'   `pred_baseline` is the training-fold's geometric mean, i.e. a naive
-#'   prediction using no spatial/temporal information at all - a reference
-#'   point for how much `pred` actually improves on.
+#'   `pred_baseline` is the training-fold's geometric mean.
 #' @export
 cv_rephy_spde <- function(data, mesh, k = 10) {
   stations <- unique(data$site_id)
@@ -135,19 +115,11 @@ cv_rephy_spde <- function(data, mesh, k = 10) {
 
 #' Cross-validation error metrics, on the log scale
 #'
-#' Log scale is the relevant one here: concentrations are right-skewed and
-#' natural-scale error is dominated by rare extreme events (e.g. a
-#' multi-year point-source spike at one station) that no spatially-smoothed
-#' model can predict from its neighbors, and that would otherwise swamp the
-#' metric regardless of model quality. Zero values are dropped (log
-#' undefined).
 #'
-#' @param cv tibble with `value` and `pred_col` columns, e.g. from
-#'   [cv_rephy_spde()].
+#' @param cv tibble with `value` and `pred_col` columns
 #' @param pred_col name of the column to score against `value` - `"pred"`
-#'   for the model, `"pred_baseline"` for the reference.
 #'
-#' @return named list: `rmse`, `mae`, `cor` (all on the log scale).
+#' @return named list: `rmse`, `mae`, `cor` (on the log scale).
 #' @export
 rephy_cv_metrics <- function(cv, pred_col = "pred") {
   cv <- dplyr::filter(cv, value > 0)

@@ -5,7 +5,8 @@ data_targets <- list(
     list(
       occurence_min = 10,
       depth_max_rephy = 1, # Meter.
-      year_min = 2000
+      year_min = 2000,
+      sampling_min = 20
     )
   ),
   tar_target(
@@ -241,5 +242,9 @@ data_targets <- list(
   tar_target(
     rephy_data_recent,
     filter_year_rephy(rephy_data_surface, year_min = params$year_min)
+  ),
+  tar_target(
+    rephy_data_sample,
+    filter_sampling_rephy(rephy_data_recent, sampling_min = params$sampling_min)
   )
 )

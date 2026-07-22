@@ -20,7 +20,8 @@ continuum in France.
 
 **Nutrients**
 
-- [ ] **(in progress)** Interpolate + yearly average at fishing sites
+- [ ] **(blocked)** Interpolate + yearly average at fishing sites
+- [ ] **(in progress)** Compute distance to river-mouth for rephy data
 - [ ] Convert units so they are consistent between REPHY and AMOBIO
 - [ ] Compute NO3+NO2 in AMOBIO
 - [ ] Check for consistency between datasets in nutrient and oxygen value
