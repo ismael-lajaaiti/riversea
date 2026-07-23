@@ -26,10 +26,15 @@ continuum in France.
 - [ ] Compute NO3+NO2 in AMOBIO
 - [ ] Check for consistency between datasets in nutrient and oxygen value
 - [ ] Also extract O2 in AMOBIO
+- [ ] Try interpolate nutrient concentration in AMOBIO dataset
 
 **Data pipeline & analysis**
 
-- [ ] **(in progress)** Validate FishBase diets against literature
+- [x] Validate FishBase diets against literature
+- [ ] Update diet table within the pipeline
+- [ ] Collect additional information on species (benthic/pelagic,
+native/invasive)
+- [ ] First plot of metaweb
 - [ ] Finish AMOBIO×ASPE×REPHY merge (unit harmonization, distance-to-mouth)
 - [ ] Decide nutrient composite variable (individual vs. TN+TP+ratio vs. PCA —
 let RF pre-screening decide)
@@ -54,6 +59,7 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 - [ ] Rewrite Introduction bullets into prose, section by section
 - [ ] Refine paper title and conceptual hook
 - [ ] Integrate the "position as currency" identity into the manuscript
+- [ ] Write BES abstract (deadline 2 September)
 
 **Reproducibility & open science**
 

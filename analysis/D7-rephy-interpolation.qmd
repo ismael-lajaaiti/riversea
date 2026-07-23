@@ -33,6 +33,9 @@ one parameter
 - [x] Compare interpolation methods with cross-validation
 - [x] Plot model performence on yearly average
 - [x] Check spatial structure of residuals
+- [ ] Add salinity as a covariable
+- [ ] Do a multivariate interpolation instead of predicting variables separately
+- [ ] Check interpolation performence without log scale
 - [ ] **(waiting for distance-to-river mouth)** Inteprolate value at fishing
 operations, remove stations too uncertain
 
