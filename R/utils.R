@@ -65,13 +65,12 @@ plot_venn_diagram <- function(df) {
 
 #' Get relative path.
 #'
-#' @param x the absolute path
+#' @param x path relative to the project root
 #'
-#' @return relative path
+#' @return path relative to `output/`
 #' @export
 to_rel <- function(x) {
-  rel <- gsub(here::here(), "", x, fixed = TRUE)
-  paste0("..", rel)
+  file.path("..", x)
 }
 
 #' Plot sampling station sea and river survey.

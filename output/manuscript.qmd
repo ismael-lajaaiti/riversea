@@ -307,6 +307,9 @@ neutral perspective.
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
 Jacobian.
 
+- @Peller-etal-2026 Nested flows of nutrients and consumers stabilize
+metaecosystems through cross-scale source-sink dynamics.
+
 ### Traits
 
 ::: {.callout-note}

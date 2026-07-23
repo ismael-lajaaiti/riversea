@@ -2,3 +2,5 @@
 renv/library
 data/**/raw
 *.Rproj.user
+_targets.yaml
+_targets/
