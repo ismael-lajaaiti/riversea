@@ -15,14 +15,9 @@ cv_rephy_spde(data, mesh, k = 10)
 }
 \value{
 \code{data} with added \code{pred} and \code{pred_baseline} columns.
-\code{pred_baseline} is the training-fold's geometric mean, i.e. a naive
-prediction using no spatial/temporal information at all - a reference
-point for how much \code{pred} actually improves on.
+\code{pred_baseline} is the training-fold's geometric mean.
 }
 \description{
 Splits stations (\code{site_id}) into \code{k} groups; for each, fits
 \code{\link[=predict_rephy_spde]{predict_rephy_spde()}} on the other stations and predicts at the held-out
-stations' observations. Tests spatial generalization to unseen locations,
-rather than leave-one-observation-out, which would let a station's other
-readings leak into its own training set.
 }

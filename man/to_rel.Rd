@@ -7,10 +7,10 @@
 to_rel(x)
 }
 \arguments{
-\item{x}{the absolute path}
+\item{x}{path relative to the project root}
 }
 \value{
-relative path
+path relative to \verb{output/}
 }
 \description{
 Get relative path.

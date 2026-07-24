@@ -236,6 +236,9 @@ species richness of aquatic insects [@Altermatt-Seymour-Martinez-2013].
 Effect of connectivity on richness supported experimentally 
 [@Carrara-etal-2012].
 
+- @Altermatt-Fronhofer-2018 in exprimental microcosms population densities are
+found to be more heterogeneous in dendritic than linear networks.
+
 ### Decomposing spatio-temporal patterns
 
 - @Frelat-etal-2022 decompose change in food web structure and species

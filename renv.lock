@@ -4,7 +4,15 @@
     "Repositories": [
       {
         "Name": "CRAN",
-        "URL": "https://cloud.r-project.org"
+        "URL": "https://packagemanager.posit.co/cran/latest"
+      },
+      {
+        "Name": "INLA",
+        "URL": "https://inla.r-inla-download.org/R/stable"
+      },
+      {
+        "Name": "rOpenSci",
+        "URL": "https://ropensci.r-universe.dev"
       }
     ]
   },
@@ -308,7 +316,7 @@
       "NeedsCompilation": "no",
       "Author": "Havard Rue [cre, aut], Finn Lindgren [aut], Elias Teixeira Krainski [aut], Sara Martino [ctb], Haakon Bakka [ctb], Daniel Simpson [ctb], Andrea Riebler [ctb], Geir-Arne Fuglstad [ctb], Cristian Chiuchiolo [ctb]",
       "Maintainer": "Havard Rue <hrue@r-inla.org>",
-      "Repository": "https://inla.r-inla-download.org/R/stable"
+      "Repository": "INLA"
     },
     "KernSmooth": {
       "Package": "KernSmooth",
@@ -3100,7 +3108,8 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "foodwebbuilder",
       "RemoteUsername": "Fellows-of-the-Fish-Food-Webs-F3W",
-      "RemoteRef": "HEAD",
+      "RemotePkgRef": "Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder@bd6878057bb97a05c9960260c02add8f64fe8894",
+      "RemoteRef": "bd6878057bb97a05c9960260c02add8f64fe8894",
       "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894",
       "NeedsCompilation": "no",
       "Author": "Jane Doe [aut, cre]",

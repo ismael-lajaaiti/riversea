@@ -7,20 +7,13 @@
 rephy_cv_metrics(cv, pred_col = "pred")
 }
 \arguments{
-\item{cv}{tibble with \code{value} and \code{pred_col} columns, e.g. from
-\code{\link[=cv_rephy_spde]{cv_rephy_spde()}}.}
+\item{cv}{tibble with \code{value} and \code{pred_col} columns}
 
-\item{pred_col}{name of the column to score against \code{value} - \code{"pred"}
-for the model, \code{"pred_baseline"} for the reference.}
+\item{pred_col}{name of the column to score against \code{value} - \code{"pred"}}
 }
 \value{
-named list: \code{rmse}, \code{mae}, \code{cor} (all on the log scale).
+named list: \code{rmse}, \code{mae}, \code{cor} (on the log scale).
 }
 \description{
-Log scale is the relevant one here: concentrations are right-skewed and
-natural-scale error is dominated by rare extreme events (e.g. a
-multi-year point-source spike at one station) that no spatially-smoothed
-model can predict from its neighbors, and that would otherwise swamp the
-metric regardless of model quality. Zero values are dropped (log
-undefined).
+Cross-validation error metrics, on the log scale
 }
