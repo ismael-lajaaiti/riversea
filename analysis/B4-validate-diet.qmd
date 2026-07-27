@@ -1,0 +1,80 @@
+---
+title: "Validate the diet table"
+format:
+  html:
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+```{r}
+#| output: false
+#| code-fold: true
+
+library(renv)
+renv::load()
+renv::restore() # Install missing librairies.
+renv::status() # Check the project state.
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(riversea)
+```
+
+We now source the diet table for estuarine and coastal fish from a
+literature-validated table (`data/diet/marine_diet_validated.csv`) instead of
+the fishbase scrape.
+
+We first go over sanity checks to ensure that the diet table is consistent,
+and the resulting food webs as well.
+
+## Sanity checks
+
+### Species coverage
+
+We compare the species observed often enough in the sea surveys to the
+species covered by the diet table. A species is considered non-rare if it
+was caught strictly more than `params$occurence_min` times. The table below
+lists commonly observed species missing from the diet table; empty means no
+coverage gap.
+
+```{r}
+params <- tar_read(params)
+diet <- tar_read(diet)
+catch <- tar_read(sea_data_tidy)$catch
+
+check_diet_species_coverage(diet, catch, params$occurence_min)
+```
+
+### Size coverage per species
+
+For each species, the diet table should define a diet over contiguous
+stages covering the whole size range, from 0 to unbounded, otherwise
+`foodwebbuilder::build_metaweb()` errors out on a missing diet interval. We
+look for three failure modes: gaps between consecutive stages, a first
+stage that does not start at 0, and a last stage that does not reach an
+unbounded size.
+
+```{r}
+check_diet_size_coverage(diet)
+```
+
+### Metaweb consistency
+
+We also check the metaweb built from this diet table: every non-resource
+(fish) trophic species should have at least one prey item, and no trophic
+species should be fully disconnected (neither predator nor prey of
+anything).
+
+```{r}
+web_list <- tar_read(web_list)
+resource_list <- tar_read(resource_list)
+
+check_metaweb_consistency(web_list$metaweb, resource_list)
+```
+
+If the three tables above are all empty, the diet table and the metaweb
+built from it pass every automated check.

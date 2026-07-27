@@ -31,7 +31,7 @@ continuum in France.
 **Data pipeline & analysis**
 
 - [x] Validate FishBase diets against literature
-- [ ] Update diet table within the pipeline
+- [ ] **(in progress)** Update diet table within the pipeline
 - [ ] Collect additional information on species (benthic/pelagic,
 native/invasive)
 - [ ] First plot of metaweb

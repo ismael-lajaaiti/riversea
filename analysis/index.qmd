@@ -17,6 +17,7 @@ to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 1. [Identify and get missing feeding information](B1-identify-diet.qmd)
 2. [Extract diet table from fishbase](B2-get-diet-fishbase.qmd)
 3. [Build food webs](B3-build-food-webs.qmd)
+4. [Validate the diet table](B4-validate-diet.qmd)
 
 ## C. Fish sizes
 

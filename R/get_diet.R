@@ -198,3 +198,50 @@ get_predation_window <- function(diet_table) {
     )
   )
 }
+
+#' Import the literature-validated diet table for estuarine and coastal fish.
+#'
+#' Replaces the fishbase-scraped diet table. Treats a blank `length_max` as
+#' an open-ended upper bound (`Inf`), consistent with the adult stage
+#' convention used elsewhere in the diet tables.
+#'
+#' @param file path to the validated diet csv.
+#'
+#' @return data.frame with columns species, stage, length_min, length_max
+#' and prey category columns.
+#' @export
+get_diet_validated <- function(file) {
+  categories <- c(
+    "crustacean", "insect", "worm", "zooplankton", "detritus", "macrophyte",
+    "mollusk", "fish", "biofilm", "phytoplankton", "echinoderm"
+  )
+  read.csv(file, stringsAsFactors = FALSE) |>
+    mutate(
+      length_max = if_else(is.na(length_max), Inf, length_max),
+      across(all_of(categories), as.numeric)
+    ) |>
+    select(species, stage, length_min, length_max, all_of(categories))
+}
+
+#' Merge the freshwater and marine/estuarine diet tables.
+#'
+#' For a species present in both tables, the freshwater diet wins entirely:
+#' all of its rows are kept and the marine rows for that species are
+#' dropped, rather than mixing rows from both sources for the same species.
+#' Small inter-stage boundary buffers are closed (see
+#' `close_diet_size_gaps()`) so no species has a size dead zone that would
+#' make `build_metaweb()` error out.
+#'
+#' @param diet_marine marine/estuarine diet table, as returned by
+#' `get_diet_validated()`.
+#' @param diet_river freshwater diet table, as returned by
+#' `get_diet_validated_river()`.
+#'
+#' @return combined diet table, same schema as `diet_marine`.
+#' @export
+merge_diet_river_marine <- function(diet_marine, diet_river) {
+  diet_marine |>
+    filter(!species %in% diet_river$species) |>
+    bind_rows(diet_river) |>
+    close_diet_size_gaps()
+}

@@ -5401,8 +5401,8 @@ color: #333333;
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>DiagrammeR<span class="sc">::</span><span class="fu">grViz</span>(<span class="fu">readLines</span>(<span class="fu">here</span>(<span class="st">&quot;figures&quot;</span>, <span class="st">&quot;foodweb.dot&quot;</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item" id="htmlwidget-0269e5d8c3d46092f48c" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-0269e5d8c3d46092f48c">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-13121f8a1c9039f9f8c9" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-13121f8a1c9039f9f8c9">{"x":{"diagram":"digraph G {\n    node [shape = box]; fish;\n    node [shape = ellipse];\n    fish -> zooplankton;\n    fish -> zoobenthos;\n    fish -> biofilm;\n    fish -> detritus;\n    fish -> macrophyte;\n    fish -> phytoplankton;\n    macrophyte -> detritus;\n    zooplankton -> phytoplankton;\n    zoobenthos -> detritus;\n    zoobenthos -> biofilm;\n    zoobenthos -> macrophyte;\n    zoobenthos -> zooplankton;\n    zoobenthos -> phytoplankton\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Ellipses represent broad basal categories on which fishes feed on. Our goal here is to determine for each fish species on which of these categories it feeds, and whether it is piscivorous or not. To do so we scrap fishbase.</p>
@@ -5549,8 +5549,8 @@ color: #333333;
 <pre><code># A tibble: 2 × 13
   species   stage biofilm crustacean detritus echinoderm  fish insect macrophyte
   &lt;chr&gt;     &lt;chr&gt;   &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;
-1 Symphodu… larv…       0          0        0          0     0      0          0
-2 Symphodu… juv.…       0          1        0          1     0      0          0
+1 Pomatosc… larv…       0          0        0          0     0      0          0
+2 Pomatosc… juv.…       0          1        0          0     0      0          0
 # ℹ 4 more variables: mollusk &lt;dbl&gt;, phytoplankton &lt;dbl&gt;, worm &lt;dbl&gt;,
 #   zooplankton &lt;dbl&gt;</code></pre>
 </div>
@@ -5694,17 +5694,20 @@ color: #333333;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>diet_full <span class="ot">&lt;-</span> <span class="fu">tar_read</span>(diet_and_length)</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(diet_full)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 15
-  species        stage length_min length_max crustacean insect  worm zooplankton
-  &lt;chr&gt;          &lt;chr&gt;      &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;       &lt;dbl&gt;
-1 Abramis brama  larv…       0          2.00          0      0     0           1
-2 Abramis brama  juve…       2.00       9.00          1      1     1           1
-3 Abramis brama  adult       9.00     Inf             1      1     1           1
-4 Agonus cataph… larv…       0          2.00          0      0     0           1
-5 Agonus cataph… adult       2.00     Inf             1      0     1           0
-6 Alburnus albu… larv…       0          2.00          0      0     0           1
-# ℹ 7 more variables: detritus &lt;dbl&gt;, macrophyte &lt;dbl&gt;, mollusk &lt;dbl&gt;,
-#   fish &lt;dbl&gt;, biofilm &lt;dbl&gt;, phytoplankton &lt;dbl&gt;, echinoderm &lt;dbl&gt;</code></pre>
+<pre><code>              species    stage length_min length_max crustacean insect worm
+1       Abramis brama   larvae   0.000000   2.000001          0      0    0
+2       Abramis brama juvenile   2.000002   9.000001          1      1    1
+3       Abramis brama    adult   9.000002        Inf          1      1    1
+4 Agonus cataphractus   larvae   0.000000   2.000001          0      0    0
+5 Agonus cataphractus juvenile   2.000000   9.000000          1      0    0
+6 Agonus cataphractus    adult   9.000000        Inf          1      0    1
+  zooplankton detritus macrophyte mollusk fish biofilm phytoplankton echinoderm
+1           1        0          0       0    0       0             0          0
+2           1        0          0       0    0       0             0          0
+3           1        1          1       1    1       0             0          0
+4           1        0          0       0    0       0             0          0
+5           0        0          0       0    0       0             0          0
+6           0        0          0       0    0       0             0          0</code></pre>
 </div>
 </div>
 

@@ -437,3 +437,31 @@ preprocess_sea_data <- function(dir, solper_reftax) {
   tidy$trait <- tidy$trait |> distinct()
   tidy
 }
+
+#' Remove rare species from sea data catch data frame
+#'
+#' A species is considered to be rare if an occurence equal or inferior to
+#' `occurence_min`.
+#'
+#' @param data list of data tibble with a catch element, which has itself a
+#' `species_valid` and `trait columns`.
+#' @param ocurence_min numeric threshold defining a rare species.
+#'
+#' @return list of data tible with catch and size elements that has been trimmed
+#' of rare species.
+#' @export
+remove_rare_sea_catch <- function(data, occurence_min) {
+  catch <- data$catch |>
+    dplyr::filter(is_valid)
+  occurence <- catch |>
+    dplyr::group_by(species_valid) |>
+    dplyr::summarise(n = dplyr::n_distinct(trait), .groups = "drop")
+  no_rare_species <- occurence |>
+    dplyr::filter(n > occurence_min) |>
+    dplyr::pull(species_valid)
+  data$catch <- data$catch |>
+    dplyr::filter(species_valid %in% no_rare_species)
+  data$size <- data$size |>
+    dplyr::filter(species_valid %in% no_rare_species)
+  data
+}

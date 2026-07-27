@@ -26,72 +26,47 @@ data_targets <- list(
     sea_data_tidy,
     preprocess_sea_data(sea_data_raw, solper_reftax)
   ),
+  tar_target(
+    sea_data_no_rare,
+    remove_rare_sea_catch(sea_data_tidy, params$occurence_min)
+  ),
   # Infer missing size.
   tar_target(
     sea_data_imputed,
-    infer_missing_size(sea_data_tidy)
+    infer_missing_size(sea_data_no_rare)
   ),
-  # Extract fish diet.
+  # Fish diet, validated against the literature.
   tar_target(
-    species_list,
-    get_species_list(sea_data_imputed)
+    diet_validated_file,
+    "data/diet/marine_diet_validated.csv",
+    format = "file"
   ),
+  tar_target(
+    diet_marine,
+    get_diet_validated(diet_validated_file)
+  ),
+  # Fish diet for freshwater fish, validated against the literature.
+  tar_target(
+    diet_validated_river_file,
+    "data/diet/river_diet_validated.csv",
+    format = "file"
+  ),
+  tar_target(
+    diet_river,
+    get_diet_validated_river(diet_validated_river_file)
+  ),
+  # Merge freshwater into marine/estuarine; freshwater wins on overlap.
   tar_target(
     diet,
-    get_diet_category(species_list)
+    merge_diet_river_marine(diet_marine, diet_river)
   ),
   tar_target(
-    species_no_diet_info,
-    get_missing_diet(species_list, diet, sea_data_tidy)
-  ),
-  tar_target(
-    diet_wide,
-    widen_diet_category(diet)
-  ),
-  tar_target(
-    diet_larvae,
-    add_larvae(diet_wide),
-  ),
-  tar_target(
-    list_no_rare,
-    filter_out_rare(
-      diet_larvae,
-      sea_data_imputed,
-      occurence_min = params$occurence_min
+    diet_coverage_check,
+    assert_diet_coverage(
+      diet,
+      sea_data_tidy$catch,
+      params$occurence_min
     )
-  ),
-  tar_target(diet_no_rare, list_no_rare$diet),
-  tar_target(n_rare, list_no_rare$n_removed),
-  # Life stage lengths.
-  tar_target(
-    species_diet,
-    diet_no_rare |> pull(species) |> unique()
-  ),
-  tar_target(
-    maturity_length,
-    get_maturity_length(species_diet)
-  ),
-  tar_target(
-    life_stage_length_file,
-    "data/sea/raw/lifestage_size.csv",
-    format = "file"
-  ),
-  tar_target(
-    life_stage_length,
-    get_life_stage_length(life_stage_length_file, maturity_length)
-  ),
-  tar_target(
-    diet_and_length,
-    merge_diet_length(diet_no_rare, life_stage_length)
-  ),
-  tar_target(
-    diet_file,
-    {
-      path <- "data/diet/fishbase_sea.csv"
-      readr::write_csv(diet_and_length, path)
-      path
-    },
-    format = "file"
   ),
   tar_target(
     size_extrema,
@@ -99,11 +74,11 @@ data_targets <- list(
   ),
   tar_target(
     foodweb_size_info,
-    get_foodweb_size_info(sea_data_imputed$size, diet_and_length)
+    get_foodweb_size_info(sea_data_imputed$size, diet)
   ),
   tar_target(
     predation_window,
-    get_predation_window(diet_and_length)
+    get_predation_window(diet)
   ),
   tar_target(
     diet_resource_file,
@@ -128,7 +103,7 @@ data_targets <- list(
       num_classes = n_class_vals,
       metaweb = list(get_metaweb(
         sea_data_imputed$size,
-        diet_and_length,
+        diet,
         diet_resource,
         predation_window,
         num_classes = n_class_vals
@@ -139,18 +114,28 @@ data_targets <- list(
   tar_target(num_classes, 5),
   tar_target(
     web_list,
-    get_metaweb(
-      sea_data_imputed$size,
-      diet_and_length,
-      diet_resource,
-      predation_window,
-      num_classes = num_classes,
-      local = TRUE
-    )
+    {
+      stopifnot(diet_coverage_check)
+      get_metaweb(
+        sea_data_imputed$size,
+        diet,
+        diet_resource,
+        predation_window,
+        num_classes = num_classes,
+        local = TRUE
+      )
+    }
+  ),
+  tar_target(
+    metaweb_consistency_check,
+    assert_metaweb_consistency(web_list$metaweb, resource_list)
   ),
   tar_target(
     local_foodwebs,
-    prepare_local_foodwebs(web_list, sea_data_tidy, resource_list)
+    {
+      stopifnot(metaweb_consistency_check)
+      prepare_local_foodwebs(web_list, sea_data_tidy, resource_list)
+    }
   ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
   tar_target(

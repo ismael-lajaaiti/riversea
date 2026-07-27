@@ -81,6 +81,8 @@ get_metaweb <- function(
   res
 }
 
+get_metaweb_river <- function(size_table, diet_fish, predation_window) {}
+
 #' Compute the connectance of the web.
 #'
 #' @param web
