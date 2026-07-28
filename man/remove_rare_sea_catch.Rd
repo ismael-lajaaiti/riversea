@@ -13,8 +13,8 @@ remove_rare_sea_catch(data, occurence_min)
 \item{ocurence_min}{numeric threshold defining a rare species.}
 }
 \value{
-list of data tible with catch element that has been trimmed of rare
-species.
+list of data tible with catch and size elements that has been trimmed
+of rare species.
 }
 \description{
 A species is considered to be rare if an occurence equal or inferior to

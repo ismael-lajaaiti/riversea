@@ -223,25 +223,24 @@ get_diet_validated <- function(file) {
     select(species, stage, length_min, length_max, all_of(categories))
 }
 
-#' Merge the freshwater and marine/estuarine diet tables.
+#' Merge two diet tables.
 #'
-#' For a species present in both tables, the freshwater diet wins entirely:
-#' all of its rows are kept and the marine rows for that species are
-#' dropped, rather than mixing rows from both sources for the same species.
-#' Small inter-stage boundary buffers are closed (see
-#' `close_diet_size_gaps()`) so no species has a size dead zone that would
-#' make `build_metaweb()` error out.
+#' For a species present in both tables, `diet_new` wins entirely: all of
+#' its rows are kept and `diet`'s rows for that species are dropped, rather
+#' than mixing rows from both sources for the same species. Small
+#' inter-stage boundary buffers are closed (see `close_diet_size_gaps()`)
+#' so no species has a size dead zone that would make `build_metaweb()`
+#' error out.
 #'
-#' @param diet_marine marine/estuarine diet table, as returned by
-#' `get_diet_validated()`.
-#' @param diet_river freshwater diet table, as returned by
-#' `get_diet_validated_river()`.
+#' @param diet diet table, as returned by `get_diet_validated()`.
+#' @param diet_new diet table to merge in, taking precedence on any species
+#' overlap.
 #'
-#' @return combined diet table, same schema as `diet_marine`.
+#' @return combined diet table, same schema as `diet`.
 #' @export
-merge_diet_river_marine <- function(diet_marine, diet_river) {
-  diet_marine |>
-    filter(!species %in% diet_river$species) |>
-    bind_rows(diet_river) |>
+merge_diet <- function(diet, diet_new) {
+  diet |>
+    filter(!species %in% diet_new$species) |>
+    bind_rows(diet_new) |>
     close_diet_size_gaps()
 }

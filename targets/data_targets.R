@@ -35,30 +35,36 @@ data_targets <- list(
     sea_data_imputed,
     infer_missing_size(sea_data_no_rare)
   ),
-  # Fish diet, validated against the literature.
   tar_target(
-    diet_validated_file,
+    diet_validated_marine_file,
     "data/diet/marine_diet_validated.csv",
     format = "file"
   ),
-  tar_target(
-    diet_marine,
-    get_diet_validated(diet_validated_file)
-  ),
-  # Fish diet for freshwater fish, validated against the literature.
   tar_target(
     diet_validated_river_file,
     "data/diet/river_diet_validated.csv",
     format = "file"
   ),
   tar_target(
+    diet_missing_river_file,
+    "data/diet/river_diet_missing.csv",
+    format = "file"
+  ),
+  tar_target(
+    diet_marine,
+    get_diet_validated(diet_validated_marine_file)
+  ),
+  tar_target(
     diet_river,
     get_diet_validated_river(diet_validated_river_file)
   ),
-  # Merge freshwater into marine/estuarine; freshwater wins on overlap.
+  tar_target(
+    diet_missing_river,
+    get_diet_validated(diet_missing_river_file)
+  ),
   tar_target(
     diet,
-    merge_diet_river_marine(diet_marine, diet_river)
+    merge_diet(merge_diet(diet_marine, diet_river), diet_missing_river)
   ),
   tar_target(
     diet_coverage_check,
@@ -67,6 +73,19 @@ data_targets <- list(
       sea_data_tidy$catch,
       params$occurence_min
     )
+  ),
+  tar_target(
+    individual_fish_file,
+    "data/river/output_individual_fish.rda",
+    format = "file"
+  ),
+  tar_target(
+    river_size,
+    get_river_size(individual_fish_file)
+  ),
+  tar_target(
+    river_size_no_rare,
+    remove_rare_river_size(river_size, params$occurence_min)
   ),
   tar_target(
     size_extrema,
@@ -134,7 +153,41 @@ data_targets <- list(
     local_foodwebs,
     {
       stopifnot(metaweb_consistency_check)
-      prepare_local_foodwebs(web_list, sea_data_tidy, resource_list)
+      prepare_local_foodwebs(
+        web_list,
+        sea_data_tidy$trait |> dplyr::rename(operation_id = trait),
+        resource_list
+      )
+    }
+  ),
+  tar_target(
+    river_web_list,
+    {
+      stopifnot(diet_coverage_check)
+      get_metaweb(
+        river_size_no_rare,
+        diet,
+        diet_resource,
+        predation_window,
+        num_classes = num_classes,
+        local = TRUE,
+        local_id = "operation_id"
+      )
+    }
+  ),
+  tar_target(
+    river_metaweb_consistency_check,
+    assert_metaweb_consistency(river_web_list$metaweb, resource_list)
+  ),
+  tar_target(
+    river_operation,
+    get_river_operation(individual_fish_file)
+  ),
+  tar_target(
+    river_local_foodwebs,
+    {
+      stopifnot(river_metaweb_consistency_check)
+      prepare_local_foodwebs(river_web_list, river_operation, resource_list)
     }
   ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),

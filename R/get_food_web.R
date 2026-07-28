@@ -12,7 +12,9 @@
 #' web, by default we consider: zooplankton, phytoplankton, biofilm, zoobenthos,
 #' macrophyte and detritus.
 #' @param local whether or not to build local food webs.
-#' @param local_id column name indicating the location.
+#' @param local_id column name in `size_table` identifying the sampling
+#' operation (fishing operation / tow), used as the grouping unit for local
+#' food webs. Ignored if `size_table` already has an `operation_id` column.
 #'
 #' @return metaweb as a matrix.
 #' @export
@@ -40,6 +42,16 @@ get_metaweb <- function(
   # Format input data.
   size_table <- size_table |>
     rename(species_code = species_valid, size = length)
+  if (!"operation_id" %in% names(size_table)) {
+    size_table <- size_table |> rename(operation_id = all_of(local_id))
+  }
+  if (!"batch_id" %in% names(size_table)) {
+    # foodwebbuilder requires a batch_id column but never uses its value
+    # (only carries it through) - synthesize a unique one for data with no
+    # natural batching concept, e.g. sea surveys where every fish is
+    # individually measured.
+    size_table <- size_table |> mutate(batch_id = dplyr::row_number())
+  }
   diet_fish <- diet_fish |>
     rename(
       species_code = species,
@@ -72,7 +84,7 @@ get_metaweb <- function(
   if (local) {
     res$local <- foodwebbuilder::build_local_foodweb(
       ind_measure = size_clean,
-      local_id = local_id,
+      local_id = "operation_id",
       metaweb = metaweb,
       tab_size_classes = size_classes,
       selected_resources = selected_resources
@@ -196,8 +208,20 @@ get_trophic_breadth <- function(web) {
   )
 }
 
-prepare_local_foodwebs <- function(web_list, sea_data_tidy, resource) {
-  foodweb <- tibble::enframe(web_list$local, name = "trait", value = "foodweb") |>
+#' Compute local food web metrics and attach operation metadata.
+#'
+#' @param web_list output of `get_metaweb()` with `local = TRUE`.
+#' @param operation tibble with an `operation_id` column identifying each
+#' sampling operation, plus whatever metadata to attach (e.g. year,
+#' longitude, latitude).
+#' @param resource resource species list.
+#'
+#' @return tibble of local food webs with metrics and operation metadata.
+#' @export
+prepare_local_foodwebs <- function(web_list, operation, resource) {
+  foodweb <- tibble::enframe(
+    web_list$local, name = "operation_id", value = "foodweb"
+  ) |>
     mutate(
       log_trophic_richness = log(purrr::map_dbl(foodweb, get_trophic_richness)),
       log_species_richness = log(purrr::map_dbl(foodweb, get_species_richness)),
@@ -214,8 +238,7 @@ prepare_local_foodwebs <- function(web_list, sea_data_tidy, resource) {
         \(x) get_frac_piscivorous(x, resource = resource)
       )
     )
-  trait <- sea_data_tidy$trait
-  foodweb |> left_join(trait, by = join_by(trait))
+  foodweb |> left_join(operation, by = join_by(operation_id))
 }
 
 match_with_environment <- function(foodweb, environment) {
@@ -263,4 +286,93 @@ get_foodweb_size_info <- function(size, diet) {
       mean_fish_size = mean(length),
     ) |>
     ungroup()
+}
+
+#' Get metadata for each ASPE fishing operation.
+#'
+#' @param individual_fish_file path to `output_individual_fish.rda`.
+#'
+#' @return tibble with columns operation_id, year, longitude, latitude.
+#' @export
+get_river_operation <- function(individual_fish_file) {
+  out <- get(base::load(individual_fish_file))
+
+  out$fishing_operation |>
+    dplyr::left_join(out$station, by = dplyr::join_by(site_id)) |>
+    dplyr::transmute(
+      operation_id = as.character(operation_id),
+      year = lubridate::year(date),
+      longitude = x,
+      latitude = y
+    )
+}
+
+#' Get individual fish sizes from the ASPE river survey data.
+#'
+#' @param individual_fish_file path to `output_individual_fish.rda`.
+#'
+#' @return tibble with columns operation_id, batch_id, length (cm),
+#' latin_name, species_valid, is_valid. Can be passed directly to
+#' `get_metaweb()`.
+#' @export
+get_river_size <- function(individual_fish_file) {
+  out <- get(base::load(individual_fish_file))
+
+  size <- out$fish_individuals |>
+    dplyr::mutate(length = size_mm / 10) |>
+    dplyr::select(operation_id, batch_id, species_code, length)
+
+  code_to_name <- out$species_ref_aspe |>
+    dplyr::select(species_code, latin_name) |>
+    dplyr::distinct() |>
+    dplyr::mutate(
+      # rfishbase can't disambiguate the bare "Salmo trutta" string (4
+      # candidate SpecCodes in FishBase's synonym table), but resolves the
+      # subspecies form cleanly to the same canonical name.
+      latin_name = dplyr::if_else(
+        latin_name == "Salmo trutta", "Salmo trutta fario", latin_name
+      ),
+      species_valid = rfishbase::validate_names(latin_name),
+      is_valid = !is.na(species_valid)
+    )
+
+  size |>
+    dplyr::left_join(code_to_name, by = dplyr::join_by(species_code)) |>
+    dplyr::select(-species_code)
+}
+
+#' Determine which species clear an occurrence threshold.
+#'
+#' A species is considered rare if its occurrence — the number of distinct
+#' traits (fishing operations / tows) it was recorded in — is equal to or
+#' below `occurence_min`. Rows failing name validation (`is_valid == FALSE`)
+#' are ignored when computing occurrence.
+#'
+#' @param data tibble with `species_valid`, `trait` and `is_valid` columns.
+#' @param occurence_min numeric threshold defining a rare species.
+#'
+#' @return character vector of species_valid values that are not rare.
+#' @export
+get_no_rare_species <- function(data, occurence_min) {
+  data |>
+    dplyr::filter(is_valid) |>
+    dplyr::group_by(species_valid) |>
+    dplyr::summarise(n = dplyr::n_distinct(trait), .groups = "drop") |>
+    dplyr::filter(n > occurence_min) |>
+    dplyr::pull(species_valid)
+}
+
+#' Remove rare species from the river size data frame.
+#'
+#' @param river_size tibble as returned by `get_river_size()`.
+#' @param occurence_min numeric threshold defining a rare species.
+#'
+#' @return river_size, trimmed of rare and unvalidated species.
+#' @export
+remove_rare_river_size <- function(river_size, occurence_min) {
+  no_rare_species <- river_size |>
+    dplyr::rename(trait = operation_id) |>
+    get_no_rare_species(occurence_min)
+  river_size |>
+    dplyr::filter(species_valid %in% no_rare_species)
 }

@@ -1,0 +1,14 @@
+species,stage,length_min,length_max,crustacean,insect,worm,zooplankton,detritus,macrophyte,mollusk,fish,biofilm,phytoplankton,echinoderm,Validated?,Reference_ID,Confidence,Notes
+Salmo salar,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
+Salmo salar,,2.00002,,1,1,0,0,0,0,0,1,0,0,0,Revised,REN11; AND05; DES09,Medium,Diet shifts along the river-continuum.
+Petromyzon marinus,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
+Petromyzon marinus,,2.00002,,0,0,0,0,0,0,0,1,0,0,0,Revised,SIL14,Medium,More a parastic interaction than a proper feeding interaction.
+Lampetra fluviatilis,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
+Lampetra fluviatilis,,2.00002,,0,0,0,0,0,0,0,1,0,0,0,Revised,MAI84,Medium,More a parastic interaction than a proper feeding interaction.
+Lampetra planeri,larvae,0,,0,0,0,0,1,0,0,0,1,1,0,Revised,MOO80,Medium,A single stage for the entire life.
+Proterorhinus semilunaris,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
+Proterorhinus semilunaris,,2.00002,,1,1,0,1,0,0,0,0,0,0,0,Revised,VSE14,Medium,
+Ambloplites rupestris,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
+Ambloplites rupestris,,2.00002,,0,1,0,1,0,0,0,1,0,0,0,Revised,PAT06,Medium,
+Gobio occitaniae,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
+Gobio occitaniae,,2.00002,,1,1,1,0,0,0,1,0,0,0,0,Revised,NA,Low,"Assumed to be similar as Gobio gobio, no dedicated study found."

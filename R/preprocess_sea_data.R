@@ -451,14 +451,7 @@ preprocess_sea_data <- function(dir, solper_reftax) {
 #' of rare species.
 #' @export
 remove_rare_sea_catch <- function(data, occurence_min) {
-  catch <- data$catch |>
-    dplyr::filter(is_valid)
-  occurence <- catch |>
-    dplyr::group_by(species_valid) |>
-    dplyr::summarise(n = dplyr::n_distinct(trait), .groups = "drop")
-  no_rare_species <- occurence |>
-    dplyr::filter(n > occurence_min) |>
-    dplyr::pull(species_valid)
+  no_rare_species <- get_no_rare_species(data$catch, occurence_min)
   data$catch <- data$catch |>
     dplyr::filter(species_valid %in% no_rare_species)
   data$size <- data$size |>

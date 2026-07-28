@@ -2481,19 +2481,18 @@
     },
     "diffobj": {
       "Package": "diffobj",
-      "Version": "0.3.6",
+      "Version": "0.3.8",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Diffs for R Objects",
       "Description": "Generate a colorized diff of two R objects for an intuitive visualization of their differences.",
       "Authors@R": "c( person( \"Brodie\", \"Gaslam\", email=\"brodie.gaslam@yahoo.com\", role=c(\"aut\", \"cre\")), person( \"Michael B.\", \"Allen\", email=\"ioplex@gmail.com\", role=c(\"ctb\", \"cph\"), comment=\"Original C implementation of Myers Diff Algorithm\"))",
       "Depends": [
-        "R (>= 3.1.0)"
+        "R (>= 4.1.0)"
       ],
       "License": "GPL-2 | GPL-3",
       "URL": "https://github.com/brodieG/diffobj",
       "BugReports": "https://github.com/brodieG/diffobj/issues",
-      "RoxygenNote": "7.2.3",
       "VignetteBuilder": "knitr",
       "Encoding": "UTF-8",
       "Suggests": [
@@ -2508,10 +2507,11 @@
         "utils",
         "stats"
       ],
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "yes",
       "Author": "Brodie Gaslam [aut, cre], Michael B. Allen [ctb, cph] (Original C implementation of Myers Diff Algorithm)",
       "Maintainer": "Brodie Gaslam <brodie.gaslam@yahoo.com>",
-      "Repository": "CRAN"
+      "Repository": "https://packagemanager.posit.co/cran/__linux__/noble/latest"
     },
     "digest": {
       "Package": "digest",
@@ -3193,7 +3193,7 @@
       "Roxygen": "list(markdown = TRUE)",
       "RoxygenNote": "7.3.3",
       "Depends": [
-        "R (>= 3.5)"
+        "R (>= 4.1.0)"
       ],
       "Suggests": [
         "knitr",
@@ -3206,9 +3206,9 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "foodwebbuilder",
       "RemoteUsername": "Fellows-of-the-Fish-Food-Webs-F3W",
-      "RemotePkgRef": "Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder@bd6878057bb97a05c9960260c02add8f64fe8894",
-      "RemoteRef": "bd6878057bb97a05c9960260c02add8f64fe8894",
-      "RemoteSha": "bd6878057bb97a05c9960260c02add8f64fe8894",
+      "RemotePkgRef": "Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "9ecb2740868b54c8de65f8e1d9e591435fed10a1",
       "NeedsCompilation": "no",
       "Author": "Jane Doe [aut, cre]",
       "Maintainer": "Jane Doe <jane@example.com>"
@@ -6736,7 +6736,7 @@
     },
     "pkgload": {
       "Package": "pkgload",
-      "Version": "1.5.2",
+      "Version": "1.5.3",
       "Source": "Repository",
       "Title": "Simulate Package Installation and Attach",
       "Authors@R": "c( person(\"Hadley\", \"Wickham\", role = \"aut\"), person(\"Winston\", \"Chang\", role = \"aut\"), person(\"Jim\", \"Hester\", role = \"aut\"), person(\"Lionel\", \"Henry\", , \"lionel@posit.co\", role = c(\"aut\", \"cre\")), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")), person(\"R Core team\", role = \"ctb\", comment = \"Some namespace and vignette code extracted from base R\") )",
@@ -6781,7 +6781,7 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut], Winston Chang [aut], Jim Hester [aut], Lionel Henry [aut, cre], Posit Software, PBC [cph, fnd], R Core team [ctb] (Some namespace and vignette code extracted from base R)",
       "Maintainer": "Lionel Henry <lionel@posit.co>",
-      "Repository": "CRAN"
+      "Repository": "https://packagemanager.posit.co/cran/__linux__/noble/latest"
     },
     "plyr": {
       "Package": "plyr",

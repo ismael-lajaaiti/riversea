@@ -32,7 +32,9 @@ and maximal size at which they can eat (for piscivorous).}
 \item{num_classes}{number of size classes used to build the metaweb, default
 set to 5.}
 
-\item{local_id}{column name indicating the location.}
+\item{local_id}{column name in \code{size_table} identifying the sampling
+operation (fishing operation / tow), used as the grouping unit for local
+food webs. Ignored if \code{size_table} already has an \code{operation_id} column.}
 
 \item{selected_resources}{which resources are considered at the base of the
 web, by default we consider: zooplankton, phytoplankton, biofilm, zoobenthos,
