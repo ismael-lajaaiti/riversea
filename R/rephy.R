@@ -460,19 +460,3 @@ filter_sampling_rephy <- function(rephy_data, sampling_min = 20) {
   rephy_data |>
     dplyr::filter(station_n[as.character(site_id)] >= sampling_min)
 }
-
-#' Drop years with little from REPHY data
-#'
-#' @param data tibble.
-#' @param year_min minimum year to be kept
-#'
-#' @return data tibble filtered.
-#' @export
-filter_year_rephy <- function(data, year_min = 2000) {
-  data |>
-    dplyr::mutate(
-      year = lubridate::year(date),
-      month = lubridate::month(date)
-    ) |>
-    dplyr::filter(year >= year_min)
-}

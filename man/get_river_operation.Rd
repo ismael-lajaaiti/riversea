@@ -10,8 +10,11 @@ get_river_operation(individual_fish_file)
 \item{individual_fish_file}{path to \code{output_individual_fish.rda}.}
 }
 \value{
-tibble with columns operation_id, year, longitude, latitude.
+tibble with columns operation_id, year, month, date, sandre_code,
+longitude, latitude.
 }
 \description{
-Get metadata for each ASPE fishing operation.
+\code{sandre_code} and \code{date} are kept (rather than only the derived \code{year}/
+\code{month}) because \code{join_amobio_aspe()} needs them to match river
+operations against AMOBIO environmental data.
 }

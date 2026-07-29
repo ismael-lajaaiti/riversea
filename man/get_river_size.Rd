@@ -12,7 +12,7 @@ get_river_size(individual_fish_file)
 \value{
 tibble with columns operation_id, batch_id, length (cm),
 latin_name, species_valid, is_valid. Can be passed directly to
-\code{get_metaweb()}.
+\code{build_foodweb()}.
 }
 \description{
 Get individual fish sizes from the ASPE river survey data.

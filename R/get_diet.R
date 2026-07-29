@@ -199,6 +199,61 @@ get_predation_window <- function(diet_table) {
   )
 }
 
+#' Clean and format the validated freshwater diet table.
+#'
+#' Freshwater diet categories predate the marine/estuarine schema and use a
+#' different, coarser resolution: zoobenthos has no direct equivalent and is
+#' spread across mollusk, crustacean and insect (worm and echinoderm have no
+#' equivalent category and are set to 0); phytobenthos has no equivalent in
+#' the marine categories and is dropped. Sizes are recorded in millimeters
+#' in the source file and are converted to centimeters, consistent with the
+#' marine diet table.
+#'
+#' @param file path to the validated freshwater diet csv.
+#'
+#' @return data.frame with the same schema as `get_diet_validated()`:
+#' species, stage, length_min, length_max and prey category columns.
+#' @export
+get_diet_validated_river <- function(file) {
+  read.csv(file, stringsAsFactors = FALSE) |>
+    transmute(
+      species = gsub("_", " ", species_name),
+      stage = as.character(stage),
+      length_min = size_min / 10,
+      length_max = size_max / 10,
+      crustacean = zoob,
+      insect = zoob,
+      worm = 0,
+      zooplankton = zoopl,
+      detritus = det,
+      macrophyte = macroph,
+      mollusk = zoob,
+      fish,
+      biofilm = biof,
+      phytoplankton = phytopl,
+      echinoderm = 0
+    ) |>
+    canonicalize_diet_species() |>
+    arrange(species, length_min)
+}
+
+#' Canonicalize species names in a diet table against FishBase.
+#'
+#' Diet sources sometimes use an outdated synonym (e.g. "Trutta fario") for
+#' a species that appears elsewhere, or in the ASPE survey data, under its
+#' current accepted name (e.g. "Salmo trutta"). Without this, the two are
+#' treated as different species and never get matched up.
+#'
+#' @param diet_table diet table with a `species` column.
+#'
+#' @return diet_table with `species` replaced by its FishBase-validated
+#' current name.
+#' @export
+canonicalize_diet_species <- function(diet_table) {
+  diet_table |>
+    mutate(species = rfishbase::validate_names(species))
+}
+
 #' Import the literature-validated diet table for estuarine and coastal fish.
 #'
 #' Replaces the fishbase-scraped diet table. Treats a blank `length_max` as
@@ -220,7 +275,8 @@ get_diet_validated <- function(file) {
       length_max = if_else(is.na(length_max), Inf, length_max),
       across(all_of(categories), as.numeric)
     ) |>
-    select(species, stage, length_min, length_max, all_of(categories))
+    select(species, stage, length_min, length_max, all_of(categories)) |>
+    canonicalize_diet_species()
 }
 
 #' Merge two diet tables.

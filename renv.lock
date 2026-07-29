@@ -3208,7 +3208,7 @@
       "RemoteUsername": "Fellows-of-the-Fish-Food-Webs-F3W",
       "RemotePkgRef": "Fellows-of-the-Fish-Food-Webs-F3W/foodwebbuilder",
       "RemoteRef": "HEAD",
-      "RemoteSha": "9ecb2740868b54c8de65f8e1d9e591435fed10a1",
+      "RemoteSha": "52a6654bfab6328898e5f9cfb7fa3d9349c0df17",
       "NeedsCompilation": "no",
       "Author": "Jane Doe [aut, cre]",
       "Maintainer": "Jane Doe <jane@example.com>"

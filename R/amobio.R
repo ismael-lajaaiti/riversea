@@ -270,35 +270,34 @@ plot_amobio_metric <- function(
     )
 }
 
-get_aspe_data <- function(aspe_file_foodweb, aspe_file_code) {
-  aspe_file_foodweb <- here::here("data", "river", "output_size2webs.rda")
-  aspe_file_code <- here::here("data", "river", "output_individual_fish.rda")
-
-  foodweb <-
-    get(base::load(aspe_file_foodweb))$tab_local_foodwebs_summary_metrics |>
-    mutate(operation_id = as.integer(operation_id))
-
-  code <- get(base::load(aspe_file_code))
-  clean_code <- code$fishing_operation |>
-    select(operation_id, site_id, date) |>
-    left_join(
-      code$station |> select(site_id, sandre_code),
-      by = join_by(site_id)
-    )
-
-  foodweb |>
-    left_join(clean_code, by = join_by(operation_id))
-}
-
-#' Join AMOBIO and ASPE datasets
+#' Join AMOBIO and river food web data.
 #'
-#' @param amobio dataframe
-#' @param aspe dataframe
+#' @param amobio dataframe.
+#' @param river_foodweb river food web structure, as returned by
+#' `measure_foodweb_structure()` (filtered to the river survey).
+#' @param river_operation river operation metadata, as returned by
+#' `get_river_operation()`, providing the `sandre_code`/`date` join keys
+#' that `river_foodweb` itself doesn't carry.
 #'
-#' @return dataframe
+#' @return dataframe.
 #' @export
-join_amobio_aspe <- function(amobio, aspe) {
-  inner_join(amobio, aspe, by = join_by(sandre_code, date))
+join_amobio_aspe <- function(amobio, river_foodweb, river_operation) {
+  aspe <- river_foodweb |>
+    left_join(
+      river_operation |> select(operation_id, sandre_code, date),
+      by = join_by(operation_id)
+    )
+  # dplyr::inner_join() on an sf object currently errors (sf 1.1.1 / dplyr
+  # 1.2.1 incompatibility), so geometry is carried through as plain x/y
+  # columns across the join and reattached afterwards instead.
+  amobio_df <- amobio |>
+    mutate(
+      geom_x = sf::st_coordinates(geometry)[, 1],
+      geom_y = sf::st_coordinates(geometry)[, 2]
+    ) |>
+    sf::st_drop_geometry()
+  inner_join(amobio_df, aspe, by = join_by(sandre_code, date)) |>
+    sf::st_as_sf(coords = c("geom_x", "geom_y"), crs = sf::st_crs(amobio))
 }
 
 #' Environmental variables from the AMOBIO databsed selected for the analysis

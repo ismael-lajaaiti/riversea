@@ -89,7 +89,7 @@ predict_rephy_spde <- function(train, newdata, mesh) {
 #' Splits stations (`site_id`) into `k` groups; for each, fits
 #' [predict_rephy_spde()] on the other stations and predicts at the held-out
 #'
-#' @param data tibble for one parameter, e.g. from [filter_year_rephy()].
+#' @param data tibble for one parameter, e.g. from [filter_year()].
 #' @param mesh `inla.mesh`, e.g. from [build_rephy_mesh()].
 #' @param k number of folds.
 #'

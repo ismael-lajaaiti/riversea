@@ -621,10 +621,6 @@ Venn diagram of common species between surveys.
 
 ::: {#sfig-metaweb-sizeclass}
 
-```{r}
-targets::tar_read(plot_metaweb_connectance)
-```
-
 How metaweb connectance varies with the number of size classes.
 
 :::

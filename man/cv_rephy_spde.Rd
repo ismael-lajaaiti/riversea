@@ -7,7 +7,7 @@
 cv_rephy_spde(data, mesh, k = 10)
 }
 \arguments{
-\item{data}{tibble for one parameter, e.g. from \code{\link[=filter_year_rephy]{filter_year_rephy()}}.}
+\item{data}{tibble for one parameter, e.g. from \code{\link[=filter_year]{filter_year()}}.}
 
 \item{mesh}{\code{inla.mesh}, e.g. from \code{\link[=build_rephy_mesh]{build_rephy_mesh()}}.}
 

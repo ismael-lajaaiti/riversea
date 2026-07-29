@@ -27,10 +27,6 @@ plot_targets <- list(
     plot_sampling(sea_data_tidy, station_file)
   ),
   tar_target(
-    plot_metaweb_connectance,
-    plot_sizeclass_connectance(metaweb_table)
-  ),
-  tar_target(
     plot_net_groups,
     plot_network_groups(diet_resource)
   )

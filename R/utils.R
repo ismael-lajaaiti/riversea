@@ -320,3 +320,32 @@ download_sea_raw_data <- function(dest_dir = "data/sea/raw") {
 coastline <- function() {
   rnaturalearth::ne_coastline(scale = "large", returnclass = "sf")
 }
+
+#' Filter data such that year is in the specified time window
+#'
+#' @param data data tibble with `year` column.
+#' @param year_min minimum year to be kept.
+#' @param year_max maximal year to be kept.
+#'
+#' @return data tibble filtered.
+#' @export
+filter_year <- function(data, year_min, year_max) {
+  data |>
+    filter(year >= year_min, year <= year_max)
+}
+
+#' Convert date to year and month
+#'
+#' @param data tibble with `date` column.
+#' @param keep logical, whether or not to keep the original `date` column.
+#'
+#' @return tibble
+#' @export
+from_date_to_year_month <- function(data, keep = FALSE) {
+  data <- data |>
+    mutate(
+      year = lubridate::year(date),
+      month = lubridate::month(date)
+    )
+  if (keep) data else data |> select(-date)
+}

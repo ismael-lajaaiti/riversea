@@ -1,7 +1,35 @@
+#' Stop with a combined message if any `mclapply()` worker failed.
+#'
+#' `mclapply()` catches worker errors into `try-error` objects instead of
+#' propagating them, so a failed worker would otherwise end up silently
+#' mixed into the result list. `conditionMessage()` doesn't work directly
+#' on a `try-error` (it isn't itself a condition) - the actual condition is
+#' stashed in its "condition" attribute.
+#'
+#' @param results output of `parallel::mclapply()`.
+#' @param caller name of the calling function, used in the error message.
+#'
+#' @return nothing; called for its side effect of stopping on failure.
+#' @noRd
+.stop_on_mclapply_errors <- function(results, caller) {
+  failed <- vapply(results, function(x) inherits(x, "try-error"), logical(1))
+  if (any(failed)) {
+    msgs <- vapply(results[failed], function(x) {
+      conditionMessage(attr(x, "condition"))
+    }, character(1))
+    stop(
+      caller, "(): ", sum(failed), " worker(s) failed:\n",
+      paste(msgs, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+}
+
 #' Build the metaweb representing all possible interactions.
 #'
-#' @param size_table data frame of each individual fish size and the operation
-#' id.
+#' @param size_table data frame of each individual fish size, with an
+#' `operation_id` column identifying the sampling operation (see
+#' `merge_size()`).
 #' @param diet_fish table of fish diet.
 #' @param diet_resource table of resource diet.
 #' @param predation_window table of fish predation window, defining the minimal
@@ -12,20 +40,16 @@
 #' web, by default we consider: zooplankton, phytoplankton, biofilm, zoobenthos,
 #' macrophyte and detritus.
 #' @param local whether or not to build local food webs.
-#' @param local_id column name in `size_table` identifying the sampling
-#' operation (fishing operation / tow), used as the grouping unit for local
-#' food webs. Ignored if `size_table` already has an `operation_id` column.
 #'
 #' @return metaweb as a matrix.
 #' @export
-get_metaweb <- function(
+build_foodweb <- function(
   size_table,
   diet_fish,
   diet_resource,
   predation_window,
   local = FALSE,
   num_classes = 5,
-  local_id = "trait",
   selected_resources = c(
     "biofilm",
     "detritus",
@@ -42,16 +66,6 @@ get_metaweb <- function(
   # Format input data.
   size_table <- size_table |>
     rename(species_code = species_valid, size = length)
-  if (!"operation_id" %in% names(size_table)) {
-    size_table <- size_table |> rename(operation_id = all_of(local_id))
-  }
-  if (!"batch_id" %in% names(size_table)) {
-    # foodwebbuilder requires a batch_id column but never uses its value
-    # (only carries it through) - synthesize a unique one for data with no
-    # natural batching concept, e.g. sea surveys where every fish is
-    # individually measured.
-    size_table <- size_table |> mutate(batch_id = dplyr::row_number())
-  }
   diet_fish <- diet_fish |>
     rename(
       species_code = species,
@@ -82,7 +96,7 @@ get_metaweb <- function(
   )
   res <- list(metaweb = metaweb, size_class = size_classes)
   if (local) {
-    res$local <- foodwebbuilder::build_local_foodweb(
+    res$local <- build_local_foodweb_parallel(
       ind_measure = size_clean,
       local_id = "operation_id",
       metaweb = metaweb,
@@ -93,7 +107,155 @@ get_metaweb <- function(
   res
 }
 
-get_metaweb_river <- function(size_table, diet_fish, predation_window) {}
+#' Build local food webs in parallel.
+#'
+#' `foodwebbuilder::build_local_foodweb()` re-scans the entire `ind_measure`
+#' table once per operation, so its cost grows with
+#' `n_operations * n_individuals` rather than `n_individuals`. This splits
+#' `ind_measure` into `n_workers` operation-disjoint chunks up front (so
+#' each worker only ever scans its own small slice) and processes the
+#' chunks in parallel forked processes, which share `metaweb` and
+#' `tab_size_classes` via copy-on-write rather than each copying them —
+#' memory use stays close to that of a single call, dominated by
+#' `ind_measure` itself. Forking is Linux/macOS only; `mc.cores` silently
+#' falls back to serial on Windows.
+#'
+#' @param ind_measure output of `foodwebbuilder::remove_missing_species()`.
+#' @param local_id column in `ind_measure` identifying the sampling operation.
+#' @param metaweb metaweb matrix, as returned by `foodwebbuilder::build_metaweb()`.
+#' @param tab_size_classes size class table, as returned by
+#' `foodwebbuilder::compute_size_classes()`.
+#' @param selected_resources which resources are considered at the base of
+#' the web.
+#' @param n_workers number of parallel workers, capped at the number of
+#' distinct operations.
+#'
+#' @return named list of local food web matrices, one per operation id.
+#' @export
+build_local_foodweb_parallel <- function(
+  ind_measure,
+  local_id,
+  metaweb,
+  tab_size_classes,
+  selected_resources,
+  n_workers = parallel::detectCores()
+) {
+  ids <- unique(ind_measure[[local_id]])
+  n_workers <- min(n_workers, length(ids))
+  batch_of_id <- stats::setNames(
+    as.integer(cut(seq_along(ids), n_workers, labels = FALSE)), ids
+  )
+  batch <- batch_of_id[as.character(ind_measure[[local_id]])]
+  chunks <- split(ind_measure, batch)
+
+  results <- parallel::mclapply(
+    chunks,
+    function(chunk) {
+      foodwebbuilder::build_local_foodweb(
+        ind_measure = chunk,
+        local_id = local_id,
+        metaweb = metaweb,
+        tab_size_classes = tab_size_classes,
+        selected_resources = selected_resources
+      )
+    },
+    mc.cores = n_workers
+  )
+  .stop_on_mclapply_errors(results, "build_local_foodweb_parallel")
+  do.call(c, unname(results))
+}
+
+#' Combine sea and river individual fish size data into one table.
+#'
+#' Relies on `assert_no_operation_id_collision()` having been run first, so
+#' `operation_id` values are carried through unprefixed.
+#'
+#' @param sea_size sea individual size table, as in `sea_data_imputed$size`.
+#' @param river_size river individual size table, as returned by
+#' `remove_rare_river_size()`.
+#'
+#' @return combined tibble with columns operation_id, species_valid, length,
+#' survey. Can be passed directly to `build_foodweb()`.
+#' @export
+merge_size <- function(sea_size, river_size) {
+  sea <- sea_size |>
+    transmute(
+      operation_id = trait,
+      species_valid,
+      length,
+      survey
+    )
+  river <- river_size |>
+    transmute(
+      operation_id = as.character(operation_id),
+      species_valid,
+      length,
+      survey = "river"
+    )
+  bind_rows(sea, river)
+}
+
+#' Combine sea and river operation metadata into one table.
+#'
+#' @param sea_operation sea operation metadata, as in `sea_data_tidy$trait`.
+#' @param river_operation river operation metadata, as returned by
+#' `get_river_operation()`.
+#'
+#' @return combined tibble with columns operation_id, year, month, longitude,
+#' latitude, survey.
+#' @export
+merge_operation <- function(sea_operation, river_operation) {
+  sea <- sea_operation |>
+    transmute(
+      operation_id = trait,
+      year,
+      month,
+      longitude,
+      latitude,
+      survey
+    )
+  river <- river_operation |>
+    transmute(
+      operation_id,
+      year,
+      month,
+      longitude,
+      latitude,
+      survey = "river"
+    )
+  bind_rows(sea, river)
+}
+
+#' Assert that operation ids never collide between sea and river surveys.
+#'
+#' `foodwebbuilder::build_local_foodweb()` groups individuals into local
+#' food webs by `operation_id` alone, with no survey qualifier, so a
+#' collision between a sea and a river id would silently pool two
+#' unrelated samples into one fabricated local food web instead of
+#' erroring. `merge_size()`/`merge_operation()` rely on ids staying unique
+#' across surveys without prefixing them; run this first so a future data
+#' refresh that introduces a collision fails loudly instead.
+#'
+#' @param sea_operation sea operation metadata, as in `sea_data_tidy$trait`.
+#' @param river_operation river operation metadata, as returned by
+#' `get_river_operation()`.
+#'
+#' @return TRUE, invisibly, if no operation id is shared between surveys.
+#' @export
+assert_no_operation_id_collision <- function(sea_operation, river_operation) {
+  collisions <- intersect(
+    as.character(sea_operation$trait),
+    as.character(river_operation$operation_id)
+  )
+  if (length(collisions) > 0) {
+    stop(
+      "Operation id(s) collide between sea and river surveys: ",
+      paste(collisions, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
 
 #' Compute the connectance of the web.
 #'
@@ -208,36 +370,82 @@ get_trophic_breadth <- function(web) {
   )
 }
 
-#' Compute local food web metrics and attach operation metadata.
+#' Compute structural metrics for one local food web.
 #'
-#' @param web_list output of `get_metaweb()` with `local = TRUE`.
+#' `get_trophic_length()` (via `cheddar`) dominates the cost of this by
+#' roughly two orders of magnitude over the other metrics combined, so
+#' bundling every metric into one call keeps each food web's work in a
+#' single unit for `measure_foodweb_structure()` to parallelize over.
+#'
+#' @param foodweb adjacency matrix for one local food web.
+#' @param resource resource species list.
+#'
+#' @return one-row tibble of structural metrics, including the input
+#' `foodweb` itself as a list-column.
+compute_foodweb_metrics <- function(foodweb, resource) {
+  # Metrics are computed into locals before assembling the tibble: naming a
+  # tibble() column "foodweb" while a later column expression still refers
+  # to the original `foodweb` argument would silently shadow it, since
+  # tibble() columns are evaluated sequentially and can see prior columns.
+  breadth <- get_trophic_breadth(foodweb)
+  log_trophic_richness <- log(get_trophic_richness(foodweb))
+  log_species_richness <- log(get_species_richness(foodweb))
+  connectance <- get_connectance(foodweb)
+  trophic_length <- get_trophic_length(foodweb)
+  frac_piscivorous <- get_frac_piscivorous(foodweb, resource = resource)
+  tibble::tibble(
+    foodweb = list(foodweb),
+    log_trophic_richness = log_trophic_richness,
+    log_species_richness = log_species_richness,
+    connectance = connectance,
+    trophic_length = trophic_length,
+    trophic_breadth_q90 = breadth$q90,
+    trophic_breadth_median = breadth$median,
+    frac_piscivorous = frac_piscivorous
+  )
+}
+
+#' Compute local food web metrics and attach operation metadata, in parallel.
+#'
+#' Splits the local food webs into `n_workers` chunks and computes
+#' `compute_foodweb_metrics()` for each chunk in a forked worker (see
+#' `build_local_foodweb_parallel()` for the memory-sharing rationale).
+#' `get_trophic_length()` dominates the per-web cost, so this is worth
+#' parallelizing even though each web's computation itself is cheap.
+#'
+#' @param web_list output of `build_foodweb()` with `local = TRUE`.
 #' @param operation tibble with an `operation_id` column identifying each
 #' sampling operation, plus whatever metadata to attach (e.g. year,
 #' longitude, latitude).
 #' @param resource resource species list.
+#' @param n_workers number of parallel workers, capped at the number of
+#' local food webs.
 #'
 #' @return tibble of local food webs with metrics and operation metadata.
 #' @export
-prepare_local_foodwebs <- function(web_list, operation, resource) {
-  foodweb <- tibble::enframe(
-    web_list$local, name = "operation_id", value = "foodweb"
-  ) |>
-    mutate(
-      log_trophic_richness = log(purrr::map_dbl(foodweb, get_trophic_richness)),
-      log_species_richness = log(purrr::map_dbl(foodweb, get_species_richness)),
-      connectance = purrr::map_dbl(foodweb, get_connectance),
-      trophic_length = purrr::map_dbl(foodweb, get_trophic_length),
-      trophic_breadth_q90 = purrr::map_dbl(
-        foodweb, \(x) get_trophic_breadth(x)$q90
-      ),
-      trophic_breadth_median = purrr::map_dbl(
-        foodweb, \(x) get_trophic_breadth(x)$median
-      ),
-      frac_piscivorous = purrr::map_dbl(
-        foodweb,
-        \(x) get_frac_piscivorous(x, resource = resource)
+measure_foodweb_structure <- function(
+  web_list,
+  operation,
+  resource,
+  n_workers = parallel::detectCores()
+) {
+  webs <- web_list$local
+  n_workers <- min(n_workers, length(webs))
+  batch <- as.integer(cut(seq_along(webs), n_workers, labels = FALSE))
+  chunks <- split(webs, batch)
+
+  results <- parallel::mclapply(
+    chunks,
+    function(chunk) {
+      purrr::map_dfr(
+        chunk, compute_foodweb_metrics,
+        resource = resource, .id = "operation_id"
       )
-    )
+    },
+    mc.cores = n_workers
+  )
+  .stop_on_mclapply_errors(results, "measure_foodweb_structure")
+  foodweb <- dplyr::bind_rows(results)
   foodweb |> left_join(operation, by = join_by(operation_id))
 }
 
@@ -290,9 +498,14 @@ get_foodweb_size_info <- function(size, diet) {
 
 #' Get metadata for each ASPE fishing operation.
 #'
+#' `sandre_code` and `date` are kept (rather than only the derived `year`/
+#' `month`) because `join_amobio_aspe()` needs them to match river
+#' operations against AMOBIO environmental data.
+#'
 #' @param individual_fish_file path to `output_individual_fish.rda`.
 #'
-#' @return tibble with columns operation_id, year, longitude, latitude.
+#' @return tibble with columns operation_id, year, month, date, sandre_code,
+#' longitude, latitude.
 #' @export
 get_river_operation <- function(individual_fish_file) {
   out <- get(base::load(individual_fish_file))
@@ -302,6 +515,9 @@ get_river_operation <- function(individual_fish_file) {
     dplyr::transmute(
       operation_id = as.character(operation_id),
       year = lubridate::year(date),
+      month = lubridate::month(date),
+      date,
+      sandre_code,
       longitude = x,
       latitude = y
     )
@@ -313,7 +529,7 @@ get_river_operation <- function(individual_fish_file) {
 #'
 #' @return tibble with columns operation_id, batch_id, length (cm),
 #' latin_name, species_valid, is_valid. Can be passed directly to
-#' `get_metaweb()`.
+#' `build_foodweb()`.
 #' @export
 get_river_size <- function(individual_fish_file) {
   out <- get(base::load(individual_fish_file))

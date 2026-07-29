@@ -30,6 +30,7 @@ Imports:
     INLA,
     lubridate,
     metanetwork,
+    parallel,
     patchwork,
     piecewiseSEM,
     purrr,

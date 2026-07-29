@@ -3,12 +3,15 @@ data_targets <- list(
   tar_target(
     params,
     list(
-      occurence_min = 10,
+      occurence_min = 10, # Excluded.
       depth_max_rephy = 1, # Meter.
-      year_min = 2000,
+      year_min = 2005, # Included.
+      year_max = 2022, # Included.
       distance_match_max = 10, # Kilometers.
       sampling_min = 20,
-      river_network_max_dist = 100 # Kilometers.
+      river_network_max_dist = 100, # Kilometers.
+      n_size_class = 5, # Number of size classes for metaweb construction.
+      amobio_average_window = "1y"
     )
   ),
   tar_target(
@@ -21,7 +24,6 @@ data_targets <- list(
     here(sea_data_raw, "Reftax_SIH.txt"),
     format = "file"
   ),
-  # Sea survey data.
   tar_target(
     sea_data_tidy,
     preprocess_sea_data(sea_data_raw, solper_reftax)
@@ -30,7 +32,6 @@ data_targets <- list(
     sea_data_no_rare,
     remove_rare_sea_catch(sea_data_tidy, params$occurence_min)
   ),
-  # Infer missing size.
   tar_target(
     sea_data_imputed,
     infer_missing_size(sea_data_no_rare)
@@ -115,32 +116,47 @@ data_targets <- list(
       c("light", "fish", "reference", "species")
     )
   ),
-  tar_target(n_class_vals, seq(3, 9)),
   tar_target(
-    metaweb_table,
-    tibble(
-      num_classes = n_class_vals,
-      metaweb = list(get_metaweb(
-        sea_data_imputed$size,
-        diet,
-        diet_resource,
-        predation_window,
-        num_classes = n_class_vals
-      )$metaweb)
-    ),
-    pattern = map(n_class_vals),
+    river_operation,
+    get_river_operation(individual_fish_file)
   ),
-  tar_target(num_classes, 5),
+  tar_target(
+    operation_id_check,
+    assert_no_operation_id_collision(sea_data_tidy$trait, river_operation)
+  ),
+  tar_target(
+    size_combined,
+    {
+      stopifnot(operation_id_check)
+      merge_size(sea_data_imputed$size, river_size_no_rare)
+    }
+  ),
+  tar_target(
+    operation_combined,
+    {
+      stopifnot(operation_id_check)
+      merge_operation(sea_data_tidy$trait, river_operation)
+    }
+  ),
+  tar_target(
+    operation_year_filtered,
+    filter_year(operation_combined, params$year_min, params$year_max)
+  ),
+  tar_target(
+    size_year_filtered,
+    size_combined |>
+      dplyr::semi_join(operation_year_filtered, by = "operation_id")
+  ),
   tar_target(
     web_list,
     {
       stopifnot(diet_coverage_check)
-      get_metaweb(
-        sea_data_imputed$size,
+      build_foodweb(
+        size_year_filtered,
         diet,
         diet_resource,
         predation_window,
-        num_classes = num_classes,
+        num_classes = params$n_size_class,
         local = TRUE
       )
     }
@@ -150,45 +166,19 @@ data_targets <- list(
     assert_metaweb_consistency(web_list$metaweb, resource_list)
   ),
   tar_target(
-    local_foodwebs,
+    foodweb_structure,
     {
       stopifnot(metaweb_consistency_check)
-      prepare_local_foodwebs(
+      measure_foodweb_structure(
         web_list,
-        sea_data_tidy$trait |> dplyr::rename(operation_id = trait),
+        operation_year_filtered,
         resource_list
       )
     }
   ),
   tar_target(
-    river_web_list,
-    {
-      stopifnot(diet_coverage_check)
-      get_metaweb(
-        river_size_no_rare,
-        diet,
-        diet_resource,
-        predation_window,
-        num_classes = num_classes,
-        local = TRUE,
-        local_id = "operation_id"
-      )
-    }
-  ),
-  tar_target(
-    river_metaweb_consistency_check,
-    assert_metaweb_consistency(river_web_list$metaweb, resource_list)
-  ),
-  tar_target(
-    river_operation,
-    get_river_operation(individual_fish_file)
-  ),
-  tar_target(
-    river_local_foodwebs,
-    {
-      stopifnot(river_metaweb_consistency_check)
-      prepare_local_foodwebs(river_web_list, river_operation, resource_list)
-    }
+    river_foodweb_structure,
+    foodweb_structure |> dplyr::filter(survey == "river")
   ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
   tar_target(
@@ -197,7 +187,10 @@ data_targets <- list(
   ),
   tar_target(
     fw_with_env,
-    match_with_environment(local_foodwebs, environment_data)
+    match_with_environment(
+      foodweb_structure |> dplyr::filter(survey != "river"),
+      environment_data
+    )
   ),
   tar_target(
     hydrographic_area_dir,
@@ -210,17 +203,19 @@ data_targets <- list(
   ),
   tar_target(
     fw_with_district,
-    match_foodweb_district(local_foodwebs, hydrographic_area)
+    match_foodweb_district(
+      foodweb_structure |> dplyr::filter(survey != "river"),
+      hydrographic_area
+    )
   ),
   tar_target(
     amobio_paths,
     download_amobio_data(here("data", "amobio"), verbose = TRUE),
     format = "file"
   ),
-  tar_target(average_time, "1y"),
   tar_target(
     amobio_metrics,
-    extract_metrics_amobio(amobio_paths, average_time)
+    extract_metrics_amobio(amobio_paths, params$amobio_average_window)
   ),
   tar_target(
     amobio_metrics_dedup,
@@ -259,19 +254,8 @@ data_targets <- list(
     combine_amobio_data(amobio_metrics_dedup, amobio_nodes)
   ),
   tar_target(
-    aspe_file_foodweb,
-    here::here("data", "river", "output_size2webs.rda"),
-    format = "file"
-  ),
-  tar_target(
-    aspe_file_code,
-    here::here("data", "river", "output_individual_fish.rda"),
-    format = "file"
-  ),
-  tar_target(aspe_data, get_aspe_data(aspe_file_foodweb, aspe_file_code)),
-  tar_target(
     amobio_aspe_data,
-    join_amobio_aspe(combined_amobio_data, aspe_data)
+    join_amobio_aspe(combined_amobio_data, river_foodweb_structure, river_operation)
   ),
   tar_target(rephy_dir, download_rephy(), format = "file"),
   tar_target(
@@ -305,7 +289,11 @@ data_targets <- list(
   ),
   tar_target(
     rephy_data_recent,
-    filter_year_rephy(rephy_data_surface, year_min = params$year_min)
+    filter_year(
+      from_date_to_year_month(rephy_data_surface),
+      year_min = params$year_min,
+      year_max = params$year_max
+    )
   ),
   tar_target(
     rephy_data_sample,

@@ -2,18 +2,23 @@
 % Please edit documentation in R/amobio.R
 \name{join_amobio_aspe}
 \alias{join_amobio_aspe}
-\title{Join AMOBIO and ASPE datasets}
+\title{Join AMOBIO and river food web data.}
 \usage{
-join_amobio_aspe(amobio, aspe)
+join_amobio_aspe(amobio, river_foodweb, river_operation)
 }
 \arguments{
-\item{amobio}{dataframe}
+\item{amobio}{dataframe.}
 
-\item{aspe}{dataframe}
+\item{river_foodweb}{river food web structure, as returned by
+\code{measure_foodweb_structure()} (filtered to the river survey).}
+
+\item{river_operation}{river operation metadata, as returned by
+\code{get_river_operation()}, providing the \code{sandre_code}/\code{date} join keys
+that \code{river_foodweb} itself doesn't carry.}
 }
 \value{
-dataframe
+dataframe.
 }
 \description{
-Join AMOBIO and ASPE datasets
+Join AMOBIO and river food web data.
 }
