@@ -1,0 +1,351 @@
+---
+title: "Food web structures along the river-sea continuum"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+## Todo
+
+- [x] Species set difference and intersection between river and sea dataset
+- [x] Plot metaweb
+- [x] Plot local webs along the continuum
+- [x] Refine food web plots
+- [x] Add map with operations to local food web plot
+- [x] Diet category analysis along the continuum
+- [ ] Add information to the metaweb (e.g. migratory status of species, invasive
+or native, freshwater, marine, estuarine, etc.)
+- [ ] **(blocked)** Structure metrics versus distance to river mouth
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+library(sf)
+devtools::load_all()
+nice_theme()
+```
+
+## Species composition along the continuum
+
+We start by looking at how much species overlap there is between the three
+surveys that make up the river-estuary-sea continuum: `river` (freshwater,
+ASPE), `nurse` (estuarine nursery grounds) and `pomet` (open coastal/sea).
+
+```{r}
+#| fig-width: 6
+#| fig-height: 5.5
+
+size <- tar_read(size_year_filtered)
+plot_venn_diagram(size)
+```
+
+Three species are shared by all three surveys: *Anguilla anguilla* (European
+eel, catadromous), *Chelon ramada* (grey mullet, euryhaline
+estuarine migrant) and *Platichthys flesus* (European flounder, catadromous
+flatfish).
+
+More surprising is the `river`/`pomet` overlap (16 species), which excludes
+`nurse` entirely. These 16 are all strict freshwater residents (e.g. roach,
+bream, perch, pikeperch, barbel, chub, three-spined stickleback), not diadromous
+species. These species most probably come from `pomet` fishing operation that
+occurs deep into the estuaries (Girond and Loire).
+
+So `river` and open sea share species through because of two reasons.
+First, through diadromous species that live across the whole continuum.
+Second, through residents caught by `pomet` operations deep into estuaries.
+
+## Metaweb
+
+The metaweb represents every possible predator-prey interaction across the
+whole continuum, aggregated over all size classes so each species appears as
+a single node. Species are placed vertically by trophic level, from basal
+resources (grey, bottom) up to fish (top), colored by whether they prey on
+other fish at any life stage, and sized by each species' mean observed body
+length.
+
+```{r}
+#| fig-width: 14
+#| fig-height: 9
+
+web_list <- tar_read(web_list)
+resource_list <- tar_read(resource_list)
+diet <- tar_read(diet)
+size <- tar_read(size_year_filtered)
+plot_metaweb(web_list$metaweb, resource_list, diet, size)
+```
+
+`r nrow(aggregate_species_web(web_list$metaweb)) - length(resource_list)`
+fish species and `r length(resource_list)` basal resources make up the
+metaweb, for a total of `r sum(aggregate_species_web(web_list$metaweb))`
+possible interactions at the species level.
+
+The static plot above omits species labels for readability. For exploring
+individual species, here is the same network as an interactive plot: hover
+over a node to see its name, and zoom/pan to inspect dense areas.
+
+```{r}
+#| fig-width: 11
+#| fig-height: 9
+
+plot_metaweb_interactive(web_list$metaweb, resource_list, diet, size)
+```
+
+## Local food webs along the continuum
+
+To see how food web structure evolves along the continuum, we pick three
+individual operations along Gironde: one on the coast (`pomet`), one within the
+Gironde estuary itself (`nurse`), and one upstream on the Dordogne (`river`).
+
+```{r}
+foodweb_structure <- tar_read(foodweb_structure)
+operation_year_filtered <- tar_read(operation_year_filtered)
+
+ops <- c(
+  pomet = "61832307", nurse = "2022_1_GIR12_14_S", river = "83544"
+)
+titles <- c(
+  pomet = "Coast",
+  nurse = "Estuary",
+  river = "River"
+)
+```
+
+First, a map showing where each of the three operations sits along the
+coastline/estuary/river.
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6
+
+continuum_pts <- operation_year_filtered |>
+  filter(operation_id %in% ops) |>
+  mutate(
+    label = titles[names(ops)[match(operation_id, ops)]]
+  )
+
+france <- rnaturalearth::ne_countries(
+  geounit = "france", type = "map_units", scale = "medium", returnclass = "sf"
+)
+rivers_fr <- rnaturalearth::ne_download(
+  scale = 10,
+  type = "rivers_lake_centerlines",
+  category = "physical",
+  returnclass = "sf"
+) |>
+  sf::st_intersection(france)
+
+e <- 0.4
+ggplot() +
+  geom_sf(data = rivers_fr, color = "grey60", linewidth = 0.3) +
+  geom_sf(data = coastline(), linewidth = 0.3) +
+  geom_point(
+    data = continuum_pts,
+    aes(longitude, latitude),
+    color = "black",
+    size = 3
+  ) +
+  ggrepel::geom_label_repel(
+    data = continuum_pts,
+    aes(longitude, latitude, label = label),
+    size = 3.5
+  ) +
+  coord_sf(
+    xlim = range(continuum_pts$longitude) + c(-e, e),
+    ylim = range(continuum_pts$latitude) + c(-e, e)
+  ) +
+  labs(x = "Longitude", y = "Latitude") +
+  theme(
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    panel.grid = element_blank()
+  )
+```
+
+```{r}
+#| fig-width: 16
+#| fig-height: 6
+
+# Shared size scale across all three panels, so `guides = "collect"` below
+# merges them into a single legend instead of one per panel.
+size_range <- (size |>
+  filter(operation_id %in% ops) |>
+  group_by(species_valid) |>
+  summarise(v = mean(length, na.rm = TRUE), .groups = "drop"))$v |>
+  range()
+
+local_web_plots <- lapply(names(ops), function(nm) {
+  fw_row <- foodweb_structure |> filter(operation_id == ops[nm])
+  web <- fw_row$foodweb[[1]]
+  op_size <- size |> filter(operation_id == ops[nm])
+  subtitle <- sprintf(
+    "Richness %d · Connectance %.2f · Mean TL %.1f",
+    round(exp(fw_row$log_species_richness)), fw_row$connectance,
+    fw_row$trophic_length
+  )
+  plot_local_foodweb(
+    web, resource_list, diet, op_size,
+    title = titles[nm], size_limits = size_range
+  ) +
+    labs(subtitle = subtitle) +
+    theme(plot.subtitle = element_text(size = 9, color = "grey40"))
+})
+
+patchwork::wrap_plots(local_web_plots, nrow = 1) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+
+The three webs illustrate a clear shift in composition: the coastal web is built
+around marine flatfish and with several piscivorous predators; the estuarine web
+is sparser, dominated by basal resources with only a couple of connected fish;
+and the river web is dominated by small non-piscivorous cyprinids alongside a
+handful of large piscivorous predators.
+
+## Structure metrics along the continuum
+
+Rather than comparing surveys as discrete boxplots, we map each operation's
+structure metrics at its actual location, restricted to the Gironde
+estuary/coast and the Dordogne river, to see how food web structure changes
+continuously along the gradient instead of as three discrete groups.
+
+We look at trophic length, diet overlap, connectance and species richness.
+Diet overlap is the mean pairwise Jaccard similarity between predators' prey
+sets (low = predators partition prey between them/complementarity, high =
+predators eat largely the same things/redundancy) - unlike connectance, it
+is close to independent of species richness
+(`r round(cor(foodweb_structure$diet_overlap, foodweb_structure$log_species_richness), 2)`
+here vs.
+`r round(cor(foodweb_structure$connectance, foodweb_structure$log_species_richness), 2)`
+for connectance), so it adds information richness alone doesn't already
+give us.
+
+```{r}
+continuum_box <- foodweb_structure |>
+  filter(longitude > -1.8, longitude < 1.3, latitude > 44.3, latitude < 46.0)
+
+plot_metric_map <- function(data, metric, title) {
+  ggplot(data) +
+    geom_sf(
+      data = rivers_fr, color = "grey70", linewidth = 0.3, inherit.aes = FALSE
+    ) +
+    geom_sf(data = coastline(), linewidth = 0.3, inherit.aes = FALSE) +
+    geom_point(
+      aes(longitude, latitude, color = .data[[metric]]), size = 1.8, alpha = 0.8
+    ) +
+    coord_sf(xlim = c(-1.8, 1.3), ylim = c(44.3, 46.0)) +
+    scale_color_viridis_c() +
+    labs(title = title, x = NULL, y = NULL, color = NULL) +
+    theme(
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      panel.grid = element_blank()
+    )
+}
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+plot_metric_map(continuum_box, "trophic_length", "Trophic length")
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+plot_metric_map(continuum_box, "diet_overlap", "Diet overlap")
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+plot_metric_map(continuum_box, "connectance", "Connectance")
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+plot_metric_map(continuum_box, "log_species_richness", "Log species richness")
+```
+
+## Diet composition by fish origin
+
+We split species into three groups, reusing the same survey-membership
+logic as the venn diagram above: `freshwater` (found only in `river`),
+`marine` (found only in `nurse`/`pomet`), and `migratory` (found in both).
+For each group, we look at the average diet composition across resource
+categories (from the literature-curated diet table, not the constructed
+food webs), normalised so each group's bars sum to 1.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6.5
+
+species_origin <- size |>
+  distinct(species_valid, survey) |>
+  group_by(species_valid) |>
+  summarise(
+    surveys = paste(sort(unique(survey)), collapse = ","), .groups = "drop"
+  ) |>
+  mutate(
+    has_river = grepl("river", surveys),
+    has_marine = grepl("nurse|pomet", surveys),
+    origin = case_when(
+      has_river & !has_marine ~ "freshwater",
+      !has_river & has_marine ~ "marine",
+      has_river & has_marine ~ "migratory"
+    )
+  )
+
+species_diet <- diet |>
+  select(species, all_of(resource_list)) |>
+  group_by(species) |>
+  summarise(across(everything(), mean), .groups = "drop") |>
+  inner_join(
+    species_origin |> select(species_valid, origin),
+    by = c("species" = "species_valid")
+  )
+
+origin_diet <- species_diet |>
+  group_by(origin) |>
+  summarise(across(all_of(resource_list), mean), .groups = "drop") |>
+  tidyr::pivot_longer(
+    -origin, names_to = "resource_cat", values_to = "value"
+  ) |>
+  group_by(origin) |>
+  mutate(share = value / sum(value)) |>
+  ungroup()
+
+ggplot(
+  origin_diet,
+  aes(x = factor(origin, levels = c("freshwater", "migratory", "marine")),
+      y = share, fill = resource_cat)
+) +
+  geom_col(width = 0.6) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(x = NULL, y = "Share of diet (resource categories)", fill = "Resource")
+```
+
+Freshwater and migratory species share a similar diet profile, both with a
+substantial insect component; marine species show almost no insect
+consumption (aquatic insects being a specifically freshwater resource) and
+rely more on zooplankton and phytoplankton instead.

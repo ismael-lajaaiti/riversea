@@ -50,17 +50,34 @@ create_plot_dag <- function() {
 
 #' Plot venn diagram of common species between surveys
 #'
+#' Styled to match `nice_theme()`: thin ink-grey outlines and labels, a
+#' restrained blue fill, no legend (redundant with the in-plot counts).
+#'
 #' @param df data frame
 #'
 #' @return plot
 #' @export
 plot_venn_diagram <- function(df) {
-  df |>
-    distinct(species_valid, survey) |>
-    group_split(survey) |>
-    stats::setNames(unique(df$survey)) |>
-    lapply(\(x) x$species_valid) |>
-    ggVennDiagram::ggVennDiagram()
+  ink <- "grey20"
+  # split() names each group after its own factor level - avoids mismatches
+  # that group_split() + setNames(unique(df$survey)) can silently produce.
+  distinct_df <- df |> distinct(species_valid, survey)
+  sets <- split(distinct_df$species_valid, distinct_df$survey)
+
+  ggVennDiagram::ggVennDiagram(
+    sets,
+    label = "count",
+    label_geom = "text",
+    label_color = ink,
+    label_alpha = 1,
+    label_size = 3.2,
+    set_color = ink,
+    set_size = 4,
+    edge_size = 0.4
+  ) +
+    ggplot2::scale_fill_gradient(low = "white", high = "#a9c9e0") +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = 0.15)) +
+    ggplot2::theme(legend.position = "none")
 }
 
 #' Get relative path.

@@ -180,6 +180,10 @@ data_targets <- list(
     river_foodweb_structure,
     foodweb_structure |> dplyr::filter(survey == "river")
   ),
+  tar_target(
+    foodweb_size_info_combined,
+    get_combined_foodweb_size_info(size_year_filtered, diet, operation_year_filtered)
+  ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
   tar_target(
     environment_data,

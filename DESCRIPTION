@@ -33,6 +33,7 @@ Imports:
     parallel,
     patchwork,
     piecewiseSEM,
+    plotly,
     purrr,
     readr,
     rfishbase,

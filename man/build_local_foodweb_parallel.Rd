@@ -18,7 +18,8 @@ build_local_foodweb_parallel(
 
 \item{local_id}{column in \code{ind_measure} identifying the sampling operation.}
 
-\item{metaweb}{metaweb matrix, as returned by \code{foodwebbuilder::build_metaweb()}.}
+\item{metaweb}{metaweb matrix, as returned by
+\code{foodwebbuilder::build_metaweb()}.}
 
 \item{tab_size_classes}{size class table, as returned by
 \code{foodwebbuilder::compute_size_classes()}.}

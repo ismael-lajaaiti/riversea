@@ -31,10 +31,10 @@ continuum in France.
 **Data pipeline & analysis**
 
 - [x] Validate FishBase diets against literature
-- [ ] **(in progress)** Update diet table within the pipeline
+- [x] Update diet table within the pipeline
+- [ ] First plot of metaweb
 - [ ] Collect additional information on species (benthic/pelagic,
 native/invasive)
-- [ ] First plot of metaweb
 - [ ] Finish AMOBIO×ASPE×REPHY merge (unit harmonization, distance-to-mouth)
 - [ ] Decide nutrient composite variable (individual vs. TN+TP+ratio vs. PCA —
 let RF pre-screening decide)
@@ -46,6 +46,7 @@ let RF pre-screening decide)
 
 - [ ] Gear-effect sensitivity analysis (electrofishing vs. trawl)
 - [ ] Bayesian SEM as a robustness check alongside INLA
+- [ ] Check/design model structure with causal models
 - [ ] RF pre-screening to inform INLA specification
 - [ ] Decide INLA spatial structure across the continuum (hydrologic-distance
 tail-down covariance + marine SPDE — to discuss with co-authors)

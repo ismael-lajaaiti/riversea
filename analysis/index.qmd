@@ -34,5 +34,7 @@ to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 6. [Overview of REPHY data](D6-rephy.qmd)
 7. [Interpolation of REPHY data](D7-rephy-interpolation.qmd)
 8. [Distance to river mouth](D8-distance-mouth.qmd)
+9. [Food web structures along the river-sea continuum](D9-structure-continuum.qmd)
+
 
 ## E. Invasive species and dams

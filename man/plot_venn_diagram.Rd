@@ -13,5 +13,6 @@ plot_venn_diagram(df)
 plot
 }
 \description{
-Plot venn diagram of common species between surveys
+Styled to match \code{nice_theme()}: thin ink-grey outlines and labels, a
+restrained blue fill, no legend (redundant with the in-plot counts).
 }

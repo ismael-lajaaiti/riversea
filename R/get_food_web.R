@@ -122,7 +122,8 @@ build_foodweb <- function(
 #'
 #' @param ind_measure output of `foodwebbuilder::remove_missing_species()`.
 #' @param local_id column in `ind_measure` identifying the sampling operation.
-#' @param metaweb metaweb matrix, as returned by `foodwebbuilder::build_metaweb()`.
+#' @param metaweb metaweb matrix, as returned by
+#' `foodwebbuilder::build_metaweb()`.
 #' @param tab_size_classes size class table, as returned by
 #' `foodwebbuilder::compute_size_classes()`.
 #' @param selected_resources which resources are considered at the base of
@@ -351,6 +352,383 @@ get_trophic_length <- function(web, tl_method = "ChainAveragedTL") {
     max(na.rm = TRUE)
 }
 
+#' Mean diet overlap between predators in a food web.
+#'
+#' For every pair of predators (nodes with >=1 prey), the Jaccard similarity
+#' of their prey sets is computed and averaged across all pairs - low values
+#' mean predators partition prey between them (complementarity), high values
+#' mean they eat largely the same things (redundancy). Unlike connectance,
+#' this is close to independent of species/trophic richness.
+#'
+#' @param web adjacency matrix, rows are prey and columns are predators.
+#'
+#' @return numeric, or `NA` if fewer than 2 predators.
+#' @export
+get_diet_overlap <- function(web) {
+  predators <- which(colSums(web) > 0)
+  if (length(predators) < 2) {
+    return(NA_real_)
+  }
+  M <- web[, predators, drop = FALSE]
+  inter <- t(M) %*% M
+  sizes <- colSums(M)
+  union_mat <- outer(sizes, sizes, "+") - inter
+  jaccard <- inter / union_mat
+  diag(jaccard) <- NA
+  mean(jaccard[upper.tri(jaccard)], na.rm = TRUE)
+}
+
+#' Collapse a trophic-species web to a species-level adjacency matrix.
+#'
+#' `build_metaweb()`/`build_local_foodweb()` split each species into size
+#' classes (e.g. `"Anguilla anguilla_1"`, `"_2"`, ...), which makes a
+#' network plot unreadable at the scale of the full metaweb. This unions
+#' interactions across size classes, keeping an edge whenever any size
+#' class of the prey is eaten by any size class of the predator.
+#'
+#' @param web adjacency matrix, rows are prey and columns are predators,
+#' with trophic-species names of the form `"species_class"`.
+#'
+#' @return 0/1 adjacency matrix at the species level.
+#' @export
+aggregate_species_web <- function(web) {
+  species <- sub("_.*", "", rownames(web))
+  species_levels <- unique(species)
+  # M: trophic-species x species membership indicator. t(M) %*% web %*% M
+  # sums prey (rows) and predators (columns) into species groups in one step,
+  # keeping row = prey / column = predator.
+  M <- matrix(
+    0, nrow(web), length(species_levels),
+    dimnames = list(NULL, species_levels)
+  )
+  M[cbind(seq_along(species), match(species, species_levels))] <- 1
+  agg <- t(M) %*% web %*% M
+  (agg > 0) * 1
+}
+
+#' Classify species in a metaweb as resource, piscivorous or non-piscivorous.
+#'
+#' Uses the diet table's per-stage `fish` flag rather than the metaweb's own
+#' links, which union all size classes and would mark nearly every species
+#' piscivorous.
+#'
+#' @param node character vector of species/node names, e.g. `colnames(web)`.
+#' @param resource character vector of basal resource node names.
+#' @param diet table of fish diet, as used by `build_foodweb()`.
+#'
+#' @return character vector, one of "resource"/"piscivorous"/
+#' "non-piscivorous", in the same order as `node`.
+#' @export
+classify_metaweb_species <- function(node, resource, diet) {
+  piscivorous_species <- diet |>
+    filter(fish == 1) |>
+    pull(species) |>
+    unique()
+  case_when(
+    node %in% resource ~ "resource",
+    node %in% piscivorous_species ~ "piscivorous",
+    TRUE ~ "non-piscivorous"
+  )
+}
+
+#' Trophic level via iterative prey-averaging, anchored at basal resources.
+#'
+#' `TL = 1` (the classical convention: producers = 1), fixed, for resources
+#' with no outgoing edges (true autotrophs/inputs - e.g. detritus,
+#' phytoplankton). Every other node, including resource categories that
+#' themselves have prey (e.g. `worm` eats `mollusk`/`crustacean`, per
+#' `diet_resource`), is `1 + mean(TL(prey))`, solved by fixed-point
+#' iteration instead of bottom-up recursion because the metaweb has cycles
+#' (species preying across size classes) - the same reason
+#' `cheddar::TrophicLevels()` returns all-`NA` on the full metaweb.
+#'
+#' @param g directed igraph, edges prey -> predator (see `agg` in
+#' `aggregate_species_web()`).
+#' @param resource character vector of basal resource node names.
+#' @param max_iter maximum number of fixed-point iterations.
+#' @param tol convergence tolerance on the largest per-node change.
+#'
+#' @return named numeric vector of trophic levels, one per vertex of `g`.
+#' @noRd
+compute_prey_averaged_trophic_level <- function(
+  g, resource, max_iter = 200, tol = 1e-8
+) {
+  nodes <- igraph::V(g)$name
+  adj <- igraph::as_adjacency_matrix(g, sparse = FALSE)
+  is_basal <- nodes %in% resource & colSums(adj) == 0
+  tl <- stats::setNames(rep(1, length(nodes)), nodes)
+  for (i in seq_len(max_iter)) {
+    prey_counts <- colSums(adj)
+    prey_tl_sum <- as.vector(tl %*% adj)
+    new_tl <- ifelse(prey_counts > 0, 1 + prey_tl_sum / prey_counts, 1)
+    new_tl[is_basal] <- 1
+    names(new_tl) <- nodes
+    if (max(abs(new_tl - tl)) < tol) {
+      return(new_tl)
+    }
+    tl <- new_tl
+  }
+  tl
+}
+
+#' Build a trophic-level network layout for a food web.
+#'
+#' Aggregates `web` to species level and lays it out with `ggraph`'s
+#' Sugiyama algorithm: nodes in rows by trophic level (rounded to the
+#' nearest integer), spread horizontally within each row to minimise edge
+#' crossings; `y` is then set to the actual (continuous) trophic level.
+#' Deterministic - no seed needed. Shared by `plot_metaweb()`,
+#' `plot_metaweb_interactive()` and `plot_local_foodweb()`.
+#'
+#' @param web adjacency matrix, as `aggregate_species_web()` expects.
+#' @param resource character vector of basal resource node names.
+#'
+#' @return list(graph = igraph object, layout = `ggraph` layout data frame
+#' with `x`/`y`/`name` columns).
+#' @noRd
+build_trophic_layout <- function(web, resource) {
+  agg <- aggregate_species_web(web)
+  g <- igraph::graph_from_adjacency_matrix(agg, mode = "directed")
+  tl <- compute_prey_averaged_trophic_level(g, resource)[igraph::V(g)$name]
+  layer <- round(tl)
+  layout <- ggraph::create_layout(g, layout = "sugiyama", layers = layer)
+  # Sugiyama spaces nodes within a row to minimise edge crossings, which
+  # gives densely-connected rows (e.g. apex predators preying on each
+  # other) far more spread than sparse rows (e.g. species that only eat
+  # resources) regardless of node count - one row can end up 7x wider than
+  # another with more nodes in it. Rank-based x keeps Sugiyama's
+  # crossing-minimising order but gives every row the same per-node gap.
+  # (Note: dplyr verbs would strip the layout object's class/attributes
+  # that ggraph::ggraph() needs, so this reassigns the column in place.)
+  layout$x <- ave(
+    layout$x, layer[layout$name],
+    FUN = function(x) rank(x, ties.method = "first")
+  )
+  # Only Sugiyama's x is wanted - its own y treats layer 0 as a root at the
+  # top (org-chart style), and layers are rounded anyway, so y is set from
+  # the actual (continuous) trophic level.
+  layout$y <- tl[layout$name]
+  list(graph = g, layout = layout)
+}
+
+trophic_group_colors <- c(
+  resource = "grey60",
+  "non-piscivorous" = "#4fae94",
+  piscivorous = "#c26b51"
+)
+
+# theme_void() leaves the background transparent; force it white so the
+# plot doesn't depend on whatever it's composited against.
+theme_blank_white <- function() {
+  theme_void() +
+    theme(
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA)
+    )
+}
+
+#' Attach a body-length column to a trophic layout, for node sizing.
+#'
+#' Resource nodes (no length data) are set to half the smallest fish size.
+#'
+#' @param layout `ggraph` layout data frame with a `name` column.
+#' @param size individual fish size table with `species_valid`/`length`
+#' columns, e.g. `size_year_filtered`, already restricted to whatever scope
+#' the node sizes should reflect (e.g. one operation for a local food web).
+#' @param metric "mean" or "max" length per species.
+#'
+#' @return `layout` with a `body_length` column added.
+#' @noRd
+attach_body_length <- function(layout, size, metric = c("mean", "max")) {
+  metric <- match.arg(metric)
+  agg_fn <- if (metric == "max") max else mean
+  species_size <- size |>
+    group_by(species_valid) |>
+    summarise(body_length = agg_fn(length, na.rm = TRUE), .groups = "drop")
+
+  layout |>
+    left_join(species_size, by = c(name = "species_valid")) |>
+    mutate(
+      body_length = if_else(
+        group == "resource", min(body_length, na.rm = TRUE) / 2, body_length
+      )
+    )
+}
+
+#' Abbreviate a binomial species name to "G. species" (e.g. for crowded
+#' node labels). Names with no genus/species space (resource categories
+#' like "detritus") are left untouched.
+#'
+#' @param x character vector of names.
+#'
+#' @return character vector.
+#' @noRd
+abbreviate_species_name <- function(x) {
+  sub("^([A-Z])[a-z]+ ", "\\1. ", x)
+}
+
+#' Plot a food web as a trophic network, aggregated at the species level.
+#'
+#' Nodes are laid out with `build_trophic_layout()`'s Sugiyama layers
+#' (rows = trophic level, minimising edge crossings within each row),
+#' colored by `classify_metaweb_species()` and sized by body length (see
+#' `attach_body_length()`).
+#'
+#' @param web adjacency matrix, as `aggregate_species_web()` expects.
+#' @param resource character vector of basal resource node names.
+#' @param diet table of fish diet, passed to `classify_metaweb_species()`.
+#' @param size individual fish size table with `species_valid`/`length`
+#' columns, e.g. `size_year_filtered`.
+#' @param metric "mean" or "max" length per species.
+#'
+#' @return ggplot.
+#' @export
+plot_metaweb <- function(web, resource, diet, size, metric = c("mean", "max")) {
+  metric <- match.arg(metric)
+  ld <- build_trophic_layout(web, resource)
+  ld$layout$group <- classify_metaweb_species(ld$layout$name, resource, diet)
+  ld$layout <- attach_body_length(ld$layout, size, metric)
+
+  ggraph::ggraph(ld$layout) +
+    ggraph::geom_edge_link(alpha = 0.05, width = 0.2, color = "grey40") +
+    ggraph::geom_node_point(aes(color = group, size = body_length)) +
+    scale_color_manual(values = trophic_group_colors) +
+    scale_size_continuous(
+      range = c(1, 12), name = paste(metric, "length (cm)")
+    ) +
+    labs(color = NULL) +
+    theme_blank_white()
+}
+
+#' Plot a single local food web as a trophic network, with species labels.
+#'
+#' Same layout, coloring and sizing as `plot_metaweb()`, but meant for a
+#' single operation's local food web (tens of species rather than ~150),
+#' small enough that species names can be shown directly with repelled
+#' labels.
+#'
+#' @inheritParams plot_metaweb
+#' @param size individual fish size table, restricted to this operation's
+#' own catch (e.g. `size_year_filtered |> filter(operation_id == id)`), so
+#' node size reflects the fish actually caught there, not a global average.
+#' @param title optional plot title, e.g. the operation's location.
+#' @param size_limits fixed `c(min, max)` for the size scale, so several
+#' `plot_local_foodweb()` plots share one legend (e.g. via
+#' `patchwork::plot_layout(guides = "collect")`) instead of each getting
+#' its own. Default `NULL` auto-scales to this plot's own data.
+#' @param label_size species label font size.
+#'
+#' @return ggplot.
+#' @export
+plot_local_foodweb <- function(
+  web, resource, diet, size, title = NULL, metric = c("mean", "max"),
+  size_limits = NULL, label_size = 4
+) {
+  metric <- match.arg(metric)
+  ld <- build_trophic_layout(web, resource)
+  ld$layout$group <- classify_metaweb_species(ld$layout$name, resource, diet)
+  ld$layout <- attach_body_length(ld$layout, size, metric)
+  ld$layout$label <- abbreviate_species_name(ld$layout$name)
+  # Resources fall back to half this plot's own local min fish length,
+  # which can be below a shared `size_limits` floor from another plot's
+  # (larger) fish - clamp so they don't silently drop off the scale.
+  if (!is.null(size_limits)) {
+    ld$layout$body_length <- pmax(ld$layout$body_length, size_limits[1])
+  }
+
+  ggraph::ggraph(ld$layout) +
+    ggraph::geom_edge_link(alpha = 0.15, width = 0.3, color = "grey40") +
+    ggraph::geom_node_point(aes(color = group, size = body_length)) +
+    ggraph::geom_node_text(
+      aes(label = label),
+      repel = TRUE, size = label_size, max.overlaps = 30,
+      segment.size = 0.2, segment.alpha = 0.5, color = "grey20", seed = 1
+    ) +
+    scale_color_manual(values = trophic_group_colors) +
+    scale_size_continuous(
+      range = c(2, 14), limits = size_limits,
+      name = paste(metric, "length (cm)")
+    ) +
+    labs(color = NULL, title = title) +
+    theme_blank_white() +
+    theme(plot.title = element_text(face = "bold"))
+}
+
+#' Interactive version of `plot_metaweb()`, with species names on hover.
+#'
+#' Rebuilds the same Sugiyama layout as `plot_metaweb()` but as plain
+#' `ggplot2` point/segment geoms (rather than `ggraph`'s specialised network
+#' geoms), since those translate reliably through `plotly::ggplotly()`. Text
+#' labels are mapped to `plotly`'s hover tooltip instead of being drawn on
+#' the plot, so species names stay legible on zoom without cluttering the
+#' static view.
+#'
+#' @inheritParams plot_metaweb
+#'
+#' @return a `plotly` htmlwidget.
+#' @export
+plot_metaweb_interactive <- function(
+  web, resource, diet, size, metric = c("mean", "max")
+) {
+  metric <- match.arg(metric)
+  ld <- build_trophic_layout(web, resource)
+  ld$layout$group <- classify_metaweb_species(ld$layout$name, resource, diet)
+  ld$layout <- attach_body_length(ld$layout, size, metric)
+  nodes <- ld$layout |> transmute(node = name, x, y, group, body_length)
+
+  edges <- igraph::as_data_frame(ld$graph, what = "edges") |>
+    rename(node = from) |>
+    left_join(nodes, by = "node") |>
+    rename(x_start = x, y_start = y, node_from = node) |>
+    rename(node = to) |>
+    left_join(nodes, by = "node") |>
+    rename(x_end = x, y_end = y)
+
+  p <- ggplot() +
+    geom_segment(
+      data = edges,
+      aes(x = x_start, y = y_start, xend = x_end, yend = y_end),
+      color = "grey40", alpha = 0.05, linewidth = 0.2
+    ) +
+    geom_point(
+      data = nodes,
+      aes(x = x, y = y, color = group, size = body_length, text = node)
+    ) +
+    scale_color_manual(values = trophic_group_colors) +
+    scale_size_continuous(
+      range = c(1, 10), name = paste(metric, "length (cm)")
+    ) +
+    labs(color = NULL) +
+    theme_blank_white()
+
+  plotly::ggplotly(p, tooltip = "text")
+}
+
+#' Share of basal-resource feeding links going to each resource category.
+#'
+#' For one local food web, computes each resource's out-degree (number of
+#' predators feeding on it) as a share of all resource-based links, giving
+#' the resource composition of the community's diet. `NA` for every
+#' resource not present in `web` (rather than 0), so it can't be confused
+#' with a resource that was present but unused.
+#'
+#' @param web adjacency matrix of one local food web.
+#' @param resource character vector of basal resource node names.
+#'
+#' @return named numeric vector, one share per resource in `resource`.
+#' @export
+summarise_resource_diet <- function(web, resource) {
+  resource_rows <- intersect(resource, rownames(web))
+  links <- rowSums(web[resource_rows, , drop = FALSE])
+  total <- sum(links)
+  share <- stats::setNames(rep(NA_real_, length(resource)), resource)
+  if (total > 0) {
+    share[] <- 0
+    share[names(links)] <- links / total
+  }
+  share
+}
+
 plot_sizeclass_connectance <- function(metaweb_table) {
   metaweb_table |>
     mutate(connectance = purrr::map_dbl(metaweb, get_connectance)) |>
@@ -393,6 +771,7 @@ compute_foodweb_metrics <- function(foodweb, resource) {
   connectance <- get_connectance(foodweb)
   trophic_length <- get_trophic_length(foodweb)
   frac_piscivorous <- get_frac_piscivorous(foodweb, resource = resource)
+  diet_overlap <- get_diet_overlap(foodweb)
   tibble::tibble(
     foodweb = list(foodweb),
     log_trophic_richness = log_trophic_richness,
@@ -401,7 +780,8 @@ compute_foodweb_metrics <- function(foodweb, resource) {
     trophic_length = trophic_length,
     trophic_breadth_q90 = breadth$q90,
     trophic_breadth_median = breadth$median,
-    frac_piscivorous = frac_piscivorous
+    frac_piscivorous = frac_piscivorous,
+    diet_overlap = diet_overlap
   )
 }
 
@@ -480,7 +860,7 @@ match_with_environment <- function(foodweb, environment) {
 
 get_foodweb_size_info <- function(size, diet) {
   size <- size |>
-    select(-c(measured, year)) |>
+    select(trait, species_valid, length) |>
     rename(species = species_valid)
   diet <- diet |>
     filter(fish == 1) |>
@@ -494,6 +874,26 @@ get_foodweb_size_info <- function(size, diet) {
       mean_fish_size = mean(length),
     ) |>
     ungroup()
+}
+
+#' Get max/mean fish size info for the combined sea/river dataset.
+#'
+#' Wraps `get_foodweb_size_info()`, which expects a `trait` id column (the
+#' sea survey's naming), and reattaches operation metadata so the result can
+#' be mapped or compared across surveys directly.
+#'
+#' @param size combined individual size table, as returned by `merge_size()`
+#' and filtered (see `size_year_filtered`).
+#' @param diet table of fish diet.
+#' @param operation combined operation metadata, as returned by
+#' `merge_operation()` (see `operation_year_filtered`).
+#'
+#' @return tibble of `get_foodweb_size_info()` output joined with `operation`.
+#' @export
+get_combined_foodweb_size_info <- function(size, diet, operation) {
+  get_foodweb_size_info(size |> rename(trait = operation_id), diet) |>
+    rename(operation_id = trait) |>
+    left_join(operation, by = "operation_id")
 }
 
 #' Get metadata for each ASPE fishing operation.
