@@ -166,6 +166,9 @@ input load.
 - @Harris-etal-2026b mobile consumers (fish, birds) use heterogeneous resources
 in braided river, New Zealand.
 
+- @Garcia-etal-2025 invasive make trophic structure more stable in lake fish
+communities (France)
+
 ### Multiple stressors
 
 - Synergistic and antagonistic effects of multiple stressors
@@ -512,8 +515,8 @@ predator–prey body size ratio in freshwater ecosystems
 In addition of fish species, seven basal nodes (resources) were added at the
 base of the metaweb: detritus, biofilm, phytoplanckton, zooplanckton,
 macrophytes and zoobenthos.
-We represent the basal food web structure in the Appendix
-(see @sfig-foodweb-base).
+We represent the basal food web structure in the Appendix.
+<!-- TODO: restore "(see @sfig-foodweb-base)." once the food web figure is re-added below. -->
 We assumed that these resources were present at all sampling sites.
 
 #### Infer missing fish lengths
@@ -594,30 +597,16 @@ along the riversea continuum.
 
 # Supporting Information
 
-## Structure of the food web base
-
-::: {#sfig-foodweb-base}
-
-![](`r riversea::to_rel(targets::tar_read(foodweb_fig))`)
-
-Assumed structure of the food web base.
-
-:::
+<!-- TODO: re-add "Structure of the food web base" (#sfig-foodweb-base) and
+"Venn diagramm" (#sfig-venn) sections once the image path bug for figures
+inside custom crossref float divs is fixed (dynamic `../`-relative paths
+computed via to_rel()/tar_read() lose their slash when rendered inside
+`::: {#sfig-...}` divs, e.g. "../figures/foodweb.png" becomes
+"..figures/foodweb.png"). -->
 
 ## Model DAG
 
 Put model DAG here using targets.
-
-## Venn diagramm
-
-
-::: {#sfig-venn}
-
-![](`r riversea::to_rel(targets::tar_read(venn_diagram))`)
-
-Venn diagram of common species between surveys.
-
-:::
 
 ## Number of size classes and metaweb structure
 
