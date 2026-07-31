@@ -148,6 +148,10 @@ data_targets <- list(
       dplyr::semi_join(operation_year_filtered, by = "operation_id")
   ),
   tar_target(
+    species_traits,
+    get_species_traits(sort(unique(size_year_filtered$species_valid)))
+  ),
+  tar_target(
     web_list,
     {
       stopifnot(diet_coverage_check)

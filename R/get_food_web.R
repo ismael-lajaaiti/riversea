@@ -664,17 +664,40 @@ plot_local_foodweb <- function(
 #' static view.
 #'
 #' @inheritParams plot_metaweb
+#' @param species_traits optional data frame from `get_species_traits()`
+#' (columns `species`, `environment`, `migratory_category`,
+#' `native_status`, `demers_pelag`) to add to the hover tooltip. Resource
+#' nodes have no traits and just show their name. Default `NULL` keeps the
+#' tooltip to the species name only.
 #'
 #' @return a `plotly` htmlwidget.
 #' @export
 plot_metaweb_interactive <- function(
-  web, resource, diet, size, metric = c("mean", "max")
+  web, resource, diet, size, species_traits = NULL,
+  metric = c("mean", "max")
 ) {
   metric <- match.arg(metric)
   ld <- build_trophic_layout(web, resource)
   ld$layout$group <- classify_metaweb_species(ld$layout$name, resource, diet)
   ld$layout <- attach_body_length(ld$layout, size, metric)
   nodes <- ld$layout |> transmute(node = name, x, y, group, body_length)
+  nodes$text <- nodes$node
+  if (!is.null(species_traits)) {
+    traits <- species_traits |>
+      transmute(
+        node = species,
+        text = paste0(
+          node, "<br>", environment,
+          ", ", coalesce(migratory_category, "migratory status: NA"),
+          ", ", coalesce(native_status, "native status: NA"),
+          "<br>", demers_pelag
+        )
+      )
+    nodes <- nodes |>
+      select(-text) |>
+      left_join(traits, by = "node") |>
+      mutate(text = coalesce(text, node))
+  }
 
   edges <- igraph::as_data_frame(ld$graph, what = "edges") |>
     rename(node = from) |>
@@ -692,7 +715,7 @@ plot_metaweb_interactive <- function(
     ) +
     geom_point(
       data = nodes,
-      aes(x = x, y = y, color = group, size = body_length, text = node)
+      aes(x = x, y = y, color = group, size = body_length, text = text)
     ) +
     scale_color_manual(values = trophic_group_colors) +
     scale_size_continuous(

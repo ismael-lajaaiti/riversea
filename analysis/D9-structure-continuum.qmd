@@ -20,8 +20,10 @@ execute:
 - [x] Refine food web plots
 - [x] Add map with operations to local food web plot
 - [x] Diet category analysis along the continuum
-- [ ] Add information to the metaweb (e.g. migratory status of species, invasive
+- [x] Add information to the metaweb (e.g. migratory status of species, invasive
 or native, freshwater, marine, estuarine, etc.)
+- [x] General information at the species level, such as, mean size, count,
+status, etc.
 - [ ] **(blocked)** Structure metrics versus distance to river mouth
 
 ## Setup
@@ -97,13 +99,92 @@ possible interactions at the species level.
 
 The static plot above omits species labels for readability. For exploring
 individual species, here is the same network as an interactive plot: hover
-over a node to see its name, and zoom/pan to inspect dense areas.
+over a node to see its name, and zoom/pan to inspect dense areas. Fish nodes'
+hover text also shows each species' environment, migratory category and
+native/introduced status in France (see next section for where these come
+from and how missing values are handled).
 
 ```{r}
 #| fig-width: 11
 #| fig-height: 9
 
-plot_metaweb_interactive(web_list$metaweb, resource_list, diet, size)
+species_traits <- tar_read(species_traits)
+plot_metaweb_interactive(
+  web_list$metaweb,
+  resource_list,
+  diet,
+  size,
+  species_traits
+)
+```
+
+## Species-level information
+
+Environment (freshwater/estuarine/marine/diadromous), demersal/pelagic
+position and migratory category come from FishBase's `species()` table;
+native/introduced status is FishBase's `country()` table filtered to France.
+Two caveats, kept as `NA` rather than imputed:
+
+- **Migratory category** (`migratory_category`) is unset for species FishBase
+  doesn't code as diadromous, rather than explicitly labelled
+  "non-migratory" - so `NA` here is ambiguous between "documented as
+  non-migratory" and "not documented". In practice, almost all of these are
+  strict freshwater residents (roach, bream, perch, etc.), so we read `NA`
+  as "presumed non-migratory" without asserting it as a FishBase-sourced
+  fact.
+- **Native status** (`native_status`) is missing for 3 species: the
+  Ponto-Caspian gobies *Neogobius melanostomus*, *Ponticola kessleri* and
+  *Proterorhinus semilunaris*. FishBase simply hasn't added a France country
+  record for them yet, even though they are documented recent invaders in
+  French rivers in the literature - so here `NA` should be read as "invasive,
+  undocumented in FishBase" rather than "unknown".
+
+```{r}
+species_summary <- size |>
+  group_by(species_valid) |>
+  summarise(
+    n_individuals = n(),
+    n_operations = n_distinct(operation_id),
+    mean_length = mean(length, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  left_join(species_traits, by = c("species_valid" = "species")) |>
+  arrange(desc(n_individuals))
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 3.5
+
+count_bar <- function(data, var, title) {
+  data |>
+    count(.data[[var]]) |>
+    mutate(val = forcats::fct_reorder(tidyr::replace_na(.data[[var]], "NA"), n)) |>
+    ggplot(aes(n, val)) +
+    geom_col() +
+    labs(x = "Number of species", y = NULL, title = title)
+}
+
+patchwork::wrap_plots(
+  count_bar(species_summary, "environment", "Environment"),
+  count_bar(species_summary, "migratory_category", "Migratory category"),
+  count_bar(species_summary, "native_status", "Native status (France)"),
+  nrow = 1
+)
+```
+
+The full species-level table: FishBase traits alongside observed count
+(number of individuals and operations) and mean length in the combined
+river-estuary-sea dataset.
+
+```{r}
+species_summary |>
+  select(
+    species = species_valid, environment, migratory_category, native_status,
+    demers_pelag, n_individuals, n_operations, mean_length
+  ) |>
+  arrange(species) |>
+  knitr::kable(digits = 1)
 ```
 
 ## Local food webs along the continuum
