@@ -665,10 +665,10 @@ plot_local_foodweb <- function(
 #'
 #' @inheritParams plot_metaweb
 #' @param species_traits optional data frame from `get_species_traits()`
-#' (columns `species`, `environment`, `migratory_category`,
-#' `native_status`, `demers_pelag`) to add to the hover tooltip. Resource
-#' nodes have no traits and just show their name. Default `NULL` keeps the
-#' tooltip to the species name only.
+#' (columns `species`, `environment`, `is_diadromous`, `is_native`,
+#' `demers_pelag`) to add to the hover tooltip. Resource nodes have no
+#' traits and just show their name. Default `NULL` keeps the tooltip to the
+#' species name only.
 #'
 #' @return a `plotly` htmlwidget.
 #' @export
@@ -687,9 +687,13 @@ plot_metaweb_interactive <- function(
       transmute(
         node = species,
         text = paste0(
-          node, "<br>", environment,
-          ", ", coalesce(migratory_category, "migratory status: NA"),
-          ", ", coalesce(native_status, "native status: NA"),
+          node, "<br>", coalesce(environment, "environment: NA"),
+          ", ", if_else(is_native, "native", "invasive"),
+          ", ", case_when(
+            is.na(is_diadromous) ~ "diadromous: NA",
+            is_diadromous ~ "diadromous",
+            TRUE ~ "not diadromous"
+          ),
           "<br>", demers_pelag
         )
       )

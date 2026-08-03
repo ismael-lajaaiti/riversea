@@ -1,6 +1,6 @@
 utils::globalVariables(c(
   "abundance", "abundance_cor", "Age", "Annee", "AnaCat", "batch_size",
-  "brack", "Brack", "C_VALIDE",
+  "C_VALIDE",
   "Campagne", "category", "CdEuMasseD", "code", "CommonessII",
   "connectance", "Coord_Deb_xmin", "Coord_Deb_ymin", "Coord_Fin_xmin",
   "Coord_Fin_ymin", "country", "date_operation", "DemersPelag", "dist_km",
@@ -10,6 +10,7 @@ utils::globalVariables(c(
   "FoodI", "FoodII", "FoodIII", "fresh", "Fresh", "frac_piscivorous",
   "from", "from_label",
   "geometry", "has_larvae", "id", "ID_interne_prelevement", "IS_FISH",
+  "is_diadromous", "is_native",
   "is_valid", "juvenile_length_max", "L_VALIDE", "L50", "label", "Lat",
   "latitude", "length_max", "length_min", "lg0_max", "LG0max", "light",
   "Lm", "log_species_richness", "log_trophic_richness", "Long",

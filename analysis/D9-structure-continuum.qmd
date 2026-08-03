@@ -24,8 +24,10 @@ execute:
 or native, freshwater, marine, estuarine, etc.)
 - [x] General information at the species level, such as, mean size, count,
 status, etc.
-- [ ] Most common invasive species
-- [ ] Location of invasive species
+- [x] Most common invasive species
+- [x] Location of invasive species
+- [ ] Impact of invasive/diadromous species on food web structure
+(richness-controlled)
 - [ ] **(blocked)** Structure metrics versus distance to river mouth
 
 ## Setup
@@ -49,7 +51,7 @@ nice_theme()
 
 We start by looking at how much species overlap there is between the three
 surveys that make up the river-estuary-sea continuum: `river` (freshwater,
-ASPE), `nurse` (estuarine nursery grounds) and `pomet` (open coastal/sea).
+ASPE), `nurse` (estuary and sea) and `pomet` (estuary and sea).
 
 ```{r}
 #| fig-width: 6
@@ -77,11 +79,10 @@ Second, through residents caught by `pomet` operations deep into estuaries.
 ## Metaweb
 
 The metaweb represents every possible predator-prey interaction across the
-whole continuum, aggregated over all size classes so each species appears as
-a single node. Species are placed vertically by trophic level, from basal
-resources (grey, bottom) up to fish (top), colored by whether they prey on
-other fish at any life stage, and sized by each species' mean observed body
-length.
+whole continuum, aggregated over all size classes so each species appears as a
+single node. Species are placed vertically by trophic level, from resources
+(grey, bottom) up to fish (top), colored by whether they prey on other fish at
+any life stage, and sized by each species' mean observed body length.
 
 ```{r}
 #| fig-width: 14
@@ -99,12 +100,8 @@ fish species and `r length(resource_list)` basal resources make up the
 metaweb, for a total of `r sum(aggregate_species_web(web_list$metaweb))`
 possible interactions at the species level.
 
-The static plot above omits species labels for readability. For exploring
-individual species, here is the same network as an interactive plot: hover
-over a node to see its name, and zoom/pan to inspect dense areas. Fish nodes'
-hover text also shows each species' environment, migratory category and
-native/introduced status in France (see next section for where these come
-from and how missing values are handled).
+Here is the interactive version of the static plot above, so we can zoom in and
+inspect in more details the metaweb.
 
 ```{r}
 #| fig-width: 11
@@ -122,25 +119,24 @@ plot_metaweb_interactive(
 
 ## Species-level information
 
-Environment (freshwater/estuarine/marine/diadromous), demersal/pelagic
-position and migratory category come from FishBase's `species()` table;
-native/introduced status is FishBase's `country()` table filtered to France.
-Two caveats:
+Environment (freshwater/marine/both), demersal/pelagic position and
+diadromous status come from FishBase's `species()` table; native status is
+FishBase's `country()` table filtered to France. Two caveats:
 
-- **Migratory category** (`migratory_category`) is unset for species FishBase
-  doesn't code as diadromous, rather than explicitly labelled
-  "non-migratory" - so `NA` here is ambiguous between "documented as
-  non-migratory" and "not documented". In practice, almost all of these are
-  strict freshwater residents (roach, bream, perch, etc.), so we read `NA`
-  as "presumed non-migratory" without asserting it as a FishBase-sourced
-  fact. Kept as `NA` rather than imputed.
-- **Native status** (`native_status`) is collapsed to just "native" or
-  "introduced": FishBase's finer-grained "endemic" and "not established"
-  categories are folded into "native" for simplicity. The three Ponto-Caspian
-  gobies *Neogobius melanostomus*, *Ponticola kessleri* and *Proterorhinus
-  semilunaris* have no France record in FishBase's `country()` table, even
-  though they are documented recent invaders in French rivers in the
-  literature, so they are hardcoded to "introduced" rather than left `NA`.
+- **Diadromous status** (`is_diadromous`) is `TRUE` for FishBase migratory
+categories that cross the fresh/salt water boundary (`amphidromous`,
+`anadromous`, `catadromous`), `FALSE` for every other documented category
+(`non-migratory`, `potamodromous`, `oceanodromous`), and `NA` only when
+FishBase leaves the category genuinely blank rather than coding it
+"non-migratory". In practice, almost all `NA` species are strict freshwater
+residents (roach, bream, perch, etc.), so read `NA` as "presumed `FALSE`"
+rather than a real unknown.
+
+- **Native status** (`is_native`) is `TRUE` or `FALSE` ("invasive"). The
+three gobies *Neogobius melanostomus*, *Ponticola kessleri* and
+*Proterorhinus semilunaris* have no France record in FishBase's `country()`
+table, even though they are documented recent invaders in French rivers in
+the literature, so they are hardcoded to `FALSE` rather than left `NA`.
 
 ```{r}
 species_summary <- size |>
@@ -162,7 +158,11 @@ species_summary <- size |>
 count_bar <- function(data, var, title) {
   data |>
     count(.data[[var]]) |>
-    mutate(val = forcats::fct_reorder(tidyr::replace_na(.data[[var]], "NA"), n)) |>
+    mutate(
+      val = forcats::fct_reorder(
+        tidyr::replace_na(as.character(.data[[var]]), "NA"), n
+      )
+    ) |>
     ggplot(aes(n, val)) +
     geom_col() +
     labs(x = "Number of species", y = NULL, title = title)
@@ -170,24 +170,238 @@ count_bar <- function(data, var, title) {
 
 patchwork::wrap_plots(
   count_bar(species_summary, "environment", "Environment"),
-  count_bar(species_summary, "migratory_category", "Migratory category"),
-  count_bar(species_summary, "native_status", "Native status (France)"),
+  count_bar(species_summary, "is_diadromous", "Diadromous"),
+  count_bar(species_summary, "is_native", "Native (France)"),
   nrow = 1
 )
 ```
 
-The full species-level table: FishBase traits alongside observed count
-(number of individuals and operations) and mean length in the combined
-river-estuary-sea dataset.
+The full species-level information table
 
 ```{r}
 species_summary |>
   select(
-    species = species_valid, environment, migratory_category, native_status,
+    species = species_valid, environment, is_diadromous, is_native,
     demers_pelag, n_individuals, n_operations, mean_length
   ) |>
   arrange(species) |>
   knitr::kable(digits = 1)
+```
+
+## Invasive and diadromous species
+
+We now look specifically at two groups: **invasive** species (`!is_native`)
+and **diadromous** species (`is_diadromous`), i.e. those that cross the
+fresh/salt water boundary during their life cycle.
+
+For each species we also report its diet, taken from the literature-curated
+diet table and listing every resource category referenced.
+
+```{r}
+diet_list <- c("fish", resource_list)
+
+species_diet_summary <- diet |>
+  select(species, all_of(diet_list)) |>
+  group_by(species) |>
+  summarise(across(everything(), max), .groups = "drop") |>
+  rowwise() |>
+  mutate(
+    diet_summary = paste(
+      diet_list[c_across(all_of(diet_list)) > 0],
+      collapse = ", "
+    )
+  ) |>
+  ungroup() |>
+  select(species, diet_summary)
+
+operation_year_filtered <- tar_read(operation_year_filtered)
+
+sp_status <- size |>
+  left_join(species_traits, by = c("species_valid" = "species")) |>
+  left_join(
+    operation_year_filtered |> select(operation_id, year, longitude, latitude),
+    by = "operation_id"
+  ) |>
+  mutate(is_invasive = !is_native)
+
+top_species_per_survey <- function(data, filter_col, n = 6) {
+  data |>
+    filter(.data[[filter_col]]) |>
+    group_by(survey, species_valid) |>
+    summarise(
+      n_individuals = n(), mean_length = mean(length, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    group_by(survey) |>
+    slice_max(n_individuals, n = n) |>
+    ungroup() |>
+    left_join(species_diet_summary, by = c("species_valid" = "species")) |>
+    arrange(survey, desc(n_individuals))
+}
+
+# Points are per-operation totals (summed across years) for the map, and
+# per-year totals (summed across operations) for the time series.
+plot_species_map <- function(data, species_list) {
+  map_data <- data |>
+    filter(species_valid %in% species_list) |>
+    group_by(species_valid, operation_id, longitude, latitude) |>
+    summarise(n = n(), .groups = "drop")
+  ggplot(map_data) +
+    geom_sf(data = coastline(), linewidth = 0.3, inherit.aes = FALSE) +
+    geom_point(aes(longitude, latitude, size = n, color = n), alpha = 0.6) +
+    coord_sf(xlim = c(-5, 9), ylim = c(41, 51)) +
+    scale_color_viridis_c(trans = "log10") +
+    scale_size_continuous(range = c(0.3, 3), guide = "none") +
+    facet_wrap(~species_valid, ncol = 4) +
+    labs(x = NULL, y = NULL, color = "N caught") +
+    theme(
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      panel.grid = element_blank(),
+      strip.text = element_text(face = "italic", size = 8)
+    )
+}
+
+n_ops_survey_year <- size |>
+  distinct(operation_id, survey) |>
+  left_join(operation_year_filtered |> select(operation_id, year), by = "operation_id") |>
+  count(survey, year, name = "n_ops")
+
+plot_species_occupancy <- function(data, species_list) {
+  present <- data |>
+    filter(species_valid %in% species_list) |>
+    group_by(species_valid, survey, year) |>
+    summarise(n_present = n_distinct(operation_id), .groups = "drop")
+  occ_data <- tidyr::expand_grid(species_valid = species_list, n_ops_survey_year) |>
+    left_join(present, by = c("species_valid", "survey", "year")) |>
+    mutate(n_present = tidyr::replace_na(n_present, 0), frac = n_present / n_ops) |>
+    filter(n_ops > 0)
+  ggplot(occ_data, aes(year, frac, color = survey)) +
+    geom_line() +
+    geom_point(size = 1) +
+    facet_wrap(~species_valid, ncol = 4, scales = "free_y") +
+    labs(x = NULL, y = "Fraction of operations\nwith species present") +
+    theme(strip.text = element_text(face = "italic", size = 8))
+}
+```
+
+### Invasive species
+
+The six most caught invasive species per survey, with mean observed
+length (cm) and diet. `nurse` has no invasive species recorded at all.
+
+```{r}
+invasive_table <- top_species_per_survey(sp_status, "is_invasive")
+invasive_table |>
+  rename(species = species_valid, diet = diet_summary) |>
+  knitr::kable(digits = 1)
+```
+
+Invasive species are essentially a `river` phenomenon: they're present in
+half of river operations, versus a handful of `pomet` operations and none
+in `nurse`.
+
+Where each is caught (per-operation total, summed across years):
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+plot_species_map(sp_status, unique(invasive_table$species_valid))
+```
+
+*Neogobius melanostomus* stands out with a tight cluster in the northeast
+(Moselle/Rhine basin) rather than the wide spread the other introduced
+species show - consistent with it being a recent, still-localized invader.
+
+And how each has evolved over the years, as the fraction of operations
+where it was caught, so this reflects abundance rather than sampling
+effort, split by survey since the fraction isn't comparable across surveys
+with different gear:
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+
+plot_species_occupancy(sp_status, unique(invasive_table$species_valid))
+```
+
+*Neogobius melanostomus* shows a clear, sustained increase since its first
+detection around 2011.
+
+```{r}
+#| fig-width: 6
+#| fig-height: 3
+
+# is_diadromous can be NA (undocumented) - any(..., na.rm = TRUE) treats
+# that as "not confirmed present" rather than letting a single NA make the
+# whole operation's presence flag NA.
+op_prop <- sp_status |>
+  group_by(operation_id, survey) |>
+  summarise(
+    has_invasive = any(is_invasive),
+    has_diadromous = any(is_diadromous, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  group_by(survey) |>
+  summarise(
+    n_operations = n(),
+    pct_with_invasive = 100 * mean(has_invasive),
+    pct_with_diadromous = 100 * mean(has_diadromous),
+    .groups = "drop"
+  )
+
+ggplot(op_prop, aes(survey, pct_with_invasive)) +
+  geom_col(width = 0.6) +
+  labs(x = NULL, y = "% operations with\n≥1 invasive species")
+```
+
+### Diadromous species
+
+Same view for diadromous species: the six most caught per survey, with
+mean observed length and diet.
+
+```{r}
+diadromous_table <- top_species_per_survey(sp_status, "is_diadromous")
+diadromous_table |>
+  rename(species = species_valid, diet = diet_summary) |>
+  knitr::kable(digits = 1)
+```
+
+Unlike invasive species, diadromous species are present across the whole
+continuum, though slightly less so in `nurse` - consistent with `nurse`
+being a nursery habitat rather than a migration corridor.
+
+Where each is caught:
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+plot_species_map(sp_status, unique(diadromous_table$species_valid))
+```
+
+The coastal/estuarine specialists (*Pomatoschistus* gobies, *Platichthys
+flesus*, *Chelon ramada*, *Alosa fallax*) hug the coastline and estuary
+mouths, while *Anguilla anguilla* and *Salmo trutta* spread across the
+entire river network, as expected for species that migrate far upstream.
+
+And their occupancy time series, split by survey:
+
+```{r}
+#| fig-width: 10
+#| fig-height: 8
+
+plot_species_occupancy(sp_status, unique(diadromous_table$species_valid))
+```
+
+```{r}
+#| fig-width: 6
+#| fig-height: 3
+
+ggplot(op_prop, aes(survey, pct_with_diadromous)) +
+  geom_col(width = 0.6) +
+  labs(x = NULL, y = "% operations with\n≥1 diadromous species")
 ```
 
 ## Local food webs along the continuum
@@ -433,3 +647,38 @@ Freshwater and migratory species share a similar diet profile, both with a
 substantial insect component; marine species show almost no insect
 consumption (aquatic insects being a specifically freshwater resource) and
 rely more on zooplankton and phytoplankton instead.
+
+## Demersal/pelagic position by survey
+
+Same idea, but for `demers_pelag` and grouped directly by `survey` rather
+than by the freshwater/marine/migratory origin above: for each survey, the
+share of distinct species falling into each demersal/pelagic category.
+
+```{r}
+#| fig-width: 7
+#| fig-height: 5.5
+
+species_survey <- size |>
+  distinct(species_valid, survey)
+
+survey_demers_pelag <- species_survey |>
+  left_join(
+    species_traits |> select(species, demers_pelag),
+    by = c("species_valid" = "species")
+  ) |>
+  count(survey, demers_pelag) |>
+  group_by(survey) |>
+  mutate(share = n / sum(n)) |>
+  ungroup()
+
+ggplot(survey_demers_pelag, aes(x = survey, y = share, fill = demers_pelag)) +
+  geom_col(width = 0.6) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(x = NULL, y = "Share of species", fill = "Position")
+```
+
+`nurse` and `pomet` look alike: both dominated by demersal species (~60%),
+with the rest split across pelagic-neritic and reef-associated. `river` is
+the opposite - mostly benthopelagic (61%) and demersal (31%), with almost no
+pelagic-neritic and, unsurprisingly, no reef-associated or bathydemersal
+species at all.
