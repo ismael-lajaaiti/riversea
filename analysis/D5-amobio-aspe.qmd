@@ -135,7 +135,7 @@ threshold values corresponding to a "mauvais" water health state.
 #| fig-width: 7
 #| fig-height: 5
 
-riversea::plot_env_boxplot(data, thresholds = data_seq_eau)
+plot_env_boxplot(data, thresholds = data_seq_eau)
 ```
 
 
@@ -145,27 +145,27 @@ riversea::plot_env_boxplot(data, thresholds = data_seq_eau)
 #| fig-width: 5
 #| fig-height: 7
 
-riversea::plot_amobio_metric(
+plot_amobio_metric(
   data,
-  "S",
+  "log_species_richness",
   year = 2019,
   title = "Species richness",
   subtitle = "Year 2019",
   legend = "S"
 )
 
-riversea::plot_amobio_metric(
+plot_amobio_metric(
   data,
-  "C",
+  "connectance",
   year = 2019,
   title = "Connectance",
   subtitle = "Year 2019.",
   legend = "C"
 )
 
-riversea::plot_amobio_metric(
+plot_amobio_metric(
   data,
-  "maxTL",
+  "trophic_length",
   year = 2019,
   title = "Max. trophic level",
   subtitle = "Year 2019.",
@@ -179,6 +179,9 @@ riversea::plot_amobio_metric(
 ```{r}
 #| fig-width: 5
 #| fig-height: 4
+
+data <- data |>
+  mutate(S = as.integer(exp(log_species_richness)))
 
 ggplot(data, aes(x = elevation, y = S)) +
   geom_point(alpha = 0.01) +

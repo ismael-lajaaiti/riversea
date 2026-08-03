@@ -28,7 +28,6 @@ crossref:
 #| echo: false
 library(renv)
 renv::load()
-renv::restore()
 renv::status()
 
 library(here)

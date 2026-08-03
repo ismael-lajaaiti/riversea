@@ -24,6 +24,8 @@ execute:
 or native, freshwater, marine, estuarine, etc.)
 - [x] General information at the species level, such as, mean size, count,
 status, etc.
+- [ ] Most common invasive species
+- [ ] Location of invasive species
 - [ ] **(blocked)** Structure metrics versus distance to river mouth
 
 ## Setup
@@ -123,7 +125,7 @@ plot_metaweb_interactive(
 Environment (freshwater/estuarine/marine/diadromous), demersal/pelagic
 position and migratory category come from FishBase's `species()` table;
 native/introduced status is FishBase's `country()` table filtered to France.
-Two caveats, kept as `NA` rather than imputed:
+Two caveats:
 
 - **Migratory category** (`migratory_category`) is unset for species FishBase
   doesn't code as diadromous, rather than explicitly labelled
@@ -131,13 +133,14 @@ Two caveats, kept as `NA` rather than imputed:
   non-migratory" and "not documented". In practice, almost all of these are
   strict freshwater residents (roach, bream, perch, etc.), so we read `NA`
   as "presumed non-migratory" without asserting it as a FishBase-sourced
-  fact.
-- **Native status** (`native_status`) is missing for 3 species: the
-  Ponto-Caspian gobies *Neogobius melanostomus*, *Ponticola kessleri* and
-  *Proterorhinus semilunaris*. FishBase simply hasn't added a France country
-  record for them yet, even though they are documented recent invaders in
-  French rivers in the literature - so here `NA` should be read as "invasive,
-  undocumented in FishBase" rather than "unknown".
+  fact. Kept as `NA` rather than imputed.
+- **Native status** (`native_status`) is collapsed to just "native" or
+  "introduced": FishBase's finer-grained "endemic" and "not established"
+  categories are folded into "native" for simplicity. The three Ponto-Caspian
+  gobies *Neogobius melanostomus*, *Ponticola kessleri* and *Proterorhinus
+  semilunaris* have no France record in FishBase's `country()` table, even
+  though they are documented recent invaders in French rivers in the
+  literature, so they are hardcoded to "introduced" rather than left `NA`.
 
 ```{r}
 species_summary <- size |>

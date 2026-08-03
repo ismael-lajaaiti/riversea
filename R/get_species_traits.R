@@ -6,10 +6,14 @@
 #' Fresh/Brack/Saltwater flags.
 #'
 #' FishBase leaves `AnaCat` (migratory category) blank for most non-diadromous
-#' species rather than coding it "non-migratory", and its France country
-#' table is missing a handful of recently established invasive species (e.g.
-#' the Ponto-Caspian gobies). Both are left as `NA` rather than imputed; see
-#' the notebook for how these are interpreted downstream.
+#' species rather than coding it "non-migratory"; this is left as `NA` rather
+#' than imputed - see the notebook for how it is interpreted downstream.
+#'
+#' `native_status` is collapsed to just "native"/"introduced": "endemic" and
+#' "not established" are folded into "native" for simplicity, and the three
+#' Ponto-Caspian gobies missing a France record in FishBase's `country()`
+#' table (documented recent invaders in the literature) are hardcoded to
+#' "introduced".
 #'
 #' @param species character vector of FishBase-validated species names.
 #' @param country_name country to look up native/introduced status for.
@@ -41,10 +45,25 @@ get_species_traits <- function(species, country_name = "France") {
     ) |>
     select(species, demers_pelag, migratory_category, environment)
 
+  invasive_undocumented <- c(
+    "Neogobius melanostomus", "Ponticola kessleri", "Proterorhinus semilunaris"
+  )
+
   status <- rfishbase::country(species) |>
     filter(country == country_name) |>
     select(species = Species, native_status = Status) |>
-    distinct()
+    distinct() |>
+    mutate(
+      native_status = case_when(
+        native_status %in% c("endemic", "not established") ~ "native",
+        TRUE ~ native_status
+      )
+    )
 
-  left_join(habitat, status, by = "species")
+  left_join(habitat, status, by = "species") |>
+    mutate(
+      native_status = dplyr::if_else(
+        species %in% invasive_undocumented, "introduced", native_status
+      )
+    )
 }

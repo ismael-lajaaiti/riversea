@@ -32,8 +32,8 @@ continuum in France.
 
 - [x] Validate FishBase diets against literature
 - [x] Update diet table within the pipeline
-- [ ] First plot of metaweb
-- [ ] Collect additional information on species (benthic/pelagic,
+- [x] First plot of metaweb
+- [x] Collect additional information on species (benthic/pelagic,
 native/invasive)
 - [ ] Finish AMOBIO×ASPE×REPHY merge (unit harmonization, distance-to-mouth)
 - [ ] Decide nutrient composite variable (individual vs. TN+TP+ratio vs. PCA —
@@ -56,11 +56,13 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 **Writing**
 
 - [x] Draft formal hypotheses
+- [ ] Write BES abstract (deadline 2 September)
+- [ ] Draft Planète-Vie piece on community structure along the river-sea
+continuum (deadline 1 October)
 - [ ] Write novelty/positioning paragraph (vs. Zhu, Ma, Barnes 2026)
 - [ ] Rewrite Introduction bullets into prose, section by section
 - [ ] Refine paper title and conceptual hook
 - [ ] Integrate the "position as currency" identity into the manuscript
-- [ ] Write BES abstract (deadline 2 September)
 
 **Reproducibility & open science**
 
@@ -68,9 +70,3 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 - [ ] Reorganize analysis notebooks into a public-facing reports (data
 provenance, methods, sensitivity analyses)
 
-**Outreach**
-
-- [ ] Draft Planète-Vie piece on community structure along the river-sea
-continuum
-- [ ] Maintain a regular (not high-frequency), milestone-triggered outreach
-pipeline (The Conversation FR, Science Ouest, international outlets)

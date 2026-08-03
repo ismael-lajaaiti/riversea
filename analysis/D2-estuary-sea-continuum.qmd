@@ -79,7 +79,7 @@ account the differences that can be due to the hydrographic bassin.
 ```{r}
 # Food web with zone information (DCE hydrographic district).
 district <- tar_read(fw_with_district) |>
-  select(trait, district, zone_id)
+  select(trait = operation_id, district, zone_id)
 
 # Food web with environment information.
 environment <- tar_read(fw_with_env) |>
@@ -88,7 +88,8 @@ environment <- tar_read(fw_with_env) |>
   mutate(
     salinity = scale(log10(sali_mean)) |> as.numeric(),
     chlorophyll = scale(chl_mean) |> as.numeric()
-  )
+  ) |>
+  rename(trait = operation_id)
 
 size <- tar_read(foodweb_size_info)
 

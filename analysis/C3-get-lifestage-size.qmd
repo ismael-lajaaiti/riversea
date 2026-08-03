@@ -20,7 +20,6 @@ In this notebook, we
 #| output: false
 library(renv)
 renv::load()
-renv::restore() # Install missing librairies.
 renv::status() # Check the project state.
 
 library(targets)

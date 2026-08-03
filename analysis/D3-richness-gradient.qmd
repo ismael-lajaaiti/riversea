@@ -235,10 +235,11 @@ comparable.
 
 ```{r}
 data <- tar_read(fw_with_env) |>
-  filter(dist_to_env < 5)
+  filter(dist_to_env < 5) |>
+  rename(trait = operation_id)
 
 district <- tar_read(fw_with_district) |>
-  select(trait, year, zone_id, district)
+  select(trait = operation_id, year, zone_id, district)
 
 data <- data |>
   left_join(district, by = join_by(trait, year)) |>
