@@ -932,7 +932,7 @@ get_combined_foodweb_size_info <- function(size, diet, operation) {
 #' @param individual_fish_file path to `output_individual_fish.rda`.
 #'
 #' @return tibble with columns operation_id, year, month, date, sandre_code,
-#' longitude, latitude.
+#' longitude, latitude, district.
 #' @export
 get_river_operation <- function(individual_fish_file) {
   out <- get(base::load(individual_fish_file))
@@ -946,7 +946,8 @@ get_river_operation <- function(individual_fish_file) {
       date,
       sandre_code,
       longitude = x,
-      latitude = y
+      latitude = y,
+      district = classify_water_body_district(body_water_code)
     )
 }
 

@@ -72,6 +72,8 @@ roughly defined functional composition [@Vannote-etal-1980].
 relationship. Interesting metric of trophic complementarity, could be used for
 our study if we can formulate clear hypothesis of stressors on that metric.
 
+- @Lindgren-Rue-2015 R-INLA paper
+
 ### River-estuary-sea continuum
 
 - @Xenopoulos-etal-2017 highlights the importance of accounting for the full
@@ -287,6 +289,9 @@ native species
 - @Chan-etal-2025b dam have negative impact on diadromous fish species. The
 installation of fish passes didn't have a positive effect. Dam removal had a
 positive effect.
+
+- @VanLooy-Tormos-Souchon-2014 Dam impacts on fish communities is dominated by
+local rather regional effects in the Loire basin.
 
 ### Nutrients
 

@@ -1,6 +1,6 @@
 utils::globalVariables(c(
   "abundance", "abundance_cor", "Age", "Annee", "AnaCat", "batch_size",
-  "C_VALIDE",
+  "body_water_code", "C_VALIDE",
   "Campagne", "category", "CdEuMasseD", "code", "CommonessII",
   "connectance", "Coord_Deb_xmin", "Coord_Deb_ymin", "Coord_Fin_xmin",
   "Coord_Fin_ymin", "country", "date_operation", "DemersPelag", "dist_km",
@@ -24,7 +24,7 @@ utils::globalVariables(c(
   "others", "p", "P.Value", "parameter_code", "path1", "path2", "Poids",
   "PredatorStage", "Predictor", "prey", "prey_category", "quality",
   "reference", "response", "Response", "saltwater", "Saltwater",
-  "sandre_code", "scientific_name",
+  "sandre_code", "scientific_name", "snap_dist_m",
   "Sexe", "share", "sigma", "significant", "site_id", "size_max",
   "size_min", "species", "Species", "species_code", "species_valid",
   "Status", "stage", "Std.Estimate", "survey", "text", "threshold", "to",

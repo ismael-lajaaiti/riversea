@@ -25,6 +25,19 @@ operations at sea.
 - [x] Check rephy data overlap with restricted river network
 - [ ] Compute distance to river mouth for rephy stations
 - [ ] Update INLA model with distance to river mouth as new covariate
+- [x] Reconstruct full river network for `river` survey stations
+- [x] Snap `river` survey stations to the network
+- [x] Classify `river` survey stations by true catchment (from ASPE's own
+water body code, not guessed from the network - see caveat below)
+- [x] Close the `Ardour-Garonne` under-classification gap (its own
+pre-harmonization water body numbering, no basin letter)
+- [x] Investigate why the Vendée cluster is disconnected (no mouth flagged,
+~77m from the main network - a broken digitized link, not real
+separation)
+- [x] Patch the missing link (Nantes/Sèvre Nantaise) and confirm the
+cluster recovers
+- [x] Snap directly against the restricted network now that it's fixed
+- [ ] Compute distance to river mouth for `river` survey stations
 
 ## Setup
 
@@ -180,5 +193,125 @@ ggplot() +
     ylim = sf::st_bbox(river_restricted_nodes)[c("ymin", "ymax")]
   ) +
   labs(x = NULL, y = NULL, color = NULL)
+```
+
+## Snapping river survey stations to the network
+
+Same idea as above, but for river (ASPE) stations instead of REPHY.
+Stations reach far upstream, so we reconstruct with a 2000km radius
+instead of REPHY's 100km, then snap each station to its nearest node.
+
+```{r}
+network_river <- tar_read(amobio_network_river)
+river_stations <- tar_read(river_station_snapped)
+district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
+
+cat("Median snap distance (m):", round(median(river_stations$snap_dist_m), 1), "\n")
+cat("N snapping over 1km:", sum(river_stations$snap_dist_m > 1000), "\n")
+```
+
+Snapping is straight-line, not channel-length, so a large distance flags a
+bad station coordinate rather than a real network gap - and there's
+barely any left (see below for why).
+
+Each station's catchment comes from ASPE's own water body code, not from
+the network: `hydrographic_area` only covers the coast (median 150km from
+an inland station), so it can't tell a station outside our four catchments
+apart from a genuine network gap. The code's basin-letter prefix gives the
+district directly, once two quirks are handled: the country code (`FR`)
+sometimes comes before the basin letter, sometimes not, and Ardour-Garonne
+used its own pre-harmonization numbering (no basin letter at all - fixed
+in `classify_water_body_district()`).
+
+```{r}
+table(river_stations$district, useNA = "always")
+```
+
+Escaut-Somme has zero stations (matches it having the fewest matched
+mouths, 15 of 274). The remaining NAs are genuinely missing codes, mostly
+outside our catchments anyway - checked geographically, none of them
+reveal a hidden classification gap like Ardour-Garonne did.
+
+```{r}
+#| fig-width: 7
+#| fig-height: 9
+
+in_scope <- river_stations |> filter(district %in% district_kept)
+river_coords <- network_river$nodes |> sf::st_as_sf() |> sf::st_transform(4326) |> sf::st_coordinates()
+cols <- c(Loire = "steelblue", "Ardour-Garonne" = "firebrick", Seine = "darkgreen", "Escaut-Somme" = "orange")
+
+plot(river_coords[, "X"], river_coords[, "Y"], col = "grey85", pch = ".", asp = 1.5, xlab = NULL, ylab = NULL)
+points(in_scope$longitude, in_scope$latitude, col = cols[in_scope$district], pch = 19, cex = 0.3)
+legend("bottomright", legend = names(cols), col = cols, pch = 19, bty = "n")
+```
+
+Clean catchment boundaries, no stray points in the wrong basin.
+
+### Fixing a network gap (Vendée / Nantes)
+
+While investigating, one ~6,000-node component near the Vendée coast had
+no station snapping to it despite sitting inside Loire territory - and no
+node in it was flagged a river mouth. Rather than assume real
+hydrological separation, checking the gap to the rest of the network:
+
+```{r}
+amobio_network <- tar_read(amobio_network)
+network_before <- amobio_network
+network_before$edges <- network_before$edges |> filter(!(from == 614458 & to == 614552))
+
+comp_before <- igraph::components(igraph::graph_from_edgelist(
+  as.matrix(network_before$edges[c("from", "to")]), directed = FALSE
+))
+vendee_comp_nodes <- which(comp_before$membership == comp_before$membership[595001])
+main_sf <- amobio_network$nodes |>
+  filter(node_id %in% which(comp_before$membership == which.max(comp_before$csize))) |>
+  sf::st_as_sf()
+vendee_sf <- amobio_network$nodes |> filter(node_id %in% vendee_comp_nodes) |> sf::st_as_sf()
+
+gap_dist_m <- as.numeric(sf::st_distance(
+  vendee_sf, main_sf[sf::st_nearest_feature(vendee_sf, main_sf), ], by_element = TRUE
+))
+cat("Component size:", length(vendee_comp_nodes), "\n")
+cat("Closest gap:", round(min(gap_dist_m), 1), "m -", sum(gap_dist_m < 500), "nodes within 500m.\n")
+```
+
+A gap under 100m is within GPS error, and several nodes are within 500m -
+this reads as a missing digitized link, not a real separation. The
+clearest of these gaps sits at Nantes, where the Sèvre Nantaise joins the
+Loire - checked against a basemap that shows the rivers:
+
+```{r}
+gap_pts <- amobio_network$nodes |>
+  filter(node_id %in% c(614458, 614552)) |>
+  sf::st_as_sf() |>
+  sf::st_transform(4326) |>
+  mutate(label = c("Vendée-side node", "Main-network node"))
+
+leaflet::leaflet(gap_pts) |>
+  leaflet::addProviderTiles(leaflet::providers$Esri.WorldTopoMap) |>
+  leaflet::addCircleMarkers(color = c("firebrick", "steelblue"), radius = 8, label = ~label) |>
+  leaflet::setView(
+    lng = mean(sf::st_coordinates(gap_pts)[, 1]),
+    lat = mean(sf::st_coordinates(gap_pts)[, 2]),
+    zoom = 15
+  )
+```
+
+Both points sit right on the river, either side of the confluence, 162m
+apart. `patch_amobio_network()` adds this edge (length computed from the
+node geometries, not hardcoded) and is already active in `amobio_network`
+above - snapping and the map/table earlier already reflect the fix:
+
+```{r}
+comp_after <- igraph::components(igraph::graph_from_edgelist(
+  as.matrix(amobio_network$edges[c("from", "to")]), directed = FALSE
+))
+cat(
+  "Same component as main network now?",
+  comp_after$membership[595001] == comp_after$membership[main_sf$node_id[1]], "\n"
+)
+recovered <- in_scope |> filter(node_id %in% vendee_comp_nodes)
+cat("Recovered:", nrow(recovered), "stations, snap distance now median",
+    round(median(recovered$snap_dist_m), 1), "m\n")
 ```
 

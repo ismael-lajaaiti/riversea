@@ -67,6 +67,54 @@ extract_river_mouth_amobio <- function(paths) {
     dplyr::select(node_id, geometry)
 }
 
+#' Classify a station's hydrographic district from its water body code.
+#'
+#' ASPE's `body_water_code` (station-level, from
+#' `output_individual_fish.rda`) mixes three formats:
+#'
+#' 1. Basin-letter first, e.g. `"DR288a"` - the same scheme as
+#'    `format_hydrographic_area()`'s `zone_id` (EU water body code), just
+#'    without the country prefix.
+#' 2. Country code first, e.g. `"FRDR288a"` - same scheme, `FR` needs
+#'    stripping first or the country code gets mistaken for the basin
+#'    letter (this is what put a cluster of Alps stations in
+#'    `Ardour-Garonne` before it was caught).
+#' 3. `Ardour-Garonne`'s own pre-harmonization numbering, e.g. `"FR228"`,
+#'    `"FRR431_1"`, `"FRL18_1"`, `"FRT33_9"` - a water-body-type letter
+#'    (`R`/`L`/`T`/`C` = river/lake/transitional/coastal, optional) then
+#'    straight digits, no basin letter at all (implicit - it's always
+#'    `Ardour-Garonne` within that agency's own numbering). Every one of
+#'    the ~540 such codes in the data falls within `Ardour-Garonne`'s
+#'    bounding box (roughly 1.6 degrees W to 3.8 degrees E, 42.6 to 46.3
+#'    degrees N), confirming they're not a stray subset of some other
+#'    basin's format.
+#'
+#' Verified against station coordinates: each group's mean position falls
+#' squarely within the expected basin (e.g. "Rhin" stations average 6.9
+#' degrees E / 48.5 degrees N - Alsace; "Corse" stations average 9.2
+#' degrees E / 42.2 degrees N).
+#'
+#' @param body_water_code character vector of ASPE water body codes.
+#'
+#' @return character vector, district name (`NA` if `body_water_code` is
+#' `NA` or has an unrecognised format).
+#' @export
+classify_water_body_district <- function(body_water_code) {
+  code <- sub("^FR", "", body_water_code)
+  dplyr::case_when(
+    startsWith(code, "A") ~ "Escaut-Somme",
+    startsWith(code, "B") ~ "Meuse",
+    startsWith(code, "C") ~ "Rhin",
+    startsWith(code, "D") ~ "Rhone",
+    startsWith(code, "E") ~ "Corse",
+    startsWith(code, "F") ~ "Ardour-Garonne",
+    startsWith(code, "G") ~ "Loire",
+    startsWith(code, "H") ~ "Seine",
+    grepl("^[RLTC]?[0-9]", code) ~ "Ardour-Garonne",
+    TRUE ~ NA_character_
+  )
+}
+
 match_mouth_district <- function(river_mouth, district, dist_max) {
   district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
   hydro_kept <- district |>
@@ -138,6 +186,39 @@ extract_amobio_network <- function(paths) {
   list(nodes = nodes, edges = edges)
 }
 
+#' Patch a known missing link in the AMOBIO river network.
+#'
+#' A ~6,000-node component around the Vendée/Deux-Sèvres area is
+#' topologically disconnected from the rest of the network - no node in it
+#' is flagged a river mouth, and it has no path to any node outside it -
+#' despite the closest pair of nodes across the gap being only 162m apart,
+#' right at the Sèvre Nantaise/Loire confluence in Nantes. That's a
+#' missing/broken digitized link, not a real hydrological separation (see
+#' the D8 notebook for the full investigation), and adding this one edge
+#' reconnects the entire component (verified: all of its nodes end up in
+#' the same component as the rest of the network afterwards).
+#'
+#' @param network list(nodes, edges), see `extract_amobio_network()`.
+#'
+#' @return `network` with one additional edge added to `edges`, its
+#' `length` the straight-line distance between the two nodes.
+#' @export
+patch_amobio_network <- function(network) {
+  from_id <- 614458L
+  to_id <- 614552L
+  endpoints <- network$nodes |>
+    dplyr::filter(node_id %in% c(from_id, to_id)) |>
+    sf::st_as_sf()
+  patch_length <- as.numeric(sf::st_distance(
+    endpoints[endpoints$node_id == from_id, ],
+    endpoints[endpoints$node_id == to_id, ]
+  ))
+
+  patch_edge <- tibble::tibble(from = from_id, to = to_id, length = patch_length)
+  network$edges <- dplyr::bind_rows(network$edges, patch_edge)
+  network
+}
+
 #' Restrict the AMOBIO network to within `max_dist` of the kept river mouths
 #'
 #' Grows the network outward (channel length, not straight-line) from every
@@ -171,6 +252,41 @@ restrict_amobio_network <- function(network, river_mouth, max_dist) {
     nodes = dplyr::filter(network$nodes, node_id %in% kept_id),
     edges = dplyr::filter(network$edges, from %in% kept_id & to %in% kept_id)
   )
+}
+
+#' Snap ASPE river survey stations to the nearest AMOBIO river network node.
+#'
+#' Matches against `restrict_amobio_network()`'s kept-catchment-only
+#' output. Straight-line distance (`st_nearest_feature`), not
+#' channel-length - `snap_dist_m` is a data-quality signal (large values
+#' mean a bad station coordinate) now that `amobio_network`'s known gap is
+#' patched (see the D8 notebook).
+#'
+#' @param river_operation tibble with `operation_id`, `longitude`,
+#'   `latitude` (WGS84), `district`, e.g. from `get_river_operation()`.
+#' @param network_nodes sf object with `node_id` and `geometry`
+#'   (Lambert-93), e.g. `restrict_amobio_network()$nodes`.
+#'
+#' @return one row per distinct station (`operation_id`, `longitude`,
+#' `latitude`, `district`), with `node_id` (nearest network node) and
+#' `snap_dist_m` (straight-line distance to that node, in meters) added.
+#' @export
+snap_river_stations <- function(river_operation, network_nodes) {
+  network_nodes <- sf::st_as_sf(network_nodes)
+  stations <- river_operation |>
+    dplyr::distinct(operation_id, longitude, latitude, district) |>
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+    sf::st_transform(sf::st_crs(network_nodes))
+
+  nearest_idx <- sf::st_nearest_feature(stations, network_nodes)
+  stations |>
+    dplyr::mutate(
+      node_id = network_nodes$node_id[nearest_idx],
+      snap_dist_m = as.numeric(
+        sf::st_distance(stations, network_nodes[nearest_idx, ], by_element = TRUE)
+      )
+    ) |>
+    sf::st_drop_geometry()
 }
 
 #' Deduplicate AMOBIO metrics on (sandre_code, date).

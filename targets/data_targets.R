@@ -10,6 +10,13 @@ data_targets <- list(
       distance_match_max = 10, # Kilometers.
       sampling_min = 20,
       river_network_max_dist = 100, # Kilometers.
+      # River survey stations reach far upstream, unlike REPHY - this just
+      # needs to be comfortably larger than the longest French river
+      # channel (Loire ~1000km) so every node actually connected to a kept
+      # mouth is retained; disconnected components are still dropped since
+      # they're unreachable (infinite graph distance) regardless of this
+      # cutoff.
+      river_station_network_max_dist = 2000, # Kilometers.
       n_size_class = 5, # Number of size classes for metaweb construction.
       amobio_average_window = "1y"
     )
@@ -247,7 +254,7 @@ data_targets <- list(
   ),
   tar_target(
     amobio_network,
-    extract_amobio_network(amobio_paths)
+    extract_amobio_network(amobio_paths) |> patch_amobio_network()
   ),
   tar_target(
     amobio_network_restricted,
@@ -256,6 +263,18 @@ data_targets <- list(
       river_mouth_district,
       params$river_network_max_dist * 1000
     )
+  ),
+  tar_target(
+    amobio_network_river,
+    restrict_amobio_network(
+      amobio_network,
+      river_mouth_district,
+      params$river_station_network_max_dist * 1000
+    )
+  ),
+  tar_target(
+    river_station_snapped,
+    snap_river_stations(river_operation, amobio_network_river$nodes)
   ),
   tar_target(
     combined_amobio_data,
