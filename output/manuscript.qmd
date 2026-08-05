@@ -314,7 +314,7 @@ terrestrial peaked in spring, while the reciprocal flux peaked in summer.
 
 - @Leibold-etal-2004b provides a definition for the concept of meta-community
 and present different paradigms: patch dynamic, species sorting, mass effect and
-neutral perspective.
+neutral perspective. See also @Loreau-Holt-null-2004.
 
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
 Jacobian.
