@@ -67,54 +67,6 @@ extract_river_mouth_amobio <- function(paths) {
     dplyr::select(node_id, geometry)
 }
 
-#' Classify a station's hydrographic district from its water body code.
-#'
-#' ASPE's `body_water_code` (station-level, from
-#' `output_individual_fish.rda`) mixes three formats:
-#'
-#' 1. Basin-letter first, e.g. `"DR288a"` - the same scheme as
-#'    `format_hydrographic_area()`'s `zone_id` (EU water body code), just
-#'    without the country prefix.
-#' 2. Country code first, e.g. `"FRDR288a"` - same scheme, `FR` needs
-#'    stripping first or the country code gets mistaken for the basin
-#'    letter (this is what put a cluster of Alps stations in
-#'    `Ardour-Garonne` before it was caught).
-#' 3. `Ardour-Garonne`'s own pre-harmonization numbering, e.g. `"FR228"`,
-#'    `"FRR431_1"`, `"FRL18_1"`, `"FRT33_9"` - a water-body-type letter
-#'    (`R`/`L`/`T`/`C` = river/lake/transitional/coastal, optional) then
-#'    straight digits, no basin letter at all (implicit - it's always
-#'    `Ardour-Garonne` within that agency's own numbering). Every one of
-#'    the ~540 such codes in the data falls within `Ardour-Garonne`'s
-#'    bounding box (roughly 1.6 degrees W to 3.8 degrees E, 42.6 to 46.3
-#'    degrees N), confirming they're not a stray subset of some other
-#'    basin's format.
-#'
-#' Verified against station coordinates: each group's mean position falls
-#' squarely within the expected basin (e.g. "Rhin" stations average 6.9
-#' degrees E / 48.5 degrees N - Alsace; "Corse" stations average 9.2
-#' degrees E / 42.2 degrees N).
-#'
-#' @param body_water_code character vector of ASPE water body codes.
-#'
-#' @return character vector, district name (`NA` if `body_water_code` is
-#' `NA` or has an unrecognised format).
-#' @export
-classify_water_body_district <- function(body_water_code) {
-  code <- sub("^FR", "", body_water_code)
-  dplyr::case_when(
-    startsWith(code, "A") ~ "Escaut-Somme",
-    startsWith(code, "B") ~ "Meuse",
-    startsWith(code, "C") ~ "Rhin",
-    startsWith(code, "D") ~ "Rhone",
-    startsWith(code, "E") ~ "Corse",
-    startsWith(code, "F") ~ "Ardour-Garonne",
-    startsWith(code, "G") ~ "Loire",
-    startsWith(code, "H") ~ "Seine",
-    grepl("^[RLTC]?[0-9]", code) ~ "Ardour-Garonne",
-    TRUE ~ NA_character_
-  )
-}
-
 match_mouth_district <- function(river_mouth, district, dist_max) {
   district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
   hydro_kept <- district |>
@@ -163,7 +115,7 @@ match_mouth_district <- function(river_mouth, district, dist_max) {
 #' @return list(nodes, edges): `nodes` has `node_id`, `geometry`,
 #'   `is_river_mouth`; `edges` has `from`, `to`, `length` (meters).
 #' @export
-extract_amobio_network <- function(paths) {
+extract_river_network <- function(paths) {
   network_file <- paths[grepl("NETWORK_AMOBIO.Rdata", paths)]
   network <- get(base::load(network_file))
 
@@ -198,12 +150,12 @@ extract_amobio_network <- function(paths) {
 #' reconnects the entire component (verified: all of its nodes end up in
 #' the same component as the rest of the network afterwards).
 #'
-#' @param network list(nodes, edges), see `extract_amobio_network()`.
+#' @param network list(nodes, edges), see `extract_river_network()`.
 #'
 #' @return `network` with one additional edge added to `edges`, its
 #' `length` the straight-line distance between the two nodes.
 #' @export
-patch_amobio_network <- function(network) {
+patch_river_network <- function(network) {
   from_id <- 614458L
   to_id <- 614552L
   endpoints <- network$nodes |>
@@ -226,14 +178,14 @@ patch_amobio_network <- function(network) {
 #' source connected to all of them with zero-weight edges - much cheaper than
 #' one shortest-path search per mouth.
 #'
-#' @param network list(nodes, edges), see [extract_amobio_network()].
+#' @param network list(nodes, edges), see [extract_river_network()].
 #' @param river_mouth tibble with `node_id`, `matched`, e.g. from
 #'   [match_mouth_district()].
 #' @param max_dist maximum channel-length distance to keep, in meters.
 #'
 #' @return list(nodes, edges) restricted to nodes within `max_dist`.
 #' @export
-restrict_amobio_network <- function(network, river_mouth, max_dist) {
+restrict_river_network <- function(network, river_mouth, max_dist) {
   g <- igraph::graph_from_edgelist(
     as.matrix(network$edges[c("from", "to")]),
     directed = FALSE
@@ -256,16 +208,16 @@ restrict_amobio_network <- function(network, river_mouth, max_dist) {
 
 #' Snap ASPE river survey stations to the nearest AMOBIO river network node.
 #'
-#' Matches against `restrict_amobio_network()`'s kept-catchment-only
+#' Matches against `restrict_river_network()`'s kept-catchment-only
 #' output. Straight-line distance (`st_nearest_feature`), not
 #' channel-length - `snap_dist_m` is a data-quality signal (large values
-#' mean a bad station coordinate) now that `amobio_network`'s known gap is
+#' mean a bad station coordinate) now that `river_network_full`'s known gap is
 #' patched (see the D8 notebook).
 #'
 #' @param river_operation tibble with `operation_id`, `longitude`,
 #'   `latitude` (WGS84), `district`, e.g. from `get_river_operation()`.
 #' @param network_nodes sf object with `node_id` and `geometry`
-#'   (Lambert-93), e.g. `restrict_amobio_network()$nodes`.
+#'   (Lambert-93), e.g. `restrict_river_network()$nodes`.
 #'
 #' @return one row per distinct station (`operation_id`, `longitude`,
 #' `latitude`, `district`), with `node_id` (nearest network node) and
@@ -287,6 +239,38 @@ snap_river_stations <- function(river_operation, network_nodes) {
       )
     ) |>
     sf::st_drop_geometry()
+}
+
+#' Attach edge linestring geometry to an already-restricted network.
+#'
+#' `extract_river_network()` drops edge geometry to keep the
+#' Dijkstra restriction cheap - `restrict_river_network()`'s node-to-node
+#' distance only needs the precomputed `length`, not the shape of the
+#' channel between them. Snapping to the nearest point on the true channel
+#' (rather than the nearest node) needs that shape back, so this re-reads
+#' just the geometry for the edges already kept by the restriction,
+#' instead of redoing it with geometry attached throughout.
+#'
+#' @param network list(nodes, edges) already restricted, e.g.
+#'   `restrict_river_network()`'s output.
+#' @param paths character vector of AMOBIO file paths.
+#'
+#' @return `network` with `edges` gaining a `geometry` column
+#' (linestring, same CRS as `nodes`).
+#' @export
+add_edge_geometry <- function(network, paths) {
+  network_file <- paths[grepl("NETWORK_AMOBIO.Rdata", paths)]
+  raw_edges <- get(base::load(network_file)) |>
+    sfnetworks::activate("edges") |>
+    sf::st_as_sf() |>
+    dplyr::select(from, to, geometry) |>
+    dplyr::distinct(from, to, .keep_all = TRUE)
+
+  edges <- network$edges |>
+    dplyr::inner_join(raw_edges, by = c("from", "to")) |>
+    sf::st_as_sf()
+
+  list(nodes = network$nodes, edges = edges)
 }
 
 #' Deduplicate AMOBIO metrics on (sandre_code, date).

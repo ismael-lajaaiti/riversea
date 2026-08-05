@@ -929,12 +929,21 @@ get_combined_foodweb_size_info <- function(size, diet, operation) {
 #' `month`) because `join_amobio_aspe()` needs them to match river
 #' operations against AMOBIO environmental data.
 #'
+#' `district` comes from a spatial join against `hydrographic_basin`
+#' (point-in-polygon on the station's coordinates), not ASPE's own
+#' `body_water_code` - validated at 100% agreement with the old
+#' code-based classification on every station that had a code, and it
+#' also correctly classifies stations with no code at all (see the D8
+#' notebook).
+#'
 #' @param individual_fish_file path to `output_individual_fish.rda`.
+#' @param hydrographic_basin sf tibble with `district` and polygon
+#'   `geometry` (WGS84), e.g. `format_hydrographic_basin()`'s output.
 #'
 #' @return tibble with columns operation_id, year, month, date, sandre_code,
 #' longitude, latitude, district.
 #' @export
-get_river_operation <- function(individual_fish_file) {
+get_river_operation <- function(individual_fish_file, hydrographic_basin) {
   out <- get(base::load(individual_fish_file))
 
   out$fishing_operation |>
@@ -946,9 +955,11 @@ get_river_operation <- function(individual_fish_file) {
       date,
       sandre_code,
       longitude = x,
-      latitude = y,
-      district = classify_water_body_district(body_water_code)
-    )
+      latitude = y
+    ) |>
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+    sf::st_join(hydrographic_basin["district"], join = sf::st_within) |>
+    sf::st_drop_geometry()
 }
 
 #' Get individual fish sizes from the ASPE river survey data.

@@ -187,6 +187,40 @@ format_hydrographic_area <- function(dir) {
     ))
 }
 
+download_hydrographic_basin <- function(dir) {
+  url <- "https://services.sandre.eaufrance.fr/telechargement/geo/ETH/BDTopage/2025/BassinHydrographique/BassinHydrographique_FXX-shp.zip"
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+  zip_file <- here::here(dir, "bassin.zip")
+  utils::download.file(url, destfile = zip_file)
+  utils::unzip(zipfile = zip_file, exdir = dir)
+  file.remove(zip_file)
+  dir
+}
+
+format_hydrographic_basin <- function(dir) {
+  # LbBH is the basin's official name (BD Topage, SANDRE) - mapped to this
+  # project's district scheme. Rhin-Meuse is a single combined polygon
+  # upstream (unlike the FRB/FRC split used elsewhere) - not an issue since
+  # neither Rhin nor Meuse is a kept district.
+  file_list <- list.files(path = dir, pattern = ".shp")
+  sf::read_sf(here::here(dir, file_list)) |>
+    sf::st_transform(crs = 4326) |>
+    sf::st_make_valid() |>
+    mutate(district = case_when(
+      LbBH == "Artois-Picardie" ~ "Escaut-Somme",
+      LbBH == "Seine-Normandie" ~ "Seine",
+      LbBH == "Loire-Bretagne" ~ "Loire",
+      LbBH == "Adour-Garonne" ~ "Ardour-Garonne",
+      LbBH == "Rhône-Méditerranée" ~ "Rhone",
+      LbBH == "Corse" ~ "Corse",
+      LbBH == "Rhin-Meuse" ~ "Rhin-Meuse",
+      TRUE ~ NA_character_
+    )) |>
+    select(district, geometry)
+}
+
 match_foodweb_district <- function(foodweb, hydro_zone, dist_max = 5) {
   fw_sf <- foodweb |>
     select(-c(

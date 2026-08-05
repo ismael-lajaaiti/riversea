@@ -4,7 +4,14 @@
 \alias{plot_metaweb_interactive}
 \title{Interactive version of \code{plot_metaweb()}, with species names on hover.}
 \usage{
-plot_metaweb_interactive(web, resource, diet, size, metric = c("mean", "max"))
+plot_metaweb_interactive(
+  web,
+  resource,
+  diet,
+  size,
+  species_traits = NULL,
+  metric = c("mean", "max")
+)
 }
 \arguments{
 \item{web}{adjacency matrix, as \code{aggregate_species_web()} expects.}
@@ -15,6 +22,12 @@ plot_metaweb_interactive(web, resource, diet, size, metric = c("mean", "max"))
 
 \item{size}{individual fish size table with \code{species_valid}/\code{length}
 columns, e.g. \code{size_year_filtered}.}
+
+\item{species_traits}{optional data frame from \code{get_species_traits()}
+(columns \code{species}, \code{environment}, \code{is_diadromous}, \code{is_native},
+\code{demers_pelag}) to add to the hover tooltip. Resource nodes have no
+traits and just show their name. Default \code{NULL} keeps the tooltip to the
+species name only.}
 
 \item{metric}{"mean" or "max" length per species.}
 }

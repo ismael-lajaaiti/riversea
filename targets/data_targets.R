@@ -9,14 +9,7 @@ data_targets <- list(
       year_max = 2022, # Included.
       distance_match_max = 10, # Kilometers.
       sampling_min = 20,
-      river_network_max_dist = 100, # Kilometers.
-      # River survey stations reach far upstream, unlike REPHY - this just
-      # needs to be comfortably larger than the longest French river
-      # channel (Loire ~1000km) so every node actually connected to a kept
-      # mouth is retained; disconnected components are still dropped since
-      # they're unreachable (infinite graph distance) regardless of this
-      # cutoff.
-      river_station_network_max_dist = 2000, # Kilometers.
+      river_station_network_max_dist = 5000, # Kilometers.
       n_size_class = 5, # Number of size classes for metaweb construction.
       amobio_average_window = "1y"
     )
@@ -124,8 +117,17 @@ data_targets <- list(
     )
   ),
   tar_target(
+    hydrographic_basin_dir,
+    download_hydrographic_basin(here("data", "geo", "hydrographic_basin")),
+    format = "file"
+  ),
+  tar_target(
+    hydrographic_basin,
+    format_hydrographic_basin(hydrographic_basin_dir)
+  ),
+  tar_target(
     river_operation,
-    get_river_operation(individual_fish_file)
+    get_river_operation(individual_fish_file, hydrographic_basin)
   ),
   tar_target(
     operation_id_check,
@@ -253,28 +255,24 @@ data_targets <- list(
     )
   ),
   tar_target(
-    amobio_network,
-    extract_amobio_network(amobio_paths) |> patch_amobio_network()
+    river_network_full,
+    extract_river_network(amobio_paths) |> patch_river_network()
   ),
   tar_target(
-    amobio_network_restricted,
-    restrict_amobio_network(
-      amobio_network,
-      river_mouth_district,
-      params$river_network_max_dist * 1000
-    )
-  ),
-  tar_target(
-    amobio_network_river,
-    restrict_amobio_network(
-      amobio_network,
+    river_network, # Restricted to the catchments of interest.
+    restrict_river_network(
+      river_network_full,
       river_mouth_district,
       params$river_station_network_max_dist * 1000
     )
   ),
   tar_target(
+    river_network_geo,
+    add_edge_geometry(river_network, amobio_paths)
+  ),
+  tar_target(
     river_station_snapped,
-    snap_river_stations(river_operation, amobio_network_river$nodes)
+    snap_river_stations(river_operation, river_network$nodes)
   ),
   tar_target(
     combined_amobio_data,
