@@ -316,6 +316,9 @@ terrestrial peaked in spring, while the reciprocal flux peaked in summer.
 and present different paradigms: patch dynamic, species sorting, mass effect and
 neutral perspective. See also @Loreau-Holt-null-2004.
 
+- @Duffy-etal-2007 reviews of study incorporating trophic complexity in BEF
+literature.
+
 - @Spaak-etal-2026 provide a metric of coupling between ecosystems based on the
 Jacobian.
 

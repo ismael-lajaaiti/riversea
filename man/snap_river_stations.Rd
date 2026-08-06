@@ -2,26 +2,31 @@
 % Please edit documentation in R/amobio.R
 \name{snap_river_stations}
 \alias{snap_river_stations}
-\title{Snap ASPE river survey stations to the nearest AMOBIO river network node.}
+\title{Snap ASPE river survey stations to the nearest AMOBIO river network edge.}
 \usage{
-snap_river_stations(river_operation, network_nodes)
+snap_river_stations(river_operation, network)
 }
 \arguments{
 \item{river_operation}{tibble with \code{operation_id}, \code{longitude},
 \code{latitude} (WGS84), \code{district}, e.g. from \code{get_river_operation()}.}
 
-\item{network_nodes}{sf object with \code{node_id} and \code{geometry}
-(Lambert-93), e.g. \code{restrict_river_network()$nodes}.}
+\item{network}{list(nodes, edges) with edge linestring geometry
+(Lambert-93), e.g. \code{add_edge_geometry()}'s output.}
 }
 \value{
 one row per distinct station (\code{operation_id}, \code{longitude},
 \code{latitude}, \code{district}), with \code{node_id} (nearest network node) and
-\code{snap_dist_m} (straight-line distance to that node, in meters) added.
+\code{snap_dist_m} (straight-line distance to the nearest edge, in meters)
+added.
 }
 \description{
 Matches against \code{restrict_river_network()}'s kept-catchment-only
-output. Straight-line distance (\code{st_nearest_feature}), not
-channel-length - \code{snap_dist_m} is a data-quality signal (large values
-mean a bad station coordinate) now that \code{river_network_full}'s known gap is
-patched (see the D8 notebook).
+output. \code{snap_dist_m} is the straight-line distance to the nearest point
+on the nearest edge linestring, not to the nearest node - a station
+sitting midway along a straight stretch between two nodes isn't
+penalized for it. It's a data-quality signal (large values mean a bad
+station coordinate) now that \code{river_network_full}'s known gap is
+patched (see the D8 notebook). \code{node_id} is still the nearest \emph{node}
+(needed downstream for network routing), so it can be a step or two
+farther than \code{snap_dist_m} alone would suggest.
 }

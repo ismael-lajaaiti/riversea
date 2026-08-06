@@ -11,7 +11,8 @@ data_targets <- list(
       sampling_min = 20,
       river_station_network_max_dist = 5000, # Kilometers.
       n_size_class = 5, # Number of size classes for metaweb construction.
-      amobio_average_window = "1y"
+      amobio_average_window = "1y",
+      district_kept = c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
     )
   ),
   tar_target(
@@ -152,6 +153,10 @@ data_targets <- list(
     filter_year(operation_combined, params$year_min, params$year_max)
   ),
   tar_target(
+    operation_location,
+    classify_operation_location(operation_year_filtered, hydrographic_basin, params$district_kept)
+  ),
+  tar_target(
     size_year_filtered,
     size_combined |>
       dplyr::semi_join(operation_year_filtered, by = "operation_id")
@@ -220,7 +225,7 @@ data_targets <- list(
   ),
   tar_target(
     fw_with_district,
-    match_foodweb_district(
+    match_sea_district(
       foodweb_structure |> dplyr::filter(survey != "river"),
       hydrographic_area
     )
@@ -251,7 +256,8 @@ data_targets <- list(
     match_mouth_district(
       amobio_river_mouth,
       hydrographic_area,
-      params$distance_match_max
+      params$distance_match_max,
+      params$district_kept
     )
   ),
   tar_target(
@@ -272,7 +278,16 @@ data_targets <- list(
   ),
   tar_target(
     river_station_snapped,
-    snap_river_stations(river_operation, river_network$nodes)
+    snap_river_stations(river_operation, river_network_geo)
+  ),
+  tar_target(
+    river_distance_to_mouth,
+    compute_distance_to_mouth(
+      river_network,
+      river_station_snapped,
+      river_mouth_district,
+      params$district_kept
+    )
   ),
   tar_target(
     combined_amobio_data,

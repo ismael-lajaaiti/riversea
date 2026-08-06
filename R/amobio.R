@@ -67,8 +67,7 @@ extract_river_mouth_amobio <- function(paths) {
     dplyr::select(node_id, geometry)
 }
 
-match_mouth_district <- function(river_mouth, district, dist_max) {
-  district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
+match_mouth_district <- function(river_mouth, district, dist_max, district_kept) {
   hydro_kept <- district |>
     filter(district %in% district_kept)
 
@@ -206,39 +205,97 @@ restrict_river_network <- function(network, river_mouth, max_dist) {
   )
 }
 
-#' Snap ASPE river survey stations to the nearest AMOBIO river network node.
+#' Snap ASPE river survey stations to the nearest AMOBIO river network edge.
 #'
 #' Matches against `restrict_river_network()`'s kept-catchment-only
-#' output. Straight-line distance (`st_nearest_feature`), not
-#' channel-length - `snap_dist_m` is a data-quality signal (large values
-#' mean a bad station coordinate) now that `river_network_full`'s known gap is
-#' patched (see the D8 notebook).
+#' output. `snap_dist_m` is the straight-line distance to the nearest point
+#' on the nearest edge linestring, not to the nearest node - a station
+#' sitting midway along a straight stretch between two nodes isn't
+#' penalized for it. It's a data-quality signal (large values mean a bad
+#' station coordinate) now that `river_network_full`'s known gap is
+#' patched (see the D8 notebook). `node_id` is still the nearest *node*
+#' (needed downstream for network routing), so it can be a step or two
+#' farther than `snap_dist_m` alone would suggest.
 #'
 #' @param river_operation tibble with `operation_id`, `longitude`,
 #'   `latitude` (WGS84), `district`, e.g. from `get_river_operation()`.
-#' @param network_nodes sf object with `node_id` and `geometry`
-#'   (Lambert-93), e.g. `restrict_river_network()$nodes`.
+#' @param network list(nodes, edges) with edge linestring geometry
+#'   (Lambert-93), e.g. `add_edge_geometry()`'s output.
 #'
 #' @return one row per distinct station (`operation_id`, `longitude`,
 #' `latitude`, `district`), with `node_id` (nearest network node) and
-#' `snap_dist_m` (straight-line distance to that node, in meters) added.
+#' `snap_dist_m` (straight-line distance to the nearest edge, in meters)
+#' added.
 #' @export
-snap_river_stations <- function(river_operation, network_nodes) {
-  network_nodes <- sf::st_as_sf(network_nodes)
+snap_river_stations <- function(river_operation, network) {
+  nodes <- sf::st_as_sf(network$nodes)
+  edges <- sf::st_as_sf(network$edges)
   stations <- river_operation |>
     dplyr::distinct(operation_id, longitude, latitude, district) |>
     sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
-    sf::st_transform(sf::st_crs(network_nodes))
+    sf::st_transform(sf::st_crs(nodes))
 
-  nearest_idx <- sf::st_nearest_feature(stations, network_nodes)
+  nearest_node <- sf::st_nearest_feature(stations, nodes)
+  nearest_edge <- sf::st_nearest_feature(stations, edges)
   stations |>
     dplyr::mutate(
-      node_id = network_nodes$node_id[nearest_idx],
+      node_id = nodes$node_id[nearest_node],
       snap_dist_m = as.numeric(
-        sf::st_distance(stations, network_nodes[nearest_idx, ], by_element = TRUE)
+        sf::st_distance(stations, edges[nearest_edge, ], by_element = TRUE)
       )
     ) |>
     sf::st_drop_geometry()
+}
+
+#' Compute the channel-length distance from each station to the nearest
+#' river mouth of its own catchment.
+#'
+#' Runs a separate multi-source Dijkstra per district (seeded from that
+#' district's own matched river mouths only), so a station's distance is
+#' always to a mouth of its own catchment. `dist_mouth_m` includes the
+#' station's own offset from its snapped node.
+#'
+#' @param network list(nodes, edges) with edge `length`, e.g.
+#'   `restrict_river_network()`'s output.
+#' @param stations tibble with `node_id`, `longitude`, `latitude`,
+#'   `district`, e.g. `snap_river_stations()`'s output.
+#' @param river_mouth tibble with `node_id`, `district`, `matched`, e.g.
+#'   `match_mouth_district()`'s output.
+#' @param district_kept character vector of districts to compute for.
+#'
+#' @return `stations`, restricted to `district_kept`, with `dist_mouth_m`
+#' added (channel-length distance to the nearest same-district river
+#' mouth, in meters).
+#' @export
+compute_distance_to_mouth <- function(network, stations, river_mouth, district_kept) {
+  stations_kept <- stations |> dplyr::filter(district %in% district_kept)
+  nodes <- sf::st_as_sf(network$nodes)
+  stations_sf <- stations_kept |>
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+    sf::st_transform(sf::st_crs(nodes))
+  node_dist_m <- as.numeric(sf::st_distance(
+    stations_sf, nodes[match(stations_kept$node_id, nodes$node_id), ],
+    by_element = TRUE
+  ))
+
+  purrr::map_dfr(district_kept, function(d) {
+    seeds <- river_mouth$node_id[river_mouth$matched & river_mouth$district == d]
+
+    g <- igraph::graph_from_edgelist(
+      as.matrix(network$edges[c("from", "to")]),
+      directed = FALSE
+    )
+    igraph::E(g)$weight <- network$edges$length
+    source <- igraph::vcount(g) + 1L
+    g <- igraph::add_vertices(g, 1)
+    g <- igraph::add_edges(g, as.vector(rbind(source, as.integer(seeds))), weight = 0)
+
+    dist <- igraph::distances(g, v = source, weights = igraph::E(g)$weight)[1, ]
+
+    is_d <- stations_kept$district == d
+    stations_kept[is_d, ] |>
+      dplyr::mutate(dist_mouth_m = dist[node_id] + node_dist_m[is_d])
+  })
 }
 
 #' Attach edge linestring geometry to an already-restricted network.

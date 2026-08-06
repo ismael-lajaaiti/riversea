@@ -221,7 +221,53 @@ format_hydrographic_basin <- function(dir) {
     select(district, geometry)
 }
 
-match_foodweb_district <- function(foodweb, hydro_zone, dist_max = 5) {
+#' Flag whether each operation sits inland or at sea, and restrict `river`
+#' operations to the catchments of interest.
+#'
+#' Point-in-polygon against `hydrographic_basin` (land catchments), no
+#' nearest-match fallback - a point just offshore stays "sea" rather than
+#' being pulled into the nearest catchment. `district` is kept (not just
+#' `inland`) so it can later be joined against `river_distance_to_mouth`.
+#' `river` operations outside `district_kept` are dropped - this also
+#' drops the handful of border-precision misses (no matched `district` at
+#' all), since `NA` can't be in `district_kept` either.
+#'
+#' @param operation tibble with `longitude`, `latitude`, `survey`.
+#' @param hydrographic_basin sf tibble with `district`, `geometry`, e.g.
+#'   `format_hydrographic_basin()`'s output.
+#' @param district_kept character vector of districts to keep `river`
+#'   operations in.
+#'
+#' @return `operation` with `district` and `inland` added (TRUE if inside a
+#' basin polygon), `river` rows restricted to `district_kept`.
+#' @export
+classify_operation_location <- function(operation, hydrographic_basin, district_kept) {
+  basin_valid <- hydrographic_basin |> filter(!is.na(district))
+  operation |>
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+    sf::st_join(basin_valid["district"], join = sf::st_within) |>
+    mutate(inland = !is.na(district)) |>
+    sf::st_drop_geometry() |>
+    filter(survey != "river" | district %in% district_kept)
+}
+
+#' District of the nearest polygon, within a distance threshold.
+#'
+#' @param points sf points.
+#' @param hydro_zone sf polygons with `district`.
+#' @param dist_max maximum distance to accept a match, in km. 0 means the
+#'   point must be inside the polygon (`st_distance` to a polygon a point
+#'   is inside is 0).
+#'
+#' @return character vector of `district`, one per row of `points`, `NA`
+#' beyond `dist_max`.
+nearest_district <- function(points, hydro_zone, dist_max) {
+  nearest_idx <- sf::st_nearest_feature(points, hydro_zone)
+  dist_km <- as.numeric(sf::st_distance(points, hydro_zone[nearest_idx, ], by_element = TRUE)) / 1000
+  ifelse(dist_km <= dist_max, hydro_zone$district[nearest_idx], NA_character_)
+}
+
+match_sea_district <- function(foodweb, hydro_zone, dist_max = 5) {
   fw_sf <- foodweb |>
     select(-c(
       foodweb,
@@ -235,22 +281,14 @@ match_foodweb_district <- function(foodweb, hydro_zone, dist_max = 5) {
 
   # Food web within zone.
   fw_within <- fw_sf |>
-    filter(!is.na(zone_id)) |>
-    mutate(dist_to_district = 0)
+    filter(!is.na(zone_id))
   fw_outside <- fw_sf |>
     filter(is.na(zone_id))
 
   # Match outside point to nearest district.
   fw_nearest <- fw_outside |>
-    mutate(
-      nearest_idx = sf::st_nearest_feature(geometry, hydro_zone),
-      district = hydro_zone$district[nearest_idx],
-      dist_to_district = sf::st_distance(geometry, hydro_zone[nearest_idx, ],
-        by_element = TRUE
-      ) |> as.numeric() / 1000
-    ) |>
-    select(-nearest_idx) |>
-    filter(dist_to_district < dist_max)
+    mutate(district = nearest_district(geometry, hydro_zone, dist_max)) |>
+    filter(!is.na(district))
 
   fw_within |>
     rbind(fw_nearest) |>
