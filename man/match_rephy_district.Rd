@@ -9,7 +9,7 @@ match_rephy_district(data, hydro_zone, dist_max = 5)
 \arguments{
 \item{data}{tibble as returned by \code{\link[=extract_nutrients_rephy]{extract_nutrients_rephy()}}.}
 
-\item{hydro_zone}{sf tibble as returned by \code{\link[=format_hydrographic_area]{format_hydrographic_area()}}.}
+\item{hydro_zone}{sf tibble as returned by \code{\link[=format_coastal_water]{format_coastal_water()}}.}
 
 \item{dist_max}{maximum distance (km) for nearest-district fallback
 matching.}
@@ -20,7 +20,7 @@ not be matched within \code{dist_max} are dropped.
 }
 \description{
 Joins each site to the coastal/transitional water body it falls within
-(see \code{\link[=format_hydrographic_area]{format_hydrographic_area()}}); sites falling outside every polygon
+(see \code{\link[=format_coastal_water]{format_coastal_water()}}); sites falling outside every polygon
 are matched to the nearest district, provided it is within \code{dist_max} km.
 A given \code{site_id} sometimes carries slightly different coordinates across
 visits (rounding differences); only the first coordinate pair is used so

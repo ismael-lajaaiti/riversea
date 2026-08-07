@@ -205,81 +205,89 @@ restrict_river_network <- function(network, river_mouth, max_dist) {
   )
 }
 
-#' Snap ASPE river survey stations to the nearest AMOBIO river network edge.
+#' Snap operations to the nearest AMOBIO river network edge.
 #'
 #' Matches against `restrict_river_network()`'s kept-catchment-only
 #' output. `snap_dist_m` is the straight-line distance to the nearest point
-#' on the nearest edge linestring, not to the nearest node - a station
+#' on the nearest edge linestring, not to the nearest node - an operation
 #' sitting midway along a straight stretch between two nodes isn't
-#' penalized for it. It's a data-quality signal (large values mean a bad
-#' station coordinate) now that `river_network_full`'s known gap is
-#' patched (see the D8 notebook). `node_id` is still the nearest *node*
-#' (needed downstream for network routing), so it can be a step or two
-#' farther than `snap_dist_m` alone would suggest.
+#' penalized for it. `node_id` is still the nearest *node* (needed
+#' downstream for network routing), so it can be a step or two farther
+#' than `snap_dist_m` alone would suggest.
 #'
-#' @param river_operation tibble with `operation_id`, `longitude`,
-#'   `latitude` (WGS84), `district`, e.g. from `get_river_operation()`.
+#' @param operation tibble with `operation_id`, `longitude`, `latitude`
+#'   (WGS84), `survey`, `district`, e.g. `classify_operation_location()`'s
+#'   output, restricted to inland operations.
 #' @param network list(nodes, edges) with edge linestring geometry
 #'   (Lambert-93), e.g. `add_edge_geometry()`'s output.
 #'
-#' @return one row per distinct station (`operation_id`, `longitude`,
-#' `latitude`, `district`), with `node_id` (nearest network node) and
-#' `snap_dist_m` (straight-line distance to the nearest edge, in meters)
-#' added.
+#' @return one row per distinct operation (`operation_id`, `longitude`,
+#' `latitude`, `survey`, `district`), with `node_id` (nearest network
+#' node) and `snap_dist_m` (straight-line distance to the nearest edge,
+#' in meters) added.
 #' @export
-snap_river_stations <- function(river_operation, network) {
+snap_operations <- function(operation, network) {
   nodes <- sf::st_as_sf(network$nodes)
   edges <- sf::st_as_sf(network$edges)
-  stations <- river_operation |>
-    dplyr::distinct(operation_id, longitude, latitude, district) |>
-    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+  op_sf <- operation |>
+    dplyr::distinct(operation_id, longitude, latitude, survey, district) |>
+    sf::st_as_sf(
+      coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
+    ) |>
     sf::st_transform(sf::st_crs(nodes))
 
-  nearest_node <- sf::st_nearest_feature(stations, nodes)
-  nearest_edge <- sf::st_nearest_feature(stations, edges)
-  stations |>
+  nearest_node <- sf::st_nearest_feature(op_sf, nodes)
+  nearest_edge <- sf::st_nearest_feature(op_sf, edges)
+  op_sf |>
     dplyr::mutate(
       node_id = nodes$node_id[nearest_node],
       snap_dist_m = as.numeric(
-        sf::st_distance(stations, edges[nearest_edge, ], by_element = TRUE)
+        sf::st_distance(op_sf, edges[nearest_edge, ], by_element = TRUE)
       )
     ) |>
     sf::st_drop_geometry()
 }
 
-#' Compute the channel-length distance from each station to the nearest
+#' Compute the channel-length distance from each operation to the nearest
 #' river mouth of its own catchment.
 #'
 #' Runs a separate multi-source Dijkstra per district (seeded from that
-#' district's own matched river mouths only), so a station's distance is
-#' always to a mouth of its own catchment. `dist_mouth_m` includes the
-#' station's own offset from its snapped node.
+#' district's own matched river mouths only), so an operation's distance
+#' is always to a mouth of its own catchment. `dist_mouth_m` includes the
+#' operation's own offset from its snapped node.
 #'
 #' @param network list(nodes, edges) with edge `length`, e.g.
 #'   `restrict_river_network()`'s output.
-#' @param stations tibble with `node_id`, `longitude`, `latitude`,
-#'   `district`, e.g. `snap_river_stations()`'s output.
+#' @param operation tibble with `node_id`, `longitude`, `latitude`,
+#'   `district`, e.g. `snap_operations()`'s output.
 #' @param river_mouth tibble with `node_id`, `district`, `matched`, e.g.
 #'   `match_mouth_district()`'s output.
 #' @param district_kept character vector of districts to compute for.
 #'
-#' @return `stations`, restricted to `district_kept`, with `dist_mouth_m`
+#' @return `operation`, restricted to `district_kept`, with `dist_mouth_m`
 #' added (channel-length distance to the nearest same-district river
 #' mouth, in meters).
 #' @export
-compute_distance_to_mouth <- function(network, stations, river_mouth, district_kept) {
-  stations_kept <- stations |> dplyr::filter(district %in% district_kept)
+compute_distance_to_mouth <- function(network,
+                                       operation,
+                                       river_mouth,
+                                       district_kept) {
+  operation_kept <- operation |> dplyr::filter(district %in% district_kept)
   nodes <- sf::st_as_sf(network$nodes)
-  stations_sf <- stations_kept |>
-    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+  operation_sf <- operation_kept |>
+    sf::st_as_sf(
+      coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
+    ) |>
     sf::st_transform(sf::st_crs(nodes))
   node_dist_m <- as.numeric(sf::st_distance(
-    stations_sf, nodes[match(stations_kept$node_id, nodes$node_id), ],
+    operation_sf, nodes[match(operation_kept$node_id, nodes$node_id), ],
     by_element = TRUE
   ))
 
   purrr::map_dfr(district_kept, function(d) {
-    seeds <- river_mouth$node_id[river_mouth$matched & river_mouth$district == d]
+    seeds <- river_mouth$node_id[
+      river_mouth$matched & river_mouth$district == d
+    ]
 
     g <- igraph::graph_from_edgelist(
       as.matrix(network$edges[c("from", "to")]),
@@ -288,13 +296,390 @@ compute_distance_to_mouth <- function(network, stations, river_mouth, district_k
     igraph::E(g)$weight <- network$edges$length
     source <- igraph::vcount(g) + 1L
     g <- igraph::add_vertices(g, 1)
-    g <- igraph::add_edges(g, as.vector(rbind(source, as.integer(seeds))), weight = 0)
+    g <- igraph::add_edges(
+      g, as.vector(rbind(source, as.integer(seeds))),
+      weight = 0
+    )
 
     dist <- igraph::distances(g, v = source, weights = igraph::E(g)$weight)[1, ]
 
-    is_d <- stations_kept$district == d
-    stations_kept[is_d, ] |>
+    is_d <- operation_kept$district == d
+    operation_kept[is_d, ] |>
       dplyr::mutate(dist_mouth_m = dist[node_id] + node_dist_m[is_d])
+  })
+}
+
+#' Build a water-only triangular mesh over the sea, excluding land.
+#'
+#' Domain is a buffered bounding box around the sea-side operations and
+#' matched river mouths, minus `land`. `fmesher::fm_mesh_2d()` auto-pads
+#' the mesh beyond this boundary regardless of land - `in_water` flags
+#' which triangles actually lie in water.
+#'
+#' @param operation tibble with `longitude`, `latitude`, `survey`,
+#'   `inland`, `district`, e.g. `classify_operation_location()`'s output.
+#' @param mouth sf tibble with `district`, `matched`, `geometry`
+#'   (WGS84), e.g. `match_mouth_district()`'s output.
+#' @param land sf polygons (WGS84), e.g. `land_polygon()`'s output.
+#' @param district_kept character vector of districts to build the mesh
+#'   for.
+#' @param buffer_deg degrees of padding around the sea-side operations
+#'   and matched mouths.
+#'
+#' @return list(mesh, in_water, land): `mesh` is an `fm_mesh_2d` object,
+#' `in_water` a logical vector (one per mesh triangle), `land` the
+#' (cropped, simplified) polygon used as the boundary.
+#' @export
+build_sea_mesh <- function(operation, mouth, land, district_kept, buffer_deg) {
+  op_sea <- operation |>
+    dplyr::filter(survey != "river", !inland, district %in% district_kept)
+  mouth_kept <- mouth |>
+    dplyr::filter(matched, district %in% district_kept) |>
+    sf::st_as_sf() |>
+    sf::st_transform(4326)
+  mouth_coords <- sf::st_coordinates(mouth_kept)
+
+  domain_bbox <- sf::st_bbox(c(
+    xmin = min(op_sea$longitude, mouth_coords[, 1]) - buffer_deg,
+    xmax = max(op_sea$longitude, mouth_coords[, 1]) + buffer_deg,
+    ymin = min(op_sea$latitude, mouth_coords[, 2]) - buffer_deg,
+    ymax = max(op_sea$latitude, mouth_coords[, 2]) + buffer_deg
+  ), crs = 4326)
+  domain_box_sfc <- sf::st_as_sfc(domain_bbox)
+
+  land_crop <- sf::st_intersection(sf::st_make_valid(land), domain_box_sfc)
+  land_union <- sf::st_make_valid(sf::st_union(land_crop))
+  land_simple <- sf::st_simplify(
+    land_union,
+    dTolerance = 0.005, preserveTopology = TRUE
+  )
+  land_parts <- sf::st_cast(land_simple, "POLYGON", warn = FALSE)
+  land_parts <- land_parts[as.numeric(sf::st_area(land_parts)) > 1e5]
+
+  water_poly <- sf::st_difference(domain_box_sfc, sf::st_union(land_parts))
+  water_seg <- fmesher::fm_as_segm(water_poly)
+  mesh <- fmesher::fm_mesh_2d(
+    boundary = water_seg,
+    max.edge = c(0.05, 0.3),
+    cutoff = 0.01
+  )
+
+  tv <- mesh$graph$tv
+  loc <- mesh$loc[, 1:2]
+  centroids <- cbind(
+    (loc[tv[, 1], 1] + loc[tv[, 2], 1] + loc[tv[, 3], 1]) / 3,
+    (loc[tv[, 1], 2] + loc[tv[, 2], 2] + loc[tv[, 3], 2]) / 3
+  )
+  centroids_sf <- sf::st_as_sf(
+    as.data.frame(centroids),
+    coords = c("V1", "V2"), crs = 4326
+  )
+  in_water <- lengths(sf::st_intersects(centroids_sf, water_poly)) > 0
+
+  list(mesh = mesh, in_water = in_water, land = land_simple)
+}
+
+#' Build a graph from a sea mesh's water triangles.
+#'
+#' Vertices keep `x`/`y` (WGS84) as attributes. Edges are water-triangle
+#' sides, weighted by geodesic distance. Vertices only used by
+#' land-extension triangles (see `build_sea_mesh()`) stay isolated.
+#'
+#' @param sea_mesh list(mesh, in_water, land), e.g. `build_sea_mesh()`'s
+#'   output.
+#'
+#' @return igraph graph, undirected, weighted (`weight`, meters).
+#' @export
+build_sea_graph <- function(sea_mesh) {
+  tv <- sea_mesh$mesh$graph$tv[sea_mesh$in_water, , drop = FALSE]
+  loc <- sea_mesh$mesh$loc[, 1:2]
+
+  edges <- rbind(tv[, c(1, 2)], tv[, c(2, 3)], tv[, c(3, 1)])
+  edges <- t(apply(edges, 1, sort))
+  edges <- unique(edges)
+
+  p1 <- sf::st_sfc(
+    lapply(seq_len(nrow(edges)), \(i) sf::st_point(loc[edges[i, 1], ])),
+    crs = 4326
+  )
+  p2 <- sf::st_sfc(
+    lapply(seq_len(nrow(edges)), \(i) sf::st_point(loc[edges[i, 2], ])),
+    crs = 4326
+  )
+  w <- as.numeric(sf::st_distance(p1, p2, by_element = TRUE))
+
+  g <- igraph::graph_from_edgelist(edges, directed = FALSE)
+  igraph::E(g)$weight <- w
+  igraph::V(g)$x <- loc[seq_len(igraph::vcount(g)), 1]
+  igraph::V(g)$y <- loc[seq_len(igraph::vcount(g)), 2]
+  g
+}
+
+#' Nearest reachable node of a sea graph, for each point.
+#'
+#' @param points sf points (WGS84).
+#' @param sea_graph igraph graph with vertex attributes `x`/`y`, e.g.
+#'   `build_sea_graph()`'s output.
+#'
+#' @return list(node_id, offset_m): `node_id` the nearest reachable
+#' vertex id, `offset_m` the distance from each point to it (meters).
+#' @export
+snap_to_sea_graph <- function(points, sea_graph) {
+  reachable <- as.integer(igraph::V(sea_graph)[igraph::degree(sea_graph) > 0])
+  reachable_sf <- sf::st_as_sf(
+    data.frame(
+      node_id = reachable,
+      x = igraph::V(sea_graph)$x[reachable],
+      y = igraph::V(sea_graph)$y[reachable]
+    ),
+    coords = c("x", "y"), crs = 4326
+  )
+  nearest <- sf::st_nearest_feature(points, reachable_sf)
+  list(
+    node_id = reachable_sf$node_id[nearest],
+    offset_m = as.numeric(sf::st_distance(
+      points, reachable_sf[nearest, ],
+      by_element = TRUE
+    ))
+  )
+}
+
+#' Compute the coast-aware distance from each sea-side operation to the
+#' nearest river mouth of its own district.
+#'
+#' Snaps each operation and matched mouth to the nearest reachable node
+#' of `sea_graph` (see `snap_to_sea_graph()`), then runs a separate
+#' multi-source Dijkstra per district (seeded from that district's own
+#' matched mouths only) - see `compute_distance_to_mouth()` for the same
+#' pattern on the river side.
+#'
+#' @param operation tibble with `longitude`, `latitude`, `survey`,
+#'   `inland`, `district`, e.g. `classify_operation_location()`'s output.
+#' @param mouth sf tibble with `district`, `matched`, `geometry`
+#'   (WGS84), e.g. `match_mouth_district()`'s output.
+#' @param sea_graph igraph graph with vertex attributes `x`/`y`, e.g.
+#'   `build_sea_graph()`'s output.
+#' @param district_kept character vector of districts to compute for.
+#'
+#' @return sea-side rows of `operation`, restricted to `district_kept`,
+#' with `dist_mouth_m` added (meters).
+#' @export
+compute_sea_distance_to_mouth <- function(operation,
+                                           mouth,
+                                           sea_graph,
+                                           district_kept) {
+  op_sea <- operation |>
+    dplyr::filter(survey != "river", !inland, district %in% district_kept)
+  op_sf <- op_sea |>
+    sf::st_as_sf(
+      coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
+    )
+  snap_op <- snap_to_sea_graph(op_sf, sea_graph)
+  op_sea$node_id <- snap_op$node_id
+  node_dist_m <- snap_op$offset_m
+
+  mouth_kept <- mouth |>
+    dplyr::filter(matched, district %in% district_kept) |>
+    sf::st_as_sf() |>
+    sf::st_transform(4326)
+  mouth_kept$node_id <- snap_to_sea_graph(mouth_kept, sea_graph)$node_id
+
+  purrr::map_dfr(district_kept, function(d) {
+    seeds <- mouth_kept$node_id[mouth_kept$district == d]
+    source <- igraph::vcount(sea_graph) + 1L
+    g2 <- igraph::add_vertices(sea_graph, 1)
+    g2 <- igraph::add_edges(
+      g2, as.vector(rbind(source, as.integer(seeds))),
+      weight = 0
+    )
+    dist <- igraph::distances(
+      g2, v = source, weights = igraph::E(g2)$weight
+    )[1, ]
+
+    is_d <- op_sea$district == d
+    op_sea[is_d, ] |>
+      dplyr::mutate(dist_mouth_m = dist[node_id] + node_dist_m[is_d])
+  })
+}
+
+#' Water-triangle edges of a sea mesh, as sf linestrings.
+#'
+#' @param sea_mesh list(mesh, in_water, land), e.g. `build_sea_mesh()`'s
+#'   output.
+#'
+#' @return sf linestrings (WGS84), one per water-triangle edge.
+#' @export
+sea_mesh_edges <- function(sea_mesh) {
+  tv <- sea_mesh$mesh$graph$tv[sea_mesh$in_water, , drop = FALSE]
+  loc <- sea_mesh$mesh$loc[, 1:2]
+  edges <- rbind(tv[, c(1, 2)], tv[, c(2, 3)], tv[, c(3, 1)])
+  edges <- t(apply(edges, 1, sort))
+  edges <- unique(edges)
+  seg <- lapply(
+    seq_len(nrow(edges)), \(i) sf::st_linestring(loc[edges[i, ], ])
+  )
+  sf::st_sf(geometry = sf::st_sfc(seg, crs = 4326))
+}
+
+#' Plot a sea mesh, zoomed to a bounding box.
+#'
+#' @param sea_mesh list(mesh, in_water, land), e.g. `build_sea_mesh()`'s
+#'   output.
+#' @param mesh_edges sf linestrings, e.g. `sea_mesh_edges()`'s output.
+#' @param xlim,ylim numeric length-2, plot extent (degrees).
+#' @param title plot title.
+#'
+#' @return ggplot.
+#' @export
+plot_sea_mesh <- function(sea_mesh, mesh_edges, xlim, ylim, title = NULL) {
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = sea_mesh$land, fill = "grey75", color = NA) +
+    ggplot2::geom_sf(data = mesh_edges, color = "steelblue", linewidth = 0.15) +
+    ggplot2::coord_sf(xlim = xlim, ylim = ylim) +
+    ggplot2::labs(title = title, x = NULL, y = NULL) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank())
+}
+
+#' Coast-aware path from one operation to its nearest same-district
+#' river mouth.
+#'
+#' @param op_row single-row tibble with `node_id`, `district`, e.g. one
+#'   row of `compute_sea_distance_to_mouth()`'s output.
+#' @param mouth sf tibble with `district`, `node_id` (already snapped to
+#'   `sea_graph`, see `snap_to_sea_graph()`).
+#' @param sea_graph igraph graph with vertex attributes `x`/`y`, e.g.
+#'   `build_sea_graph()`'s output.
+#'
+#' @return list(path, mouth_coords): `path` an sf linestring (WGS84),
+#' `mouth_coords` the reached mouth's coordinates.
+#' @export
+sea_mouth_path <- function(op_row, mouth, sea_graph) {
+  seeds <- mouth$node_id[mouth$district == op_row$district]
+  source <- igraph::vcount(sea_graph) + 1L
+  g2 <- igraph::add_vertices(sea_graph, 1)
+  g2 <- igraph::add_edges(
+    g2, as.vector(rbind(source, as.integer(seeds))),
+    weight = 0
+  )
+  sp <- igraph::shortest_paths(
+    g2,
+    from = op_row$node_id, to = source,
+    weights = igraph::E(g2)$weight, output = "vpath"
+  )
+  path_nodes <- as.integer(sp$vpath[[1]])
+  path_nodes <- path_nodes[path_nodes != source]
+  loc <- cbind(igraph::V(sea_graph)$x, igraph::V(sea_graph)$y)
+  list(
+    path = sf::st_sf(geometry = sf::st_sfc(
+      sf::st_linestring(loc[path_nodes, , drop = FALSE]), crs = 4326
+    )),
+    mouth_coords = loc[utils::tail(path_nodes, 1), ]
+  )
+}
+
+#' Plot one path checkpoint: straight line vs. coast-aware mesh path.
+#'
+#' @param op_row single-row tibble with `longitude`, `latitude`,
+#'   `dist_mouth_m`.
+#' @param path list(path, mouth_coords), e.g. `sea_mouth_path()`'s
+#'   output.
+#' @param mesh_edges sf linestrings, e.g. `sea_mesh_edges()`'s output.
+#' @param land sf polygons, e.g. `build_sea_mesh()`'s `land` output.
+#' @param title plot title.
+#'
+#' @return ggplot.
+#' @export
+plot_sea_path_checkpoint <- function(op_row, path, mesh_edges, land, title) {
+  op_pt <- sf::st_as_sf(
+    op_row,
+    coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
+  )
+  mouth_pt <- sf::st_sf(geometry = sf::st_sfc(
+    sf::st_point(path$mouth_coords), crs = 4326
+  ))
+  straight <- sf::st_sf(geometry = sf::st_sfc(
+    sf::st_linestring(rbind(
+      c(op_row$longitude, op_row$latitude), path$mouth_coords
+    )),
+    crs = 4326
+  ))
+  straight_dist_m <- as.numeric(sf::st_distance(op_pt, mouth_pt))
+
+  bbox <- sf::st_bbox(path$path)
+  pad_x <- max((bbox["xmax"] - bbox["xmin"]) * 0.6, 0.03)
+  pad_y <- max((bbox["ymax"] - bbox["ymin"]) * 0.6, 0.03)
+
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = land, fill = "grey80", color = NA) +
+    ggplot2::geom_sf(data = mesh_edges, color = "grey75", linewidth = 0.15) +
+    ggplot2::geom_sf(
+      data = straight, color = "firebrick",
+      linewidth = 0.8, linetype = "dashed"
+    ) +
+    ggplot2::geom_sf(data = path$path, color = "steelblue", linewidth = 1.4) +
+    ggplot2::geom_sf(data = op_pt, color = "black", size = 3.5, shape = 17) +
+    ggplot2::geom_sf(data = mouth_pt, color = "black", size = 3.5, shape = 8) +
+    ggplot2::coord_sf(
+      xlim = c(bbox["xmin"] - pad_x, bbox["xmax"] + pad_x),
+      ylim = c(bbox["ymin"] - pad_y, bbox["ymax"] + pad_y)
+    ) +
+    ggplot2::labs(
+      title = title,
+      subtitle = sprintf(
+        "straight-line: %.0fm | mesh path: %.0fm",
+        straight_dist_m, op_row$dist_mouth_m
+      ),
+      x = NULL, y = NULL
+    ) +
+    ggplot2::theme(
+      plot.subtitle = ggplot2::element_text(size = 9),
+      panel.grid = ggplot2::element_blank()
+    )
+}
+
+#' Length of a straight line's overlap with land, per operation.
+#'
+#' For each operation, draws a straight line to the nearest mouth of its
+#' own district and measures how much of it overlaps `land`. Only counts
+#' past a minimal overlap length - `st_intersects()` alone also flags a
+#' line that merely touches a boundary vertex, not a real crossing.
+#'
+#' @param operation sf tibble with `operation_id`, `district`, `geometry`
+#'   (WGS84).
+#' @param mouth sf tibble with `district`, `geometry` (WGS84).
+#' @param land sf polygons (WGS84).
+#' @param district_kept character vector of districts to compute for.
+#'
+#' @return tibble with `operation_id`, `crossing_len_m` (meters, 0 if no
+#' meaningful overlap).
+#' @export
+straight_line_land_crossing <- function(operation, mouth, land, district_kept) {
+  land_union <- sf::st_union(land)
+  mouth_by_district <- split(mouth, mouth$district)
+
+  purrr::map_dfr(district_kept, function(d) {
+    op_d <- operation[operation$district == d, ]
+    mouth_d <- mouth_by_district[[d]]
+    idx <- sf::st_nearest_feature(op_d, mouth_d)
+    lines <- mapply(
+      \(p, q) sf::st_linestring(rbind(p, q)),
+      sf::st_coordinates(op_d) |> split(seq_len(nrow(op_d))),
+      sf::st_coordinates(mouth_d[idx, ]) |> split(seq_len(nrow(op_d))),
+      SIMPLIFY = FALSE
+    )
+    lines_sfc <- sf::st_sfc(lines, crs = 4326)
+    has_inter <- lengths(sf::st_intersects(lines_sfc, land)) > 0
+    len_m <- sapply(seq_along(lines_sfc), function(i) {
+      if (!has_inter[i]) {
+        return(0)
+      }
+      ii <- suppressWarnings(sf::st_intersection(lines_sfc[i], land_union))
+      if (length(ii) == 0) {
+        return(0)
+      }
+      sum(as.numeric(sf::st_length(sf::st_cast(ii, "LINESTRING"))))
+    })
+    tibble::tibble(operation_id = op_d$operation_id, crossing_len_m = len_m)
   })
 }
 

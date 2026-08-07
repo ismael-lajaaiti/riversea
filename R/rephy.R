@@ -281,14 +281,14 @@ range_zero_one <- function(x) {
 #' Match REPHY sampling sites to their DCE hydrographic district
 #'
 #' Joins each site to the coastal/transitional water body it falls within
-#' (see [format_hydrographic_area()]); sites falling outside every polygon
+#' (see [format_coastal_water()]); sites falling outside every polygon
 #' are matched to the nearest district, provided it is within `dist_max` km.
 #' A given `site_id` sometimes carries slightly different coordinates across
 #' visits (rounding differences); only the first coordinate pair is used so
 #' each site is matched exactly once.
 #'
 #' @param data tibble as returned by [extract_nutrients_rephy()].
-#' @param hydro_zone sf tibble as returned by [format_hydrographic_area()].
+#' @param hydro_zone sf tibble as returned by [format_coastal_water()].
 #' @param dist_max maximum distance (km) for nearest-district fallback
 #'   matching.
 #'

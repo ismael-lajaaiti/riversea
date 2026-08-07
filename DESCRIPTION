@@ -17,6 +17,7 @@ Imports:
     cheddar,
     dataverse,
     dplyr,
+    fmesher,
     foodwebbuilder,
     ggdag,
     ggplot2,

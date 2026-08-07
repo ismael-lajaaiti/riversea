@@ -2,17 +2,17 @@
 % Please edit documentation in R/amobio.R
 \name{compute_distance_to_mouth}
 \alias{compute_distance_to_mouth}
-\title{Compute the channel-length distance from each station to the nearest
+\title{Compute the channel-length distance from each operation to the nearest
 river mouth of its own catchment.}
 \usage{
-compute_distance_to_mouth(network, stations, river_mouth, district_kept)
+compute_distance_to_mouth(network, operation, river_mouth, district_kept)
 }
 \arguments{
 \item{network}{list(nodes, edges) with edge \code{length}, e.g.
 \code{restrict_river_network()}'s output.}
 
-\item{stations}{tibble with \code{node_id}, \code{longitude}, \code{latitude},
-\code{district}, e.g. \code{snap_river_stations()}'s output.}
+\item{operation}{tibble with \code{node_id}, \code{longitude}, \code{latitude},
+\code{district}, e.g. \code{snap_operations()}'s output.}
 
 \item{river_mouth}{tibble with \code{node_id}, \code{district}, \code{matched}, e.g.
 \code{match_mouth_district()}'s output.}
@@ -20,13 +20,13 @@ compute_distance_to_mouth(network, stations, river_mouth, district_kept)
 \item{district_kept}{character vector of districts to compute for.}
 }
 \value{
-\code{stations}, restricted to \code{district_kept}, with \code{dist_mouth_m}
+\code{operation}, restricted to \code{district_kept}, with \code{dist_mouth_m}
 added (channel-length distance to the nearest same-district river
 mouth, in meters).
 }
 \description{
 Runs a separate multi-source Dijkstra per district (seeded from that
-district's own matched river mouths only), so a station's distance is
-always to a mouth of its own catchment. \code{dist_mouth_m} includes the
-station's own offset from its snapped node.
+district's own matched river mouths only), so an operation's distance
+is always to a mouth of its own catchment. \code{dist_mouth_m} includes the
+operation's own offset from its snapped node.
 }

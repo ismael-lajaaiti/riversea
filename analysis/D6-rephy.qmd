@@ -145,7 +145,7 @@ keep this in mind when comparing periods.
 
 To plot a yearly time series per nutrient we need a geographic grouping.
 We reuse the DCE hydrographic districts already used for the river food web
-(`hydrographic_area`, built from the SANDRE coastal/transitional water body
+(`coastal_water`, built from the SANDRE coastal/transitional water body
 shapefiles), so that river and coastal analyses stay on the same spatial
 units. Each site is joined to the district it falls in, dropping the few
 sites too far from any polygon to be matched reliably.
@@ -157,7 +157,7 @@ sites <- data |>
   distinct(site_id, longitude, latitude) |>
   mutate(matched = site_id %in% district_data$site_id)
 
-hydro_area <- tar_read(hydrographic_area) |>
+coastal_water <- tar_read(coastal_water) |>
   filter(district %in% unique(district_data$district))
 ```
 
@@ -166,7 +166,7 @@ hydro_area <- tar_read(hydrographic_area) |>
 #| fig-height: 9
 
 ggplot() +
-  geom_sf(data = hydro_area, aes(fill = district), alpha = 0.5) +
+  geom_sf(data = coastal_water, aes(fill = district), alpha = 0.5) +
   geom_point(data = sites, aes(x = longitude, y = latitude, color = matched)) +
   coord_sf(xlim = range(sites$longitude), ylim = range(sites$latitude)) +
   scale_color_manual(values = c(`TRUE` = "grey20", `FALSE` = "red")) +

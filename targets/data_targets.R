@@ -8,6 +8,8 @@ data_targets <- list(
       year_min = 2005, # Included.
       year_max = 2022, # Included.
       distance_match_max = 10, # Kilometers.
+      distance_match_max_sea = 15, # Kilometers.
+      sea_mesh_buffer_deg = 0.4, # Degrees.
       sampling_min = 20,
       river_station_network_max_dist = 5000, # Kilometers.
       n_size_class = 5, # Number of size classes for metaweb construction.
@@ -118,17 +120,17 @@ data_targets <- list(
     )
   ),
   tar_target(
-    hydrographic_basin_dir,
-    download_hydrographic_basin(here("data", "geo", "hydrographic_basin")),
+    basin_dir,
+    download_basin(here("data", "geo", "hydrographic_basin")),
     format = "file"
   ),
   tar_target(
-    hydrographic_basin,
-    format_hydrographic_basin(hydrographic_basin_dir)
+    basin,
+    format_basin(basin_dir)
   ),
   tar_target(
     river_operation,
-    get_river_operation(individual_fish_file, hydrographic_basin)
+    get_river_operation(individual_fish_file, basin)
   ),
   tar_target(
     operation_id_check,
@@ -154,7 +156,13 @@ data_targets <- list(
   ),
   tar_target(
     operation_location,
-    classify_operation_location(operation_year_filtered, hydrographic_basin, params$district_kept)
+    classify_operation_location(
+      operation_year_filtered,
+      basin,
+      coastal_water,
+      params$district_kept,
+      params$distance_match_max_sea
+    )
   ),
   tar_target(
     size_year_filtered,
@@ -215,19 +223,19 @@ data_targets <- list(
     )
   ),
   tar_target(
-    hydrographic_area_dir,
-    download_hydrographic_files(here("data", "geo", "hydrographic")),
+    coastal_water_dir,
+    download_coastal_water(here("data", "geo", "hydrographic")),
     format = "file"
   ),
   tar_target(
-    hydrographic_area,
-    format_hydrographic_area(hydrographic_area_dir)
+    coastal_water,
+    format_coastal_water(coastal_water_dir)
   ),
   tar_target(
     fw_with_district,
     match_sea_district(
       foodweb_structure |> dplyr::filter(survey != "river"),
-      hydrographic_area
+      coastal_water
     )
   ),
   tar_target(
@@ -255,7 +263,7 @@ data_targets <- list(
     river_mouth_district,
     match_mouth_district(
       amobio_river_mouth,
-      hydrographic_area,
+      coastal_water,
       params$distance_match_max,
       params$district_kept
     )
@@ -277,16 +285,62 @@ data_targets <- list(
     add_edge_geometry(river_network, amobio_paths)
   ),
   tar_target(
-    river_station_snapped,
-    snap_river_stations(river_operation, river_network_geo)
+    inland_operations_snapped,
+    snap_operations(
+      operation_location |> dplyr::filter(inland),
+      river_network_geo
+    )
   ),
   tar_target(
-    river_distance_to_mouth,
+    inland_distance_to_mouth,
     compute_distance_to_mouth(
       river_network,
-      river_station_snapped,
+      inland_operations_snapped,
       river_mouth_district,
       params$district_kept
+    )
+  ),
+  tar_target(
+    land,
+    land_polygon()
+  ),
+  tar_target(
+    sea_mesh,
+    build_sea_mesh(
+      operation_location,
+      river_mouth_district,
+      land,
+      params$district_kept,
+      params$sea_mesh_buffer_deg
+    )
+  ),
+  tar_target(
+    sea_graph,
+    build_sea_graph(sea_mesh)
+  ),
+  tar_target(
+    sea_offshore_distance_to_mouth,
+    compute_sea_distance_to_mouth(
+      operation_location,
+      river_mouth_district,
+      sea_graph,
+      params$district_kept
+    )
+  ),
+  tar_target(
+    sea_distance_to_mouth,
+    dplyr::bind_rows(
+      inland_distance_to_mouth |>
+        dplyr::filter(survey != "river") |>
+        dplyr::mutate(method = "river_network") |>
+        dplyr::select(
+          operation_id, longitude, latitude, district, dist_mouth_m, method
+        ),
+      sea_offshore_distance_to_mouth |>
+        dplyr::mutate(method = "sea_mesh") |>
+        dplyr::select(
+          operation_id, longitude, latitude, district, dist_mouth_m, method
+        )
     )
   ),
   tar_target(
@@ -317,7 +371,7 @@ data_targets <- list(
   ),
   tar_target(
     rephy_district_data,
-    match_rephy_district(rephy_data, hydrographic_area)
+    match_rephy_district(rephy_data, coastal_water)
   ),
   tar_target(
     rephy_yearly,

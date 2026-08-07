@@ -76,8 +76,9 @@ hydrographic basins.
 
 ```{r}
 network_river <- tar_read(river_network)
-river_stations <- tar_read(river_station_snapped)
-basin <- tar_read(hydrographic_basin)
+river_stations <- tar_read(inland_operations_snapped) |>
+  filter(survey == "river")
+basin <- tar_read(basin)
 district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
 
 cols <- c(
@@ -151,7 +152,10 @@ stations_selected <- river_stations |>
 ggplot(stations_selected, aes(x = snap_dist_m)) +
   geom_histogram(fill = "#a9c9e0", color = "white", bins = 40) +
   geom_vline(xintercept = 150) +
-  annotate("text", x = 150, y = Inf, label = "150m", hjust = -0.2, vjust = 1.5) +
+  annotate(
+    "text",
+    x = 150, y = Inf, label = "150m", hjust = -0.2, vjust = 1.5
+  ) +
   scale_x_continuous(trans = "log10", labels = scales::label_number()) +
   labs(x = "Snapping distance (m)", y = "Number of stations")
 ```
@@ -183,9 +187,13 @@ comp_before <- igraph::components(igraph::graph_from_edgelist(
   as.matrix(network_before$edges[c("from", "to")]),
   directed = FALSE
 ))
-vendee_comp_nodes <- which(comp_before$membership == comp_before$membership[595001])
+vendee_comp_nodes <- which(
+  comp_before$membership == comp_before$membership[595001]
+)
 main_sf <- river_network_full$nodes |>
-  filter(node_id %in% which(comp_before$membership == which.max(comp_before$csize))) |>
+  filter(
+    node_id %in% which(comp_before$membership == which.max(comp_before$csize))
+  ) |>
   sf::st_as_sf()
 vendee_sf <- river_network_full$nodes |>
   filter(node_id %in% vendee_comp_nodes) |>
@@ -226,7 +234,7 @@ component. This operation is documented in `patch_river_network()`.
 Here we have everything to compute the distance to the river mouth for river
 stations at least.
 
-### River
+### River operations
 
 We group our stations per catchment, and identify for each catchment transitions
 point between freshwater and marine areas.
@@ -263,7 +271,10 @@ points(
   pch = 19,
   cex = 0.3
 )
-points(mouth_coords[, "X"], mouth_coords[, "Y"], col = "black", pch = 17, cex = 0.8)
+points(
+  mouth_coords[, "X"], mouth_coords[, "Y"],
+  col = "black", pch = 17, cex = 0.8
+)
 legend(
   "bottomright",
   legend = c(names(cols), "River mouth"),
@@ -278,7 +289,8 @@ river mouth of its own catchment (so a station can only be matched to a mouth of
 its own catchment - see `compute_distance_to_mouth()`).
 
 ```{r}
-river_distance <- tar_read(river_distance_to_mouth)
+river_distance <- tar_read(inland_distance_to_mouth) |>
+  filter(survey == "river")
 
 ggplot(river_distance, aes(x = dist_mouth_m / 1000, fill = district)) +
   geom_histogram(bins = 30, color = "white") +
@@ -308,7 +320,9 @@ mouth_coords_df <- as.data.frame(mouth_coords)
 
 ggplot() +
   geom_sf(data = basin, fill = NA, color = "grey80") +
-  geom_sf(data = basin_kept, aes(fill = district), color = "grey70", alpha = 0.10) +
+  geom_sf(
+    data = basin_kept, aes(fill = district), color = "grey70", alpha = 0.10
+  ) +
   scale_fill_manual(values = cols, name = NULL) +
   geom_point(
     data = river_distance,
@@ -330,13 +344,16 @@ Distances range from a few tens of meters (stations right at the mouth) to
 under 950km. Escaut-Somme has the shortest distances overall (small,
 coastal catchment), while Seine stations sit farthest inland on average.
 
-### Sea operations: inland vs. sea-side
+### Sea operations
+
+#### Inland vs. sea-side
 
 For sea operations, we first need to know whether an operation sits
 upstream or downstream of the river mouth before a distance is even
-meaningful. One idea: use `hydrographic_basin` (land catchment) vs.
-`hydrographic_area` (coastal/transitional water body) - if a point falls
-in the basin polygon, it's inland; if in the area polygon, sea-side.
+meaningful. One idea: use `basin` (land catchment) vs.
+`coastal_water` (coastal/transitional water body) - if a point falls
+in the basin polygon, it's inland; if in the coastal water polygon,
+sea-side.
 
 To validate our choice let's have a look at the Gironde and Loire estuaries.
 
@@ -344,7 +361,7 @@ To validate our choice let's have a look at the Gironde and Loire estuaries.
 #| fig-width: 12
 #| fig-height: 7
 
-hydro_area <- tar_read(hydrographic_area)
+coastal_water <- tar_read(coastal_water)
 
 plot_estuary <- function(name, xlim, ylim) {
   bbox <- st_as_sfc(st_bbox(
@@ -352,15 +369,23 @@ plot_estuary <- function(name, xlim, ylim) {
     crs = 4326
   ))
   basin_e <- st_intersection(st_make_valid(basin), bbox)
-  area_e <- st_intersection(st_make_valid(hydro_area), bbox)
+  area_e <- st_intersection(st_make_valid(coastal_water), bbox)
 
   ggplot() +
-    geom_sf(data = basin_e, aes(fill = "Basin (catchment)"), color = NA, alpha = 0.4) +
-    geom_sf(data = area_e, aes(fill = "Area (coastal water body)"), color = NA, alpha = 0.4) +
+    geom_sf(
+      data = basin_e, aes(fill = "Basin (catchment)"), color = NA, alpha = 0.4
+    ) +
+    geom_sf(
+      data = area_e, aes(fill = "Area (coastal water body)"),
+      color = NA, alpha = 0.4
+    ) +
     geom_point(data = mouth_coords_df, aes(X, Y), shape = 17, size = 1) +
     scale_fill_manual(
       name = NULL,
-      values = c("Basin (catchment)" = "steelblue", "Area (coastal water body)" = "firebrick")
+      values = c(
+        "Basin (catchment)" = "steelblue",
+        "Area (coastal water body)" = "firebrick"
+      )
     ) +
     coord_sf(xlim = xlim, ylim = ylim) +
     labs(x = NULL, y = NULL, title = name) +
@@ -370,91 +395,85 @@ plot_estuary <- function(name, xlim, ylim) {
 p_gironde <- plot_estuary("Gironde", c(-1.3, -0.3), c(44.8, 45.7))
 p_loire <- plot_estuary("Loire", c(-2.3, -1.0), c(47.0, 47.5))
 
-p_gironde + p_loire + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+p_gironde + p_loire +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
 ```
 
-From what we see there it is quite clear the the natural delimitation is the
-basin polygon whose boundaries fit well with our river mouths.
+From what we see there, it is quite clear that the natural delimitation is
+the basin polygon, whose boundaries fit well with our river mouths. So, to
+infer whether an operation is inland or sea-side, we check whether it falls
+within a hydrographic basin: if so, it is inland; if not, it is sea-side.
 
-So we use `hydrographic_basin` alone as the inland test: an operation
-falling inside a basin polygon is inland, everything else is sea-side (no
-fallback nearest-match, unlike `match_sea_district()` - a point just
-offshore should stay "sea", not get pulled into the nearest basin). This is
-now target `operation_location` (`classify_operation_location()`, applied
-to every operation, `river` included, not just sea ones). `district` is
-kept too (not just `inland`), so it can later be joined against
-`river_distance_to_mouth` once we can compute the same distance for
-sea-side operations. `river` operations outside our four catchments of
-interest are dropped here - the same filter also drops the border-precision
-edge cases found earlier (no matched `district` at all, so they can't be in
-`district_kept` either).
+Let's see, per survey, how many inland and sea-side operations we have.
 
 ```{r}
 operation_location <- tar_read(operation_location)
 
 operation_location |>
-  mutate(district = tidyr::replace_na(district, "(sea, no catchment)")) |>
-  count(district, survey, inland) |>
+  count(survey, inland) |>
   tidyr::pivot_wider(
     names_from = inland,
     values_from = n,
     values_fill = 0,
     names_prefix = "inland_"
   ) |>
-  arrange(district, survey) |>
+  rename(
+    inland = inland_TRUE,
+    "sea-side" = inland_FALSE,
+  ) |>
   knitr::kable()
 ```
 
-One row per (district, survey) makes the consistency check easy: every real
-catchment row has `inland_FALSE = 0` and the "(sea, no catchment)" rows have
-`inland_TRUE = 0` - a `district` label and `inland` always agree, exactly as
-the classification should behave. Every surviving `river` operation is
-inland now (that's what the filter guarantees) and split across our four
-catchments - `operation_year_filtered` had 21,761 `river` operations before
-this filter, 14,359 after: 7,402 dropped, of which 90 were the
-border-precision misses and the rest sat in catchments outside our scope
-(Rhone, Corse, Rhin-Meuse). `nurse` stays almost entirely sea-side, `pomet`
-splits between sea-side and inland, and none of the sea surveys' inland
-operations fall outside our four catchments either.
+#### Catchment attribution
 
-### Choosing a sea-match threshold
-
-Sea operations that miss every basin polygon are candidates for a
-nearest-match fallback against `hydrographic_area`, within a distance
-threshold to be chosen. Restricting to `nurse`/`pomet` (the `river`
-border-precision misses are already explained, and aren't a coastal
-question):
+Next, we want to attribute a catchment to the sea operations. We proceed as
+follows: if the operation is inland, we use the district of the basin it
+falls in; if the operation is sea-side, we use the district of the closest
+coastal water body. Here, the question is to define a threshold beyond which
+we consider that a coastal water body cannot be reliably attributed to an
+operation. To help us, let's plot, in the Gironde estuary, the operations
+farthest from the closest water body.
 
 ```{r}
 operation_year_filtered <- tar_read(operation_year_filtered)
 
 outside_sea <- operation_year_filtered |>
   filter(survey != "river") |>
-  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
+  sf::st_as_sf(
+    coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
+  ) |>
   sf::st_join(basin["district"], join = sf::st_within) |>
   filter(is.na(district)) |>
   select(-district)
 
-nearest_idx <- sf::st_nearest_feature(outside_sea, hydro_area)
+nearest_idx <- sf::st_nearest_feature(outside_sea, coastal_water)
 outside_sea <- outside_sea |>
   mutate(dist_km = as.numeric(sf::st_distance(
-    outside_sea, hydro_area[nearest_idx, ],
+    outside_sea, coastal_water[nearest_idx, ],
     by_element = TRUE
   )) / 1000)
 
 thresholds <- c(1, 2, 5, 10, 15, 20)
 tibble::tibble(threshold_km = thresholds) |>
   mutate(
-    pct_matched = round(100 * purrr::map_dbl(threshold_km, \(t) mean(outside_sea$dist_km <= t)), 1),
-    n_unmatched = purrr::map_int(threshold_km, \(t) sum(outside_sea$dist_km > t))
+    pct_matched = round(
+      100 * purrr::map_dbl(threshold_km, \(t) mean(outside_sea$dist_km <= t)),
+      1
+    ),
+    n_unmatched = purrr::map_int(
+      threshold_km, \(t) sum(outside_sea$dist_km > t)
+    )
   ) |>
   knitr::kable()
 ```
 
-10km (`params$distance_match_max`, already used for river mouth matching)
-leaves 7 `nurse` operations unmatched, all clustered right at the Gironde
-mouth, 10.0-11.3km out - past 15km nothing more is gained, coverage is
-already 100%.
+Here, a threshold of 10km leaves 7 operations unmatched; however, they can
+all be clearly attributed to the Gironde district. Raising the threshold to
+15km enables us to attribute all operations correctly, so this is the value
+we select. Raising the threshold further leads to no change, as every
+operation is already attributed to a district.
+
 
 ```{r}
 #| fig-width: 7
@@ -466,7 +485,7 @@ outside_sea <- outside_sea |>
 
 ggplot() +
   geom_sf(data = basin, fill = NA, color = "grey80") +
-  geom_sf(data = hydro_area, fill = "firebrick", alpha = 0.1, color = NA) +
+  geom_sf(data = coastal_water, fill = "firebrick", alpha = 0.1, color = NA) +
   geom_sf(data = outside_sea, aes(color = matched), size = 1.3) +
   scale_color_manual(
     values = c(`TRUE` = "steelblue", `FALSE` = "firebrick"),
@@ -476,12 +495,201 @@ ggplot() +
   theme(panel.grid = element_blank())
 ```
 
-Zoomed on the Gironde mouth, where all 7 unmatched points sit: they're
-just outside the coastal polygon's western edge, right at the estuary
-mouth - nothing suspicious, just borderline. 10km vs. 15km is the real
-call to make (100% coverage vs. reusing the existing `distance_match_max`
-param) - over to you before I wire this into
+We can now confidently attribute a district to all sea operations, whether
+they are inland or sea-side. Let's do it, and investigate, per district
+(corresponding to the catchments), how many inland and sea-side operations
+we have.
+
+```{r}
+operation_location |>
+  mutate(district = tidyr::replace_na(district, "(sea, no catchment)")) |>
+  count(district, inland) |>
+  tidyr::pivot_wider(
+    names_from = inland,
+    values_from = n,
+    values_fill = 0,
+    names_prefix = "inland_"
+  ) |>
+  rename(
+    inland = inland_TRUE,
+    "sea-side" = inland_FALSE,
+  ) |>
+  arrange(district) |>
+  knitr::kable()
+```
+
+#### Distance to river mouth
+
+Sea operations split in two (see above): inland ones are snapped to the
+river network and get channel-length distance, exactly like river
+stations. Sea-side ones aren't on the river network, and a straight line
+can cut across land, so they use a coast-aware sea mesh instead.
+
+##### Inland sea operations: snapping quality
+
+Same check as for river stations, now for inland-flagged sea operations
+(`nurse`/`pomet`), snapped to the network for the first time. Unlike river
+ASPE stations, which sit directly on a gauged channel, `nurse`/`pomet`
+stations sample across the width of estuary mouths - and the network
+models only a single channel line there, not the full width. So a much
+looser threshold is expected and appropriate: 2100m, not 150m.
+Investigating individual operations up to that distance confirmed
+they sit exactly where estuaries widen (Gironde, Seine), not on data
+errors - except one, `61837633`, which turned out to be miscoded inland
+right at the coast and is now classified sea-side directly in
 `classify_operation_location()`.
+
+```{r}
+#| fig-width: 7
+#| fig-height: 9
+
+threshold_sea <- 2100
+sea_stations_selected <- tar_read(inland_operations_snapped) |>
+  filter(survey != "river")
+
+ggplot(sea_stations_selected, aes(x = snap_dist_m)) +
+  geom_histogram(fill = "#a9c9e0", color = "white", bins = 40) +
+  geom_vline(xintercept = threshold_sea) +
+  annotate(
+    "text",
+    x = threshold_sea, y = Inf, label = "2100m", hjust = -0.2, vjust = 1.5
+  ) +
+  scale_x_continuous(trans = "log10", labels = scales::label_number()) +
+  labs(x = "Snapping distance (m)", y = "Number of operations")
+```
+
+```{r}
+n_bad_snap_sea <- sum(sea_stations_selected$snap_dist_m > threshold_sea)
+```
+
+`r n_bad_snap_sea` inland sea operations, out of
+`r nrow(sea_stations_selected)`, have a snapping distance greater than
+`r threshold_sea` meters.
+
+##### Sea-side operations: mesh
+
+`build_sea_mesh()` builds a water-only mesh over the sea (using
+[rnaturalearth's land polygons](https://rnaturalearth.com/) rather than
+`basin`, which only partially covers islands), `build_sea_graph()` turns
+it into a graph, and `compute_sea_distance_to_mouth()` runs the same
+per-district Dijkstra as `compute_distance_to_mouth()`, over that graph.
+
+Two checkpoints: does the mesh respect the coastline, and do the
+resulting distances actually account for land where a straight line
+wouldn't?
+
+```{r}
+#| fig-width: 12
+#| fig-height: 13
+
+sea_mesh <- tar_read(sea_mesh)
+sea_graph <- tar_read(sea_graph)
+land_raw <- tar_read(land)
+mesh_edges <- sea_mesh_edges(sea_mesh)
+
+zoom_islands <- list(xlim = c(-2.6, -0.9), ylim = c(45.7, 47.1))
+zoom_gironde <- list(xlim = c(-1.3, -0.3), ylim = c(44.8, 45.7))
+
+zoom_box <- function(xlim, ylim) {
+  st_as_sfc(st_bbox(
+    c(xmin = xlim[1], xmax = xlim[2], ymin = ylim[1], ymax = ylim[2]),
+    crs = 4326
+  ))
+}
+zoom_boxes <- st_sf(geometry = c(
+  zoom_box(zoom_islands$xlim, zoom_islands$ylim),
+  zoom_box(zoom_gironde$xlim, zoom_gironde$ylim)
+))
+
+p_overview <- ggplot() +
+  geom_sf(data = land_raw, fill = "grey75", color = NA) +
+  geom_sf(data = mesh_edges, color = "steelblue", linewidth = 0.1) +
+  geom_sf(data = zoom_boxes, fill = NA, color = "firebrick", linewidth = 0.6) +
+  coord_sf(xlim = c(-5.6, 2.9), ylim = c(42.8, 51.6)) +
+  labs(title = "Sea mesh domain", x = NULL, y = NULL) +
+  theme(panel.grid = element_blank())
+
+p_islands <- plot_sea_mesh(
+  sea_mesh, mesh_edges, zoom_islands$xlim, zoom_islands$ylim,
+  "Ile de Re"
+)
+p_gironde <- plot_sea_mesh(
+  sea_mesh, mesh_edges, zoom_gironde$xlim, zoom_gironde$ylim,
+  "Gironde"
+)
+
+p_overview / (p_islands + p_gironde)
+```
+
+The mesh covers water only - islands come through as untriangulated
+holes, and the Gironde's channel is followed without cutting across the
+peninsula on its western side.
+
+Second checkpoint: per zoomed region, pick one operation whose straight
+line to its nearest same-district mouth crosses land, and one that
+doesn't, and compare straight-line to mesh-path distance. A crossing only
+counts past 100m of overlap - `st_intersects()` alone also flags a line
+that merely touches a boundary vertex, not a real crossing.
+
+```{r}
+#| fig-width: 9
+#| fig-height: 28
+
+sea_dist <- tar_read(sea_offshore_distance_to_mouth)
+mouth_kept <- river_mouth_district |>
+  filter(matched, district %in% district_kept) |>
+  st_as_sf() |>
+  st_transform(4326)
+mouth_kept$node_id <- snap_to_sea_graph(mouth_kept, sea_graph)$node_id
+
+sea_dist_sf <- sea_dist |>
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)
+crossing_len <- straight_line_land_crossing(
+  sea_dist_sf, mouth_kept, sea_mesh$land, district_kept
+)
+sea_dist_checked <- sea_dist |> left_join(crossing_len, by = "operation_id")
+
+pick_pair <- function(xlim, ylim) {
+  in_zoom <- sea_dist_checked |>
+    filter(
+      longitude >= xlim[1], longitude <= xlim[2],
+      latitude >= ylim[1], latitude <= ylim[2]
+    )
+  crossing <- in_zoom |>
+    filter(crossing_len_m > 100) |>
+    arrange(desc(crossing_len_m)) |>
+    slice(1)
+  clean <- in_zoom |> filter(crossing_len_m == 0) |> slice(1)
+  list(crossing = crossing, clean = clean)
+}
+
+pair_islands <- pick_pair(zoom_islands$xlim, zoom_islands$ylim)
+pair_gironde <- pick_pair(zoom_gironde$xlim, zoom_gironde$ylim)
+
+plot_pair <- function(op_row, label) {
+  path <- sea_mouth_path(op_row, mouth_kept, sea_graph)
+  plot_sea_path_checkpoint(op_row, path, mesh_edges, sea_mesh$land, label)
+}
+
+p1 <- plot_pair(
+  pair_islands$crossing, "Ile de Re - line crosses land"
+)
+p2 <- plot_pair(
+  pair_islands$clean, "Ile de Re - line doesn't cross land"
+)
+p3 <- plot_pair(
+  pair_gironde$crossing, "Gironde - line crosses land"
+)
+p4 <- plot_pair(
+  pair_gironde$clean, "Gironde - line doesn't cross land"
+)
+
+p1 / p2 / p3 / p4
+```
+
+Where the straight line would cut across land, the mesh path detours
+around it and comes out longer; where it wouldn't, the mesh path stays
+close to the straight-line distance.
 
 ## Rephy interpolation
 
@@ -552,9 +760,9 @@ highlight the ones that still don't match. These points will be removed.
 #| fig-width: 6
 #| fig-height: 9
 
-hydro <- tar_read(hydrographic_area)
+coastal_water <- tar_read(coastal_water)
 district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
-hydro_kept <- hydro |>
+hydro_kept <- coastal_water |>
   filter(district %in% district_kept)
 
 river_mouth_district <- tar_read(river_mouth_district)

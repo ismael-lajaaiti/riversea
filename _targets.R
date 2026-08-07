@@ -26,6 +26,7 @@ tar_option_set(
     "sf",
     "foodwebbuilder",
     "igraph",
+    "fmesher",
     "metanetwork",
     "cheddar",
     "vegan",

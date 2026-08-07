@@ -2,30 +2,36 @@
 % Please edit documentation in R/utils.R
 \name{classify_operation_location}
 \alias{classify_operation_location}
-\title{Flag whether each operation sits inland or at sea, and restrict \code{river}
-operations to the catchments of interest.}
+\title{Assign districts and whether the operation is inland or sea-side.
+and restrict \code{river} operations to the catchments of interest.}
 \usage{
-classify_operation_location(operation, hydrographic_basin, district_kept)
+classify_operation_location(
+  operation,
+  basin,
+  coastal_water,
+  district_kept,
+  dist_max_sea
+)
 }
 \arguments{
 \item{operation}{tibble with \code{longitude}, \code{latitude}, \code{survey}.}
 
-\item{hydrographic_basin}{sf tibble with \code{district}, \code{geometry}, e.g.
-\code{format_hydrographic_basin()}'s output.}
+\item{basin}{sf tibble with \code{district}, \code{geometry}.}
 
-\item{district_kept}{character vector of districts to keep \code{river}
-operations in.}
+\item{coastal_water}{sf tibble with \code{district}, \code{geometry}.}
+
+\item{district_kept}{character vector of districts to keep.}
+
+\item{dist_max_sea}{maximum distance, in km, to fall back to the
+nearest \code{coastal_water} polygon for sea-side operations.}
 }
 \value{
 \code{operation} with \code{district} and \code{inland} added (TRUE if inside a
 basin polygon), \code{river} rows restricted to \code{district_kept}.
 }
 \description{
-Point-in-polygon against \code{hydrographic_basin} (land catchments), no
-nearest-match fallback - a point just offshore stays "sea" rather than
-being pulled into the nearest catchment. \code{district} is kept (not just
-\code{inland}) so it can later be joined against \code{river_distance_to_mouth}.
-\code{river} operations outside \code{district_kept} are dropped - this also
-drops the handful of border-precision misses (no matched \code{district} at
-all), since \code{NA} can't be in \code{district_kept} either.
+Inland test if operation is in a basin. If they miss, they are sea-side.
+Inland operations catchment come from the basin they fall in.
+Sea-side operations catchment come from the nearest coastal water they are
+to.
 }

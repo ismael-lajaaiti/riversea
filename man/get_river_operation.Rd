@@ -4,13 +4,13 @@
 \alias{get_river_operation}
 \title{Get metadata for each ASPE fishing operation.}
 \usage{
-get_river_operation(individual_fish_file, hydrographic_basin)
+get_river_operation(individual_fish_file, basin)
 }
 \arguments{
 \item{individual_fish_file}{path to \code{output_individual_fish.rda}.}
 
-\item{hydrographic_basin}{sf tibble with \code{district} and polygon
-\code{geometry} (WGS84), e.g. \code{format_hydrographic_basin()}'s output.}
+\item{basin}{sf tibble with \code{district} and polygon
+\code{geometry} (WGS84), e.g. \code{format_basin()}'s output.}
 }
 \value{
 tibble with columns operation_id, year, month, date, sandre_code,
@@ -22,7 +22,7 @@ longitude, latitude, district.
 operations against AMOBIO environmental data.
 }
 \details{
-\code{district} comes from a spatial join against \code{hydrographic_basin}
+\code{district} comes from a spatial join against \code{basin}
 (point-in-polygon on the station's coordinates), not ASPE's own
 \code{body_water_code} - validated at 100\% agreement with the old
 code-based classification on every station that had a code, and it

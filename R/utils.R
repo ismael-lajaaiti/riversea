@@ -142,7 +142,7 @@ read_environment_data <- function(dir, year_start = 1993, year_end = 2023) {
     purrr::list_rbind()
 }
 
-download_hydrographic_files <- function(dir) {
+download_coastal_water <- function(dir) {
   url_sea_polygones <- c(
     estuary = "https://services.sandre.eaufrance.fr/telechargement/geo/MDO/MasseDEau/vedl_2019/PolygMasseDEauTransition/PolygMasseDEauTransition_FXX-shp.zip",
     coast = "https://services.sandre.eaufrance.fr/telechargement/geo/MDO/MasseDEau/vrap_2022/MasseDEauCotiere/MasseDEauCotiere_FRA-shp.zip"
@@ -162,7 +162,7 @@ download_hydrographic_files <- function(dir) {
   dir
 }
 
-format_hydrographic_area <- function(dir) {
+format_coastal_water <- function(dir) {
   # District classification from
   # https://www.donnees.statistiques.developpement-durable.gouv.fr/lesessentiels/essentiels/dce-district.html
   file_list <- list.files(path = dir, pattern = ".shp")
@@ -187,7 +187,7 @@ format_hydrographic_area <- function(dir) {
     ))
 }
 
-download_hydrographic_basin <- function(dir) {
+download_basin <- function(dir) {
   url <- "https://services.sandre.eaufrance.fr/telechargement/geo/ETH/BDTopage/2025/BassinHydrographique/BassinHydrographique_FXX-shp.zip"
   if (!dir.exists(dir)) {
     dir.create(dir, recursive = TRUE)
@@ -199,7 +199,7 @@ download_hydrographic_basin <- function(dir) {
   dir
 }
 
-format_hydrographic_basin <- function(dir) {
+format_basin <- function(dir) {
   # LbBH is the basin's official name (BD Topage, SANDRE) - mapped to this
   # project's district scheme. Rhin-Meuse is a single combined polygon
   # upstream (unlike the FRB/FRC split used elsewhere) - not an issue since
@@ -221,49 +221,90 @@ format_hydrographic_basin <- function(dir) {
     select(district, geometry)
 }
 
-#' Flag whether each operation sits inland or at sea, and restrict `river`
-#' operations to the catchments of interest.
+#' Assign districts and whether the operation is inland or sea-side.
+#' and restrict `river` operations to the catchments of interest.
 #'
-#' Point-in-polygon against `hydrographic_basin` (land catchments), no
-#' nearest-match fallback - a point just offshore stays "sea" rather than
-#' being pulled into the nearest catchment. `district` is kept (not just
-#' `inland`) so it can later be joined against `river_distance_to_mouth`.
-#' `river` operations outside `district_kept` are dropped - this also
-#' drops the handful of border-precision misses (no matched `district` at
-#' all), since `NA` can't be in `district_kept` either.
+#' Inland test if operation is in a basin. If they miss, they are sea-side.
+#' Inland operations catchment come from the basin they fall in.
+#' Sea-side operations catchment come from the nearest coastal water they are
+#' to.
 #'
 #' @param operation tibble with `longitude`, `latitude`, `survey`.
-#' @param hydrographic_basin sf tibble with `district`, `geometry`, e.g.
-#'   `format_hydrographic_basin()`'s output.
-#' @param district_kept character vector of districts to keep `river`
-#'   operations in.
+#' @param basin sf tibble with `district`, `geometry`.
+#' @param coastal_water sf tibble with `district`, `geometry`.
+#' @param district_kept character vector of districts to keep.
+#' @param dist_max_sea maximum distance, in km, to fall back to the
+#'   nearest `coastal_water` polygon for sea-side operations.
 #'
 #' @return `operation` with `district` and `inland` added (TRUE if inside a
 #' basin polygon), `river` rows restricted to `district_kept`.
 #' @export
-classify_operation_location <- function(operation, hydrographic_basin, district_kept) {
-  basin_valid <- hydrographic_basin |> filter(!is.na(district))
+classify_operation_location <- function(
+  operation,
+  basin,
+  coastal_water,
+  district_kept,
+  dist_max_sea
+) {
+  basin_valid <- basin |> filter(!is.na(district))
+  coastal_water_valid <- coastal_water |> filter(!is.na(district))
+  op_geom <- operation |>
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+    sf::st_geometry()
+
+  district_basin <- in_district(op_geom, basin_valid)
+  # Operation 61837633 matches the basin polygon at the coast but is
+  # sea-side - an implausible ~8.2km network snap distance gives it away.
+  district_basin[operation$operation_id == "61837633"] <- NA_character_
+  inland <- !is.na(district_basin)
+  district_coastal <- rep(NA_character_, length(op_geom))
+  district_coastal[!inland] <- nearest_district(
+    op_geom[!inland],
+    coastal_water_valid,
+    dist_max = dist_max_sea
+  )
+
   operation |>
-    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) |>
-    sf::st_join(basin_valid["district"], join = sf::st_within) |>
-    mutate(inland = !is.na(district)) |>
-    sf::st_drop_geometry() |>
+    mutate(
+      inland = inland,
+      district = dplyr::coalesce(district_basin, district_coastal)
+    ) |>
     filter(survey != "river" | district %in% district_kept)
+}
+
+#' Get district of the polygon each point falls within.
+#'
+#' @param points sf or sfc points.
+#' @param hydro_zone sf polygons with `district`.
+#'
+#' @return character vector of `district`, one per row of `points`, `NA`
+#' outside every polygon.
+in_district <- function(points, hydro_zone) {
+  sf::st_join(
+    sf::st_as_sf(points),
+    hydro_zone["district"],
+    join = sf::st_within
+  )$district
 }
 
 #' District of the nearest polygon, within a distance threshold.
 #'
+#' For a pure containment check (no fallback), use `in_district()`
+#' instead - cheaper on complex polygons, see its docstring for why.
+#'
 #' @param points sf points.
 #' @param hydro_zone sf polygons with `district`.
-#' @param dist_max maximum distance to accept a match, in km. 0 means the
-#'   point must be inside the polygon (`st_distance` to a polygon a point
-#'   is inside is 0).
+#' @param dist_max maximum distance to accept a match, in km.
 #'
 #' @return character vector of `district`, one per row of `points`, `NA`
 #' beyond `dist_max`.
 nearest_district <- function(points, hydro_zone, dist_max) {
   nearest_idx <- sf::st_nearest_feature(points, hydro_zone)
-  dist_km <- as.numeric(sf::st_distance(points, hydro_zone[nearest_idx, ], by_element = TRUE)) / 1000
+  dist_km <- as.numeric(sf::st_distance(
+    points,
+    hydro_zone[nearest_idx, ],
+    by_element = TRUE
+  )) / 1000
   ifelse(dist_km <= dist_max, hydro_zone$district[nearest_idx], NA_character_)
 }
 
@@ -408,6 +449,14 @@ download_sea_raw_data <- function(dest_dir = "data/sea/raw") {
 #' @export
 coastline <- function() {
   rnaturalearth::ne_coastline(scale = "large", returnclass = "sf")
+}
+
+#' Get land polygons (islands included) from rnaturalearth package.
+#'
+#' @return sf polygons, WGS84.
+#' @export
+land_polygon <- function() {
+  rnaturalearth::ne_download(scale = 10, type = "land", category = "physical", returnclass = "sf")
 }
 
 #' Filter data such that year is in the specified time window

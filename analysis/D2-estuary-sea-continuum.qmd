@@ -34,8 +34,8 @@ First, we have different zones that we can download from the Sandre database.
 They take the form of polygons.
 
 ```{r}
-area <- tar_read(hydrographic_area)
-head(area)
+coastal_water <- tar_read(coastal_water)
+head(coastal_water)
 ```
 
 ::: {.callout-note}
@@ -310,11 +310,11 @@ ggplot(year_re, aes(x = year, y = mean)) +
 #### Spatial
 
 ```{r}
-area <- tar_read(hydrographic_area)
+coastal_water <- tar_read(coastal_water)
 spatial_re <- m_c$summary.random$zone_id |>
   as_tibble() |>
   rename(zone_id = ID) |>
-  left_join(area, by = join_by(zone_id)) |>
+  left_join(coastal_water, by = join_by(zone_id)) |>
   st_as_sf()
 
 bbox <- st_bbox(spatial_re)

@@ -11,14 +11,13 @@ nearest_district(points, hydro_zone, dist_max)
 
 \item{hydro_zone}{sf polygons with \code{district}.}
 
-\item{dist_max}{maximum distance to accept a match, in km. 0 means the
-point must be inside the polygon (\code{st_distance} to a polygon a point
-is inside is 0).}
+\item{dist_max}{maximum distance to accept a match, in km.}
 }
 \value{
 character vector of \code{district}, one per row of \code{points}, \code{NA}
 beyond \code{dist_max}.
 }
 \description{
-District of the nearest polygon, within a distance threshold.
+For a pure containment check (no fallback), use \code{in_district()}
+instead - cheaper on complex polygons, see its docstring for why.
 }
