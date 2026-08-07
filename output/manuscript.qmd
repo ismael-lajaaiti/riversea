@@ -325,6 +325,9 @@ Jacobian.
 - @Peller-etal-2026 Nested flows of nutrients and consumers stabilize
 metaecosystems through cross-scale source-sink dynamics.
 
+- @Govaert-Colombo-Altermatt-2026 disturbance responses can be modified by local
+  resource availability and cross-ecosystem flows.
+
 ### Traits
 
 ::: {.callout-note}
