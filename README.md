@@ -38,6 +38,9 @@ system libraries, Quarto, and R package versions (via
 `Dockerfile`.
 
 1. Install [Docker](https://www.docker.com/products/docker-desktop/).
+    You need admin right on your machine to run docker. On unix, you will need to prefix every docker command by `sudo`,
+    i.e. `$ sudo docker run ...`
+
 2. Build the image once from the repository root (~10 min):
    ```sh
    docker build -t riversea .
@@ -62,7 +65,7 @@ docker run --rm -p 8787:8787 \
   riversea /init
 ```
 
-Then open `localhost:8787` in your browser. `USERID`/`GROUPID` match the
+Then open [`localhost:8787`](http://localhost:8787/) in your browser. `USERID`/`GROUPID` match the
 container's `rstudio` user to your own, so files created through the IDE
 (including quarto's `.quarto/` cache) keep sane ownership/permissions on
 the mounted repo.
