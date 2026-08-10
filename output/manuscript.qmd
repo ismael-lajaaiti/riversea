@@ -231,7 +231,7 @@ macroinvertebrates communities [@Chalmandrier-etal-2025b].
 - It is key to adopt a network perspective to understand how diversity is
 created and maintained within riverine ecosystems [@Altermatt-2013b]. With this
 perspective one can account for the dendritic network and so the spatial
-processes that shape diversity. 
+processes that shape diversity.
 
 - From points [@Death-Winterbourn-1995]... to lines (RCC, SDC)... to dendritic
 networks [@Shepherd-Ellis-1997].
@@ -244,6 +244,9 @@ Effect of connectivity on richness supported experimentally
 
 - @Altermatt-Fronhofer-2018 in exprimental microcosms population densities are
 found to be more heterogeneous in dendritic than linear networks.
+
+- @CampbellGrant-Lowe-Fagan-2007 the geometry of dendritic network interacts
+with species movement and reshape population densities and interaction network.
 
 ### Decomposing spatio-temporal patterns
 
