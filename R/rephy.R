@@ -120,6 +120,7 @@ rename_rephy <- function() {
     site_id = "Lieu de surveillance : Identifiant",
     site_label = "Lieu de surveillance : Libellé",
     sample_id = "Prélèvement : Identifiant interne",
+    passage_id = "Passage : Identifiant interne",
     date = "Passage : Date",
     level = "Prélèvement : Niveau",
     depth = "Prélèvement : Immersion",
@@ -137,7 +138,10 @@ rename_rephy <- function() {
 #'
 #' Filters rows to the nutrient parameters of interest and drops all columns
 #' but those identifying the sampling operation, its coordinates, and the
-#' measured value (see [rename_rephy()]).
+#' measured value (see [rename_rephy()]). Each row also gets a `salinity`
+#' column, matched from the "SALI" parameter recorded during the same site
+#' visit (`passage_id`) - the shallowest reading when a visit has salinity
+#' at multiple depths.
 #'
 #' Dissolved oxygen is reported in two units ("ml.l-1" and "mg.l-1");
 #' "ml.l-1" values are converted to "mg.l-1" (factor 1.42903, the standard
@@ -148,6 +152,14 @@ rename_rephy <- function() {
 #' @return tibble with one row per nutrient measurement.
 #' @export
 extract_nutrients_rephy <- function(data) {
+  salinity <- data |>
+    dplyr::filter(.data[["Résultat : Code paramètre"]] == "SALI") |>
+    dplyr::filter_out(.data[["Résultat : Niveau de qualité"]] == "Douteux") |>
+    dplyr::select(dplyr::all_of(rename_rephy())) |>
+    dplyr::arrange(passage_id, depth) |>
+    dplyr::distinct(passage_id, .keep_all = TRUE) |>
+    dplyr::select(passage_id, salinity = value)
+
   data |>
     dplyr::filter(
       .data[["Résultat : Code paramètre"]] %in% rephy_nutrient_codes()
@@ -160,7 +172,8 @@ extract_nutrients_rephy <- function(data) {
       date = lubridate::dmy(date),
       value = dplyr::if_else(unit == "ml.l-1", value * 1.42903, value),
       unit = dplyr::if_else(unit == "ml.l-1", "mg.l-1", unit)
-    )
+    ) |>
+    dplyr::left_join(salinity, by = "passage_id")
 }
 
 #' Summarise coverage of REPHY nutrient data

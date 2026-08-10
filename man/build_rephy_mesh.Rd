@@ -2,17 +2,22 @@
 % Please edit documentation in R/rephy_interpolation.R
 \name{build_rephy_mesh}
 \alias{build_rephy_mesh}
-\title{Build a spatial mesh over REPHY station locations}
+\title{Build a spatial mesh over REPHY stations and fishing operations}
 \usage{
-build_rephy_mesh(data)
+build_rephy_mesh(rephy, foodwebs)
 }
 \arguments{
-\item{data}{tibble with \code{longitude}/\code{latitude} columns.}
+\item{rephy}{tibble with \code{longitude}/\code{latitude} columns, e.g. REPHY data.}
+
+\item{foodwebs}{tibble with \code{longitude}/\code{latitude} columns, e.g. sea-survey
+fishing operations.}
 }
 \value{
 an \code{inla.mesh} object.
 }
 \description{
 Uses a non-convex hull boundary so the mesh follows the coastline instead of
-spanning the land between the Atlantic and Channel station clusters.
+spanning the land between the Atlantic and Channel station clusters. Both
+point sets are included so the mesh also covers fishing operations, not just
+REPHY stations.
 }

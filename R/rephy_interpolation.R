@@ -1,16 +1,22 @@
 
-#' Build a spatial mesh over REPHY station locations
+#' Build a spatial mesh over REPHY stations and fishing operations
 #'
 #' Uses a non-convex hull boundary so the mesh follows the coastline instead of
-#' spanning the land between the Atlantic and Channel station clusters.
+#' spanning the land between the Atlantic and Channel station clusters. Both
+#' point sets are included so the mesh also covers fishing operations, not just
+#' REPHY stations.
 #'
-#' @param data tibble with `longitude`/`latitude` columns.
+#' @param rephy tibble with `longitude`/`latitude` columns, e.g. REPHY data.
+#' @param foodwebs tibble with `longitude`/`latitude` columns, e.g. sea-survey
+#'   fishing operations.
 #'
 #' @return an `inla.mesh` object.
 #' @export
-build_rephy_mesh <- function(data) {
-  loc <- data |>
-    dplyr::distinct(longitude, latitude) |>
+build_rephy_mesh <- function(rephy, foodwebs) {
+  loc <- dplyr::bind_rows(
+    rephy |> dplyr::distinct(longitude, latitude),
+    foodwebs |> dplyr::distinct(longitude, latitude)
+  ) |>
     as.matrix()
   boundary <- INLA::inla.nonconvex.hull(loc, convex = 0.3, resolution = 100)
   INLA::inla.mesh.2d(
@@ -84,19 +90,86 @@ predict_rephy_spde <- function(train, newdata, mesh) {
   exp(fit$summary.fitted.values$mean[idx_pred])
 }
 
+#' Predict a REPHY parameter with an additive spatio-temporal SPDE model,
+#' with salinity as a covariate
+#'
+#' Same as [predict_rephy_spde()], with an added fixed effect for salinity.
+#' `train` and `newdata` must already be complete in `salinity`.
+#'
+#' @param train tibble with `value`, `longitude`, `latitude`, `year`,
+#'   `month`, `salinity`.
+#' @param newdata tibble with `longitude`, `latitude`, `year`, `month`,
+#'   `salinity` to predict at - years should stay within `train`'s range.
+#' @param mesh `inla.mesh`, e.g. from [build_rephy_mesh()].
+#'
+#' @return numeric vector, one prediction per row of `newdata`.
+#' @export
+predict_rephy_spde_salinity <- function(train, newdata, mesh) {
+  min_positive <- min(train$value[train$value > 0])
+  train <- dplyr::mutate(
+    train,
+    value = dplyr::if_else(value == 0, min_positive / 2, value)
+  )
+  spde <- INLA::inla.spde2.pcmatern(
+    mesh,
+    prior.range = c(1, 0.5),
+    prior.sigma = c(1, 0.5)
+  )
+  field_idx <- INLA::inla.spde.make.index("field", n.spde = spde$n.spde)
+
+  make_stack <- function(d, tag, y = NA) {
+    a <- INLA::inla.spde.make.A(mesh, loc = as.matrix(d[c("longitude", "latitude")]))
+    INLA::inla.stack(
+      tag = tag,
+      data = list(y = y),
+      A = list(a, 1),
+      effects = list(
+        field_idx,
+        list(
+          intercept = 1,
+          year = d$year - min(train$year) + 1,
+          month = d$month,
+          salinity = d$salinity
+        )
+      )
+    )
+  }
+
+  stack <- INLA::inla.stack(
+    make_stack(train, "est", y = log(train$value)),
+    make_stack(newdata, "pred")
+  )
+
+  fit <- INLA::inla(
+    y ~ 0 + intercept + salinity +
+      f(field, model = spde) +
+      f(year, model = "rw1") +
+      f(month, model = "rw1", cyclic = TRUE),
+    data = INLA::inla.stack.data(stack),
+    control.predictor = list(A = INLA::inla.stack.A(stack), compute = TRUE),
+    family = "gaussian"
+  )
+
+  idx_pred <- INLA::inla.stack.index(stack, "pred")$data
+  exp(fit$summary.fitted.values$mean[idx_pred])
+}
+
 #' Leave-station-out cross-validation for a REPHY parameter
 #'
-#' Splits stations (`site_id`) into `k` groups; for each, fits
-#' [predict_rephy_spde()] on the other stations and predicts at the held-out
+#' Splits stations (`site_id`) into `k` groups; for each, fits `predict_fn`
+#' on the other stations and predicts at the held-out group.
 #'
 #' @param data tibble for one parameter, e.g. from [filter_year()].
 #' @param mesh `inla.mesh`, e.g. from [build_rephy_mesh()].
+#' @param predict_fn prediction function, e.g. [predict_rephy_spde()]
+#'   (default) or [predict_rephy_spde_salinity()], called as
+#'   `predict_fn(train, test, mesh)`.
 #' @param k number of folds.
 #'
 #' @return `data` with added `pred` and `pred_baseline` columns.
 #'   `pred_baseline` is the training-fold's geometric mean.
 #' @export
-cv_rephy_spde <- function(data, mesh, k = 10) {
+cv_rephy_spde <- function(data, mesh, predict_fn = predict_rephy_spde, k = 10) {
   stations <- unique(data$site_id)
   station_fold <- stats::setNames(
     sample(rep_len(seq_len(k), length(stations))),
@@ -107,7 +180,7 @@ cv_rephy_spde <- function(data, mesh, k = 10) {
   purrr::map_dfr(seq_len(k), \(i) {
     train <- dplyr::filter(data, fold != i)
     test <- dplyr::filter(data, fold == i)
-    test$pred <- predict_rephy_spde(train, test, mesh)
+    test$pred <- predict_fn(train, test, mesh)
     test$pred_baseline <- exp(mean(log(train$value[train$value > 0])))
     test
   })

@@ -33,7 +33,7 @@ one parameter
 - [x] Compare interpolation methods with cross-validation
 - [x] Plot model performence on yearly average
 - [x] Check spatial structure of residuals
-- [ ] Add salinity as a covariable
+- [x] Add salinity as a covariable
 - [ ] Do a multivariate interpolation instead of predicting variables separately
 - [ ] Check interpolation performence without log scale
 - [ ] **(waiting for distance-to-river mouth)** Inteprolate value at fishing
@@ -69,8 +69,13 @@ For more information see [Overview of REPHY data](D6-rephy.qmd). And, here is
 the fishing operation data.
 
 ```{r}
-foodwebs <- tar_read(local_foodwebs)
+foodwebs <- tar_read(local_foodwebs) |>
+  dplyr::filter(survey %in% c("nurse", "pomet"))
 ```
+
+This interpolation exercise is only concerned with sea-survey operations
+(`nurse` and `pomet`), not river-survey ones -- REPHY monitors marine and
+estuarine chemistry, which has no bearing hundreds of kilometers up a river.
 
 Before interpolating anything, we start with a simple picture of where and when
 the two datasets overlap: REPHY nutrient and oxygen stations on one side, fishing
@@ -148,14 +153,15 @@ rephy_filtered <- tar_read(rephy_data_sample)
 
 ### Spatial mesh
 
-We build a mesh, shared across parameters, from all filtered REPHY stations. Its
-boundary follows the coastline (a non-convex hull) rather than the convex hull
-of the stations, which would otherwise span the land between the Atlantic and
-Channel clusters.
+We build a mesh around REPHY stations and fishing operations. Its boundary
+follows the coastline (a non-convex hull) rather than the convex hull of the
+points, which would otherwise includes the land between the Atlantic and Channel
+clusters.
 
 ```{r}
-mesh <- build_rephy_mesh(rephy_filtered)
+mesh <- build_rephy_mesh(rephy_filtered, foodwebs)
 plot(mesh, main = "")
+plot(sf::st_geometry(coastline()), add = TRUE, col = "grey60")
 points(
   foodwebs$longitude,
   foodwebs$latitude,
@@ -173,11 +179,14 @@ points(
 legend(
   "bottomright",
   legend = c("REPHY station", "Fishing operation"),
-  col = c("coral", "cyan3"),
+  col = c("cyan3", "coral"),
   pch = 19,
   bty = "n"
 )
 ```
+
+This is the mesh the model is going to work with. Next, we fit first model and
+evaluate them with cross-validation.
 
 ### Cross-validation
 
@@ -383,3 +392,122 @@ consistently under-predicted. This point to an unmodeled driver of local
 nutrient-loading that could bias our analysis afterwards. For that reason, we
 should certainly include distance to the river mouth as covariate to better
 predict nutrient concentrations at those sites.
+
+## Salinity
+
+REPHY also measures salinity at most stations, so we can use it to inform our
+predictions. In particular this may help with the understimation issue we
+observe in estuaries.
+
+```{r}
+rephy_filtered |>
+  dplyr::summarise(
+    n = dplyr::n(),
+    n_salinity = sum(!is.na(salinity)),
+    pct_salinity = round(100 * mean(!is.na(salinity)), 1),
+    .by = parameter_code
+  ) |>
+  knitr::kable()
+```
+
+Coverage is close to complete for all four parameters.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 8
+
+sal_data <- rephy_filtered |> dplyr::filter(!is.na(salinity), value > 0)
+
+ggplot(sal_data, aes(x = salinity, y = value)) +
+  geom_point(alpha = 0.2, size = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "firebrick") +
+  scale_y_log10() +
+  facet_wrap(~parameter_code, scales = "free_y") +
+  labs(x = "Salinity", y = "Value (log scale)")
+```
+
+```{r}
+sal_data |>
+  summarise(cor = round(stats::cor(log(value), salinity), 2), .by = parameter_code) |>
+  arrange(cor) |>
+  knitr::kable()
+```
+
+The dense low-salinity cluster visible in the plot comes from a handful of
+far-upstream, tidal-freshwater stations.
+
+```{r}
+sal_data |>
+  filter(salinity < 5) |>
+  dplyr::count(site_label, sort = TRUE) |>
+  head(5) |>
+  knitr::kable()
+```
+
+Two of these -- Pont St Maurice and Indre -- are the same stations flagged
+earlier as under-predicted (the PO4 point-source event and an OXYGENE
+hypoxia event, respectively). That's a good sign that adding salinity to the
+model may help improve it.
+
+### Model comparison
+
+`predict_rephy_spde_salinity()` adds salinity as a fixed effect on top of
+the spatial field, year and month terms already in `predict_rephy_spde()`.
+We compare the two with the same leave-station-out cross-validation as
+before, on the same data for both models (samples with a matched salinity
+value), so the only thing that differs is the presence of the covariate.
+
+```{r}
+rephy_sal <- rephy_filtered |> dplyr::filter(!is.na(salinity))
+
+set.seed(1)
+cv_base_sal <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
+  d_param <- rephy_sal |> dplyr::filter(parameter_code == parameter)
+  cv <- cv_rephy_spde(d_param, mesh, k = n_fold)
+  cv$parameter_code <- parameter
+  cv
+})
+
+set.seed(1)
+cv_salinity <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
+  d_param <- rephy_sal |> dplyr::filter(parameter_code == parameter)
+  cv <- cv_rephy_spde(
+    d_param, mesh,
+    predict_fn = predict_rephy_spde_salinity, k = n_fold
+  )
+  cv$parameter_code <- parameter
+  cv
+})
+```
+
+```{r}
+dplyr::bind_rows(
+  cv_base_sal |>
+    dplyr::group_by(parameter_code) |>
+    dplyr::group_modify(\(cv, ...) as.data.frame(rephy_cv_metrics(cv))) |>
+    dplyr::mutate(model = "Baseline"),
+  cv_salinity |>
+    dplyr::group_by(parameter_code) |>
+    dplyr::group_modify(\(cv, ...) as.data.frame(rephy_cv_metrics(cv))) |>
+    dplyr::mutate(model = "+ Salinity")
+) |>
+  dplyr::ungroup() |>
+  dplyr::arrange(parameter_code, model) |>
+  dplyr::select(parameter_code, model, rmse, mae, cor) |>
+  knitr::kable(digits = 3)
+```
+
+Salinity clearly helps for NO3+NO2 (RMSE 1.49 -> 1.26, correlation 0.70 ->
+0.79) -- the parameter most correlated with salinity in the exploratory
+plots above -- and gives a smaller but consistent improvement for PO4 and
+NH4. For OXYGENE, the parameter least correlated with salinity, the two
+models are indistinguishable (RMSE and correlation both flat). This tracks
+the raw correlations from the previous section: the more a parameter
+covaries with salinity in the first place, the more the model gains from
+being told about it.
+
+We'll keep salinity as a covariate for NH4, NO3+NO2 and PO4, and drop it for
+OXYGENE where it adds complexity for no measurable benefit. This doesn't by
+itself resolve the estuarine under-prediction flagged earlier -- distance to
+the river mouth is still a separate, unexplored covariate -- but it's a
+clear, low-cost improvement for three of the four parameters.
