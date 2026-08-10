@@ -56,17 +56,18 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 **Writing**
 
 - [x] Draft formal hypotheses
-- [ ] Write BES abstract (deadline 2 September)
+- [ ] **(in progress)** Write BES abstract (deadline 2 September)
+- [ ] **(in progress)** Postdoc extension
 - [ ] Draft Planète-Vie piece on community structure along the river-sea
 continuum (deadline 1 October)
 - [ ] Write novelty/positioning paragraph (vs. Zhu, Ma, Barnes 2026)
 - [ ] Rewrite Introduction bullets into prose, section by section
 - [ ] Refine paper title and conceptual hook
-- [ ] Integrate the "position as currency" identity into the manuscript
 
 **Reproducibility & open science**
 
 - [x] Reproducibility hygiene: `DESCRIPTION`, Docker, CI
-- [ ] Reorganize analysis notebooks into a public-facing reports (data
-provenance, methods, sensitivity analyses)
+- [ ] Turn the "reproducing the pipeline" README's section into a tutorial
+- [ ] Reorganize analysis notebooks into a clean reports reports (how-to versus
+rationale explanations)
 

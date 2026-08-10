@@ -12,37 +12,7 @@ execute:
     warning: false
 ---
 
-The goal is to compute the distance to river mouth REPHY data and fishing
-operations at sea.
-
-## Todo
-
-- [x] Extract river mouth points
-- [x] Plot river mouth points
-- [x] Simplify AMOBIO network
-- [x] Filter river mouths
-- [x] Restrict river network
-- [x] Check rephy data overlap with restricted river network
-- [x] Reconstruct full river network for `river` survey stations
-- [x] Snap `river` survey stations to the network
-- [x] Classify `river` survey stations by true catchment
-- [x] Close the `Ardour-Garonne` under-classification gap
-- [x] Investigate why the Vendée cluster is disconnected
-- [x] Patch the missing link (Nantes/Sèvre Nantaise) and confirm the
-cluster recovers
-- [x] Snap directly against the restricted network now that it's fixed
-- [x] Check quality of snapping, how many non-snapped stations and where?
-- [x] Find about Somme classification, as it doesn't appear in the current
-cateogries
-- [x] Keep edge linestring geometry in `extract_river_network()`
-(currently dropped for straight node-to-node lines) - check if it
-recovers some non-snapped stations
-- [ ] Clean notebook, reorganise, snapping and rephy are mixed
-- [ ] Plot catchments
-- [ ] Merge catchments (if needed) to cover land and coast
-- [ ] Check connected components vs. catchments - is one catchment one
-connected component?
-- [ ] Compute distance to river mouth for `river` survey stations
+Here, we show how we compute distance to river mouth for all fishing operations.
 
 ## Setup
 
@@ -60,10 +30,6 @@ library(sf)
 library(patchwork)
 devtools::load_all()
 riversea::nice_theme()
-```
-
-```{r}
-river_mouth <- tar_read(amobio_river_mouth)
 ```
 
 ## Snapping river survey stations to the network
@@ -146,22 +112,26 @@ distance, that is, how far the station was from the closest point in the river
 network. Short distances indicate confident snapping.
 
 ```{r}
+#| fig-width: 7
+#| fig-height: 4
+
+threshold <- 150
 stations_selected <- river_stations |>
   filter(district %in% district_kept)
 
 ggplot(stations_selected, aes(x = snap_dist_m)) +
   geom_histogram(fill = "#a9c9e0", color = "white", bins = 40) +
-  geom_vline(xintercept = 150) +
+  geom_vline(xintercept = threshold) +
   annotate(
     "text",
-    x = 150, y = Inf, label = "150m", hjust = -0.2, vjust = 1.5
+    x = threshold, y = Inf, label = paste0(threshold, "m"),
+    hjust = 1.1, vjust = 1.5
   ) +
   scale_x_continuous(trans = "log10", labels = scales::label_number()) +
   labs(x = "Snapping distance (m)", y = "Number of stations")
 ```
 
 ```{r}
-threshold <- 150
 n_bad_snap <- sum(stations_selected$snap_dist_m > threshold)
 ```
 
@@ -289,7 +259,7 @@ river mouth of its own catchment (so a station can only be matched to a mouth of
 its own catchment - see `compute_distance_to_mouth()`).
 
 ```{r}
-river_distance <- tar_read(inland_distance_to_mouth) |>
+river_distance <- tar_read(distance_to_mouth) |>
   filter(survey == "river")
 
 ggplot(river_distance, aes(x = dist_mouth_m / 1000, fill = district)) +
@@ -518,30 +488,21 @@ operation_location |>
   knitr::kable()
 ```
 
-#### Distance to river mouth
+#### Inland operations: snapping quality
 
-Sea operations split in two (see above): inland ones are snapped to the
-river network and get channel-length distance, exactly like river
-stations. Sea-side ones aren't on the river network, and a straight line
-can cut across land, so they use a coast-aware sea mesh instead.
+Sea operations split in two: inland and sea-side. Inland operations are snapped
+to the river network and their distance to the river mouth is computed as for
+river operations. Sea-side operations are not on the river network, and
+Euclidean distance cannot be used directly, because a straight line can cut
+across land. For this reason, we compute distance along a mesh that excludes
+land.
 
-##### Inland sea operations: snapping quality
-
-Same check as for river stations, now for inland-flagged sea operations
-(`nurse`/`pomet`), snapped to the network for the first time. Unlike river
-ASPE stations, which sit directly on a gauged channel, `nurse`/`pomet`
-stations sample across the width of estuary mouths - and the network
-models only a single channel line there, not the full width. So a much
-looser threshold is expected and appropriate: 2100m, not 150m.
-Investigating individual operations up to that distance confirmed
-they sit exactly where estuaries widen (Gironde, Seine), not on data
-errors - except one, `61837633`, which turned out to be miscoded inland
-right at the coast and is now classified sea-side directly in
-`classify_operation_location()`.
+First, we check that inland operations are snapped correctly to the river
+network by looking at their snapping distance.
 
 ```{r}
 #| fig-width: 7
-#| fig-height: 9
+#| fig-height: 4
 
 threshold_sea <- 2100
 sea_stations_selected <- tar_read(inland_operations_snapped) |>
@@ -552,35 +513,36 @@ ggplot(sea_stations_selected, aes(x = snap_dist_m)) +
   geom_vline(xintercept = threshold_sea) +
   annotate(
     "text",
-    x = threshold_sea, y = Inf, label = "2100m", hjust = -0.2, vjust = 1.5
+    x = threshold_sea, y = Inf, label = paste0(threshold_sea, "m"),
+    hjust = 1.1, vjust = 1.5
   ) +
-  scale_x_continuous(trans = "log10", labels = scales::label_number()) +
+  scale_x_continuous(
+    trans = "log10", labels = scales::label_number(),
+    expand = expansion(mult = c(0.05, 0.15))
+  ) +
   labs(x = "Snapping distance (m)", y = "Number of operations")
 ```
 
-```{r}
-n_bad_snap_sea <- sum(sea_stations_selected$snap_dist_m > threshold_sea)
-```
+Because sea survey operations sit in wide estuaries, we expect greater snapping
+distances than for operations in thin river branches. For this reason, we have
+raised the threshold to `r threshold_sea`. This value was selected through visual
+investigation of the Gironde and Seine estuaries, such that all their operations
+are recovered. This visual investigation allowed us to identify an operation,
+`61837633`, which turned out to be miscoded inland right at the coast and is now
+classified sea-side directly in `classify_operation_location()`.
 
-`r n_bad_snap_sea` inland sea operations, out of
-`r nrow(sea_stations_selected)`, have a snapping distance greater than
-`r threshold_sea` meters.
+#### Sea-side operations: mesh
 
-##### Sea-side operations: mesh
+We build a water-only mesh (see `build_sea_mesh()`), which we convert into a
+graph and run the Dijkstra algorithm to compute the distance between the
+operation and the closest river mouth (per catchment).
 
-`build_sea_mesh()` builds a water-only mesh over the sea (using
-[rnaturalearth's land polygons](https://rnaturalearth.com/) rather than
-`basin`, which only partially covers islands), `build_sea_graph()` turns
-it into a graph, and `compute_sea_distance_to_mouth()` runs the same
-per-district Dijkstra as `compute_distance_to_mouth()`, over that graph.
-
-Two checkpoints: does the mesh respect the coastline, and do the
-resulting distances actually account for land where a straight line
-wouldn't?
+Here is the mesh we built. We zoomed in on two coastal areas to show how it
+follows the land.
 
 ```{r}
-#| fig-width: 12
-#| fig-height: 13
+#| fig-width: 10
+#| fig-height: 11
 
 sea_mesh <- tar_read(sea_mesh)
 sea_graph <- tar_read(sea_graph)
@@ -618,23 +580,18 @@ p_gironde <- plot_sea_mesh(
   "Gironde"
 )
 
-p_overview / (p_islands + p_gironde)
+p_overview / (p_islands + p_gironde) +
+  patchwork::plot_layout(heights = c(1, 1))
 ```
 
-The mesh covers water only - islands come through as untriangulated
-holes, and the Gironde's channel is followed without cutting across the
-peninsula on its western side.
+The mesh covers water only; land, including islands, is left untriangulated,
+as desired.
 
-Second checkpoint: per zoomed region, pick one operation whose straight
-line to its nearest same-district mouth crosses land, and one that
-doesn't, and compare straight-line to mesh-path distance. A crossing only
-counts past 100m of overlap - `st_intersects()` alone also flags a line
-that merely touches a boundary vertex, not a real crossing.
+Next, we show, using an example from l'île de Ré, how the mesh-based
+distance is computed depending on whether a straight line between the
+operation and the river mouth crosses land.
 
 ```{r}
-#| fig-width: 9
-#| fig-height: 28
-
 sea_dist <- tar_read(sea_offshore_distance_to_mouth)
 mouth_kept <- river_mouth_district |>
   filter(matched, district %in% district_kept) |>
@@ -664,7 +621,6 @@ pick_pair <- function(xlim, ylim) {
 }
 
 pair_islands <- pick_pair(zoom_islands$xlim, zoom_islands$ylim)
-pair_gironde <- pick_pair(zoom_gironde$xlim, zoom_gironde$ylim)
 
 plot_pair <- function(op_row, label) {
   path <- sea_mouth_path(op_row, mouth_kept, sea_graph)
@@ -672,161 +628,96 @@ plot_pair <- function(op_row, label) {
 }
 
 p1 <- plot_pair(
-  pair_islands$crossing, "Ile de Re - line crosses land"
+  pair_islands$crossing, "Ile de Re - crosses land"
 )
 p2 <- plot_pair(
-  pair_islands$clean, "Ile de Re - line doesn't cross land"
-)
-p3 <- plot_pair(
-  pair_gironde$crossing, "Gironde - line crosses land"
-)
-p4 <- plot_pair(
-  pair_gironde$clean, "Gironde - line doesn't cross land"
+  pair_islands$clean, "Ile de Re - doesn't cross land"
 )
 
-p1 / p2 / p3 / p4
+p1 + p2
 ```
 
 Where the straight line would cut across land, the mesh path detours
 around it and comes out longer; where it wouldn't, the mesh path stays
 close to the straight-line distance.
 
-## Rephy interpolation
+#### Distance to river mouth: results
 
-River mouth points come from the AMOBIO river network (Lambert-93), so we
-reproject to lon/lat before plotting alongside the coastline.
+We present here results of the distance to river mouth for sea operations.
+First, here is the distributions of the distance to river mouth for sea-side and
+inland operations.
 
 ```{r}
-#| fig-width: 6
-#| fig-height: 9
+#| fig-width: 7
+#| fig-height: 4
 
-river_mouth_sf <- river_mouth |>
-  sf::st_as_sf() |>
-  sf::st_transform(4326)
+sea_all_distance <- tar_read(distance_to_mouth) |>
+  filter(survey != "river") |>
+  mutate(method = if_else(inland, "Inland", "Sea-side"))
 
-ggplot() +
-  geom_sf(data = coastline(), linewidth = 0.3) +
-  geom_sf(data = river_mouth_sf, size = 0.8) +
-  coord_sf(
-    xlim = sf::st_bbox(river_mouth_sf)[c("xmin", "xmax")],
-    ylim = sf::st_bbox(river_mouth_sf)[c("ymin", "ymax")]
+ggplot(sea_all_distance, aes(x = dist_mouth_m / 1000, fill = method)) +
+  geom_histogram(bins = 30, color = "white") +
+  scale_fill_manual(
+    values = c(Inland = "steelblue", "Sea-side" = "steelblue"),
+    guide = "none"
   ) +
-  labs(x = NULL, y = NULL)
+  facet_wrap(~method, scales = "free") +
+  labs(x = "Distance to river mouth (km)", y = "Number of operations")
 ```
 
-### Sea mesh and river network
-
-Before building a combined graph, we look at the sea mesh (built the same way
-as in the interpolation notebook) and the AMOBIO river network nodes overlaid
-on the same map. The river network has ~1M nodes, so we plot with base R
-(much faster than ggplot for this many points) and use tiny markers.
+We note that inland operations go deep in the large estuaries (such as Gironde),
+and can so can have large distance to river mouths (150 km). Sea-side operations
+are mostly coastal so the distance to river mouth remains small (smaller than 40
+km).
 
 ```{r}
-rephy_filtered <- tar_read(rephy_data_sample)
-mesh <- build_rephy_mesh(rephy_filtered)
-
-network <- tar_read(river_network_full)
-river_coords <- network$nodes |>
-  sf::st_as_sf() |>
-  sf::st_transform(4326) |>
-  sf::st_coordinates()
+sea_all_distance |>
+  group_by(method) |>
+  summarise(
+    n = n(),
+    median_km = round(median(dist_mouth_m) / 1000, 1),
+    max_km = round(max(dist_mouth_m) / 1000, 1)
+  ) |>
+  knitr::kable()
 ```
 
-```{r}
-#| fig-width: 6
-#| fig-height: 9
-
-plot(mesh, main = "")
-points(river_coords[, "X"], river_coords[, "Y"], col = "steelblue", pch = ".")
-points(
-  river_mouth_sf |> sf::st_coordinates(),
-  col = "firebrick", pch = 19, cex = 0.6
-)
-legend(
-  "bottomright",
-  legend = c("River network node", "River mouth"),
-  col = c("steelblue", "firebrick"),
-  pch = 19,
-  bty = "n"
-)
-```
-
-### River mouths vs. hydrographic area
-
-We match each river mouth to a district (of interest for our study) and
-highlight the ones that still don't match. These points will be removed.
+Here is a map with the operations colored by their distance to river mouth, with
+a zommed panel on the Gironde estuary where we can distinguish between inland
+and sea-side operations.
 
 ```{r}
-#| fig-width: 6
-#| fig-height: 9
+#| fig-width: 8
+#| fig-height: 6
 
-coastal_water <- tar_read(coastal_water)
-district_kept <- c("Loire", "Ardour-Garonne", "Seine", "Escaut-Somme")
-hydro_kept <- coastal_water |>
-  filter(district %in% district_kept)
-
-river_mouth_district <- tar_read(river_mouth_district)
-
-ggplot() +
-  geom_sf(data = hydro_kept, aes(fill = district), color = NA, alpha = 0.4) +
-  geom_sf(data = coastline(), linewidth = 0.3) +
-  geom_sf(data = river_mouth_district, aes(color = matched), size = 1) +
-  scale_color_manual(values = c("TRUE" = "grey20", "FALSE" = "firebrick")) +
-  coord_sf(
-    xlim = sf::st_bbox(river_mouth_sf)[c("xmin", "xmax")],
-    ylim = sf::st_bbox(river_mouth_sf)[c("ymin", "ymax")]
-  ) +
-  labs(x = NULL, y = NULL, fill = "District", color = "Matched (≤ 10 km)")
-```
-
-### Restricted river network
-
-We grow the network outward (channel length) from the matched river mouths,
-using a single Dijkstra run from a virtual source connected to every matched
-mouth at once - much cheaper than one search per mouth. This reuses
-`river_network` (restricted to `river_station_network_max_dist`, the river
-station radius) rather than a separate 100km REPHY-only cutoff - the
-dedicated REPHY-scope target was a duplicate of this one and has been
-removed, since `river_network`'s radius is a safe superset.
-
-```{r}
-#| fig-width: 6
-#| fig-height: 9
-
-network_restricted <- tar_read(river_network)
-
-river_restricted_nodes <- network_restricted$nodes |>
-  sf::st_as_sf() |>
-  sf::st_transform(4326)
-
-ggplot() +
-  geom_sf(data = coastline(), linewidth = 0.3) +
-  geom_sf(
-    data = river_restricted_nodes,
-    aes(color = "River network node"),
-    size = 0.1,
-    alpha = 0.1
-  ) +
-  geom_sf(
-    data = river_mouth_district |> filter(matched),
-    aes(color = "River mouth"),
-    size = 1
-  ) +
+p_main <- ggplot() +
+  geom_sf(data = coastline(), linewidth = 0.3, color = "grey40") +
   geom_point(
-    data = rephy_filtered,
-    aes(x = longitude, y = latitude, color = "REPHY station"),
-    size = 0.8
+    data = sea_all_distance,
+    aes(longitude, latitude, color = dist_mouth_m / 1000),
+    size = 0.5, shape = 16
   ) +
-  scale_color_manual(
-    values = c(
-      "River network node" = "steelblue",
-      "River mouth" = "firebrick",
-      "REPHY station" = "darkorange"
-    )
+  scale_color_viridis_c(name = "Distance to river mouth (km)") +
+  coord_sf(xlim = c(-5.6, 2.9), ylim = c(42.8, 51.6)) +
+  labs(x = NULL, y = NULL, title = "France") +
+  theme(panel.grid = element_blank())
+
+p_zoom <- ggplot() +
+  geom_sf(data = coastline(), linewidth = 0.3, color = "grey40") +
+  geom_point(
+    data = sea_all_distance,
+    aes(longitude, latitude, color = dist_mouth_m / 1000, shape = method),
+    size = 1.8
   ) +
-  coord_sf(
-    xlim = sf::st_bbox(river_restricted_nodes)[c("xmin", "xmax")],
-    ylim = sf::st_bbox(river_restricted_nodes)[c("ymin", "ymax")]
+  scale_color_viridis_c(name = "Distance to river mouth (km)") +
+  scale_shape_manual(
+    values = c(Inland = 16, "Sea-side" = 17), name = NULL
   ) +
-  labs(x = NULL, y = NULL, color = NULL)
+  coord_sf(xlim = zoom_gironde$xlim, ylim = zoom_gironde$ylim) +
+  labs(x = NULL, y = NULL, title = "Gironde") +
+  guides(shape = guide_legend(override.aes = list(size = 3))) +
+  theme(panel.grid = element_blank())
+
+p_main + p_zoom +
+  patchwork::plot_layout(guides = "collect", widths = c(1.3, 1))
 ```
+

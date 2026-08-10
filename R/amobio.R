@@ -502,6 +502,31 @@ compute_sea_distance_to_mouth <- function(operation,
   })
 }
 
+#' Combine river-network and sea-mesh distances into a single dataframe.
+#'
+#' @param inland_distance tibble from `compute_distance_to_mouth()`.
+#' @param sea_offshore_distance tibble from
+#'   `compute_sea_distance_to_mouth()`.
+#'
+#' @return tibble with `operation_id`, `longitude`, `latitude`, `survey`,
+#' `district`, `dist_mouth_m`, `inland` (TRUE if `dist_mouth_m` was
+#' computed via the river network, FALSE if via the sea mesh).
+#' @export
+combine_distance_to_mouth <- function(inland_distance, sea_offshore_distance) {
+  cols <- c(
+    "operation_id", "longitude", "latitude", "survey", "district",
+    "dist_mouth_m", "inland"
+  )
+  dplyr::bind_rows(
+    inland_distance |>
+      dplyr::mutate(inland = TRUE) |>
+      dplyr::select(dplyr::all_of(cols)),
+    sea_offshore_distance |>
+      dplyr::mutate(inland = FALSE) |>
+      dplyr::select(dplyr::all_of(cols))
+  )
+}
+
 #' Water-triangle edges of a sea mesh, as sf linestrings.
 #'
 #' @param sea_mesh list(mesh, in_water, land), e.g. `build_sea_mesh()`'s

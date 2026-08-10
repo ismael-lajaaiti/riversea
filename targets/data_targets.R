@@ -208,7 +208,11 @@ data_targets <- list(
   ),
   tar_target(
     foodweb_size_info_combined,
-    get_combined_foodweb_size_info(size_year_filtered, diet, operation_year_filtered)
+    get_combined_foodweb_size_info(
+      size_year_filtered,
+      diet,
+      operation_year_filtered
+    )
   ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
   tar_target(
@@ -328,19 +332,10 @@ data_targets <- list(
     )
   ),
   tar_target(
-    sea_distance_to_mouth,
-    dplyr::bind_rows(
-      inland_distance_to_mouth |>
-        dplyr::filter(survey != "river") |>
-        dplyr::mutate(method = "river_network") |>
-        dplyr::select(
-          operation_id, longitude, latitude, district, dist_mouth_m, method
-        ),
-      sea_offshore_distance_to_mouth |>
-        dplyr::mutate(method = "sea_mesh") |>
-        dplyr::select(
-          operation_id, longitude, latitude, district, dist_mouth_m, method
-        )
+    distance_to_mouth,
+    combine_distance_to_mouth(
+      inland_distance_to_mouth,
+      sea_offshore_distance_to_mouth
     )
   ),
   tar_target(
