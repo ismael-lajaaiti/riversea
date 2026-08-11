@@ -203,7 +203,8 @@ merge_size <- function(sea_size, river_size) {
 #' `get_river_operation()`.
 #'
 #' @return combined tibble with columns operation_id, year, month, longitude,
-#' latitude, survey.
+#' latitude, survey, salinity (`NA` for river operations - only `pomet` sea
+#' operations carry a measured value).
 #' @export
 merge_operation <- function(sea_operation, river_operation) {
   sea <- sea_operation |>
@@ -213,7 +214,8 @@ merge_operation <- function(sea_operation, river_operation) {
       month,
       longitude,
       latitude,
-      survey
+      survey,
+      salinity
     )
   river <- river_operation |>
     transmute(

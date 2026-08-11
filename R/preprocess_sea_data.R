@@ -79,6 +79,15 @@ clean_sea_data <- function(raw_data) {
     tidyr::uncount(batch_size) |>
     mutate(length = length |> stringr::str_replace(",", ".") |> as.numeric()) |>
     mutate(length = length / 10) # Convert to cm.
+  # Pomet - Salinity (measured per trait during the size survey).
+  pomet_salinity <- raw_data$pomet$size |>
+    select(ID_interne_prelevement, Salinite) |>
+    filter(!is.na(Salinite), Salinite != "") |>
+    distinct(ID_interne_prelevement, .keep_all = TRUE) |>
+    transmute(
+      trait = as.character(ID_interne_prelevement),
+      salinity = Salinite |> stringr::str_replace(",", ".") |> as.numeric()
+    )
   # Pomet - Trait.
   clean_data$pomet$trait <- raw_data$pomet$trait |>
     select(
@@ -100,6 +109,7 @@ clean_sea_data <- function(raw_data) {
       y_end = Coord_Fin_ymin,
     ) |>
     mutate(
+      trait = as.character(trait),
       x_start = x_start |> stringr::str_replace(",", ".") |> as.numeric(),
       x_end = x_end |> stringr::str_replace(",", ".") |> as.numeric(),
       y_start = y_start |> stringr::str_replace(",", ".") |> as.numeric(),
@@ -112,7 +122,8 @@ clean_sea_data <- function(raw_data) {
       y_start,
       x_end,
       y_end
-    ))
+    )) |>
+    left_join(pomet_salinity, by = "trait")
   # Nurse - Catch.
   clean_data$nurse$catch <- raw_data$nurse$catch |>
     select(
@@ -233,7 +244,7 @@ combine_sea_data <- function(clean_data) {
     clean_data$solper$size |> mutate(survey = "solper")
   )
 
-  combined$trait <- rbind(
+  combined$trait <- dplyr::bind_rows(
     clean_data$pomet$trait |> mutate(survey = "pomet"),
     clean_data$nurse$trait |> mutate(survey = "nurse")
   )

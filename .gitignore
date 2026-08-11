@@ -16,6 +16,8 @@ data/*.zip
 data/amobio
 backup-data/
 _freeze/
+*_cache/
+*_files/
 
 _targets/
 *targets.yaml

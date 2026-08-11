@@ -387,5 +387,30 @@ data_targets <- list(
   tar_target(
     rephy_data_sample,
     filter_sampling_rephy(rephy_data_recent, sampling_min = params$sampling_min)
+  ),
+  tar_target(
+    rephy_mesh,
+    build_rephy_mesh(
+      rephy_data_sample,
+      foodweb_structure |> dplyr::filter(survey %in% c("nurse", "pomet"))
+    )
+  ),
+  tar_target(
+    rephy_salinity_complete,
+    rephy_data_sample |> dplyr::filter(!is.na(salinity))
+  ),
+  tarchetypes::tar_map(
+    values = tibble::tibble(
+      parameter = c("NH4", "NO3+NO2", "PO4"),
+      id = c("nh4", "no3_no2", "po4")
+    ),
+    names = "id",
+    tar_target(
+      rephy_fit,
+      fit_rephy_spde_smooth(
+        rephy_salinity_complete |> dplyr::filter(parameter_code == parameter),
+        rephy_mesh
+      )
+    )
   )
 )

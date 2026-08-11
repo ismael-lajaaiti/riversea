@@ -34,14 +34,13 @@ one parameter
 - [x] Plot model performence on yearly average
 - [x] Check spatial structure of residuals
 - [x] Add salinity as a covariable
-- [ ] Do a multivariate interpolation instead of predicting variables separately
 - [ ] Check interpolation performence without log scale
-- [ ] **(waiting for distance-to-river mouth)** Inteprolate value at fishing
-operations, remove stations too uncertain
+- [x] Inteprolate value at fishing operations
+- [ ] Remove REPHY stations too uncertain to interpolate reliably from
 
 ## Setup
 
-```{r}
+```{r setup}
 library(renv)
 renv::load()
 library(targets)
@@ -52,15 +51,17 @@ tar_config_set(
 library(ggplot2)
 library(dplyr)
 library(sf)
+library(patchwork)
 devtools::load_all()
 riversea::nice_theme()
+knitr::opts_chunk$set(autodep = TRUE)
 ```
 
 ## Presentation of the data
 
 Here is the REPHY data that we have collected and cleaned. 
 
-```{r}
+```{r rephy-data}
 rephy_data <- tar_read(rephy_data_surface)
 str(rephy_data)
 ```
@@ -68,8 +69,8 @@ str(rephy_data)
 For more information see [Overview of REPHY data](D6-rephy.qmd). And, here is
 the fishing operation data.
 
-```{r}
-foodwebs <- tar_read(local_foodwebs) |>
+```{r foodwebs-data}
+foodwebs <- tar_read(foodweb_structure) |>
   dplyr::filter(survey %in% c("nurse", "pomet"))
 ```
 
@@ -83,7 +84,7 @@ operations from the food web data on the other.
 
 ### Spatial coverage
 
-```{r}
+```{r spatial-coverage-plot}
 #| fig-width: 6
 #| fig-height: 9
 
@@ -100,7 +101,8 @@ ggplot(sites, aes(x = longitude, y = latitude, color = source)) +
   geom_point() +
   geom_sf(data = coastline(), inherit.aes = FALSE, linewidth = 0.3) +
   coord_sf(xlim = range(sites$longitude), ylim = range(sites$latitude)) +
-  labs(x = NULL, y = NULL, color = NULL)
+  labs(x = NULL, y = NULL, color = NULL) +
+  theme(panel.grid = element_blank())
 ```
 
 Fishing operations are much more numerous and spatially diffuse than REPHY
@@ -109,7 +111,7 @@ on REPHY stations that are reasonably close to fishing operations.
 
 ### Temporal coverage
 
-```{r}
+```{r temporal-coverage-plot}
 #| fig-width: 7
 #| fig-height: 3
 
@@ -129,7 +131,7 @@ ggplot(yearly_counts, aes(x = year, y = n, fill = source)) +
   labs(x = NULL, y = "Number of observations", fill = NULL)
 ```
 
-Both datasets have good overlap from 2000 onwarrds, which is where we should
+Both datasets have good overlap from 2000 onwards, which is where we should
 expect the interpolation to be best supported.
 
 ## Interpolation model
@@ -147,7 +149,7 @@ $$
 
 We restrict the data to 2000 onward.
 
-```{r}
+```{r rephy-filtered}
 rephy_filtered <- tar_read(rephy_data_sample)
 ```
 
@@ -156,10 +158,11 @@ rephy_filtered <- tar_read(rephy_data_sample)
 We build a mesh around REPHY stations and fishing operations. Its boundary
 follows the coastline (a non-convex hull) rather than the convex hull of the
 points, which would otherwise includes the land between the Atlantic and Channel
-clusters.
+clusters. It's a `targets` pipeline target (`rephy_mesh`), not built here, so
+it's reusable from other notebooks without recomputing it.
 
-```{r}
-mesh <- build_rephy_mesh(rephy_filtered, foodwebs)
+```{r mesh-plot}
+mesh <- tar_read(rephy_mesh)
 plot(mesh, main = "")
 plot(sf::st_geometry(coastline()), add = TRUE, col = "grey60")
 points(
@@ -190,7 +193,7 @@ evaluate them with cross-validation.
 
 ### Cross-validation
 
-```{r}
+```{r n-fold}
 n_fold <- 5
 ```
 
@@ -203,7 +206,9 @@ into the test fold.
 We compare our model performence (RMSE, MAE and correlation) against a naive
 baseline prediction: the training fold's mean.
 
-```{r}
+```{r cv-baseline}
+#| cache: true
+
 set.seed(1)
 cv_all <- purrr::map_dfr(unique(rephy_filtered$parameter_code), \(parameter) {
   d_param <- rephy_filtered |> dplyr::filter(parameter_code == parameter)
@@ -233,7 +238,7 @@ baseline and correlates positively with observed values, where the baseline
 is essentially uncorrelated by construction. The spatio-temporal structure is
 clearly adding information, even if there's room to improve.
 
-```{r}
+```{r cv-baseline-plot}
 #| fig-width: 8
 #| fig-height: 8
 
@@ -276,7 +281,7 @@ the station itself is held out.
 We will use yearly averages rather than raw values in the next modelling steps,
 we also plot the same predictions averaged per year (observed and predicted).
 
-```{r}
+```{r cv-yearly-plot}
 #| fig-width: 8
 #| fig-height: 8
 
@@ -326,7 +331,7 @@ so, we will check the structure of the model residuals.
 
 We check whether the CV residuals still carry spatial or temporal structure. 
 
-```{r}
+```{r residual-temporal-plot}
 #| fig-width: 8
 #| fig-height: 4
 
@@ -334,8 +339,10 @@ cv_resid <- cv_all |>
   dplyr::filter(value > 0) |>
   dplyr::mutate(resid = log(pred) - log(value))
 
-year_resid <- cv_resid |> dplyr::summarise(resid = mean(resid), .by = c(parameter_code, year))
-month_resid <- cv_resid |> dplyr::summarise(resid = mean(resid), .by = c(parameter_code, month))
+year_resid <- cv_resid |>
+  dplyr::summarise(resid = mean(resid), .by = c(parameter_code, year))
+month_resid <- cv_resid |>
+  dplyr::summarise(resid = mean(resid), .by = c(parameter_code, month))
 
 ggplot(year_resid, aes(x = year, y = resid)) +
   geom_hline(yintercept = 0, linetype = "dashed") +
@@ -360,7 +367,7 @@ captures seasonality well.
 
 #### Spatial structure
 
-```{r}
+```{r residual-spatial-plot}
 #| fig-width: 10
 #| fig-height: 8
 
@@ -384,7 +391,8 @@ ggplot(station_resid, aes(x = longitude, y = latitude, color = resid, size = n))
     midpoint = 0
   ) +
   facet_wrap(~parameter_code) +
-  labs(x = NULL, y = NULL, color = "Mean log-resid", size = "n")
+  labs(x = NULL, y = NULL, color = "Mean log-resid", size = "n") +
+  theme(panel.grid = element_blank())
 ```
 
 There is no broad geographic gradient, but a set of estuarine stations are
@@ -393,13 +401,15 @@ nutrient-loading that could bias our analysis afterwards. For that reason, we
 should certainly include distance to the river mouth as covariate to better
 predict nutrient concentrations at those sites.
 
-## Salinity
+## Refining the model
 
-REPHY also measures salinity at most stations, so we can use it to inform our
-predictions. In particular this may help with the understimation issue we
-observe in estuaries.
+### Salinity
 
-```{r}
+REPHY and some fishing operations also measures salinity at most stations, so we
+can use it to inform our predictions. In particular this may help with the
+understimation issue we observe in estuaries.
+
+```{r salinity-coverage-table}
 rephy_filtered |>
   dplyr::summarise(
     n = dplyr::n(),
@@ -410,9 +420,10 @@ rephy_filtered |>
   knitr::kable()
 ```
 
-Coverage is close to complete for all four parameters.
+Coverage is close to complete for all four parameters. We next plot the
+relationship between our parameters and salinity.
 
-```{r}
+```{r salinity-scatter-plot}
 #| fig-width: 8
 #| fig-height: 8
 
@@ -420,49 +431,51 @@ sal_data <- rephy_filtered |> dplyr::filter(!is.na(salinity), value > 0)
 
 ggplot(sal_data, aes(x = salinity, y = value)) +
   geom_point(alpha = 0.2, size = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "firebrick") +
   scale_y_log10() +
   facet_wrap(~parameter_code, scales = "free_y") +
   labs(x = "Salinity", y = "Value (log scale)")
 ```
 
-```{r}
-sal_data |>
-  summarise(cor = round(stats::cor(log(value), salinity), 2), .by = parameter_code) |>
-  arrange(cor) |>
-  knitr::kable()
-```
+We see a strong relationship, and it's clearly not a straight line on the
+log scale -- so we compare the baseline model against three ways of adding
+salinity: a linear term, a quadratic term, and a smooth term (a random walk
+over binned salinity, the same idiom already used for `year` and `month`)
+to capture that curvature.
 
-The dense low-salinity cluster visible in the plot comes from a handful of
-far-upstream, tidal-freshwater stations.
+$$
+\log(\text{nutrient}) = \text{SPDE}_\text{2D} + \text{year}_\text{RW}
+                       + \text{month}_\text{RW} + \beta \cdot \text{salinity}
+$$
 
-```{r}
-sal_data |>
-  filter(salinity < 5) |>
-  dplyr::count(site_label, sort = TRUE) |>
-  head(5) |>
-  knitr::kable()
-```
+$$
+\log(\text{nutrient}) = \text{SPDE}_\text{2D} + \text{year}_\text{RW}
+                       + \text{month}_\text{RW} + \beta_1 \cdot \text{salinity}
+                       + \beta_2 \cdot \text{salinity}^2
+$$
 
-Two of these -- Pont St Maurice and Indre -- are the same stations flagged
-earlier as under-predicted (the PO4 point-source event and an OXYGENE
-hypoxia event, respectively). That's a good sign that adding salinity to the
-model may help improve it.
+$$
+\log(\text{nutrient}) = \text{SPDE}_\text{2D} + \text{year}_\text{RW}
+                       + \text{month}_\text{RW} + \text{salinity}_\text{RW}
+$$
 
-### Model comparison
+::: {.callout-note}
+We use linear scale for salinity in the model, not logged. We tested
+`log(salinity)` and found that raw salinity performed better on every parameter.
+:::
 
-`predict_rephy_spde_salinity()` adds salinity as a fixed effect on top of
-the spatial field, year and month terms already in `predict_rephy_spde()`.
-We compare the two with the same leave-station-out cross-validation as
-before, on the same data for both models (samples with a matched salinity
-value), so the only thing that differs is the presence of the covariate.
+We compare all four models with the same leave-station-out cross-validation
+as before, on the same data (samples with a matched salinity value), so the
+only thing that differs between them is the covariate.
 
-```{r}
+```{r cv-salinity-comparison}
+#| cache: true
+
 rephy_sal <- rephy_filtered |> dplyr::filter(!is.na(salinity))
 
 set.seed(1)
 cv_base_sal <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
-  d_param <- rephy_sal |> dplyr::filter(parameter_code == parameter)
+  d_param <- rephy_sal |>
+    dplyr::filter(parameter_code == parameter)
   cv <- cv_rephy_spde(d_param, mesh, k = n_fold)
   cv$parameter_code <- parameter
   cv
@@ -470,7 +483,8 @@ cv_base_sal <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
 
 set.seed(1)
 cv_salinity <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
-  d_param <- rephy_sal |> dplyr::filter(parameter_code == parameter)
+  d_param <- rephy_sal |>
+    dplyr::filter(parameter_code == parameter)
   cv <- cv_rephy_spde(
     d_param, mesh,
     predict_fn = predict_rephy_spde_salinity, k = n_fold
@@ -480,7 +494,61 @@ cv_salinity <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
 })
 ```
 
-```{r}
+```{r cv-salinity-quadratic}
+#| cache: true
+
+set.seed(1)
+cv_salinity_quadratic <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
+  d_param <- rephy_sal |>
+    dplyr::filter(parameter_code == parameter)
+  cv <- cv_rephy_spde(
+    d_param, mesh,
+    predict_fn = predict_rephy_spde_salinity_quadratic, k = n_fold
+  )
+  cv$parameter_code <- parameter
+  cv
+})
+```
+
+```{r cv-salinity-smooth}
+#| cache: true
+
+set.seed(1)
+cv_salinity_smooth <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
+  d_param <- rephy_sal |>
+    dplyr::filter(parameter_code == parameter)
+  cv <- cv_rephy_spde(
+    d_param, mesh,
+    predict_fn = predict_rephy_spde_salinity_smooth, k = n_fold
+  )
+  cv$parameter_code <- parameter
+  cv
+})
+```
+
+To check that the smooth term isn't just overfitting we also compute WAIC from a
+single full-data fit per model.
+
+```{r salinity-criteria}
+#| cache: true
+
+rephy_criteria <- purrr::map_dfr(unique(rephy_sal$parameter_code), \(parameter) {
+  d_param <- rephy_sal |> dplyr::filter(parameter_code == parameter)
+  dplyr::bind_rows(
+    rephy_model_criteria(predict_rephy_spde(d_param, d_param, mesh)) |>
+      dplyr::mutate(model = "Baseline"),
+    rephy_model_criteria(predict_rephy_spde_salinity(d_param, d_param, mesh)) |>
+      dplyr::mutate(model = "Salinity (linear)"),
+    rephy_model_criteria(predict_rephy_spde_salinity_quadratic(d_param, d_param, mesh)) |>
+      dplyr::mutate(model = "Salinity (quadratic)"),
+    rephy_model_criteria(predict_rephy_spde_salinity_smooth(d_param, d_param, mesh)) |>
+      dplyr::mutate(model = "Salinity (smooth)")
+  ) |>
+    dplyr::mutate(parameter_code = parameter)
+})
+```
+
+```{r salinity-comparison-table}
 dplyr::bind_rows(
   cv_base_sal |>
     dplyr::group_by(parameter_code) |>
@@ -489,25 +557,204 @@ dplyr::bind_rows(
   cv_salinity |>
     dplyr::group_by(parameter_code) |>
     dplyr::group_modify(\(cv, ...) as.data.frame(rephy_cv_metrics(cv))) |>
-    dplyr::mutate(model = "+ Salinity")
+    dplyr::mutate(model = "Salinity (linear)"),
+  cv_salinity_quadratic |>
+    dplyr::group_by(parameter_code) |>
+    dplyr::group_modify(\(cv, ...) as.data.frame(rephy_cv_metrics(cv))) |>
+    dplyr::mutate(model = "Salinity (quadratic)"),
+  cv_salinity_smooth |>
+    dplyr::group_by(parameter_code) |>
+    dplyr::group_modify(\(cv, ...) as.data.frame(rephy_cv_metrics(cv))) |>
+    dplyr::mutate(model = "Salinity (smooth)")
 ) |>
   dplyr::ungroup() |>
+  dplyr::left_join(
+    rephy_criteria |> dplyr::select(parameter_code, model, waic),
+    by = c("parameter_code", "model")
+  ) |>
+  dplyr::mutate(is_best = waic == min(waic), .by = parameter_code) |>
   dplyr::arrange(parameter_code, model) |>
-  dplyr::select(parameter_code, model, rmse, mae, cor) |>
-  knitr::kable(digits = 3)
+  dplyr::transmute(
+    parameter_code,
+    model,
+    rmse = sprintf("%.2f", rmse),
+    mae = sprintf("%.2f", mae),
+    waic = sprintf("%.1f", waic),
+    is_best
+  ) |>
+  dplyr::mutate(
+    dplyr::across(
+      c(model, rmse, mae, waic),
+      \(x) dplyr::if_else(is_best, paste0("<strong>", x, "</strong>"), x)
+    )
+  ) |>
+  dplyr::select(-is_best) |>
+  knitr::kable(escape = FALSE)
 ```
 
-Salinity clearly helps for NO3+NO2 (RMSE 1.49 -> 1.26, correlation 0.70 ->
-0.79) -- the parameter most correlated with salinity in the exploratory
-plots above -- and gives a smaller but consistent improvement for PO4 and
-NH4. For OXYGENE, the parameter least correlated with salinity, the two
-models are indistinguishable (RMSE and correlation both flat). This tracks
-the raw correlations from the previous section: the more a parameter
-covaries with salinity in the first place, the more the model gains from
-being told about it.
+Smooth salinity is the best model (lowest WAIC) for NH4, NO3+NO2 and PO4,
+beating linear and quadratic salinity as well as the baseline For oxygen,
+salinity doesn't help in any form, so we drop it there and keep the baseline.
 
-We'll keep salinity as a covariate for NH4, NO3+NO2 and PO4, and drop it for
-OXYGENE where it adds complexity for no measurable benefit. This doesn't by
-itself resolve the estuarine under-prediction flagged earlier -- distance to
-the river mouth is still a separate, unexplored covariate -- but it's a
-clear, low-cost improvement for three of the four parameters.
+### Spatial residuals
+
+The residual-structure map above showed a set of estuarine stations
+consistently under-predicted. We rebuild the same map, baseline vs. smooth
+salinity (the model we're keeping), on the same station set so the two
+rows are directly comparable.
+
+```{r cv-salinity-residual-map}
+#| fig-width: 10
+#| fig-height: 10
+
+resid_compare <- dplyr::bind_rows(
+  cv_base_sal |> dplyr::mutate(model = "Baseline"),
+  cv_salinity_smooth |> dplyr::mutate(model = "+ Salinity (smooth)")
+) |>
+  dplyr::filter(value > 0) |>
+  dplyr::mutate(resid = log(pred) - log(value)) |>
+  dplyr::summarise(
+    resid = mean(resid),
+    n = dplyr::n(),
+    .by = c(model, parameter_code, site_id, longitude, latitude)
+  )
+
+ggplot(resid_compare, aes(x = longitude, y = latitude, color = resid, size = n)) +
+  geom_point(alpha = 1) +
+  geom_sf(data = coastline(), inherit.aes = FALSE, linewidth = 0.3) +
+  coord_sf(
+    xlim = range(resid_compare$longitude), ylim = range(resid_compare$latitude)
+  ) +
+  scale_color_gradient2(
+    low = "steelblue",
+    mid = "grey90",
+    high = "firebrick",
+    midpoint = 0
+  ) +
+  facet_grid(model ~ parameter_code) +
+  labs(x = NULL, y = NULL, color = "Mean log-resid", size = "n") +
+  theme(panel.grid = element_blank())
+```
+
+We see a clear improvement of the model in the estuaries. Next, we move to
+predicting nutrient values at our fishing operations.
+
+## Predicting at fishing operations
+
+This is the notebook's actual goal: environmental values at every `nurse` and
+`pomet` fishing operation. We use the smooth-salinity model for NH4, NO3+NO2 and
+PO4 -- OXYGENE is dropped. Each parameter is fit once on the full
+salinity-complete REPHY dataset, then predicted at every operation. `pomet`
+operations use their own measured salinity where available; the rest (all
+`nurse` and 4% of `pomet`) fall back to a space-time-only prediction for that
+operation.
+
+```{r foodweb-predictions}
+#| cache: true
+
+foodweb_predictions <- purrr::map_dfr(c("NH4", "NO3+NO2", "PO4"), \(parameter) {
+  train <- rephy_sal |> dplyr::filter(parameter_code == parameter)
+  pred <- predict_rephy_spde_salinity_smooth(train, foodwebs, mesh)
+  foodwebs |>
+    dplyr::transmute(operation_id, survey, longitude, latitude, year, month, salinity) |>
+    dplyr::mutate(parameter_code = parameter, pred = pred, sd = attr(pred, "sd"))
+})
+```
+
+```{r foodweb-predictions-map}
+#| fig-width: 12
+#| fig-height: 8
+
+plot_operation_map <- function(parameter, value_col, legend) {
+  d <- foodweb_predictions |> dplyr::filter(parameter_code == parameter)
+  ggplot(d, aes(longitude, latitude, color = .data[[value_col]])) +
+    geom_point(size = 0.6, alpha = 0.7) +
+    geom_sf(data = coastline(), inherit.aes = FALSE, linewidth = 0.3) +
+    coord_sf(
+      xlim = range(foodweb_predictions$longitude),
+      ylim = range(foodweb_predictions$latitude)
+    ) +
+    scale_color_viridis_c(trans = if (value_col == "pred") "log10" else "identity") +
+    labs(x = NULL, y = NULL, color = legend, title = parameter) +
+    theme(panel.grid = element_blank())
+}
+
+patchwork::wrap_plots(
+  lapply(c("NH4", "NO3+NO2", "PO4"), plot_operation_map, value_col = "pred", legend = NULL),
+  nrow = 1
+)
+```
+
+```{r foodweb-predictions-table}
+foodweb_predictions |>
+  dplyr::summarise(
+    n = dplyr::n(),
+    median = round(median(pred), 2),
+    p10 = round(quantile(pred, 0.1), 2),
+    p90 = round(quantile(pred, 0.9), 2),
+    .by = c(parameter_code, survey)
+  ) |>
+  dplyr::arrange(parameter_code, survey) |>
+  knitr::kable()
+```
+
+Predictions are consistently higher at `pomet` operations than `nurse` across
+all three parameters (e.g. NO3+NO2 median 22.2 vs. 3.5) -- exactly what we'd
+expect given `pomet` reaches deep into estuaries while `nurse` stays coastal.
+
+### Prediction uncertainty
+
+Each prediction comes with a standard deviation (posterior SD of the linear
+predictor, log scale, from `predict_rephy_spde_salinity_smooth()`'s `sd`
+attribute).
+
+```{r foodweb-predictions-uncertainty-map}
+#| fig-width: 12
+#| fig-height: 8
+
+patchwork::wrap_plots(
+  lapply(
+    c("NH4", "NO3+NO2", "PO4"), plot_operation_map,
+    value_col = "sd", legend = "log-scale SD"
+  ),
+  nrow = 1
+)
+```
+
+Overall SD is similar between the two surveys (mean 0.42 for `nurse`, 0.44 for
+`pomet`). We note a pattern within `pomet`: its highest-SD operations are all at
+the extreme low-salinity end , where REPHY's own salinity training data is
+sparse, so the model has a hard time there. 
+
+::: {.callout-note}
+These are point estimates -- the downstream model assessing nutrient (and
+dam) effects on food web structure will treat them as observed data. This is
+bad. The clean fix is to propagate the actual posterior by sampling it. Each
+parameter's model is fit once (`fit_rephy_spde_smooth()`) and saved as a
+`targets` pipeline target (`rephy_fit_nh4`, `rephy_fit_no3_no2`,
+`rephy_fit_po4`), so it's reusable from any script without refitting -- in
+particular from the food-web-structure notebook itself.
+`sample_rephy_spde_smooth(fit, newdata, n_draws)` then draws samples at any
+new locations from an already-fitted model, no refit involved.
+:::
+
+A quick demonstration, 200 draws for PO4 at 5 operations, from the cached fit:
+
+```{r posterior-draws-demo}
+#| cache: true
+#| fig-width: 5
+#| fig-height: 3.5
+
+fit_po4 <- tar_read(rephy_fit_po4)
+draws_demo <- sample_rephy_spde_smooth(
+  fit_po4,
+  foodwebs |> dplyr::slice_sample(n = 5),
+  n_draws = 200
+)
+
+ggplot(data.frame(draw = draws_demo[1, ]), aes(draw)) +
+  geom_histogram(bins = 30) +
+  labs(x = "PO4, posterior draws for one operation", y = NULL) +
+  theme(panel.grid = element_blank())
+```
+
