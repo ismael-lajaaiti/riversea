@@ -248,6 +248,9 @@ found to be more heterogeneous in dendritic than linear networks.
 - @CampbellGrant-Lowe-Fagan-2007 the geometry of dendritic network interacts
 with species movement and reshape population densities and interaction network.
 
+- @Giacomuzzo-etal-2026 shows that impact of disturbances is modulated by the
+combination of ecosystem size and connectivity with experimental miscrocosms.
+
 ### Decomposing spatio-temporal patterns
 
 - @Frelat-etal-2022 decompose change in food web structure and species
