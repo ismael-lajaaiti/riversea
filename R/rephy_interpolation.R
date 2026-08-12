@@ -231,10 +231,12 @@ predict_rephy_spde_salinity_quadratic <- function(train, newdata, mesh) {
 #' Predict a REPHY parameter with an additive spatio-temporal SPDE model,
 #' with salinity as a smooth (non-linear) covariate
 #'
-#' Same as [predict_rephy_spde_salinity()], but salinity enters as a random
-#' walk over binned values (`f(salinity_group, model = "rw1")`) instead of a
-#' linear fixed effect. Bins are computed jointly across `train` and
-#' `newdata` (via `INLA::inla.group()`) so both share the same index.
+#' Same as [predict_rephy_spde_salinity()], but salinity enters as a
+#' P-spline: a cubic B-spline basis (18 basis functions, knots at `train`'s
+#' salinity quantiles) with an `f(model = "rw2")` smoothness penalty on the
+#' basis coefficients. The basis is fixed from `train` alone and evaluated
+#' at `newdata` via [.spline_basis_A()], so no joint binning of `train` and
+#' `newdata` is needed.
 #'
 #' @param train tibble with `value`, `longitude`, `latitude`, `year`,
 #'   `month`, `salinity`.
@@ -253,13 +255,8 @@ predict_rephy_spde_salinity_smooth <- function(train, newdata, mesh) {
     value = dplyr::if_else(value == 0, min_positive / 2, value)
   )
 
-  salinity_group <- INLA::inla.group(
-    c(train$salinity, newdata$salinity),
-    method = "quantile"
-  )
-  train$salinity_group <- salinity_group[seq_len(nrow(train))]
-  newdata$salinity_group <-
-    salinity_group[nrow(train) + seq_len(nrow(newdata))]
+  bs_basis <- splines::bs(train$salinity, df = 18, degree = 3, intercept = TRUE)
+  n_basis <- ncol(bs_basis)
 
   spde <- INLA::inla.spde2.pcmatern(
     mesh,
@@ -269,18 +266,19 @@ predict_rephy_spde_salinity_smooth <- function(train, newdata, mesh) {
   field_idx <- INLA::inla.spde.make.index("field", n.spde = spde$n.spde)
 
   make_stack <- function(d, tag, y = NA) {
-    a <- INLA::inla.spde.make.A(mesh, loc = as.matrix(d[c("longitude", "latitude")]))
+    a_spatial <- INLA::inla.spde.make.A(mesh, loc = as.matrix(d[c("longitude", "latitude")]))
+    a_spline <- .spline_basis_A(d$salinity, bs_basis)
     INLA::inla.stack(
       tag = tag,
       data = list(y = y),
-      A = list(a, 1),
+      A = list(a_spatial, a_spline, 1),
       effects = list(
         field_idx,
+        list(spline = seq_len(n_basis)),
         list(
           intercept = 1,
           year = d$year - min(train$year) + 1,
-          month = d$month,
-          salinity_group = d$salinity_group
+          month = d$month
         )
       )
     )
@@ -296,7 +294,7 @@ predict_rephy_spde_salinity_smooth <- function(train, newdata, mesh) {
       f(field, model = spde) +
       f(year, model = "rw1") +
       f(month, model = "rw1", cyclic = TRUE) +
-      f(salinity_group, model = "rw1"),
+      f(spline, model = "rw2"),
     data = INLA::inla.stack.data(stack),
     control.predictor = list(A = INLA::inla.stack.A(stack), compute = TRUE),
     control.compute = list(waic = TRUE),
@@ -313,25 +311,27 @@ predict_rephy_spde_salinity_smooth <- function(train, newdata, mesh) {
 #' Fit the smooth-salinity REPHY model once, for later reuse
 #'
 #' Same model as [predict_rephy_spde_salinity_smooth()], fit on `train`
-#' alone (`control.compute = list(config = TRUE)`, 100 salinity bins instead
-#' of the default 25) so the fit can be reused by [sample_rephy_spde_smooth()]
-#' at any later prediction locations without refitting.
+#' alone (`control.compute = list(config = TRUE)`) so the fit can be reused
+#' by [sample_rephy_spde_smooth()] at any later prediction locations without
+#' refitting.
 #'
 #' @param train tibble with `value`, `longitude`, `latitude`, `year`,
 #'   `month`, `salinity`.
 #' @param mesh `inla.mesh`, e.g. from [build_rephy_mesh()].
 #'
-#' @return list with `fit` (the `inla` object), `mesh`, `salinity_centers`
-#'   (sorted bin centers) and `year_min` - everything
-#'   [sample_rephy_spde_smooth()] needs.
+#' @return list with `fit` (the `inla` object), `mesh`, `bs_basis` (the
+#'   fitted `splines::bs()` object, fixing the basis for later prediction)
+#'   and `year_min` - everything [sample_rephy_spde_smooth()] needs.
 #' @export
 fit_rephy_spde_smooth <- function(train, mesh) {
   min_positive <- min(train$value[train$value > 0])
   train <- dplyr::mutate(
     train,
-    value = dplyr::if_else(value == 0, min_positive / 2, value),
-    salinity_group = INLA::inla.group(salinity, method = "quantile", n = 100)
+    value = dplyr::if_else(value == 0, min_positive / 2, value)
   )
+
+  bs_basis <- splines::bs(train$salinity, df = 18, degree = 3, intercept = TRUE)
+  n_basis <- ncol(bs_basis)
 
   spde <- INLA::inla.spde2.pcmatern(
     mesh,
@@ -339,18 +339,20 @@ fit_rephy_spde_smooth <- function(train, mesh) {
     prior.sigma = c(1, 0.5)
   )
   field_idx <- INLA::inla.spde.make.index("field", n.spde = spde$n.spde)
-  a <- INLA::inla.spde.make.A(mesh, loc = as.matrix(train[c("longitude", "latitude")]))
+  a_spatial <- INLA::inla.spde.make.A(mesh, loc = as.matrix(train[c("longitude", "latitude")]))
+  a_spline <- .spline_basis_A(train$salinity, bs_basis)
+
   stack <- INLA::inla.stack(
     tag = "est",
     data = list(y = log(train$value)),
-    A = list(a, 1),
+    A = list(a_spatial, a_spline, 1),
     effects = list(
       field_idx,
+      list(spline = seq_len(n_basis)),
       list(
         intercept = 1,
         year = train$year - min(train$year) + 1,
-        month = train$month,
-        salinity_group = train$salinity_group
+        month = train$month
       )
     )
   )
@@ -360,7 +362,7 @@ fit_rephy_spde_smooth <- function(train, mesh) {
       f(field, model = spde) +
       f(year, model = "rw1") +
       f(month, model = "rw1", cyclic = TRUE) +
-      f(salinity_group, model = "rw1"),
+      f(spline, model = "rw2"),
     data = INLA::inla.stack.data(stack),
     control.predictor = list(A = INLA::inla.stack.A(stack), compute = TRUE),
     control.compute = list(config = TRUE),
@@ -370,48 +372,37 @@ fit_rephy_spde_smooth <- function(train, mesh) {
   list(
     fit = fit,
     mesh = mesh,
-    salinity_centers = sort(unique(train$salinity_group)),
+    bs_basis = bs_basis,
     year_min = min(train$year)
   )
 }
 
-#' Linear-interpolation projection matrix onto fixed salinity bin centers
+#' B-spline basis design matrix, with missing salinity zeroed out
 #'
-#' Row `i` gets weight 1 at the nearest `centers` entry if `x[i]` falls
-#' outside `centers`' range, or linearly-interpolated weights at the two
-#' bracketing centers otherwise - the standard way to evaluate a
-#' `model = "rw1"` term (a smooth curve known only at discrete points) at an
-#' arbitrary `x`. `NA` in `x` gives an all-zero row: no salinity
-#' contribution, same as [predict_rephy_spde_salinity_smooth()]'s handling
-#' of missing salinity.
+#' Evaluates `bs_basis` (a fitted `splines::bs()` object, fixing the knots,
+#' degree and boundary) at `x` via `predict()`. `NA` entries in `x` give an
+#' all-zero row: no salinity contribution, same convention as elsewhere for
+#' missing salinity.
 #'
-#' @param x numeric vector of new salinity values.
-#' @param centers sorted numeric vector of fitted bin centers.
+#' @param x numeric vector of salinity values.
+#' @param bs_basis a `splines::bs()` object, e.g. from
+#'   [fit_rephy_spde_smooth()].
 #'
-#' @return sparse `Matrix`, `length(x)` rows by `length(centers)` columns.
+#' @return matrix, `length(x)` rows by `ncol(bs_basis)` columns.
 #' @noRd
-.salinity_interp_A <- function(x, centers) {
-  n <- length(x)
-  k <- length(centers)
+.spline_basis_A <- function(x, bs_basis) {
   has_val <- !is.na(x)
-  x_clipped <- pmin(pmax(x, centers[1]), centers[k])
-  j <- findInterval(x_clipped, centers, all.inside = TRUE)
-  frac <- (x_clipped - centers[j]) / (centers[j + 1] - centers[j])
-
-  Matrix::sparseMatrix(
-    i = c(which(has_val), which(has_val)),
-    j = c(j[has_val], j[has_val] + 1L),
-    x = c((1 - frac)[has_val], frac[has_val]),
-    dims = c(n, k)
-  )
+  result <- matrix(0, nrow = length(x), ncol = ncol(bs_basis))
+  result[has_val, ] <- predict(bs_basis, x[has_val])
+  result
 }
 
 #' Draw posterior samples from an already-fitted smooth-salinity model
 #'
 #' Projects a [fit_rephy_spde_smooth()] fit onto new locations without
 #' refitting: builds fresh A-matrices for the spatial field and for
-#' salinity ([.salinity_interp_A()]) and applies them to posterior draws
-#' via `INLA::inla.posterior.sample.eval()`.
+#' salinity ([.spline_basis_A()]) and applies them to posterior draws via
+#' `INLA::inla.posterior.sample.eval()`.
 #'
 #' @param fit_obj output of [fit_rephy_spde_smooth()].
 #' @param newdata tibble with `longitude`, `latitude`, `year`, `month`,
@@ -425,25 +416,20 @@ sample_rephy_spde_smooth <- function(fit_obj, newdata, n_draws) {
   a_spatial <- INLA::inla.spde.make.A(
     fit_obj$mesh, loc = as.matrix(newdata[c("longitude", "latitude")])
   )
-  a_salinity <- .salinity_interp_A(newdata$salinity, fit_obj$salinity_centers)
+  a_spline <- .spline_basis_A(newdata$salinity, fit_obj$bs_basis)
   year_idx <- newdata$year - fit_obj$year_min + 1
   month_idx <- newdata$month
 
   samples <- INLA::inla.posterior.sample(n_draws, fit_obj$fit)
-  # inla.posterior.sample.eval() replaces this function's environment with
-  # one exposing each sample's components (field, year, month,
-  # salinity_group, intercept) as plain names, parented to .GlobalEnv - it
-  # can't see a_spatial/a_salinity/year_idx/month_idx via closure, so they
-  # have to come in as arguments via `...` instead.
-  proj <- function(a_spatial, a_salinity, year_idx, month_idx) {
+  proj <- function(a_spatial, a_spline, year_idx, month_idx) {
     spatial <- as.vector(a_spatial %*% field)
-    salinity_contrib <- as.vector(a_salinity %*% salinity_group)
+    salinity_contrib <- as.vector(a_spline %*% spline)
     lp <- intercept[1] + spatial + year[year_idx] + month[month_idx] + salinity_contrib
     exp(lp)
   }
   INLA::inla.posterior.sample.eval(
     proj, samples,
-    a_spatial = a_spatial, a_salinity = a_salinity,
+    a_spatial = a_spatial, a_spline = a_spline,
     year_idx = year_idx, month_idx = month_idx
   )
 }

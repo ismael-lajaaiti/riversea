@@ -141,7 +141,8 @@ rename_rephy <- function() {
 #' measured value (see [rename_rephy()]). Each row also gets a `salinity`
 #' column, matched from the "SALI" parameter recorded during the same site
 #' visit (`passage_id`) - the shallowest reading when a visit has salinity
-#' at multiple depths.
+#' at multiple depths. Readings outside \[0, 43\] psu are excluded as
+#' implausible.
 #'
 #' Dissolved oxygen is reported in two units ("ml.l-1" and "mg.l-1");
 #' "ml.l-1" values are converted to "mg.l-1" (factor 1.42903, the standard
@@ -156,6 +157,7 @@ extract_nutrients_rephy <- function(data) {
     dplyr::filter(.data[["Résultat : Code paramètre"]] == "SALI") |>
     dplyr::filter_out(.data[["Résultat : Niveau de qualité"]] == "Douteux") |>
     dplyr::select(dplyr::all_of(rename_rephy())) |>
+    dplyr::filter(dplyr::between(value, 0, 43)) |>
     dplyr::arrange(passage_id, depth) |>
     dplyr::distinct(passage_id, .keep_all = TRUE) |>
     dplyr::select(passage_id, salinity = value)

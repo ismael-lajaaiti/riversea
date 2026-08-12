@@ -438,8 +438,8 @@ ggplot(sal_data, aes(x = salinity, y = value)) +
 
 We see a strong relationship, and it's clearly not a straight line on the
 log scale -- so we compare the baseline model against three ways of adding
-salinity: a linear term, a quadratic term, and a smooth term (a random walk
-over binned salinity, the same idiom already used for `year` and `month`)
+salinity: a linear term, a quadratic term, and a smooth term (a P-spline:
+a cubic B-spline basis with an RW2 smoothness penalty on its coefficients)
 to capture that curvature.
 
 $$
@@ -455,7 +455,7 @@ $$
 
 $$
 \log(\text{nutrient}) = \text{SPDE}_\text{2D} + \text{year}_\text{RW}
-                       + \text{month}_\text{RW} + \text{salinity}_\text{RW}
+                       + \text{month}_\text{RW} + \text{salinity}_\text{P-spline}
 $$
 
 ::: {.callout-note}
@@ -596,6 +596,39 @@ Smooth salinity is the best model (lowest WAIC) for NH4, NO3+NO2 and PO4,
 beating linear and quadratic salinity as well as the baseline For oxygen,
 salinity doesn't help in any form, so we drop it there and keep the baseline.
 
+#### Marginal salinity effect
+
+To check that the P-spline is actually behaving like a smooth function of
+salinity (and not just overfitting), we plot its marginal effect.
+
+```{r salinity-marginal-plot}
+#| fig-width: 10
+#| fig-height: 4
+
+spline_curve <- function(fit_obj) {
+  boundary <- attr(fit_obj$bs_basis, "Boundary.knots")
+  salinity <- seq(boundary[1], boundary[2], length.out = 100)
+  mean <- predict(fit_obj$bs_basis, salinity) %*% fit_obj$fit$summary.random$spline$mean
+  data.frame(salinity = salinity, mean = as.vector(mean))
+}
+
+salinity_marginal <- dplyr::bind_rows(
+  "NH4" = spline_curve(tar_read(rephy_fit_nh4)),
+  "NO3+NO2" = spline_curve(tar_read(rephy_fit_no3_no2)),
+  "PO4" = spline_curve(tar_read(rephy_fit_po4)),
+  .id = "parameter_code"
+)
+
+ggplot(salinity_marginal, aes(x = salinity, y = mean)) +
+  geom_line() +
+  facet_wrap(~parameter_code, scales = "free_y") +
+  labs(x = "Salinity", y = "Effect (log scale)")
+```
+
+The curves are smooth throughout -- an earlier RW1-over-binned-salinity version
+of this same model produced a visibly noisier curve, which is why we moved to
+the P-spline.
+
 ### Spatial residuals
 
 The residual-structure map above showed a set of estuarine stations
@@ -641,7 +674,7 @@ predicting nutrient values at our fishing operations.
 
 ## Predicting at fishing operations
 
-This is the notebook's actual goal: environmental values at every `nurse` and
+This is our goal. Predict nutrient values at every `nurse` and
 `pomet` fishing operation. We use the smooth-salinity model for NH4, NO3+NO2 and
 PO4 -- OXYGENE is dropped. Each parameter is fit once on the full
 salinity-complete REPHY dataset, then predicted at every operation. `pomet`
@@ -704,9 +737,7 @@ expect given `pomet` reaches deep into estuaries while `nurse` stays coastal.
 
 ### Prediction uncertainty
 
-Each prediction comes with a standard deviation (posterior SD of the linear
-predictor, log scale, from `predict_rephy_spde_salinity_smooth()`'s `sd`
-attribute).
+We next investigate the uncertainty of our predictions.
 
 ```{r foodweb-predictions-uncertainty-map}
 #| fig-width: 12
@@ -721,22 +752,12 @@ patchwork::wrap_plots(
 )
 ```
 
-Overall SD is similar between the two surveys (mean 0.42 for `nurse`, 0.44 for
-`pomet`). We note a pattern within `pomet`: its highest-SD operations are all at
-the extreme low-salinity end , where REPHY's own salinity training data is
-sparse, so the model has a hard time there. 
-
-::: {.callout-note}
-These are point estimates -- the downstream model assessing nutrient (and
-dam) effects on food web structure will treat them as observed data. This is
-bad. The clean fix is to propagate the actual posterior by sampling it. Each
-parameter's model is fit once (`fit_rephy_spde_smooth()`) and saved as a
-`targets` pipeline target (`rephy_fit_nh4`, `rephy_fit_no3_no2`,
-`rephy_fit_po4`), so it's reusable from any script without refitting -- in
-particular from the food-web-structure notebook itself.
-`sample_rephy_spde_smooth(fit, newdata, n_draws)` then draws samples at any
-new locations from an already-fitted model, no refit involved.
-:::
+We note that uncertainty is higher when reaching far upstream, as the model as
+less data points there to learn, and so make more uncertain predictions. The
+good things with bayesian model is that we can actually propagate this
+uncertainty. Instead of making a producing a point-estimate, we will sample the
+posterior probability repeatidly and feed this to the downstream model that will
+actually work on food web structure.
 
 A quick demonstration, 200 draws for PO4 at 5 operations, from the cached fit:
 
