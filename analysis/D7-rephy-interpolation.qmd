@@ -17,28 +17,6 @@ when and where fishing operation occured. It means interpolate the variables of
 interest in space and time. We intend to do so using the Bayesian framework
 INLA.
 
-## Todo
-
-- [x] Setup notebook
-- [x] Plot REPHY stations and fishing operations together (space and time)
-- [x] Fit additive spatio-temporal SPDE model (space + year + cyclic month) for
-one parameter
-- [x] Leave-station-out cross-validation for PO4
-- [x] Diagnose limited CV skill (outliers? under-sampled folds?)
-- [x] Write interpolation model
-- [x] Extend to the other three parameters
-- [x] Diagnose model performence on oxygen
-- [x] Diagnose model performence on nitrite and nitrate
-- [x] Diagnose model performence on ammonium
-- [x] Compare interpolation methods with cross-validation
-- [x] Plot model performence on yearly average
-- [x] Check spatial structure of residuals
-- [x] Add salinity as a covariable
-- [ ] Check interpolation performence without log scale
-- [x] Inteprolate value at fishing operations
-- [ ] Remove REPHY stations too uncertain to interpolate reliably from
-
-## Setup
 
 ```{r setup}
 library(renv)

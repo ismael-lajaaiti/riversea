@@ -4247,9 +4247,7 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#todo" id="toc-todo" class="nav-link active" data-scroll-target="#todo">Todo</a></li>
-  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
-  <li><a href="#presentation-of-the-data" id="toc-presentation-of-the-data" class="nav-link" data-scroll-target="#presentation-of-the-data">Presentation of the data</a>
+  <li><a href="#presentation-of-the-data" id="toc-presentation-of-the-data" class="nav-link active" data-scroll-target="#presentation-of-the-data">Presentation of the data</a>
   <ul class="collapse">
   <li><a href="#spatial-coverage" id="toc-spatial-coverage" class="nav-link" data-scroll-target="#spatial-coverage">Spatial coverage</a></li>
   <li><a href="#temporal-coverage" id="toc-temporal-coverage" class="nav-link" data-scroll-target="#temporal-coverage">Temporal coverage</a></li>
@@ -4295,30 +4293,6 @@ window.Quarto = {
 
 
 <p>The goal is to interpolate REPHY data – nutrient and oxygen concentrations – when and where fishing operation occured. It means interpolate the variables of interest in space and time. We intend to do so using the Bayesian framework INLA.</p>
-<section id="todo" class="level2">
-<h2 class="anchored" data-anchor-id="todo">Todo</h2>
-<ul class="task-list">
-<li><label><input type="checkbox" checked>Setup notebook</label></li>
-<li><label><input type="checkbox" checked>Plot REPHY stations and fishing operations together (space and time)</label></li>
-<li><label><input type="checkbox" checked>Fit additive spatio-temporal SPDE model (space + year + cyclic month) for one parameter</label></li>
-<li><label><input type="checkbox" checked>Leave-station-out cross-validation for PO4</label></li>
-<li><label><input type="checkbox" checked>Diagnose limited CV skill (outliers? under-sampled folds?)</label></li>
-<li><label><input type="checkbox" checked>Write interpolation model</label></li>
-<li><label><input type="checkbox" checked>Extend to the other three parameters</label></li>
-<li><label><input type="checkbox" checked>Diagnose model performence on oxygen</label></li>
-<li><label><input type="checkbox" checked>Diagnose model performence on nitrite and nitrate</label></li>
-<li><label><input type="checkbox" checked>Diagnose model performence on ammonium</label></li>
-<li><label><input type="checkbox" checked>Compare interpolation methods with cross-validation</label></li>
-<li><label><input type="checkbox" checked>Plot model performence on yearly average</label></li>
-<li><label><input type="checkbox" checked>Check spatial structure of residuals</label></li>
-<li><label><input type="checkbox" checked>Add salinity as a covariable</label></li>
-<li><label><input type="checkbox">Check interpolation performence without log scale</label></li>
-<li><label><input type="checkbox" checked>Inteprolate value at fishing operations</label></li>
-<li><label><input type="checkbox">Remove REPHY stations too uncertain to interpolate reliably from</label></li>
-</ul>
-</section>
-<section id="setup" class="level2">
-<h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -4338,7 +4312,6 @@ window.Quarto = {
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">autodep =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-</section>
 <section id="presentation-of-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="presentation-of-the-data">Presentation of the data</h2>
 <p>Here is the REPHY data that we have collected and cleaned.</p>

@@ -340,7 +340,7 @@
     "href": "analysis/D7-rephy-interpolation.html",
     "title": "Interpolation of REPHY data",
     "section": "",
-    "text": "The goal is to interpolate REPHY data – nutrient and oxygen concentrations – when and where fishing operation occured. It means interpolate the variables of interest in space and time. We intend to do so using the Bayesian framework INLA."
+    "text": "The goal is to interpolate REPHY data – nutrient and oxygen concentrations – when and where fishing operation occured. It means interpolate the variables of interest in space and time. We intend to do so using the Bayesian framework INLA.\nCode\nlibrary(renv)\nrenv::load()\nlibrary(targets)\nlibrary(here)\ntar_config_set(\n  store = here::here(\"_targets\")\n)\nlibrary(ggplot2)\nlibrary(dplyr)\nlibrary(sf)\nlibrary(patchwork)\ndevtools::load_all()\nriversea::nice_theme()\nknitr::opts_chunk$set(autodep = TRUE)"
   },
   {
     "objectID": "analysis/D7-rephy-interpolation.html#todo",
