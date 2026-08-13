@@ -1,6 +1,6 @@
 ---
 title: "RIVERSEA : État d'avancement"
-subtitle: "Document à l'appui du formulaire de demande de soutien post-doctorant"
+subtitle: "Document à l'appui du formulaire de demande de soutien post-doctorant INRAE"
 author: "Alain Danet, Ismaël Lajaaiti, Anik Brind'Amour et Eric Edeline"
 date: "25 septembre 2026"
 date-format: long
@@ -39,43 +39,62 @@ les [perspectives](#sec-perspectives), ainsi que la
 ## Contexte et objectifs {#sec-contexte}
 
 Les changements globaux, le mouvement des espèces et les flux de nutriments
-transcendent les frontières traditionnelles entre écosystèmes terrestres,
-d'eau douce et marins, qui pourtant continuent souvent d'être étudiés
-isolément. Face à ce cloisonnement et aux pressions anthropiques croissantes,
-le projet RIVERSEA s'appuie sur le cadre des méta-écosystèmes
-[@Loreau-Mouquet-Holt-2003a] pour quantifier, à l'échelle de la France,
+transcendent les frontières traditionnelles entre écosystèmes terrestres, d'eau
+douce et marins [@Polis-Anderson-Holt-1997; @Gounand-etal-2018b]. Pourtant ces
+écosystèmes continuent souvent d'être étudiés isolément [@Kavanaugh-etal-2013].
+En réponse à ce cloisonnement, **le projet RIVERSEA vise à documenter l'impact
+des pressions anthropiques sur l'ensemble du continuum rivière-mer**. En
+particulier, RIVERSEA s'appuie sur le cadre des méta-écosystèmes
+[@Loreau-Mouquet-Holt-2003a] pour **quantifier, à l'échelle de la France,
 l'impact conjoint des barrages et de l'enrichissement en nutriments sur la
-structure et le fonctionnement des écosystèmes aquatiques le long du
-continuum rivière-mer. En fragmentant ce continuum, les barrages entravent la
-migration des espèces [@Grill-etal-2019], tandis que l'enrichissement en
-nutriments peut profondément restructurer les réseaux trophiques et provoquer
-des efflorescences algales aux conséquences dramatiques [@Diaz-Rosenberg-2008].
-Ces deux pressions sont rarement étudiées conjointement, bien que les barrages
-modulent eux-mêmes les flux de nutriments qu'ils peuvent retenir
-[@He-etal-2024], avec un potentiel stabilisateur en aval au prix d'une
-déstabilisation en amont [@Gounand-etal-2014]. Cette double intégration —
-pressions croisées et continuum complet — positionne RIVERSEA comme un projet
-inédit pour renouveler la compréhension du fonctionnement et de la stabilité
-des méta-écosystèmes. Les enjeux, l'état de l'art et le programme de recherche
-complets sont détaillés dans le formulaire de demande de soutien
-post-doctorant.
+structure et le fonctionnement des écosystèmes aquatiques**.
+
+*Les enjeux, l'état de l'art et le programme de recherche complets sont
+détaillés dans le formulaire de demande de soutien post-doctorant.*
 
 ## Travail réalisé {#sec-travail}
 
-### Données biologiques
+### Données de pêche
 
-Trois campagnes de pêche ont été harmonisées : Pomet (façades Atlantique et
-Manche, INRAE), Nurse (côtes françaises, 1980-2023, IFREMER) et Solper
-(2005-2011), en complément des opérations en rivière (ASPE, OFB). Le travail
-a couvert le nettoyage des noms d'espèces, l'harmonisation des unités
-(longueurs, coordonnées) et le contrôle du taux de mesure des tailles
-individuelles (par exemple 83 % des poissons intégralement mesurés dans
-Pomet). Les tailles manquantes ont été imputées par espèce à partir de la
-distribution des tailles observées, une méthode validée sur données
-synthétiques avant application aux données réelles.
+Deux campagnes de pêche en mer ont été harmonisées avec les opérations en
+rivière : Pomet (façades Atlantique et Manche, INRAE), Nurse (côtes
+françaises, 1980-2023, IFREMER) et ASPE (OFB). Le travail a couvert le
+nettoyage des noms d'espèces
+(taxonomie changeante), l'harmonisation des unités (longueurs des poissons,
+coordonnées GPS) et le contrôle du taux de qualité des données, avec filtration
+quand nécessaire (espèces rares, années peu échantillonnées, etc.). Les tailles
+manquantes ont été imputées par espèce à partir de la distribution des tailles
+observées, une méthode validée sur données synthétiques avant application aux
+données réelles. Ces données de tailles individuelles servent ensuite à la
+reconstruction des réseaux trophiques.
 
 *[Figure : carte des stations d'échantillonnage rivière-estuaire-mer, colorée
-par source de données (ASPE / Pomet / Nurse / Solper).]*
+par source de données (ASPE / Pomet / Nurse).]*
+
+### Table de régime alimentaire
+
+En plus des données de tailles, la reconstruction des réseaux trophiques
+nécessitait une connaissance du régime alimentaire des 158 espèces de poissons
+pêchées le long du continuum. Celle-ci comprenait des poissons marins
+benthiques comme la sole commune (*Solea solea*) se nourrissant sur le benthos
+(polychètes, mollusques, etc.), des espèces d'eau douce pélagiques comme
+l'ablette (*Alburnus alburnus*), en passant par des espèces anadromes telles
+que le saumon atlantique (*Salmo salar*). Ce travail de collecte des
+informations de régime alimentaire a d'abord été fait automatiquement en
+extrayant des informations de la base de données FishBase avec le paquet
+`rfishbase`. Cette première table de régime alimentaire a ensuite été
+validée, espèce par espèce, par une recherche bibliographique qui a permis de
+corriger des imprécisions de FishBase. La table ainsi produite, ainsi que les
+références bibliographiques la justifiant, seront mises à disposition avec les
+données en libre accès associées au manuscrit.
+
+### Reconstruction des réseaux trophiques
+
+La reconstruction des réseaux trophiques a été faite grâce au paquet
+`foodwebbuilder`. Plus de 17 000 réseaux trophiques ont été reconstruits le
+long du continuum rivière-mer, de 1980 à 2023, à partir de cette table de
+régimes alimentaires. Cette reconstruction repose sur un pipeline automatisé,
+facilitant l'intégration des données de nouvelles campagnes de pêche.
 
 ### Données environnementales
 
@@ -98,14 +117,6 @@ continuum, avec incertitude associée.]*
 
 *[Figure : distribution des distances à l'embouchure par bassin versant.]*
 
-### Reconstruction des réseaux trophiques
-
-Plus de 17 000 réseaux trophiques ont été reconstruits le long du continuum
-rivière-mer, de 1980 à 2023, à partir d'une table de régimes alimentaires
-couvrant 148 espèces, validée par la littérature et construite spécifiquement
-pour ce projet. Cette reconstruction repose sur un pipeline automatisé,
-facilitant l'intégration des données de nouvelles campagnes de pêche.
-
 ### Modélisation statistique spatiale
 
 La définition du modèle spatial bayésien (R-INLA) reliant structure des
@@ -115,7 +126,7 @@ révélé des effets significatifs des nutriments et des barrages sur les
 communautés de poissons le long du continuum (voir [Résultats
 principaux](#sec-resultats) ci-dessous).
 
-## Résultats principaux {#sec-resultats}
+## Résultats préliminaires {#sec-resultats}
 
 *[2-3 résultats clés, avec éventuellement une figure. Rester factuel : ce qui
 a été testé, ce qui en ressort.]*
