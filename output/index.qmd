@@ -2,4 +2,7 @@
 title: "Reports"
 ---
 
-Synthetic report documenting the analysis pipeline.
+- [**Manuscript**](manuscript.qmd) — synthetic report documenting the
+  analysis pipeline.
+- [**État d'avancement**](etat-avancement.qmd) — progress report
+  ([PDF](etat-avancement.pdf)).

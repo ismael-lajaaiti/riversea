@@ -1110,7 +1110,7 @@
     "href": "output/index.html",
     "title": "Reports",
     "section": "",
-    "text": "Synthetic report documenting the analysis pipeline."
+    "text": "Manuscript — synthetic report documenting the analysis pipeline.\nÉtat d’avancement — progress report (PDF)."
   },
   {
     "objectID": "analysis/D9-structure-continuum.html#invasive-and-diadromous-species",
@@ -1167,5 +1167,96 @@
     "title": "Interpolation of REPHY data",
     "section": "Predicting at fishing operations",
     "text": "Predicting at fishing operations\nThis is our goal. Predict nutrient values at every nurse and pomet fishing operation. We use the smooth-salinity model for NH4, NO3+NO2 and PO4 – OXYGENE is dropped. Each parameter is fit once on the full salinity-complete REPHY dataset, then predicted at every operation. pomet operations use their own measured salinity where available; the rest (all nurse and 4% of pomet) fall back to a space-time-only prediction for that operation.\n\n\nCode\nfoodweb_predictions &lt;- purrr::map_dfr(c(\"NH4\", \"NO3+NO2\", \"PO4\"), \\(parameter) {\n  train &lt;- rephy_sal |&gt; dplyr::filter(parameter_code == parameter)\n  pred &lt;- predict_rephy_spde_salinity_smooth(train, foodwebs, mesh)\n  foodwebs |&gt;\n    dplyr::transmute(operation_id, survey, longitude, latitude, year, month, salinity) |&gt;\n    dplyr::mutate(parameter_code = parameter, pred = pred, sd = attr(pred, \"sd\"))\n})\n\n\n\n\nCode\nplot_operation_map &lt;- function(parameter, value_col, legend) {\n  d &lt;- foodweb_predictions |&gt; dplyr::filter(parameter_code == parameter)\n  ggplot(d, aes(longitude, latitude, color = .data[[value_col]])) +\n    geom_point(size = 0.6, alpha = 0.7) +\n    geom_sf(data = coastline(), inherit.aes = FALSE, linewidth = 0.3) +\n    coord_sf(\n      xlim = range(foodweb_predictions$longitude),\n      ylim = range(foodweb_predictions$latitude)\n    ) +\n    scale_color_viridis_c(trans = if (value_col == \"pred\") \"log10\" else \"identity\") +\n    labs(x = NULL, y = NULL, color = legend, title = parameter) +\n    theme(panel.grid = element_blank())\n}\n\npatchwork::wrap_plots(\n  lapply(c(\"NH4\", \"NO3+NO2\", \"PO4\"), plot_operation_map, value_col = \"pred\", legend = NULL),\n  nrow = 1\n)\n\n\n\n\n\n\n\n\n\n\n\nCode\nfoodweb_predictions |&gt;\n  dplyr::summarise(\n    n = dplyr::n(),\n    median = round(median(pred), 2),\n    p10 = round(quantile(pred, 0.1), 2),\n    p90 = round(quantile(pred, 0.9), 2),\n    .by = c(parameter_code, survey)\n  ) |&gt;\n  dplyr::arrange(parameter_code, survey) |&gt;\n  knitr::kable()\n\n\n\n\n\nparameter_code\nsurvey\nn\nmedian\np10\np90\n\n\n\n\nNH4\nnurse\n1471\n0.67\n0.37\n1.32\n\n\nNH4\npomet\n6523\n1.42\n0.50\n4.10\n\n\nNO3+NO2\nnurse\n1471\n3.12\n2.04\n4.62\n\n\nNO3+NO2\npomet\n6523\n22.59\n3.10\n72.89\n\n\nPO4\nnurse\n1471\n0.28\n0.19\n0.44\n\n\nPO4\npomet\n6523\n0.38\n0.15\n1.10\n\n\n\n\n\nPredictions are consistently higher at pomet operations than nurse across all three parameters (e.g. NO3+NO2 median 22.2 vs. 3.5) – exactly what we’d expect given pomet reaches deep into estuaries while nurse stays coastal.\n\nPrediction uncertainty\nWe next investigate the uncertainty of our predictions.\n\n\nCode\npatchwork::wrap_plots(\n  lapply(\n    c(\"NH4\", \"NO3+NO2\", \"PO4\"), plot_operation_map,\n    value_col = \"sd\", legend = \"log-scale SD\"\n  ),\n  nrow = 1\n)\n\n\n\n\n\n\n\n\n\nWe note that uncertainty is higher when reaching far upstream, as the model as less data points there to learn, and so make more uncertain predictions. The good things with bayesian model is that we can actually propagate this uncertainty. Instead of making a producing a point-estimate, we will sample the posterior probability repeatidly and feed this to the downstream model that will actually work on food web structure.\nA quick demonstration, 200 draws for PO4 at 5 operations, from the cached fit:\n\n\nCode\nfit_po4 &lt;- tar_read(rephy_fit_po4)\ndraws_demo &lt;- sample_rephy_spde_smooth(\n  fit_po4,\n  foodwebs |&gt; dplyr::slice_sample(n = 5),\n  n_draws = 200\n)\n\nggplot(data.frame(draw = draws_demo[1, ]), aes(draw)) +\n  geom_histogram(bins = 30) +\n  labs(x = \"PO4, posterior draws for one operation\", y = NULL) +\n  theme(panel.grid = element_blank())"
+  },
+  {
+    "objectID": "output/etat-avancement.html",
+    "href": "output/etat-avancement.html",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "",
+    "text": "Ce document présente la progression du projet RIVERSEA, qui a débuté le 2 février 2026, jusqu’à début septembre 2026. Il rappelle brièvement le contexte général dans lequel le projet s’inscrit, puis présente le travail réalisé, les premiers résultats obtenus, les difficultés rencontrées, les perspectives, ainsi que la valorisation du projet."
+  },
+  {
+    "objectID": "output/etat-avancement.html#contexte-et-objectifs",
+    "href": "output/etat-avancement.html#contexte-et-objectifs",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "",
+    "text": "Ceci est un test.\n[1 court paragraphe : rappel de l’objectif du projet RIVERSEA et de la question scientifique centrale — cf. résumé dans manuscript.qmd pour une version plus détaillée.]"
+  },
+  {
+    "objectID": "output/etat-avancement.html#travail-réalisé",
+    "href": "output/etat-avancement.html#travail-réalisé",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Travail réalisé",
+    "text": "Travail réalisé\n[Bilan du travail effectué depuis le début du contrat, organisé par grand chantier plutôt que par ordre chronologique, p. ex. :]\n\nConstitution des jeux de données\n\n\nReconstruction des réseaux trophiques\n\n\nModélisation statistique spatiale"
+  },
+  {
+    "objectID": "output/etat-avancement.html#résultats-principaux",
+    "href": "output/etat-avancement.html#résultats-principaux",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Résultats principaux",
+    "text": "Résultats principaux\n[2-3 résultats clés, avec éventuellement une figure. Rester factuel : ce qui a été testé, ce qui en ressort.]\n\n\n\n\n\n\nFigure 1: Sites d’échantillonnage utilisés dans l’étude, répartis le long du continuum rivière-estuaire-mer.\n\n\n\nComme illustré en Figure 1, […]."
+  },
+  {
+    "objectID": "output/etat-avancement.html#difficultés-rencontrées-et-ajustements",
+    "href": "output/etat-avancement.html#difficultés-rencontrées-et-ajustements",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Difficultés rencontrées et ajustements",
+    "text": "Difficultés rencontrées et ajustements\n[Ce qui a pris plus de temps que prévu et pourquoi, tout changement de cap méthodologique.]"
+  },
+  {
+    "objectID": "output/etat-avancement.html#perspectives-et-calendrier",
+    "href": "output/etat-avancement.html#perspectives-et-calendrier",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Perspectives et calendrier",
+    "text": "Perspectives et calendrier\n[Étapes restantes et calendrier prévisionnel, en cohérence avec la durée de prolongation demandée.]"
+  },
+  {
+    "objectID": "output/etat-avancement.html#valorisation",
+    "href": "output/etat-avancement.html#valorisation",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Valorisation",
+    "text": "Valorisation\n[Communications, soumissions, collaborations engagées.]"
+  },
+  {
+    "objectID": "output/etat-avancement.html#sec-contexte",
+    "href": "output/etat-avancement.html#sec-contexte",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Contexte et objectifs",
+    "text": "Contexte et objectifs\nLes changements globaux, le mouvement des espèces et les flux de nutriments transcendent les frontières traditionnelles entre écosystèmes terrestres, d’eau douce et marins, qui pourtant continuent souvent d’être étudiés isolément. Face à ce cloisonnement et aux pressions anthropiques croissantes, le projet RIVERSEA s’appuie sur le cadre des méta-écosystèmes (Loreau et al. 2003) pour quantifier, à l’échelle de la France, l’impact conjoint des barrages et de l’enrichissement en nutriments sur la structure et le fonctionnement des écosystèmes aquatiques le long du continuum rivière-mer. En fragmentant ce continuum, les barrages entravent la migration des espèces (Grill et al. 2019), tandis que l’enrichissement en nutriments peut profondément restructurer les réseaux trophiques et provoquer des efflorescences algales aux conséquences dramatiques (Diaz et Rosenberg 2008). Ces deux pressions sont rarement étudiées conjointement, bien que les barrages modulent eux-mêmes les flux de nutriments qu’ils peuvent retenir (He et al. 2024), avec un potentiel stabilisateur en aval au prix d’une déstabilisation en amont (Gounand et al. 2014). Cette double intégration — pressions croisées et continuum complet — positionne RIVERSEA comme un projet inédit pour renouveler la compréhension du fonctionnement et de la stabilité des méta-écosystèmes. Les enjeux, l’état de l’art et le programme de recherche complets sont détaillés dans le formulaire de demande de soutien post-doctorant."
+  },
+  {
+    "objectID": "output/etat-avancement.html#sec-travail",
+    "href": "output/etat-avancement.html#sec-travail",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Travail réalisé",
+    "text": "Travail réalisé\n\nDonnées biologiques\nTrois campagnes de pêche ont été harmonisées : Pomet (façades Atlantique et Manche, INRAE), Nurse (côtes françaises, 1980-2023, IFREMER) et Solper (2005-2011), en complément des opérations en rivière (ASPE, OFB). Le travail a couvert le nettoyage des noms d’espèces, l’harmonisation des unités (longueurs, coordonnées) et le contrôle du taux de mesure des tailles individuelles (par exemple 83 % des poissons intégralement mesurés dans Pomet). Les tailles manquantes ont été imputées par espèce à partir de la distribution des tailles observées, une méthode validée sur données synthétiques avant application aux données réelles.\n[Figure : carte des stations d’échantillonnage rivière-estuaire-mer, colorée par source de données (ASPE / Pomet / Nurse / Solper).]\n\n\nDonnées environnementales\nLes données de barrages et de nutriments (AMOBIO, échelle France) ont été croisées avec les données de structure des réseaux trophiques (ASPE), après contrôle des valeurs aberrantes et vérification de la couverture temporelle (bonne couverture depuis 2005). Les concentrations en nutriments ont été comparées aux seuils réglementaires de qualité de l’eau (grille SEQ-Eau). En parallèle, les données de nutriments côtiers (REPHY, 1998-2023) ont été nettoyées et harmonisées, puis interpolées dans l’espace et le temps par un modèle bayésien spatio-temporel (INLA-SPDE) jusqu’aux opérations de pêche en estuaire et en mer, avec validation croisée. Enfin, la distance à l’embouchure la plus proche a été calculée pour l’ensemble des opérations de pêche (rivière et mer) sur quatre bassins versants (Loire, Adour-Garonne, Seine, Escaut-Somme), en tenant compte du réseau hydrographique et du contournement des côtes et îles pour les opérations en mer.\n[Figure : carte des concentrations en nutriments interpolées le long du continuum, avec incertitude associée.]\n[Figure : distribution des distances à l’embouchure par bassin versant.]\n\n\nReconstruction des réseaux trophiques\nPlus de 17 000 réseaux trophiques ont été reconstruits le long du continuum rivière-mer, de 1980 à 2023, à partir d’une table de régimes alimentaires couvrant 148 espèces, validée par la littérature et construite spécifiquement pour ce projet. Cette reconstruction repose sur un pipeline automatisé, facilitant l’intégration des données de nouvelles campagnes de pêche.\n\n\nModélisation statistique spatiale\nLa définition du modèle spatial bayésien (R-INLA) reliant structure des réseaux trophiques, barrages et nutriments est en cours, sur la base des données désormais consolidées. De premières analyses exploratoires ont déjà révélé des effets significatifs des nutriments et des barrages sur les communautés de poissons le long du continuum (voir Résultats principaux ci-dessous)."
+  },
+  {
+    "objectID": "output/etat-avancement.html#sec-resultats",
+    "href": "output/etat-avancement.html#sec-resultats",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Résultats principaux",
+    "text": "Résultats principaux\n[2-3 résultats clés, avec éventuellement une figure. Rester factuel : ce qui a été testé, ce qui en ressort.]\n\n\n\n\n\n\nFigure 1: Sites d’échantillonnage utilisés dans l’étude, répartis le long du continuum rivière-estuaire-mer.\n\n\n\nComme illustré en Figure 1, […]."
+  },
+  {
+    "objectID": "output/etat-avancement.html#sec-difficultes",
+    "href": "output/etat-avancement.html#sec-difficultes",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Difficultés rencontrées et ajustements",
+    "text": "Difficultés rencontrées et ajustements\n[Ce qui a pris plus de temps que prévu et pourquoi, tout changement de cap méthodologique.]"
+  },
+  {
+    "objectID": "output/etat-avancement.html#sec-perspectives",
+    "href": "output/etat-avancement.html#sec-perspectives",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Perspectives et calendrier",
+    "text": "Perspectives et calendrier\n[Étapes restantes et calendrier prévisionnel, en cohérence avec la durée de prolongation demandée.]"
+  },
+  {
+    "objectID": "output/etat-avancement.html#sec-valorisation",
+    "href": "output/etat-avancement.html#sec-valorisation",
+    "title": "RIVERSEA : État d’avancement",
+    "section": "Valorisation",
+    "text": "Valorisation\n[Communications, soumissions, collaborations engagées.]"
   }
 ]

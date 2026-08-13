@@ -1,0 +1,140 @@
+---
+title: "RIVERSEA : État d'avancement"
+subtitle: "Document à l'appui du formulaire de demande de soutien post-doctorant"
+author: "Alain Danet, Ismaël Lajaaiti, Anik Brind'Amour et Eric Edeline"
+date: "25 septembre 2026"
+date-format: long
+lang: fr
+bibliography: ../references.bib
+format:
+  html:
+    toc: true
+    embed-resources: true
+  typst:
+    papersize: a4
+    margin:
+      x: 2.5cm
+      y: 2.5cm
+    toc: false
+    number-sections: true
+    fontsize: 11pt
+    csl: "chicago-author-date"
+    mainfont: "Noto Sans"
+    template-partials:
+      - "typst-template.typ"
+    include-before-body:
+      text: |
+        #show heading: set text(font: "Noto Sans")
+        #show heading: set block(above: 1.6em, below: 1em)
+---
+
+Ce document présente la progression du projet RIVERSEA, qui a débuté le 2
+février 2026, jusqu'à début septembre 2026. Il rappelle brièvement le
+[contexte général](#sec-contexte) dans lequel le projet s'inscrit, puis
+présente le [travail réalisé](#sec-travail), les [premiers résultats
+obtenus](#sec-resultats), les [difficultés rencontrées](#sec-difficultes),
+les [perspectives](#sec-perspectives), ainsi que la
+[valorisation](#sec-valorisation) du projet.
+
+## Contexte et objectifs {#sec-contexte}
+
+Les changements globaux, le mouvement des espèces et les flux de nutriments
+transcendent les frontières traditionnelles entre écosystèmes terrestres,
+d'eau douce et marins, qui pourtant continuent souvent d'être étudiés
+isolément. Face à ce cloisonnement et aux pressions anthropiques croissantes,
+le projet RIVERSEA s'appuie sur le cadre des méta-écosystèmes
+[@Loreau-Mouquet-Holt-2003a] pour quantifier, à l'échelle de la France,
+l'impact conjoint des barrages et de l'enrichissement en nutriments sur la
+structure et le fonctionnement des écosystèmes aquatiques le long du
+continuum rivière-mer. En fragmentant ce continuum, les barrages entravent la
+migration des espèces [@Grill-etal-2019], tandis que l'enrichissement en
+nutriments peut profondément restructurer les réseaux trophiques et provoquer
+des efflorescences algales aux conséquences dramatiques [@Diaz-Rosenberg-2008].
+Ces deux pressions sont rarement étudiées conjointement, bien que les barrages
+modulent eux-mêmes les flux de nutriments qu'ils peuvent retenir
+[@He-etal-2024], avec un potentiel stabilisateur en aval au prix d'une
+déstabilisation en amont [@Gounand-etal-2014]. Cette double intégration —
+pressions croisées et continuum complet — positionne RIVERSEA comme un projet
+inédit pour renouveler la compréhension du fonctionnement et de la stabilité
+des méta-écosystèmes. Les enjeux, l'état de l'art et le programme de recherche
+complets sont détaillés dans le formulaire de demande de soutien
+post-doctorant.
+
+## Travail réalisé {#sec-travail}
+
+### Données biologiques
+
+Trois campagnes de pêche ont été harmonisées : Pomet (façades Atlantique et
+Manche, INRAE), Nurse (côtes françaises, 1980-2023, IFREMER) et Solper
+(2005-2011), en complément des opérations en rivière (ASPE, OFB). Le travail
+a couvert le nettoyage des noms d'espèces, l'harmonisation des unités
+(longueurs, coordonnées) et le contrôle du taux de mesure des tailles
+individuelles (par exemple 83 % des poissons intégralement mesurés dans
+Pomet). Les tailles manquantes ont été imputées par espèce à partir de la
+distribution des tailles observées, une méthode validée sur données
+synthétiques avant application aux données réelles.
+
+*[Figure : carte des stations d'échantillonnage rivière-estuaire-mer, colorée
+par source de données (ASPE / Pomet / Nurse / Solper).]*
+
+### Données environnementales
+
+Les données de barrages et de nutriments (AMOBIO, échelle France) ont été
+croisées avec les données de structure des réseaux trophiques (ASPE), après
+contrôle des valeurs aberrantes et vérification de la couverture temporelle
+(bonne couverture depuis 2005). Les concentrations en nutriments ont été
+comparées aux seuils réglementaires de qualité de l'eau (grille SEQ-Eau). En
+parallèle, les données de nutriments côtiers (REPHY, 1998-2023) ont été
+nettoyées et harmonisées, puis interpolées dans l'espace et le temps par un
+modèle bayésien spatio-temporel (INLA-SPDE) jusqu'aux opérations de pêche en
+estuaire et en mer, avec validation croisée. Enfin, la distance à l'embouchure
+la plus proche a été calculée pour l'ensemble des opérations de pêche
+(rivière et mer) sur quatre bassins versants (Loire, Adour-Garonne, Seine,
+Escaut-Somme), en tenant compte du réseau hydrographique et du contournement
+des côtes et îles pour les opérations en mer.
+
+*[Figure : carte des concentrations en nutriments interpolées le long du
+continuum, avec incertitude associée.]*
+
+*[Figure : distribution des distances à l'embouchure par bassin versant.]*
+
+### Reconstruction des réseaux trophiques
+
+Plus de 17 000 réseaux trophiques ont été reconstruits le long du continuum
+rivière-mer, de 1980 à 2023, à partir d'une table de régimes alimentaires
+couvrant 148 espèces, validée par la littérature et construite spécifiquement
+pour ce projet. Cette reconstruction repose sur un pipeline automatisé,
+facilitant l'intégration des données de nouvelles campagnes de pêche.
+
+### Modélisation statistique spatiale
+
+La définition du modèle spatial bayésien (R-INLA) reliant structure des
+réseaux trophiques, barrages et nutriments est en cours, sur la base des
+données désormais consolidées. De premières analyses exploratoires ont déjà
+révélé des effets significatifs des nutriments et des barrages sur les
+communautés de poissons le long du continuum (voir [Résultats
+principaux](#sec-resultats) ci-dessous).
+
+## Résultats principaux {#sec-resultats}
+
+*[2-3 résultats clés, avec éventuellement une figure. Rester factuel : ce qui
+a été testé, ce qui en ressort.]*
+
+![Sites d'échantillonnage utilisés dans l'étude, répartis le long du
+continuum rivière-estuaire-mer.](../assets/fig2-maps.png){#fig-sites width="70%"}
+
+Comme illustré en @fig-sites, [...].
+
+## Difficultés rencontrées et ajustements {#sec-difficultes}
+
+*[Ce qui a pris plus de temps que prévu et pourquoi, tout changement de cap
+méthodologique.]*
+
+## Perspectives et calendrier {#sec-perspectives}
+
+*[Étapes restantes et calendrier prévisionnel, en cohérence avec la durée de
+prolongation demandée.]*
+
+## Valorisation {#sec-valorisation}
+
+*[Communications, soumissions, collaborations engagées.]*
