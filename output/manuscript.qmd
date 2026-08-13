@@ -260,6 +260,9 @@ probably try the method for our work.
 - @Kortsch-etal-2021 investigates change in food web in the Baltic Sea using
 weighted and unweighted structural metrics.
 
+- @Rogers-etal-2024 found that top-down and bottom-up effect varied along the
+estuary gradient.
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
