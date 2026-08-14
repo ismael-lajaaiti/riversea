@@ -412,5 +412,13 @@ data_targets <- list(
         rephy_mesh
       )
     )
+  ),
+  tar_target(
+    rephy_operation_predictions,
+    predict_rephy_at_operations(
+      rephy_salinity_complete,
+      foodweb_structure |> dplyr::filter(survey %in% c("nurse", "pomet")),
+      rephy_mesh
+    )
   )
 )

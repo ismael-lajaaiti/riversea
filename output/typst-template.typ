@@ -109,6 +109,8 @@
         ]]
       }
 
+      #align(center)[#line(length: 30%, stroke: 0.5pt + gray)]
+
       #if abstract != none {
         block(inset: 2em)[
         #text(weight: "semibold")[#abstract-title] #h(1em) #abstract
@@ -124,12 +126,15 @@
       toc_title
     }
     block(above: 0em, below: 2em)[
+    #set text(font: font) if font != none
+    #show heading: set text(font: font) if font != none
     #outline(
       title: toc_title,
       depth: toc_depth,
       indent: toc_indent
     );
     ]
+    pagebreak()
   }
 
   doc

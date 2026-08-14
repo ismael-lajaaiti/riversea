@@ -434,6 +434,110 @@ sample_rephy_spde_smooth <- function(fit_obj, newdata, n_draws) {
   )
 }
 
+#' Predict REPHY nutrient concentrations, with uncertainty, at fishing
+#' operations.
+#'
+#' Wraps [predict_rephy_spde_salinity_smooth()] (fit-and-predict-in-one-call,
+#' same function/model as the rest of the notebook's point predictions) over
+#' each parameter. Uses INLA's own posterior summary for `sd` (the linear
+#' predictor's sd on the log scale, computed exactly), not an empirical sd
+#' across posterior draws - the latter is noisy for a modest draw count and
+#' can be inflated by occasional draws with extreme salinity-spline
+#' extrapolation (see the `bs()` "beyond boundary knots" warning).
+#'
+#' @param rephy_data tibble with `parameter_code`, `value`, `longitude`,
+#'   `latitude`, `year`, `month`, `salinity`, e.g. `rephy_salinity_complete`.
+#' @param operation tibble with `operation_id`, `survey`, `longitude`,
+#'   `latitude`, `year`, `month`, `salinity`, e.g. `foodweb_structure`
+#'   restricted to `nurse`/`pomet`.
+#' @param mesh `inla.mesh`, e.g. `rephy_mesh`.
+#' @param parameters REPHY parameter codes to predict.
+#'
+#' @return tibble, one row per (operation, parameter): `operation_id`,
+#' `survey`, `longitude`, `latitude`, `parameter_code`, `pred` (natural
+#' scale), `sd` (log-scale sd of the linear predictor).
+#' @export
+predict_rephy_at_operations <- function(
+  rephy_data, operation, mesh, parameters = c("NH4", "NO3+NO2", "PO4")
+) {
+  purrr::map_dfr(parameters, function(param) {
+    train <- rephy_data |> dplyr::filter(parameter_code == param)
+    pred <- predict_rephy_spde_salinity_smooth(train, operation, mesh)
+    sd_val <- attr(pred, "sd")
+    operation |>
+      dplyr::select(operation_id, survey, longitude, latitude) |>
+      dplyr::mutate(parameter_code = param, pred = as.numeric(pred), sd = sd_val)
+  })
+}
+
+#' Map of interpolated REPHY nutrient concentrations at fishing operations.
+#'
+#' Three panels (NH4, NO3+NO2, PO4) of predicted concentration at fishing
+#' operations, restricted to `district_kept`, each with its own legend
+#' directly beneath it (concentration ranges differ too much between
+#' parameters to share one).
+#'
+#' @param predictions tibble with `operation_id`, `survey`, `longitude`,
+#'   `latitude`, `parameter_code`, `pred`, e.g.
+#'   `predict_rephy_at_operations()`'s output.
+#' @param operation_location tibble with `operation_id`, `district`, e.g.
+#'   `classify_operation_location()`'s output.
+#' @param district_kept character vector of districts to keep.
+#' @param basin sf tibble with `district`, `geometry`, e.g.
+#'   `format_basin()`'s output.
+#'
+#' @return patchwork object, 1 row x 3 columns.
+#' @export
+plot_rephy_predictions_map <- function(
+  predictions, operation_location, district_kept, basin
+) {
+  nice_theme()
+
+  pred <- predictions |>
+    dplyr::left_join(
+      operation_location |> dplyr::select(operation_id, district),
+      by = "operation_id"
+    ) |>
+    dplyr::filter(district %in% district_kept)
+
+  france <- rnaturalearth::ne_countries(
+    geounit = "france", type = "map_units", scale = "medium",
+    returnclass = "sf"
+  )
+  basin_kept <- basin |> dplyr::filter(district %in% district_kept)
+  xlim <- c(-5.3, 8.3)
+  ylim <- c(41.2, 51.2)
+
+  params <- c("NH4", "NO3+NO2", "PO4")
+
+  panels <- lapply(params, function(p) {
+    pred_p <- pred |> dplyr::filter(parameter_code == p)
+    ggplot2::ggplot() +
+      ggplot2::geom_sf(data = france, fill = NA, color = "grey80", linewidth = 0.25) +
+      ggplot2::geom_sf(
+        data = basin_kept, fill = "grey97", color = "grey40", linewidth = 0.4
+      ) +
+      ggplot2::geom_point(
+        data = pred_p, ggplot2::aes(longitude, latitude, color = pred),
+        size = 0.6, alpha = 0.75
+      ) +
+      ggplot2::coord_sf(xlim = xlim, ylim = ylim, expand = FALSE) +
+      ggplot2::scale_color_viridis_c(trans = "log10", name = "Concentration (µmol/L)") +
+      ggplot2::labs(x = "Longitude", y = "Latitude", title = p) +
+      ggplot2::theme(
+        panel.grid = ggplot2::element_blank(),
+        plot.title = ggplot2::element_text(size = 13, face = "bold"),
+        axis.text = ggplot2::element_text(size = 9),
+        axis.title = ggplot2::element_text(size = 10),
+        legend.position = "bottom",
+        legend.text = ggplot2::element_text(size = 8, angle = 30, hjust = 1),
+        legend.title = ggplot2::element_text(size = 10)
+      )
+  })
+
+  patchwork::wrap_plots(panels, ncol = 3)
+}
+
 #' Leave-station-out cross-validation for a REPHY parameter
 #'
 #' Splits stations (`site_id`) into `k` groups; for each, fits `predict_fn`

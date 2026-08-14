@@ -32,7 +32,8 @@ tar_option_set(
     "vegan",
     "ggvegan",
     "lubridate",
-    "mapview"
+    "mapview",
+    "patchwork"
   )
 )
 

@@ -27,7 +27,41 @@ plot_targets <- list(
     plot_sampling(sea_data_tidy, station_file)
   ),
   tar_target(
+    plot_stations_overview,
+    plot_station_overview(operation_location, params$district_kept, basin)
+  ),
+  tar_target(
     plot_net_groups,
     plot_network_groups(diet_resource)
+  ),
+  tar_target(
+    plot_diet_categories_overview,
+    plot_diet_categories(diet, size_year_filtered)
+  ),
+  tar_target(
+    plot_foodweb_overview_report,
+    plot_foodweb_overview(
+      web_list$metaweb, resource_list, diet, size_year_filtered,
+      foodweb_structure,
+      ops = c(river = "83544", nurse = "2022_1_GIR12_14_S", pomet = "61832307"),
+      titles = c(
+        river = "Rivière (Dordogne)",
+        nurse = "Estuaire (Gironde)",
+        pomet = "Côte (Gironde)"
+      ),
+      lang = "fr"
+    )
+  ),
+  tar_target(
+    plot_foodweb_structure_map_overview,
+    plot_foodweb_structure_map(
+      foodweb_structure, operation_location, params$district_kept, basin
+    )
+  ),
+  tar_target(
+    plot_rephy_predictions_map_overview,
+    plot_rephy_predictions_map(
+      rephy_operation_predictions, operation_location, params$district_kept, basin
+    )
   )
 )

@@ -124,6 +124,228 @@ plot_sampling <- function(sea_data, station_file) {
     ggplot2::geom_sf(data = d_sampling, ggplot2::aes(color = survey))
 }
 
+#' Map and temporal coverage of fishing operations by data source.
+#'
+#' Progress-report figure: a national map of stations colored by survey
+#' (river operations relabelled `ASPE`), next to yearly operation counts per
+#' survey. Both panels are restricted to `district_kept`, so the map matches
+#' the catchments actually used in the analysis rather than the full,
+#' national extent of each raw survey. The four kept catchments are drawn
+#' as polygons on the map for spatial context.
+#'
+#' @param operation tibble with `longitude`, `latitude`, `survey`, `year`,
+#'   `district`, e.g. `classify_operation_location()`'s output.
+#' @param district_kept character vector of districts to keep.
+#' @param basin sf tibble with `district`, `geometry`, e.g.
+#'   `format_basin()`'s output.
+#'
+#' @return patchwork object combining the map and temporal-coverage panels.
+#' @export
+plot_station_overview <- function(operation, district_kept, basin) {
+  nice_theme() # self-contained: don't depend on caller-side theme_set()
+  pal <- c(ASPE = "#2a78d6", Pomet = "#eb6834", Nurse = "#1baf7a")
+
+  d <- operation |>
+    filter(district %in% district_kept) |>
+    mutate(
+      source = recode(survey, pomet = "Pomet", nurse = "Nurse", river = "ASPE"),
+      source = factor(source, levels = c("ASPE", "Pomet", "Nurse"))
+    )
+  d_sf <- d |> sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+
+  france <- rnaturalearth::ne_countries(
+    geounit = "france", type = "map_units", scale = "medium",
+    returnclass = "sf"
+  )
+  basin_kept <- basin |> filter(district %in% district_kept)
+
+  big_text <- ggplot2::theme(
+    axis.text = ggplot2::element_text(size = 13),
+    axis.title = ggplot2::element_text(size = 15),
+    legend.text = ggplot2::element_text(size = 14)
+  )
+
+  map_panel <- ggplot2::ggplot() +
+    ggplot2::geom_sf(data = france, fill = NA, color = "grey80", linewidth = 0.25) +
+    ggplot2::geom_sf(data = basin_kept, fill = "grey97", color = "grey40", linewidth = 0.5) +
+    ggplot2::geom_sf(
+      data = d_sf |> arrange(source),
+      ggplot2::aes(color = source), size = 0.3, alpha = 0.5
+    ) +
+    ggplot2::coord_sf(xlim = c(-5.3, 8.3), ylim = c(41.2, 51.2), expand = FALSE) +
+    ggplot2::scale_color_manual(values = pal, name = NULL) +
+    ggplot2::guides(
+      color = ggplot2::guide_legend(override.aes = list(size = 3.5, alpha = 1))
+    ) +
+    ggplot2::labs(x = "Longitude", y = "Latitude") +
+    ggplot2::theme(panel.grid = ggplot2::element_blank()) +
+    big_text
+
+  temporal_panel <- d |>
+    count(source, year) |>
+    ggplot2::ggplot(ggplot2::aes(year, n, fill = source)) +
+    ggplot2::geom_col() +
+    ggplot2::facet_wrap(~source, ncol = 1, scales = "free_y") +
+    ggplot2::scale_fill_manual(values = pal, guide = "none") +
+    ggplot2::labs(x = "Année", y = "Nombre d'opérations") +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.grid.major.x = ggplot2::element_blank(),
+      strip.text = ggplot2::element_blank()
+    ) +
+    big_text
+
+  ((map_panel + temporal_panel) +
+    patchwork::plot_layout(widths = c(1.3, 1), guides = "collect") +
+    patchwork::plot_annotation(tag_levels = "A")) &
+    ggplot2::theme(
+      legend.position = "bottom",
+      plot.tag = ggplot2::element_text(size = 15, face = "bold")
+    )
+}
+
+#' Map of food web structure metrics along the continuum.
+#'
+#' Four small maps - species richness, trophic chain length, connectance,
+#' diet overlap - one point per local food web (operation), restricted to
+#' `district_kept`. Each metric gets its own panel/color scale (very
+#' different units and ranges), same basin/coastline context as
+#' `plot_station_overview()`.
+#'
+#' @param foodweb_structure tibble with `operation_id`, `longitude`,
+#' `latitude`, `log_species_richness`, `trophic_length`, `connectance`,
+#' `diet_overlap`, e.g. `measure_foodweb_structure()`'s output.
+#' @param operation_location tibble with `operation_id`, `district`, e.g.
+#' `classify_operation_location()`'s output.
+#' @param district_kept character vector of districts to keep.
+#' @param basin sf tibble with `district`, `geometry`, e.g.
+#' `format_basin()`'s output.
+#'
+#' @return patchwork object, four panels.
+#' @export
+plot_foodweb_structure_map <- function(
+  foodweb_structure, operation_location, district_kept, basin
+) {
+  nice_theme()
+
+  d <- foodweb_structure |>
+    left_join(
+      operation_location |> select(operation_id, district),
+      by = "operation_id"
+    ) |>
+    filter(district %in% district_kept) |>
+    mutate(richness = exp(log_species_richness)) |>
+    sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)
+
+  france <- rnaturalearth::ne_countries(
+    geounit = "france", type = "map_units", scale = "medium",
+    returnclass = "sf"
+  )
+  basin_kept <- basin |> filter(district %in% district_kept)
+
+  metrics <- c(
+    richness = "Richesse spécifique",
+    trophic_length = "Longueur de chaîne trophique",
+    connectance = "Connectance",
+    diet_overlap = "Similarité des régimes alimentaires"
+  )
+
+  panels <- lapply(names(metrics), function(var) {
+    ggplot2::ggplot() +
+      ggplot2::geom_sf(
+        data = france, fill = NA, color = "grey80", linewidth = 0.25
+      ) +
+      ggplot2::geom_sf(
+        data = basin_kept, fill = "grey97", color = "grey40", linewidth = 0.4
+      ) +
+      ggplot2::geom_sf(
+        data = d, ggplot2::aes(color = .data[[var]]), size = 0.3, alpha = 0.6
+      ) +
+      ggplot2::coord_sf(xlim = c(-5.3, 8.3), ylim = c(41.2, 51.2), expand = FALSE) +
+      ggplot2::scale_color_viridis_c(
+        name = NULL, breaks = scales::breaks_pretty(n = 3)
+      ) +
+      ggplot2::labs(x = "Longitude", y = "Latitude", title = metrics[[var]]) +
+      ggplot2::theme(
+        panel.grid = ggplot2::element_blank(),
+        plot.title = ggplot2::element_text(size = 13, face = "bold"),
+        axis.text = ggplot2::element_text(size = 9),
+        axis.title = ggplot2::element_text(size = 10),
+        legend.text = ggplot2::element_text(size = 9)
+      )
+  })
+
+  patchwork::wrap_plots(panels, ncol = 2)
+}
+
+#' Diet-category composition of each survey's fish community.
+#'
+#' Stacked bar of prey categories represented in the diet of the species
+#' caught in each survey (river operations relabelled `ASPE`, matching the
+#' other report figures). A species counts toward a category if any of its
+#' life stages consume it.
+#'
+#' @param diet tibble with `species`, `stage`, and one 0/1 column per prey
+#'   category, e.g. `merge_diet()`'s output.
+#' @param size tibble with `species_valid`, `survey`, e.g.
+#'   `size_year_filtered`.
+#'
+#' @return ggplot.
+#' @export
+plot_diet_categories <- function(diet, size) {
+  nice_theme()
+
+  category_labels <- c(
+    detritus = "Détritus", biofilm = "Biofilm", macrophyte = "Macrophytes",
+    phytoplankton = "Phytoplancton", zooplankton = "Zooplancton",
+    worm = "Vers", mollusk = "Mollusques", crustacean = "Crustacés",
+    insect = "Insectes", echinoderm = "Échinodermes", fish = "Poissons"
+  )
+  category_cols <- names(category_labels)
+
+  species_diet <- diet |>
+    group_by(species) |>
+    summarise(
+      across(all_of(category_cols), ~ as.integer(any(. == 1))),
+      .groups = "drop"
+    )
+
+  d <- size |>
+    distinct(species_valid, survey) |>
+    mutate(
+      source = recode(survey, pomet = "Pomet", nurse = "Nurse", river = "ASPE"),
+      source = factor(source, levels = c("ASPE", "Pomet", "Nurse"))
+    ) |>
+    inner_join(species_diet, by = c("species_valid" = "species")) |>
+    tidyr::pivot_longer(
+      all_of(category_cols), names_to = "category", values_to = "present"
+    ) |>
+    filter(present == 1) |>
+    count(source, category) |>
+    group_by(source) |>
+    mutate(prop = n / sum(n)) |>
+    ungroup() |>
+    mutate(
+      category = factor(
+        unname(category_labels[category]),
+        levels = category_labels[category_cols]
+      )
+    )
+
+  ggplot2::ggplot(d, ggplot2::aes(source, prop, fill = category)) +
+    ggplot2::geom_col() +
+    ggplot2::scale_y_continuous(labels = scales::percent) +
+    ggplot2::scale_fill_brewer(palette = "Paired", name = "Catégorie de proie") +
+    ggplot2::labs(x = NULL, y = "Proportion d'espèces") +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_blank(),
+      axis.text = ggplot2::element_text(size = 12),
+      axis.title = ggplot2::element_text(size = 13),
+      legend.text = ggplot2::element_text(size = 11),
+      legend.title = ggplot2::element_text(size = 12)
+    )
+}
+
 plot_network_groups <- function(diet_resource) {
   adj <- t(as.matrix(diet_resource |> select(-c(light, species, reference))))
   colnames(adj) <- diet_resource$species

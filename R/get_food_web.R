@@ -519,6 +519,17 @@ trophic_group_colors <- c(
   piscivorous = "#c26b51"
 )
 
+trophic_group_labels <- list(
+  en = c(
+    resource = "resource", "non-piscivorous" = "non-piscivorous",
+    piscivorous = "piscivorous"
+  ),
+  fr = c(
+    resource = "Ressource", "non-piscivorous" = "Non-piscivore",
+    piscivorous = "Piscivore"
+  )
+)
+
 # theme_void() leaves the background transparent; force it white so the
 # plot doesn't depend on whatever it's composited against.
 theme_blank_white <- function() {
@@ -582,22 +593,32 @@ abbreviate_species_name <- function(x) {
 #' @param size individual fish size table with `species_valid`/`length`
 #' columns, e.g. `size_year_filtered`.
 #' @param metric "mean" or "max" length per species.
+#' @param lang "en" or "fr" legend labels (group names and size legend
+#' title); underlying data/classification is unaffected.
 #'
 #' @return ggplot.
 #' @export
-plot_metaweb <- function(web, resource, diet, size, metric = c("mean", "max")) {
+plot_metaweb <- function(
+  web, resource, diet, size, metric = c("mean", "max"), lang = c("en", "fr")
+) {
   metric <- match.arg(metric)
+  lang <- match.arg(lang)
   ld <- build_trophic_layout(web, resource)
   ld$layout$group <- classify_metaweb_species(ld$layout$name, resource, diet)
   ld$layout <- attach_body_length(ld$layout, size, metric)
+  size_name <- if (lang == "fr") {
+    "Longueur moyenne (cm)"
+  } else {
+    paste(metric, "length (cm)")
+  }
 
   ggraph::ggraph(ld$layout) +
     ggraph::geom_edge_link(alpha = 0.05, width = 0.2, color = "grey40") +
     ggraph::geom_node_point(aes(color = group, size = body_length)) +
-    scale_color_manual(values = trophic_group_colors) +
-    scale_size_continuous(
-      range = c(1, 12), name = paste(metric, "length (cm)")
+    scale_color_manual(
+      values = trophic_group_colors, labels = trophic_group_labels[[lang]]
     ) +
+    scale_size_continuous(range = c(1, 12), name = size_name) +
     labs(color = NULL) +
     theme_blank_white()
 }
@@ -624,9 +645,10 @@ plot_metaweb <- function(web, resource, diet, size, metric = c("mean", "max")) {
 #' @export
 plot_local_foodweb <- function(
   web, resource, diet, size, title = NULL, metric = c("mean", "max"),
-  size_limits = NULL, label_size = 4
+  size_limits = NULL, label_size = 4, lang = c("en", "fr")
 ) {
   metric <- match.arg(metric)
+  lang <- match.arg(lang)
   ld <- build_trophic_layout(web, resource)
   ld$layout$group <- classify_metaweb_species(ld$layout$name, resource, diet)
   ld$layout <- attach_body_length(ld$layout, size, metric)
@@ -637,6 +659,11 @@ plot_local_foodweb <- function(
   if (!is.null(size_limits)) {
     ld$layout$body_length <- pmax(ld$layout$body_length, size_limits[1])
   }
+  size_name <- if (lang == "fr") {
+    "Longueur moyenne (cm)"
+  } else {
+    paste(metric, "length (cm)")
+  }
 
   ggraph::ggraph(ld$layout) +
     ggraph::geom_edge_link(alpha = 0.15, width = 0.3, color = "grey40") +
@@ -646,14 +673,108 @@ plot_local_foodweb <- function(
       repel = TRUE, size = label_size, max.overlaps = 30,
       segment.size = 0.2, segment.alpha = 0.5, color = "grey20", seed = 1
     ) +
-    scale_color_manual(values = trophic_group_colors) +
+    scale_color_manual(
+      values = trophic_group_colors, labels = trophic_group_labels[[lang]]
+    ) +
     scale_size_continuous(
-      range = c(2, 14), limits = size_limits,
-      name = paste(metric, "length (cm)")
+      range = c(2, 14), limits = size_limits, name = size_name
     ) +
     labs(color = NULL, title = title) +
     theme_blank_white() +
     theme(plot.title = element_text(face = "bold"))
+}
+
+#' Local food webs at a few chosen points along a river-sea continuum.
+#'
+#' Combines `plot_local_foodweb()` for a handful of operations (e.g. one
+#' river, one estuary, one coastal site) into a single row of panels with a
+#' common body-length scale, so the panels are directly comparable. Legends
+#' are left uncollected - meant to be composed further (e.g. stacked under
+#' `plot_metaweb()` by `plot_foodweb_overview()`), which collects guides
+#' once for the whole combined figure.
+#'
+#' @param foodweb_structure tibble with `operation_id`, `foodweb`, e.g.
+#' `measure_foodweb_structure()`'s output.
+#' @param resource,diet,size as in `plot_local_foodweb()`; `size` is
+#' filtered to each operation internally.
+#' @param ops named character vector of operation ids, one per panel; names
+#' are used to look up `titles`.
+#' @param titles named character vector of panel titles, same names as
+#' `ops`.
+#' @param lang "en" or "fr" legend labels, passed to `plot_local_foodweb()`.
+#'
+#' @return patchwork object, one row of panels.
+#' @export
+plot_continuum_local_foodwebs <- function(
+  foodweb_structure, resource, diet, size, ops, titles, lang = c("en", "fr")
+) {
+  lang <- match.arg(lang)
+  size_range <- (size |>
+    filter(operation_id %in% ops) |>
+    group_by(species_valid) |>
+    summarise(v = mean(length, na.rm = TRUE), .groups = "drop"))$v |>
+    range()
+
+  panels <- lapply(names(ops), function(nm) {
+    fw_row <- foodweb_structure |> filter(operation_id == ops[nm])
+    web <- fw_row$foodweb[[1]]
+    op_size <- size |> filter(operation_id == ops[nm])
+    plot_local_foodweb(
+      web, resource, diet, op_size,
+      title = titles[nm], size_limits = size_range, lang = lang
+    )
+  })
+
+  patchwork::wrap_plots(panels, nrow = 1)
+}
+
+#' Metaweb and local food webs along the continuum, combined into one figure.
+#'
+#' Stacks `plot_metaweb()` above `plot_continuum_local_foodwebs()`'s row of
+#' panels, collecting guides once for the whole figure: the trophic-group
+#' color legend is shared (identical scale in both), while the two size
+#' legends stay separate, since the metaweb's sizes reflect the whole
+#' species pool and the local webs are limited to their own operations'
+#' species.
+#'
+#' @inheritParams plot_metaweb
+#' @param foodweb_structure,ops,titles as in `plot_continuum_local_foodwebs()`.
+#'
+#' @return patchwork object.
+#' @export
+plot_foodweb_overview <- function(
+  web, resource, diet, size, foodweb_structure, ops, titles,
+  metric = c("mean", "max"), lang = c("en", "fr")
+) {
+  metric <- match.arg(metric)
+  lang <- match.arg(lang)
+
+  # Panel letters folded into each title ("(A) Metaweb", "(B) ...") rather
+  # than patchwork's separate tag - reads better than a floating letter.
+  titles_tagged <- stats::setNames(
+    paste0("(", LETTERS[seq_along(titles) + 1], ") ", titles), names(titles)
+  )
+
+  metaweb_panel <- plot_metaweb(web, resource, diet, size, metric, lang) +
+    labs(title = "(A) Metaweb") +
+    # Its size scale spans the whole species pool, unlike the local webs'
+    # (limited to 3 operations) - showing both "Longueur moyenne" legends
+    # at once is confusing, so only the local webs' (more informative,
+    # per-panel) one is kept.
+    guides(size = "none")
+  local_panels <- plot_continuum_local_foodwebs(
+    foodweb_structure, resource, diet, size, ops, titles_tagged, lang
+  )
+
+  (metaweb_panel / local_panels) +
+    patchwork::plot_layout(heights = c(1.4, 1), guides = "collect") &
+    theme(
+      legend.position = "bottom",
+      legend.box = "vertical",
+      legend.text = element_text(size = 13),
+      legend.title = element_text(size = 14),
+      plot.title = element_text(size = 15, face = "bold")
+    )
 }
 
 #' Interactive version of `plot_metaweb()`, with species names on hover.

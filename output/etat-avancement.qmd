@@ -15,7 +15,10 @@ format:
     margin:
       x: 2.5cm
       y: 2.5cm
-    toc: false
+    toc: true
+    toc-title: "Table des matières"
+    toc-depth: 2
+    page-numbering: "1"
     number-sections: true
     fontsize: 11pt
     csl: "chicago-author-date"
@@ -26,7 +29,22 @@ format:
       text: |
         #show heading: set text(font: "Noto Sans")
         #show heading: set block(above: 1.6em, below: 1em)
+        #show raw.where(block: false): set text(size: 1.05em)
+        #set figure.caption(separator: [. ])
+        #show figure.caption: set text(size: 9.5pt, fill: rgb("#5c5c5c"))
+        #show figure.caption: set par(justify: false)
 ---
+
+```{r}
+#| include: false
+library(renv)
+renv::load(here::here())
+library(targets)
+library(here)
+tar_config_set(store = here::here("_targets"))
+devtools::load_all(here::here(), quiet = TRUE)
+nice_theme()
+```
 
 Ce document présente la progression du projet RIVERSEA, qui a débuté le 2
 février 2026, jusqu'à début septembre 2026. Il rappelle brièvement le
@@ -58,8 +76,8 @@ détaillés dans le formulaire de demande de soutien post-doctorant.*
 
 Deux campagnes de pêche en mer ont été harmonisées avec les opérations en
 rivière : Pomet (façades Atlantique et Manche, INRAE), Nurse (côtes
-françaises, 1980-2023, IFREMER) et ASPE (OFB). Le travail a couvert le
-nettoyage des noms d'espèces
+françaises, 1980-2023, IFREMER) et ASPE (OFB) (@fig-stations). Le travail a
+couvert le nettoyage des noms d'espèces
 (taxonomie changeante), l'harmonisation des unités (longueurs des poissons,
 coordonnées GPS) et le contrôle du taux de qualité des données, avec filtration
 quand nécessaire (espèces rares, années peu échantillonnées, etc.). Les tailles
@@ -68,73 +86,191 @@ observées, une méthode validée sur données synthétiques avant application a
 données réelles. Ces données de tailles individuelles servent ensuite à la
 reconstruction des réseaux trophiques.
 
-*[Figure : carte des stations d'échantillonnage rivière-estuaire-mer, colorée
-par source de données (ASPE / Pomet / Nurse).]*
+```{r}
+#| echo: false
+#| label: fig-stations
+#| fig-cap: "(A) Stations d'échantillonnage le long du continuum rivière-estuaire-mer, colorées par source de données (ASPE, Pomet, Nurse). (B) Couverture temporelle de chaque campagne."
+#| fig-width: 10
+#| fig-height: 5
+
+tar_read(plot_stations_overview)
+```
 
 ### Table de régime alimentaire
 
 En plus des données de tailles, la reconstruction des réseaux trophiques
 nécessitait une connaissance du régime alimentaire des 158 espèces de poissons
-pêchées le long du continuum. Celle-ci comprenait des poissons marins
-benthiques comme la sole commune (*Solea solea*) se nourrissant sur le benthos
-(polychètes, mollusques, etc.), des espèces d'eau douce pélagiques comme
-l'ablette (*Alburnus alburnus*), en passant par des espèces anadromes telles
-que le saumon atlantique (*Salmo salar*). Ce travail de collecte des
-informations de régime alimentaire a d'abord été fait automatiquement en
-extrayant des informations de la base de données FishBase avec le paquet
-`rfishbase`. Cette première table de régime alimentaire a ensuite été
-validée, espèce par espèce, par une recherche bibliographique qui a permis de
-corriger des imprécisions de FishBase. La table ainsi produite, ainsi que les
-références bibliographiques la justifiant, seront mises à disposition avec les
-données en libre accès associées au manuscrit.
+pêchées le long du continuum. Celle-ci comprenait des poissons marins benthiques
+comme la sole commune (*Solea solea*) se nourrissant sur le benthos (polychètes,
+mollusques, etc.), des espèces d'eau douce pélagiques comme l'ablette (*Alburnus
+alburnus*), en passant par des espèces anadromes telles que le saumon atlantique
+(*Salmo salar*) (@fig-diet). Ce travail de collecte des informations de régime
+alimentaire a d'abord été fait automatiquement en extrayant des informations de
+la base de données FishBase avec le paquet `rfishbase`
+[@Boettiger-Lang-Wainwright-2012]. Cette première table de régime alimentaire a
+ensuite été validée, espèce par espèce, par une recherche bibliographique qui a
+permis de corriger des imprécisions de FishBase. La table ainsi produite, ainsi
+que les références bibliographiques la justifiant, seront mises à disposition
+avec les données en libre accès associées au manuscrit.
 
-### Reconstruction des réseaux trophiques
+```{r}
+#| echo: false
+#| label: fig-diet
+#| fig-cap: "Composition du régime alimentaire des espèces échantillonnées, par campagne (ASPE, Pomet, Nurse) : part de chaque catégorie de proie parmi l'ensemble des catégories consommées par ces espèces. Une espèce est comptée dans une catégorie dès que l'un de ses stades de vie s'en nourrit, et peut donc contribuer à plusieurs catégories."
+#| fig-width: 8
+#| fig-height: 5.5
+
+tar_read(plot_diet_categories_overview)
+```
+
+### Reconstruction et caractérisation des réseaux trophiques
 
 La reconstruction des réseaux trophiques a été faite grâce au paquet
-`foodwebbuilder`. Plus de 17 000 réseaux trophiques ont été reconstruits le
-long du continuum rivière-mer, de 1980 à 2023, à partir de cette table de
-régimes alimentaires. Cette reconstruction repose sur un pipeline automatisé,
-facilitant l'intégration des données de nouvelles campagnes de pêche.
+`foodwebbuilder`. Celui-ci reconstruit dans un premier temps une *metaweb*
+[@Gravel-etal-2011], représentant l'ensemble des interactions *possibles* entre
+les espèces du continuum, puis reconstruit les réseaux locaux en
+sous-échantillonnant cette metaweb selon les espèces effectivement présentes à
+chaque opération de pêche (@fig-foodweb). Plus de 17 000 réseaux trophiques
+locaux ont ainsi été reconstruits le long du continuum rivière-mer, de 2005 à
+2022 (après filtration), à partir de cette table de régimes alimentaires. Cette
+reconstruction repose sur un pipeline automatisé,
+facilitant l'intégration des données de nouvelles campagnes de pêche. Nous avons
+ensuite caractérisé la structure de ces réseaux à l'aide de quatre métriques :
+la richesse spécifique, la longueur de chaîne trophique, la connectance (densité
+de liens du réseau) et le chevauchement de régime alimentaire (la similarité
+moyenne des régimes alimentaires entre espèces d'un même réseau) (@fig-foodweb-map).
+Ces métriques offrent une image synthétique de la structure des réseaux et de la
+façon dont celle-ci est modifiée par les pressions étudiées. Elles sont
+également couramment utilisées dans la littérature, ce qui permet de formuler
+des hypothèses et de comparer nos résultats à ceux d'autres études
+[@Bonnaffé-etal-2024].
+
+```{r}
+#| echo: false
+#| label: fig-foodweb
+#| fig-cap: "(A) Metaweb représentant l'ensemble des interactions trophiques possibles entre les espèces du continuum rivière-mer, organisées par niveau trophique (des ressources basales en bas aux poissons en haut), colorées selon le statut piscivore et dimensionnées par la longueur moyenne des individus. (B-D) Réseaux trophiques locaux reconstruits en trois points du continuum, le long de la Gironde et de la Dordogne (mêmes conventions) : en rivière (communauté d'eau douce), dans l'estuaire (espèces saumâtres/euryhalines) et sur la côte (poissons plats benthiques). Par souci de lisibilité, chaque espèce est représentée agrégée sur l'ensemble de ses classes de taille ; le modèle sous-jacent distingue cependant plusieurs classes de taille par espèce, dont les interactions de prédation sont déterminées par une fenêtre de prédation (*predation window*)."
+#| fig-width: 12
+#| fig-height: 12
+
+tar_read(plot_foodweb_overview_report)
+```
+
+```{r}
+#| echo: false
+#| label: fig-foodweb-map
+#| fig-cap: "Métriques de structure des réseaux trophiques locaux (richesse spécifique, longueur de chaîne trophique, connectance, similarité des régimes alimentaires), une opération par point."
+#| fig-width: 10
+#| fig-height: 10
+
+tar_read(plot_foodweb_structure_map_overview)
+```
 
 ### Données environnementales
 
-Les données de barrages et de nutriments (AMOBIO, échelle France) ont été
-croisées avec les données de structure des réseaux trophiques (ASPE), après
-contrôle des valeurs aberrantes et vérification de la couverture temporelle
-(bonne couverture depuis 2005). Les concentrations en nutriments ont été
-comparées aux seuils réglementaires de qualité de l'eau (grille SEQ-Eau). En
-parallèle, les données de nutriments côtiers (REPHY, 1998-2023) ont été
-nettoyées et harmonisées, puis interpolées dans l'espace et le temps par un
-modèle bayésien spatio-temporel (INLA-SPDE) jusqu'aux opérations de pêche en
-estuaire et en mer, avec validation croisée. Enfin, la distance à l'embouchure
-la plus proche a été calculée pour l'ensemble des opérations de pêche
-(rivière et mer) sur quatre bassins versants (Loire, Adour-Garonne, Seine,
-Escaut-Somme), en tenant compte du réseau hydrographique et du contournement
-des côtes et îles pour les opérations en mer.
+Pour la collecte des données environnementales, deux sources principales ont été
+mobilisées : 1) la base **AMOBIO**, pour les pressions liées aux barrages et la
+qualité de l'eau en rivière ; 2) la base **REPHY**, pour les nutriments côtiers.
+Nous détaillons le travail effectué sur chacune de ces bases ci-dessous.
 
-*[Figure : carte des concentrations en nutriments interpolées le long du
-continuum, avec incertitude associée.]*
+**AMOBIO** --- Produite par l'INRAE et l'OFB (programme 2021-2024), AMOBIO
+fournit, pour des milliers de stations du réseau hydrographique français, des
+indicateurs de pression liés aux barrages ainsi que des mesures de qualité de
+l'eau, construits à partir des réseaux de surveillance DCE (ROE, CARHYCE,
+SYRAH-CE). Nous avons croisé ces indicateurs à nos données de structure des
+réseaux trophiques (ASPE), en nous restreignant aux bassins connectés à
+l'Atlantique et à la Manche. Ces données étant déjà disponibles à nos stations
+de pêche, aucune étape d'interpolation n'a été nécessaire ici (voir toutefois
+les [perspectives](#sec-perspectives)). L'impact des barrages est mesuré par la
+distance au barrage le plus proche (amont/aval) et par la hauteur cumulée des
+barrages en aval, un indicateur de l'isolement d'un site vis-à-vis de la côte.
+Les concentrations en nutriments (phosphore total, ammonium, nitrite, nitrate,
+azote Kjeldahl) ont été comparées aux seuils réglementaires de qualité de l'eau.
+La qualité des données a été contrôlée (valeurs aberrantes, couverture spatiale
+et temporelle) ; la couverture temporelle est en particulier bonne depuis 2005.
 
-*[Figure : distribution des distances à l'embouchure par bassin versant.]*
+**REPHY** --- Piloté par l'Ifremer depuis 1987, REPHY surveille la qualité
+physico-chimique et le phytoplancton des eaux côtières françaises. Nous en avons
+extrait trois paramètres pertinents pour notre étude (ammonium, nitrite+nitrate
+et phosphate), nettoyés puis restreints aux mesures de surface et de bonne
+qualité. Nous avons également vérifié que les changements de protocole de
+mesure n'introduisaient pas de biais temporel dans les données. Ces données ont
+ensuite été interpolées dans l'espace et le temps jusqu'aux opérations de
+pêche en estuaire et en mer (nurse, pomet) (@fig-rephy), à l'aide d'un modèle
+bayésien spatio-temporel implémenté dans le paquet `R-INLA`
+[@Lindgren-Rue-2015].
+L'utilisation d'INLA à cette étape avait un double intérêt : éprouver l'outil
+et évaluer son applicabilité aux analyses à plus grande échelle prévues pour la
+suite du projet, et bénéficier des distributions *a posteriori* qu'il produit
+pour les valeurs interpolées (plutôt qu'une simple estimation ponctuelle), ce
+qui permettra de propager correctement l'incertitude de cette interpolation
+dans les modèles en aval. L'ajout de la salinité comme covariable améliore
+nettement les prédictions en estuaire ; la validation croisée par station
+confirme que ce modèle surpasse une prédiction naïve pour les trois paramètres.
+
+```{r}
+#| echo: false
+#| label: fig-rephy
+#| fig-cap: "Concentrations en nutriments interpolées aux opérations de pêche en estuaire et en mer, pour les trois paramètres retenus."
+#| fig-width: 13
+#| fig-height: 6
+
+tar_read(plot_rephy_predictions_map_overview)
+```
+
+### Calcul de la distance à l'embouchure
+
+Afin de rendre compte de la variabilité de l'impact des pressions le long du
+continuum rivière-mer, une mesure de *position* le long de ce continuum était
+nécessaire. Pour cela, nous avons calculé la distance à l'embouchure la plus
+proche pour chaque opération de pêche, en mer comme en rivière, sur quatre
+bassins versants (Loire, Adour-Garonne, Seine, Escaut-Somme). Les embouchures
+sont définies comme les points de transition entre le réseau fluvial et les
+masses d'eau côtières ou de transition *[préciser la source des points
+d'embouchure]*. Deux méthodes différentes ont été utilisées, pour les
+opérations en rivière et en mer respectivement.
+
+**Opérations en rivière** --- Pour ces opérations, il était nécessaire de tenir
+compte des distances *hydrographiques* le long du réseau, et non de la
+distance à vol d'oiseau. Nous avons donc utilisé, pour chaque bassin versant,
+un algorithme de plus court chemin sur le graphe du réseau hydrographique.
+
+**Opérations en mer** --- Ici, la distance euclidienne n'était pas non plus
+adaptée, car elle ne tient pas compte de la topologie du littoral (îles,
+échancrures côtières). Nous avons donc construit un maillage fin excluant les
+terres sur l'intégralité du littoral Atlantique et Manche, puis calculé les
+distances le long de ce maillage, ce qui permet de
+contourner correctement les côtes et les îles.
+
+*[Figure : distribution des distances à l'embouchure par bassin versant
+(opérations amont/aval de l'embouchure) et carte associée.]*
 
 ### Modélisation statistique spatiale
 
-La définition du modèle spatial bayésien (R-INLA) reliant structure des
-réseaux trophiques, barrages et nutriments est en cours, sur la base des
-données désormais consolidées. De premières analyses exploratoires ont déjà
-révélé des effets significatifs des nutriments et des barrages sur les
-communautés de poissons le long du continuum (voir [Résultats
-principaux](#sec-resultats) ci-dessous).
+La définition du modèle spatial bayésien (INLA) reliant structure des réseaux
+trophiques, barrages et nutriments est en cours, sur la base des données
+désormais consolidées. Après étude approfondie, INLA nous est apparu comme
+l'outil le mieux adapté à cette tâche : sa rapidité (approximation de Laplace)
+permet de passer à l'échelle sur notre jeu de données de plus de 17 000 points,
+tout en conservant une grande flexibilité de modélisation. INLA permet également
+de tenir compte de l'autocorrélation spatiale, qui pourrait sinon biaiser
+d'éventuels effets fixes, même si la formulation exacte de cette composante
+spatiale reste encore à déterminer (voir [perspectives](#sec-perspectives)). La
+participation d'I. Lajaaiti à un atelier sur la modélisation spatio-temporelle
+lors de son arrivée début février, complétée par la pratique acquise en
+interpolant les données REPHY, lui a permis de prendre ces outils en main.
+Nous avons
+toutefois identifié d'autres approches intéressantes pour la modélisation
+spatio-temporelle, telles que SSN2 [@Dumelle-etal-2024] et glmmTMB
+[@Brooks-etal-2017], auxquelles nous pourrons comparer INLA si besoin.
+
+De premières analyses exploratoires ont déjà révélé des effets significatifs
+des nutriments et des barrages sur les communautés de poissons le long du
+continuum (voir [Résultats préliminaires](#sec-resultats)).
 
 ## Résultats préliminaires {#sec-resultats}
 
 *[2-3 résultats clés, avec éventuellement une figure. Rester factuel : ce qui
 a été testé, ce qui en ressort.]*
-
-![Sites d'échantillonnage utilisés dans l'étude, répartis le long du
-continuum rivière-estuaire-mer.](../assets/fig2-maps.png){#fig-sites width="70%"}
-
-Comme illustré en @fig-sites, [...].
 
 ## Difficultés rencontrées et ajustements {#sec-difficultes}
 

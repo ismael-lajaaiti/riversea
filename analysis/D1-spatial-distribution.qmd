@@ -35,6 +35,24 @@ Here is the map of the sampling station for the different surveys.
 tar_read(plot_station)
 ```
 
+### River-sea station map (report figure)
+
+Same idea, but restricted to the four catchments actually kept for the
+analysis (`district_kept`), with the river survey relabelled `ASPE` for
+consistency with the progress-report text, main rivers added for spatial
+context, and a temporal-coverage panel per survey. Built by
+`plot_station_overview()` (`R/utils.R`); the progress report reads the
+`plot_stations_overview` target directly, so there is no PNG to keep in
+sync.
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 5
+
+tar_read(plot_stations_overview)
+```
+
 ## Sea environmental data
 
 Here is the kind of environment data we have for the sea.
