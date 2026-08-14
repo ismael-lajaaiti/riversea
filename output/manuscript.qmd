@@ -263,6 +263,9 @@ weighted and unweighted structural metrics.
 - @Rogers-etal-2024 found that top-down and bottom-up effect varied along the
 estuary gradient.
 
+- @Carvajal-Quintero-etal-2026 found that decreasing fish body-size led to
+increase connectance and generalism.
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
