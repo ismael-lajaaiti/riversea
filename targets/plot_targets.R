@@ -63,5 +63,15 @@ plot_targets <- list(
     plot_rephy_predictions_map(
       rephy_operation_predictions, operation_location, params$district_kept, basin
     )
+  ),
+  tar_target(
+    plot_distance_to_mouth_overview_report,
+    plot_distance_to_mouth_overview(
+      river_network_geo, river_mouth_district, inland_distance_to_mouth,
+      sea_graph, sea_mesh, sea_offshore_distance_to_mouth,
+      distance_to_mouth, params$district_kept, basin,
+      river_operation_id = "61833954",
+      sea_operation_id = "2019_2_GIR33_1_S"
+    )
   )
 )

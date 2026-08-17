@@ -20,13 +20,12 @@ continuum in France.
 
 **Nutrients**
 
-- [ ] **(blocked)** Interpolate + yearly average at fishing sites
-- [ ] **(in progress)** Compute distance to river-mouth for rephy data
+- [x] Interpolate nutrient at fishing sites (with salinity when available)
+- [x] Compute distance to river-mouth
 - [ ] Convert units so they are consistent between REPHY and AMOBIO
 - [ ] Compute NO3+NO2 in AMOBIO
-- [ ] Check for consistency between datasets in nutrient and oxygen value
-- [ ] Also extract O2 in AMOBIO
-- [ ] Try interpolate nutrient concentration in AMOBIO dataset
+- [ ] Check for consistency between datasets in nutrient
+- [ ] Try interpolate nutrient concentration in AMOBIO dataset (pandora box)
 
 **Data pipeline & analysis**
 
@@ -56,18 +55,15 @@ tail-down covariance + marine SPDE — to discuss with co-authors)
 **Writing**
 
 - [x] Draft formal hypotheses
-- [ ] **(in progress)** Write BES abstract (deadline 2 September)
+- [x] Write BES abstract (deadline 2 September)
 - [ ] **(in progress)** Postdoc extension
 - [ ] Draft Planète-Vie piece on community structure along the river-sea
 continuum (deadline 1 October)
-- [ ] Write novelty/positioning paragraph (vs. Zhu, Ma, Barnes 2026)
-- [ ] Rewrite Introduction bullets into prose, section by section
-- [ ] Refine paper title and conceptual hook
 
 **Reproducibility & open science**
 
 - [x] Reproducibility hygiene: `DESCRIPTION`, Docker, CI
 - [ ] Turn the "reproducing the pipeline" README's section into a tutorial
 - [ ] Reorganize analysis notebooks into a clean reports reports (how-to versus
-rationale explanations)
+rationale explanations) - Diataxis
 

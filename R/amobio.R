@@ -309,6 +309,126 @@ compute_distance_to_mouth <- function(network,
   })
 }
 
+#' Channel-network path from one operation to its nearest same-district
+#' river mouth.
+#'
+#' Same idea as `sea_mouth_path()`, but for the AMOBIO river network: the
+#' path is returned as the actual channel geometry of the edges it walks
+#' (not straight lines between nodes), since river channels wind.
+#'
+#' @param op_row single-row tibble with `node_id`, `district`, e.g. one
+#'   row of `compute_distance_to_mouth()`'s output.
+#' @param network list(nodes, edges) with edge `length` and `geometry`,
+#'   e.g. `add_edge_geometry()`'s output.
+#' @param river_mouth tibble with `node_id`, `district`, `matched`, e.g.
+#'   `match_mouth_district()`'s output.
+#'
+#' @return list(path, mouth_coords): `path` an sf linestring (WGS84),
+#' `mouth_coords` the reached mouth's coordinates (WGS84).
+#' @export
+river_mouth_path <- function(op_row, network, river_mouth) {
+  seeds <- river_mouth$node_id[
+    river_mouth$matched & river_mouth$district == op_row$district
+  ]
+  g <- igraph::graph_from_edgelist(
+    as.matrix(sf::st_drop_geometry(network$edges)[c("from", "to")]),
+    directed = FALSE
+  )
+  igraph::E(g)$weight <- network$edges$length
+  source <- igraph::vcount(g) + 1L
+  g <- igraph::add_vertices(g, 1)
+  g <- igraph::add_edges(
+    g, as.vector(rbind(source, as.integer(seeds))),
+    weight = 0
+  )
+  sp <- igraph::shortest_paths(
+    g,
+    from = op_row$node_id, to = source,
+    weights = igraph::E(g)$weight, output = "both"
+  )
+
+  path_edges <- as.integer(sp$epath[[1]])
+  real_edges <- path_edges[path_edges <= nrow(network$edges)]
+  path_geom <- sf::st_transform(
+    sf::st_union(sf::st_geometry(network$edges)[real_edges]), 4326
+  )
+
+  path_nodes <- as.integer(sp$vpath[[1]])
+  path_nodes <- path_nodes[path_nodes != source]
+  mouth_node_id <- utils::tail(path_nodes, 1)
+  nodes_sf <- sf::st_as_sf(network$nodes) |> sf::st_transform(4326)
+  mouth_coords <- sf::st_coordinates(
+    nodes_sf[nodes_sf$node_id == mouth_node_id, ]
+  )[1, ]
+
+  list(
+    path = sf::st_sf(geometry = path_geom),
+    mouth_coords = mouth_coords
+  )
+}
+
+#' Plot one river-network path checkpoint: the shortest channel-network
+#' path highlighted against the rest of the local hydrographic network.
+#'
+#' @param op_row single-row tibble with `longitude`, `latitude`.
+#' @param path list(path, mouth_coords), e.g. `river_mouth_path()`'s
+#'   output.
+#' @param network list(nodes, edges) with edge geometry (any CRS), e.g.
+#'   `add_edge_geometry()`'s output - used to draw the rest of the local
+#'   network as context.
+#' @param basin_geom sf polygon(s), the catchment(s) to draw as
+#'   geographic context, e.g. `basin` filtered to `op_row`'s district.
+#' @param label panel label (e.g. `"A"`).
+#'
+#' @return ggplot.
+#' @export
+plot_river_path_checkpoint <- function(op_row, path, network, basin_geom, label) {
+  op_pt <- sf::st_as_sf(
+    op_row,
+    coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
+  )
+  mouth_pt <- sf::st_sf(geometry = sf::st_sfc(
+    sf::st_point(path$mouth_coords), crs = 4326
+  ))
+
+  bbox <- sf::st_bbox(path$path)
+  pad_x <- max((bbox["xmax"] - bbox["xmin"]) * 0.6, 0.03)
+  pad_y <- max((bbox["ymax"] - bbox["ymin"]) * 0.6, 0.03)
+  xlim <- c(bbox["xmin"] - pad_x, bbox["xmax"] + pad_x)
+  ylim <- c(bbox["ymin"] - pad_y, bbox["ymax"] + pad_y)
+
+  zoom_box <- sf::st_transform(
+    sf::st_as_sfc(sf::st_bbox(
+      c(
+        xmin = unname(xlim[1]), xmax = unname(xlim[2]),
+        ymin = unname(ylim[1]), ymax = unname(ylim[2])
+      ),
+      crs = 4326
+    )),
+    sf::st_crs(network$edges)
+  )
+  context_edges <- sf::st_transform(
+    sf::st_filter(network$edges, zoom_box), 4326
+  )
+
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(
+      data = basin_geom, fill = "grey97", color = "grey40", linewidth = 0.4
+    ) +
+    ggplot2::geom_sf(data = context_edges, color = "grey65", linewidth = 0.2) +
+    ggplot2::geom_sf(data = path$path, color = "steelblue", linewidth = 1.4) +
+    ggplot2::geom_sf(data = op_pt, color = "black", size = 3.5, shape = 17) +
+    ggplot2::geom_sf(data = mouth_pt, color = "black", size = 3.5, shape = 8) +
+    ggplot2::scale_x_continuous(breaks = scales::breaks_pretty(n = 3)) +
+    ggplot2::coord_sf(xlim = xlim, ylim = ylim) +
+    ggplot2::labs(title = label, x = NULL, y = NULL) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold"),
+      panel.grid = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(t = 5, r = 14, b = 5, l = 5)
+    )
+}
+
 #' Build a water-only triangular mesh over the sea, excluding land.
 #'
 #' Domain is a buffered bounding box around the sea-side operations and
@@ -611,10 +731,15 @@ sea_mouth_path <- function(op_row, mouth, sea_graph) {
 #' @param mesh_edges sf linestrings, e.g. `sea_mesh_edges()`'s output.
 #' @param land sf polygons, e.g. `build_sea_mesh()`'s `land` output.
 #' @param title plot title.
+#' @param lang `"en"` or `"fr"`, language of the subtitle.
+#' @param show_subtitle whether to add a subtitle with the straight-line
+#'   and mesh-path distances.
 #'
 #' @return ggplot.
 #' @export
-plot_sea_path_checkpoint <- function(op_row, path, mesh_edges, land, title) {
+plot_sea_path_checkpoint <- function(op_row, path, mesh_edges, land, title,
+                                      lang = c("en", "fr"), show_subtitle = TRUE) {
+  lang <- match.arg(lang)
   op_pt <- sf::st_as_sf(
     op_row,
     coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
@@ -634,6 +759,20 @@ plot_sea_path_checkpoint <- function(op_row, path, mesh_edges, land, title) {
   pad_x <- max((bbox["xmax"] - bbox["xmin"]) * 0.6, 0.03)
   pad_y <- max((bbox["ymax"] - bbox["ymin"]) * 0.6, 0.03)
 
+  subtitle <- if (!show_subtitle) {
+    NULL
+  } else if (lang == "fr") {
+    sprintf(
+      "ligne droite : %.0fm | maillage : %.0fm",
+      straight_dist_m, op_row$dist_mouth_m
+    )
+  } else {
+    sprintf(
+      "straight-line: %.0fm | mesh path: %.0fm",
+      straight_dist_m, op_row$dist_mouth_m
+    )
+  }
+
   ggplot2::ggplot() +
     ggplot2::geom_sf(data = land, fill = "grey80", color = NA) +
     ggplot2::geom_sf(data = mesh_edges, color = "grey75", linewidth = 0.15) +
@@ -644,21 +783,16 @@ plot_sea_path_checkpoint <- function(op_row, path, mesh_edges, land, title) {
     ggplot2::geom_sf(data = path$path, color = "steelblue", linewidth = 1.4) +
     ggplot2::geom_sf(data = op_pt, color = "black", size = 3.5, shape = 17) +
     ggplot2::geom_sf(data = mouth_pt, color = "black", size = 3.5, shape = 8) +
+    ggplot2::scale_x_continuous(breaks = scales::breaks_pretty(n = 3)) +
     ggplot2::coord_sf(
       xlim = c(bbox["xmin"] - pad_x, bbox["xmax"] + pad_x),
       ylim = c(bbox["ymin"] - pad_y, bbox["ymax"] + pad_y)
     ) +
-    ggplot2::labs(
-      title = title,
-      subtitle = sprintf(
-        "straight-line: %.0fm | mesh path: %.0fm",
-        straight_dist_m, op_row$dist_mouth_m
-      ),
-      x = NULL, y = NULL
-    ) +
+    ggplot2::labs(title = title, subtitle = subtitle, x = NULL, y = NULL) +
     ggplot2::theme(
       plot.subtitle = ggplot2::element_text(size = 9),
-      panel.grid = ggplot2::element_blank()
+      panel.grid = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(t = 5, r = 14, b = 5, l = 5)
     )
 }
 
@@ -738,6 +872,118 @@ add_edge_geometry <- function(network, paths) {
     sf::st_as_sf()
 
   list(nodes = network$nodes, edges = edges)
+}
+
+#' Map of France, operations colored by distance to river mouth.
+#'
+#' @param distance tibble with `longitude`, `latitude`, `dist_mouth_m`,
+#'   e.g. `combine_distance_to_mouth()`'s output.
+#' @param district_kept character vector of districts to keep.
+#' @param basin sf tibble with `district`, `geometry`, e.g.
+#'   `format_basin()`'s output.
+#'
+#' @return ggplot.
+#' @export
+plot_distance_to_mouth_map <- function(distance, district_kept, basin) {
+  france <- rnaturalearth::ne_countries(
+    geounit = "france", type = "map_units", scale = "medium",
+    returnclass = "sf"
+  )
+  basin_kept <- basin |> dplyr::filter(district %in% district_kept)
+
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(
+      data = france, fill = NA, color = "grey80", linewidth = 0.25
+    ) +
+    ggplot2::geom_sf(
+      data = basin_kept, fill = "grey94", color = "grey20", linewidth = 0.8
+    ) +
+    ggplot2::geom_point(
+      data = distance,
+      ggplot2::aes(longitude, latitude, color = dist_mouth_m / 1000),
+      size = 0.5, alpha = 0.8
+    ) +
+    ggplot2::coord_sf(xlim = c(-5.3, 8.3), ylim = c(41.2, 51.2), expand = FALSE) +
+    ggplot2::scale_color_viridis_c(name = "Distance à l'embouchure (km)") +
+    ggplot2::labs(x = "Longitude", y = "Latitude") +
+    ggplot2::theme(
+      panel.grid = ggplot2::element_blank(),
+      legend.position = "top"
+    )
+}
+
+#' Three-panel figure illustrating the distance-to-mouth computation: one
+#' example path on the river network, one example path on the coastal
+#' mesh, and a France-wide map of the result for every operation.
+#'
+#' @param river_network_geo list(nodes, edges) with edge geometry, e.g.
+#'   `add_edge_geometry()`'s output.
+#' @param river_mouth_district tibble with `node_id`, `district`,
+#'   `matched`, e.g. `match_mouth_district()`'s output.
+#' @param inland_distance_to_mouth tibble, e.g.
+#'   `compute_distance_to_mouth()`'s output.
+#' @param sea_graph igraph graph, e.g. `build_sea_graph()`'s output.
+#' @param sea_mesh list(mesh, in_water, land), e.g. `build_sea_mesh()`'s
+#'   output.
+#' @param sea_offshore_distance_to_mouth tibble, e.g.
+#'   `compute_sea_distance_to_mouth()`'s output.
+#' @param distance_to_mouth tibble, e.g.
+#'   `combine_distance_to_mouth()`'s output.
+#' @param district_kept character vector of districts to keep.
+#' @param basin sf tibble with `district`, `geometry`, e.g.
+#'   `format_basin()`'s output.
+#' @param river_operation_id operation_id of the river-network example.
+#' @param sea_operation_id operation_id of the coastal-mesh example.
+#'
+#' @return patchwork object, 1 row x 3 columns.
+#' @export
+plot_distance_to_mouth_overview <- function(river_network_geo,
+                                             river_mouth_district,
+                                             inland_distance_to_mouth,
+                                             sea_graph,
+                                             sea_mesh,
+                                             sea_offshore_distance_to_mouth,
+                                             distance_to_mouth,
+                                             district_kept,
+                                             basin,
+                                             river_operation_id,
+                                             sea_operation_id) {
+  nice_theme()
+
+  op_river <- inland_distance_to_mouth |>
+    dplyr::filter(operation_id == river_operation_id)
+  path_river <- river_mouth_path(op_river, river_network_geo, river_mouth_district)
+  basin_river <- basin |> dplyr::filter(district == op_river$district)
+  panel_a <- plot_river_path_checkpoint(
+    op_river, path_river, river_network_geo, basin_river, "A"
+  )
+
+  mouth_sea <- river_mouth_district |>
+    dplyr::filter(matched, district %in% district_kept) |>
+    sf::st_as_sf() |>
+    sf::st_transform(4326)
+  mouth_sea$node_id <- snap_to_sea_graph(mouth_sea, sea_graph)$node_id
+  op_sea <- sea_offshore_distance_to_mouth |>
+    dplyr::filter(operation_id == sea_operation_id)
+  path_sea <- sea_mouth_path(op_sea, mouth_sea, sea_graph)
+  mesh_edges <- sea_mesh_edges(sea_mesh)
+  panel_b <- plot_sea_path_checkpoint(
+    op_sea, path_sea, mesh_edges, sea_mesh$land,
+    "B", show_subtitle = FALSE
+  )
+
+  panel_c <- plot_distance_to_mouth_map(distance_to_mouth, district_kept, basin) +
+    ggplot2::labs(title = "C")
+
+  ((panel_a / panel_b) | panel_c) +
+    patchwork::plot_layout(widths = c(1, 1.5)) &
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 15, face = "bold"),
+      axis.text = ggplot2::element_text(size = 10),
+      axis.title = ggplot2::element_text(size = 11),
+      legend.text = ggplot2::element_text(size = 10),
+      legend.title = ggplot2::element_text(size = 11)
+    )
 }
 
 #' Deduplicate AMOBIO metrics on (sandre_code, date).

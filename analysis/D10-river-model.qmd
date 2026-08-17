@@ -1,0 +1,206 @@
+---
+title: "River model: impact of nutrients and dams on food web structure"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+## Todo
+
+- [x] Join AMOBIO stressors + distance to mouth to river food web structure
+- [x] Checkpoint: coverage and missingness of covariates
+- [x] Checkpoint: spatial/temporal coverage and response distributions
+- [ ] Decide how to handle nutrient / dam-distance-downstream missingness
+- [ ] Build SPDE mesh over river station locations (Lambert-93)
+- [ ] Fit richness ~ nutrients + dams * distance to mouth + year + SPDE (path *a*)
+- [ ] Checkpoint: richness model diagnostics and predictions
+- [ ] Fit connectance / trophic length / diet overlap ~ richness + nutrients +
+  dams * distance to mouth + year + SPDE (paths *b* and *c'*)
+- [ ] Checkpoint each model
+- [ ] Direct/indirect effect decomposition (product of coefficients, via
+  posterior samples)
+- [ ] Swap Euclidean SPDE for a `MetricGraph` hydrographic-distance spatial
+  term [@Bolin-Simas-Wallin-2023]
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+library(sf)
+devtools::load_all()
+nice_theme()
+```
+
+## 1. Data preparation
+
+We join two existing pipeline targets:
+
+- `amobio_aspe_data`: AMOBIO environmental stressors (nutrients, dams) already
+  matched to river food web structure metrics (`connectance`, `trophic_length`,
+  `diet_overlap`, `log_species_richness`) via `sandre_code`/`date`.
+- `inland_distance_to_mouth`: hydrographic distance to the nearest river mouth,
+  per operation.
+
+Both carry `operation_id`, drawn from the same ASPE ID space, so they join
+directly.
+
+```{r}
+amobio <- tar_read(amobio_aspe_data) |> st_drop_geometry()
+dist_mouth <- tar_read(inland_distance_to_mouth) |>
+  select(operation_id, district, dist_mouth_m)
+
+river_data <- amobio |>
+  inner_join(dist_mouth, by = "operation_id") |>
+  select(
+    operation_id, year, survey, district, longitude, latitude,
+    # Responses.
+    log_species_richness, connectance, trophic_length, diet_overlap,
+    # Nutrients.
+    ammonium, nitrite, nitrate, phosphate,
+    # Dams.
+    dam_distance_upstream, dam_distance_downstream,
+    barrier_upstream, barrier_downstream,
+    # Position along the continuum.
+    dist_mouth_m
+  )
+
+nrow(river_data)
+```
+
+We go from 8372 river operations with AMOBIO data, and 19045 with a computed
+distance to mouth, down to `r nrow(river_data)` once both are required
+simultaneously.
+
+## 2. Checkpoint: missingness
+
+```{r}
+vars <- c(
+  "ammonium", "nitrite", "nitrate", "phosphate",
+  "dam_distance_upstream", "dam_distance_downstream",
+  "barrier_upstream", "barrier_downstream", "dist_mouth_m",
+  "log_species_richness", "connectance", "trophic_length", "diet_overlap"
+)
+
+tibble(
+  variable = vars,
+  n_na = sapply(river_data[vars], \(x) sum(is.na(x))),
+  pct_na = round(100 * n_na / nrow(river_data), 1)
+) |>
+  arrange(desc(n_na))
+```
+
+Two things stand out:
+
+- **Nutrients are missing together, not independently**: `r sum(rowSums(is.na(river_data[c("ammonium", "nitrite", "nitrate", "phosphate")])) == 4)`
+  of the ~1930 rows missing any nutrient are missing *all four* at once. This
+  points to whole sampling dates lacking a water-quality sample, rather than
+  per-parameter gaps - so there's little to gain from imputing per nutrient
+  independently.
+- **`dam_distance_downstream` is missing far more often (~40%) than
+  `dam_distance_upstream` (~6%)**, while the cumulative height indices
+  (`barrier_upstream`/`barrier_downstream`) are always present. This asymmetry
+  is worth understanding before we decide how to handle it - it may be
+  structural (no downstream dam within AMOBIO's search radius, which would
+  make the missingness itself informative) rather than a data gap. We haven't
+  resolved this yet (see Todo).
+
+Requiring complete cases on every covariate at once keeps only
+`r sum(complete.cases(river_data[vars]))` of `r nrow(river_data)` operations
+(`r round(100 * sum(complete.cases(river_data[vars])) / nrow(river_data))`%).
+Since each of the four response models won't necessarily use every covariate
+at once (and since missingness clusters so unevenly across variables), we'll
+likely want to handle this per-model rather than with one global complete-case
+filter - to be decided once we see how much it affects power for each model.
+
+## 3. Checkpoint: spatial and temporal coverage
+
+```{r}
+#| fig-width: 9
+#| fig-height: 8
+
+basin <- tar_read(basin)
+france <- rnaturalearth::ne_countries(
+  geounit = "france", type = "map_units", scale = "medium", returnclass = "sf"
+)
+
+ggplot() +
+  geom_sf(data = france, fill = NA, color = "grey80", linewidth = 0.25) +
+  geom_sf(
+    data = basin |> filter(district %in% unique(river_data$district)),
+    fill = "grey97", color = "grey40", linewidth = 0.4
+  ) +
+  geom_point(
+    data = river_data, aes(longitude, latitude, color = district),
+    size = 0.6, alpha = 0.7
+  ) +
+  coord_sf(xlim = c(-5.3, 8.3), ylim = c(41.2, 51.2), expand = FALSE) +
+  labs(x = "Longitude", y = "Latitude", color = "Bassin versant") +
+  theme(panel.grid = element_blank())
+```
+
+```{r}
+#| fig-width: 7
+#| fig-height: 3.5
+
+ggplot(river_data, aes(year)) +
+  geom_bar(fill = "steelblue") +
+  labs(x = NULL, y = "Nombre d'opérations")
+```
+
+Coverage is very uneven across the four basins (Loire and Seine dominate;
+Escaut-Somme is thin), and 2020 has a visible spike. Both are things to keep
+in mind when we get to the spatial/temporal random effects - a `year` random
+effect should absorb the 2020 spike, but the basin imbalance means the SPDE
+field will be much better informed in some catchments than others.
+
+## 4. Checkpoint: response distributions
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6
+
+river_data |>
+  select(log_species_richness, connectance, trophic_length, diet_overlap) |>
+  tidyr::pivot_longer(everything(), names_to = "metric", values_to = "value") |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 40, fill = "steelblue") +
+  facet_wrap(~metric, scales = "free") +
+  labs(x = NULL, y = NULL)
+```
+
+`connectance` and `diet_overlap` both stay strictly within (0, 1) (no exact 0
+or 1 values), which is what a Beta likelihood needs, and both look reasonably
+unimodal. `log_species_richness` is right-skewed with a shoulder but not
+obviously multimodal - plausible for a Gaussian-on-log approximation, though
+worth watching in residuals.
+
+`trophic_length` is not what we expected: it's clearly **bimodal**, with a
+narrow spike around 3.9-4.0 separated from a second, wider mode around
+4.5-5.7. A single Gaussian isn't going to fit this well as-is. This may be
+related to an earlier finding (see the metaweb investigation in `D9`): some
+species classified as piscivorous never actually realize a fish-eating edge
+in this dataset, because their size-class midpoints don't cross into the diet
+table's "adult"/piscivorous stage. If so, this could be the same mechanism
+showing up here: sites where the food chain tops out on a species that
+genuinely eats fish (higher trophic length) versus sites where it tops out on
+a species classified as piscivorous but that never actually predates on fish
+in practice (trophic length capped around 4). Worth confirming directly (e.g.
+splitting the histogram by whether the local web's top species has a realized
+fish-eating edge) before we commit to a Gaussian likelihood for this response
+- a mixture, or a covariate that captures this split, might be needed
+instead.
