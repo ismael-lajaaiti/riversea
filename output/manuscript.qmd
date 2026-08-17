@@ -266,6 +266,9 @@ estuary gradient.
 - @Carvajal-Quintero-etal-2026 found that decreasing fish body-size led to
 increase connectance and generalism.
 
+- @Finneran-etal-2026b plant productivity similarity predicts food web
+similarity at continental scale.
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
