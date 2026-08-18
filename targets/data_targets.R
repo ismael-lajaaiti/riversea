@@ -346,6 +346,15 @@ data_targets <- list(
     amobio_aspe_data,
     join_amobio_aspe(combined_amobio_data, river_foodweb_structure, river_operation)
   ),
+  tar_target(
+    naiades_hm_operation_file,
+    "data/naides_hydromorphologie/operation.csv",
+    format = "file"
+  ),
+  tar_target(
+    river_width,
+    get_river_width(naiades_hm_operation_file)
+  ),
   tar_target(rephy_dir, download_rephy(), format = "file"),
   tar_target(
     rephy_files,

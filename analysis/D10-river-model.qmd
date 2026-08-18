@@ -17,9 +17,10 @@ execute:
 - [x] Join AMOBIO stressors + distance to mouth to river food web structure
 - [x] Checkpoint: coverage and missingness of covariates
 - [x] Checkpoint: spatial/temporal coverage and response distributions
-- [ ] Decide how to handle nutrient / dam-distance-downstream missingness
+- [x] Decide how to handle nutrient / dam-distance-downstream missingness
 - [ ] Build SPDE mesh over river station locations (Lambert-93)
-- [ ] Fit richness ~ nutrients + dams * distance to mouth + year + SPDE (path *a*)
+- [ ] Fit richness ~ nutrients + dams * distance to mouth + year + SPDE
+  (path *a*)
 - [ ] Checkpoint: richness model diagnostics and predictions
 - [ ] Fit connectance / trophic length / diet overlap ~ richness + nutrients +
   dams * distance to mouth + year + SPDE (paths *b* and *c'*)
@@ -29,9 +30,7 @@ execute:
 - [ ] Swap Euclidean SPDE for a `MetricGraph` hydrographic-distance spatial
   term [@Bolin-Simas-Wallin-2023]
 
-## Setup
-
-```{r}
+```{r setup}
 library(renv)
 renv::load()
 library(targets)
@@ -46,55 +45,78 @@ devtools::load_all()
 nice_theme()
 ```
 
-## 1. Data preparation
+## Data preparation
 
-We join two existing pipeline targets:
+We join two dataframes:
 
-- `amobio_aspe_data`: AMOBIO environmental stressors (nutrients, dams) already
-  matched to river food web structure metrics (`connectance`, `trophic_length`,
-  `diet_overlap`, `log_species_richness`) via `sandre_code`/`date`.
-- `inland_distance_to_mouth`: hydrographic distance to the nearest river mouth,
-  per operation.
+- AMOBIO environmental stressors (nutrients and dams), already matched with
+food web structure (`amobio_aspe_data`);
 
-Both carry `operation_id`, drawn from the same ASPE ID space, so they join
-directly.
+- and hydrographic distance to river mouth (`inland_distance_to_mouth`)
 
-```{r}
+```{r data-overview}
 amobio <- tar_read(amobio_aspe_data) |> st_drop_geometry()
+head(amobio)
+
 dist_mouth <- tar_read(inland_distance_to_mouth) |>
   select(operation_id, district, dist_mouth_m)
+head(dist_mouth)
 
+river_width <- tar_read(river_width)
+head(river_width)
+```
+
+`amobio` and `dist_mouth` both carry `operation_id`, drawn from the same
+ASPE ID space, so they join directly. `river_width` is station-level
+(Naiades hydromorphology survey, averaged across all available visit
+dates per station), so it joins on `sandre_code`.
+
+```{r prepare-data}
 river_data <- amobio |>
   inner_join(dist_mouth, by = "operation_id") |>
+  left_join(river_width, by = "sandre_code") |>
   select(
-    operation_id, year, survey, district, longitude, latitude,
-    # Responses.
+    operation_id, sandre_code, year, survey, district, longitude, latitude,
     log_species_richness, connectance, trophic_length, diet_overlap,
-    # Nutrients.
+    elevation, river_width,
     ammonium, nitrite, nitrate, phosphate,
-    # Dams.
     dam_distance_upstream, dam_distance_downstream,
     barrier_upstream, barrier_downstream,
-    # Position along the continuum.
     dist_mouth_m
   )
 
-nrow(river_data)
+head(river_data)
 ```
 
-We go from 8372 river operations with AMOBIO data, and 19045 with a computed
-distance to mouth, down to `r nrow(river_data)` once both are required
-simultaneously.
+We go from `r nrow(amobio)` river operations with AMOBIO data, and
+`r nrow(dist_mouth)` with a computed distance to mouth, down to
+`r nrow(river_data)` once both are required simultaneously. Most droppped
+rows are because of the filtering on hydrographic basin kept, and a few
+stations that are not present in AMOBIO dataset.
 
-## 2. Checkpoint: missingness
+## Data overview
 
-```{r}
+### Missing values
+
+```{r missing-values}
 vars <- c(
   "ammonium", "nitrite", "nitrate", "phosphate",
   "dam_distance_upstream", "dam_distance_downstream",
   "barrier_upstream", "barrier_downstream", "dist_mouth_m",
+  "elevation", "river_width",
   "log_species_richness", "connectance", "trophic_length", "diet_overlap"
 )
+
+nutrient_na <- river_data |>
+  select(ammonium, nitrite, nitrate, phosphate) |>
+  mutate(
+    one_is_na = if_any(c(ammonium, nitrite, nitrate, phosphate), is.na),
+    all_are_na = if_all(c(ammonium, nitrite, nitrate, phosphate), is.na)
+  )
+
+n_one_na <- sum(nutrient_na$one_is_na)
+n_all_na <- sum(nutrient_na$all_are_na)
+n_mismatch <- sum(nutrient_na$one_is_na & !nutrient_na$all_are_na)
 
 tibble(
   variable = vars,
@@ -104,32 +126,23 @@ tibble(
   arrange(desc(n_na))
 ```
 
-Two things stand out:
+Two things stand out
 
-- **Nutrients are missing together, not independently**: `r sum(rowSums(is.na(river_data[c("ammonium", "nitrite", "nitrate", "phosphate")])) == 4)`
-  of the ~1930 rows missing any nutrient are missing *all four* at once. This
-  points to whole sampling dates lacking a water-quality sample, rather than
-  per-parameter gaps - so there's little to gain from imputing per nutrient
-  independently.
-- **`dam_distance_downstream` is missing far more often (~40%) than
-  `dam_distance_upstream` (~6%)**, while the cumulative height indices
-  (`barrier_upstream`/`barrier_downstream`) are always present. This asymmetry
-  is worth understanding before we decide how to handle it - it may be
-  structural (no downstream dam within AMOBIO's search radius, which would
-  make the missingness itself informative) rather than a data gap. We haven't
-  resolved this yet (see Todo).
+- nutrients are missing together, not independently: `r n_all_na` of the
+  `r n_one_na` rows missing any nutrient are missing *all four* at once, and
+  only `r n_mismatch` rows show a partial mismatch;
 
-Requiring complete cases on every covariate at once keeps only
-`r sum(complete.cases(river_data[vars]))` of `r nrow(river_data)` operations
-(`r round(100 * sum(complete.cases(river_data[vars])) / nrow(river_data))`%).
-Since each of the four response models won't necessarily use every covariate
-at once (and since missingness clusters so unevenly across variables), we'll
-likely want to handle this per-model rather than with one global complete-case
-filter - to be decided once we see how much it affects power for each model.
+- dam upstream distance is missing far more of than the downstream distance
+  (`dam_distance_upstream`/`dam_distance_downstream` were swapped in
+  `rename_amobio()` relative to AMOBIO's own scale codes - fixed in
+  `R/amobio.R`, pipeline rebuilt).
 
-## 3. Checkpoint: spatial and temporal coverage
+Coverage for `dam_distance_upstream` is too low, so we drop it from the
+model. For the other covariates we'll use complete cases per model.
 
-```{r}
+### Spatial coverage
+
+```{r spatial-coverage}
 #| fig-width: 9
 #| fig-height: 8
 
@@ -149,28 +162,32 @@ ggplot() +
     size = 0.6, alpha = 0.7
   ) +
   coord_sf(xlim = c(-5.3, 8.3), ylim = c(41.2, 51.2), expand = FALSE) +
-  labs(x = "Longitude", y = "Latitude", color = "Bassin versant") +
+  labs(x = "Longitude", y = "Latitude", color = "Catchment") +
   theme(panel.grid = element_blank())
 ```
 
-```{r}
+Good coverage in all four basin although they vary in sizes.
+
+### Temporal coverage
+
+```{r temporal-coverage}
 #| fig-width: 7
 #| fig-height: 3.5
 
 ggplot(river_data, aes(year)) +
   geom_bar(fill = "steelblue") +
-  labs(x = NULL, y = "Nombre d'opérations")
+  labs(x = NULL, y = "Number of operations")
 ```
 
-Coverage is very uneven across the four basins (Loire and Seine dominate;
-Escaut-Somme is thin), and 2020 has a visible spike. Both are things to keep
-in mind when we get to the spatial/temporal random effects - a `year` random
-effect should absorb the 2020 spike, but the basin imbalance means the SPDE
-field will be much better informed in some catchments than others.
+Mostly even coverage, but for 2018 and 2021 which have far less fishing
+operations.
 
-## 4. Checkpoint: response distributions
+## Response distributions
 
-```{r}
+Let's see the distributions of our response variable so we can choose the
+relevant reponse distributions.
+
+```{r response-distributions}
 #| fig-width: 9
 #| fig-height: 6
 
@@ -183,24 +200,389 @@ river_data |>
   labs(x = NULL, y = NULL)
 ```
 
-`connectance` and `diet_overlap` both stay strictly within (0, 1) (no exact 0
-or 1 values), which is what a Beta likelihood needs, and both look reasonably
-unimodal. `log_species_richness` is right-skewed with a shoulder but not
-obviously multimodal - plausible for a Gaussian-on-log approximation, though
-worth watching in residuals.
+Connectance and diet overlap are bounded between 0 and 1; they will be properly
+modeled by a beta distribution. Log species richness might be handle well by a
+gaussian distribution. The real thinking should be done for the trophic level
+which is clearly multimodal. Let's try to investigate why.
 
-`trophic_length` is not what we expected: it's clearly **bimodal**, with a
-narrow spike around 3.9-4.0 separated from a second, wider mode around
-4.5-5.7. A single Gaussian isn't going to fit this well as-is. This may be
-related to an earlier finding (see the metaweb investigation in `D9`): some
-species classified as piscivorous never actually realize a fish-eating edge
-in this dataset, because their size-class midpoints don't cross into the diet
-table's "adult"/piscivorous stage. If so, this could be the same mechanism
-showing up here: sites where the food chain tops out on a species that
-genuinely eats fish (higher trophic length) versus sites where it tops out on
-a species classified as piscivorous but that never actually predates on fish
-in practice (trophic length capped around 4). Worth confirming directly (e.g.
-splitting the histogram by whether the local web's top species has a realized
-fish-eating edge) before we commit to a Gaussian likelihood for this response
-- a mixture, or a covariate that captures this split, might be needed
-instead.
+We split each local food web by the predation depth of its top species: does
+it eat no fish at all, a fish that itself only eats invertebrates, or a fish
+that is itself piscivorous.
+
+```{r trophic-length-modes}
+#| fig-width: 9
+#| fig-height: 4
+
+river_foodweb <- tar_read(river_foodweb_structure) |>
+  filter(operation_id %in% river_data$operation_id)
+resource_list <- tar_read(resource_list)
+
+classify_predation_depth <- function(web, resource_list) {
+  nodes <- data.frame(node = colnames(web))
+  links <- web |>
+    as.data.frame() |>
+    mutate(resource = rownames(web)) |>
+    tidyr::pivot_longer(-resource, names_to = "consumer") |>
+    filter(value == 1) |>
+    select(-value)
+  community <- cheddar::Community(
+    nodes = nodes, properties = list(title = "Community"), trophic.links = links
+  )
+  tl <- cheddar::TrophicLevels(community) |>
+    as.data.frame() |>
+    tibble::rownames_to_column("node") |>
+    rename(TL = ChainAveragedTL)
+  top_nodes <- tl$node[!is.na(tl$TL) & tl$TL == max(tl$TL, na.rm = TRUE)]
+
+  fish_prey_of <- function(n) {
+    prey <- rownames(web)[web[, n] == 1]
+    prey[!(prey %in% resource_list)]
+  }
+  top_fish_prey <- unique(unlist(lapply(top_nodes, fish_prey_of)))
+
+  if (length(top_fish_prey) == 0) {
+    "no fish eaten"
+  } else if (any(sapply(top_fish_prey, \(p) length(fish_prey_of(p)) > 0))) {
+    "eats a piscivorous fish"
+  } else {
+    "eats a non-piscivorous fish"
+  }
+}
+
+river_foodweb <- river_foodweb |>
+  mutate(
+    predation_depth = sapply(
+      foodweb, classify_predation_depth, resource_list = resource_list
+    ),
+    predation_depth = factor(
+      predation_depth,
+      levels = c(
+        "no fish eaten", "eats a non-piscivorous fish",
+        "eats a piscivorous fish"
+      )
+    )
+  )
+
+tl_range <- range(river_foodweb$trophic_length)
+normal_overlay <- river_foodweb |>
+  group_by(predation_depth) |>
+  summarise(
+    mean_tl = mean(trophic_length), sd_tl = sd(trophic_length), .groups = "drop"
+  ) |>
+  rowwise() |>
+  reframe(
+    predation_depth = predation_depth,
+    x = seq(tl_range[1], tl_range[2], length.out = 200),
+    y = dnorm(x, mean_tl, sd_tl)
+  )
+
+ggplot(river_foodweb, aes(trophic_length)) +
+  geom_histogram(
+    aes(y = after_stat(density)), bins = 30, fill = "steelblue", alpha = 0.7
+  ) +
+  geom_line(
+    data = normal_overlay, aes(x, y), color = "firebrick", linewidth = 0.8
+  ) +
+  facet_wrap(~predation_depth, scales = "free") +
+  labs(x = "Trophic length", y = "Density")
+```
+
+We see that the 'predation depth' cleanly separates our three modes of the
+trophic level distribution. So we will go for an ordinal model the classify
+these modes and model each of the mode individually as a gaussian.
+
+## Building the mesh
+
+We build a mesh that covers all fishing stations.
+
+```{r river-mesh}
+library(INLA)
+library(fmesher)
+
+stations <- river_data |>
+  distinct(sandre_code, longitude, latitude) |>
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+  st_transform(2154) # Lambert-93, coordinates in meters.
+
+coords <- st_coordinates(stations)
+
+mesh <- fm_mesh_2d_inla(
+  loc = coords,
+  max.edge = c(15000, 60000),
+  offset = c(15000, 100000),
+  cutoff = 5000
+)
+plot(mesh, edge.color = rgb(0.6, 0.6, 0.6), lwd = 0.5)
+points(coords, col = "steelblue", pch = 16, cex = 0.4)
+```
+
+```{r spde-setup}
+spde <- inla.spde2.pcmatern(
+  mesh = mesh,
+  prior.range = c(50000, 0.5),
+  prior.sigma = c(1, 0.01)
+)
+
+A <- inla.spde.make.A(mesh = mesh, loc = coords)
+spatial_index <- inla.spde.make.index("spatial.field", n.spde = spde$n.spde)
+
+site_idx <- match(river_data$sandre_code, stations$sandre_code)
+A_expanded <- A[site_idx, ]
+```
+
+## Richness model
+
+Path *a*: `log_species_richness ~ nutrients + dams * distance to mouth +
+elevation + river_width + year + district + SPDE`, restricted to complete
+cases on the covariates used here (`dam_distance_upstream` excluded, see
+above). `ammonium` is dropped (collinear with `nitrite`, r=0.79 on log
+scale, see below) and we keep `nitrite` only. Nitrite, nitrate, phosphate,
+`dam_distance_downstream` and `river_width` are log-transformed;
+`barrier_upstream`/`barrier_downstream` are log1p-transformed (both have
+exact zeros). We also add an IID random effect for `district` (hydrographic
+basin) alongside the SPDE field.
+
+`elevation` and `river_width` were added after noticing `barrier_upstream`
+had a counterintuitive positive effect on richness: `elevation` is a real
+confound for the whole dam/distance story (see checkpoint below), and
+`river_width` (Naiades hydromorphology data, joined on `sandre_code`)
+turned out to fully explain `barrier_upstream`'s effect - larger rivers
+carry both more historic barrier infrastructure and higher richness.
+`river_width` has substantial missingness (~35% of stations were never
+surveyed for hydromorphology at all), which is the dominant cost of adding
+it here.
+
+```{r richness-data}
+richness_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "nitrite", "nitrate", "phosphate",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m", "year", "sandre_code", "district"
+)
+river_model_data_raw <- river_data |>
+  filter(complete.cases(river_data[richness_vars]))
+nrow(river_model_data_raw)
+```
+
+### Collinearity check
+
+Before fitting, we check pairwise correlation between covariates, on the
+same complete-case rows used for fitting, log-transforming the skewed ones
+first.
+
+```{r collinearity}
+#| fig-width: 12
+#| fig-height: 10
+
+river_model_data_raw <- river_model_data_raw |>
+  mutate(
+    log_nitrite = log(nitrite),
+    log_nitrate = log(nitrate),
+    log_phosphate = log(phosphate),
+    log_dam_distance_downstream = log(dam_distance_downstream),
+    log_barrier_upstream = log1p(barrier_upstream),
+    log_barrier_downstream = log1p(barrier_downstream),
+    log_river_width = log(river_width)
+  )
+
+river_model_data_raw |>
+  select(
+    log_nitrite, log_nitrate, log_phosphate,
+    log_dam_distance_downstream, log_barrier_upstream,
+    log_barrier_downstream, dist_mouth_m, elevation, log_river_width
+  ) |>
+  GGally::ggpairs()
+```
+
+*To discuss: whether dropping ammonium and keeping nitrite resolved the
+worst collinearity, whether log1p on the barrier variables changed their
+correlation structure the way plain log did for nutrients and
+dam_distance_downstream, and whether any remaining pair is still high
+enough to worry about before fitting.*
+
+### Model fit
+
+```{r richness-model}
+river_model_data <- river_model_data_raw |>
+  mutate(
+    nitrite = log(nitrite),
+    nitrate = log(nitrate),
+    phosphate = log(phosphate),
+    dam_distance_downstream = log(dam_distance_downstream),
+    barrier_upstream = log1p(barrier_upstream),
+    barrier_downstream = log1p(barrier_downstream),
+    river_width = log(river_width),
+    district_id = as.integer(factor(district))
+  ) |>
+  mutate(across(
+    c(
+      nitrite, nitrate, phosphate, dam_distance_downstream,
+      barrier_upstream, barrier_downstream, dist_mouth_m,
+      elevation, river_width
+    ),
+    \(x) as.numeric(scale(x))
+  ))
+
+site_idx_model <- match(river_model_data$sandre_code, stations$sandre_code)
+A_model <- A[site_idx_model, ]
+
+richness_stack <- inla.stack(
+  data = list(y = river_model_data$log_species_richness),
+  A = list(A_model, 1),
+  effects = list(
+    spatial.field = spatial_index,
+    data.frame(
+      intercept = 1,
+      elevation = river_model_data$elevation,
+      river_width = river_model_data$river_width,
+      nitrite = river_model_data$nitrite,
+      nitrate = river_model_data$nitrate,
+      phosphate = river_model_data$phosphate,
+      dam_distance_downstream = river_model_data$dam_distance_downstream,
+      barrier_upstream = river_model_data$barrier_upstream,
+      barrier_downstream = river_model_data$barrier_downstream,
+      dist_mouth_m = river_model_data$dist_mouth_m,
+      year = river_model_data$year,
+      district_id = river_model_data$district_id
+    )
+  ),
+  tag = "est"
+)
+
+fit_richness <- inla(
+  y ~ -1 + intercept +
+    elevation + river_width +
+    nitrite + nitrate + phosphate +
+    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    dist_mouth_m +
+    dam_distance_downstream:dist_mouth_m +
+    barrier_upstream:dist_mouth_m +
+    barrier_downstream:dist_mouth_m +
+    f(year, model = "iid") +
+    f(district_id, model = "iid") +
+    f(spatial.field, model = spde),
+  family = "gaussian",
+  data = inla.stack.data(richness_stack),
+  control.predictor = list(A = inla.stack.A(richness_stack), compute = TRUE),
+  control.compute = list(waic = TRUE, config = TRUE)
+)
+
+summary(fit_richness)
+```
+
+*To discuss: which fixed effects have credible intervals excluding zero
+now that elevation and river_width are in the model, whether
+barrier_upstream's effect has vanished the way it did in the smaller
+robustness checks, how much the district IID effect's variance compares to
+the SPDE field's, whether the spatial range and dist_mouth_m's sign are
+stable now versus the elevation-only checkpoint, and whether the ~35% drop
+in coverage from river_width's missingness is an acceptable cost for this
+model.*
+
+## Coefficient plot
+
+All covariates are standardized, so posterior means/CIs are directly
+comparable across terms.
+
+```{r coefficient-plot}
+#| fig-width: 9
+#| fig-height: 6
+
+term_order <- c(
+  "elevation", "river_width",
+  "nitrite", "nitrate", "phosphate",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m",
+  "dam_distance_downstream:dist_mouth_m", "barrier_upstream:dist_mouth_m",
+  "barrier_downstream:dist_mouth_m"
+)
+term_type <- c(
+  elevation = "physical", river_width = "physical",
+  nitrite = "nutrient", nitrate = "nutrient", phosphate = "nutrient",
+  dam_distance_downstream = "connectivity", barrier_upstream = "connectivity",
+  barrier_downstream = "connectivity", dist_mouth_m = "distance",
+  `dam_distance_downstream:dist_mouth_m` = "interaction",
+  `barrier_upstream:dist_mouth_m` = "interaction",
+  `barrier_downstream:dist_mouth_m` = "interaction"
+)
+
+coef_df <- fit_richness$summary.fixed |>
+  tibble::rownames_to_column("term") |>
+  filter(term != "intercept") |>
+  mutate(
+    term = factor(term, levels = rev(term_order)),
+    type = term_type[as.character(term)]
+  )
+
+ggplot(coef_df, aes(x = mean, y = term, color = type)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = `0.025quant`, xmax = `0.975quant`)) +
+  labs(
+    x = "Standardized coefficient (posterior mean, 95% CI)", y = NULL,
+    color = "Term type"
+  )
+```
+
+## Visualizing interactions
+
+A coefficient bar for an interaction term only tells us it's non-zero, not
+what it means for the underlying relationship. Instead, for each dam
+variable we plot its *marginal effect* on richness (main effect +
+interaction x distance) as a function of distance to the river mouth,
+across the observed range, with a credible band. Since the main effect and
+interaction coefficients are correlated in the posterior, we use posterior
+samples (not the two terms' separate CIs, which would ignore that
+covariance) to build the band correctly.
+
+```{r interaction-plot}
+#| fig-width: 10
+#| fig-height: 4
+
+set.seed(1)
+n_samples <- 1000
+post_samples <- inla.posterior.sample(n_samples, fit_richness)
+
+get_coef <- function(name) {
+  sapply(post_samples, function(s) {
+    s$latent[rownames(s$latent) == paste0(name, ":1"), 1]
+  })
+}
+
+dam_vars <- c(
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream"
+)
+z_grid <- seq(-2, 3, length.out = 50)
+
+marginal_df <- purrr::map_dfr(dam_vars, function(v) {
+  main <- get_coef(v)
+  inter <- get_coef(paste0(v, ":dist_mouth_m"))
+  eff <- sapply(z_grid, function(z) main + inter * z)
+  tibble::tibble(
+    variable = v,
+    z = z_grid,
+    mean = apply(eff, 2, mean),
+    lower = apply(eff, 2, quantile, 0.025),
+    upper = apply(eff, 2, quantile, 0.975)
+  )
+})
+
+ggplot(marginal_df, aes(x = z, y = mean)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_ribbon(
+    aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "steelblue"
+  ) +
+  geom_line(color = "steelblue") +
+  facet_wrap(~variable) +
+  labs(
+    x = "Distance to river mouth (standardized)",
+    y = "Estimated effect on log richness"
+  )
+```
+
+*To discuss: barrier_downstream's effect crossing from ~0 near the mouth to
+clearly negative far upstream, barrier_upstream's effect crossing from ~0
+to clearly positive far upstream, and dam_distance_downstream staying flat
+near zero throughout (consistent with its non-credible interaction) -
+whether this is worth reporting as "connectivity effects only bite far
+from the sea" or needs more caution given the earlier confound flags on
+barrier_upstream.*

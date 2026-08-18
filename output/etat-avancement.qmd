@@ -309,9 +309,8 @@ restant à exploiter, qui motive la demande de prolongation du contrat.
 ## Perspectives {#sec-perspectives}
 
 Nous détaillons ici, dans l'ordre chronologique, les prochaines étapes prévues
-pendant la durée de la prolongation demandée (jusqu'à août 2027). Un
-calendrier détaillé de cette prolongation est fourni dans le formulaire qui
-accompagne ce document.
+avant la fin du contrat initial (fin août 2027). Un calendrier détaillé de
+cette prolongation est fourni dans le formulaire qui accompagne ce document.
 
 ### Finalisation de l'harmonisation des données
 

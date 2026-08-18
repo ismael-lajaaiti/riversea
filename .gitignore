@@ -14,6 +14,7 @@ old_data/
 data/rephy/
 data/*.zip
 data/amobio
+data/nai*
 backup-data/
 _freeze/
 *_cache/
