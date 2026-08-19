@@ -43,6 +43,7 @@ library(dplyr)
 library(sf)
 devtools::load_all()
 nice_theme()
+knitr::opts_chunk$set(autodep = TRUE)
 ```
 
 ## Data preparation
@@ -209,7 +210,9 @@ We split each local food web by the predation depth of its top species: does
 it eat no fish at all, a fish that itself only eats invertebrates, or a fish
 that is itself piscivorous.
 
+
 ```{r trophic-length-modes}
+#| cache: true
 #| fig-width: 9
 #| fig-height: 4
 
@@ -330,40 +333,6 @@ site_idx <- match(river_data$sandre_code, stations$sandre_code)
 A_expanded <- A[site_idx, ]
 ```
 
-## Richness model
-
-Path *a*: `log_species_richness ~ nutrients + dams * distance to mouth +
-elevation + river_width + year + district + SPDE`, restricted to complete
-cases on the covariates used here (`dam_distance_upstream` excluded, see
-above). `ammonium` is dropped (collinear with `nitrite`, r=0.79 on log
-scale, see below) and we keep `nitrite` only. Nitrite, nitrate, phosphate,
-`dam_distance_downstream` and `river_width` are log-transformed;
-`barrier_upstream`/`barrier_downstream` are log1p-transformed (both have
-exact zeros). We also add an IID random effect for `district` (hydrographic
-basin) alongside the SPDE field.
-
-`elevation` and `river_width` were added after noticing `barrier_upstream`
-had a counterintuitive positive effect on richness: `elevation` is a real
-confound for the whole dam/distance story (see checkpoint below), and
-`river_width` (Naiades hydromorphology data, joined on `sandre_code`)
-turned out to fully explain `barrier_upstream`'s effect - larger rivers
-carry both more historic barrier infrastructure and higher richness.
-`river_width` has substantial missingness (~35% of stations were never
-surveyed for hydromorphology at all), which is the dominant cost of adding
-it here.
-
-```{r richness-data}
-richness_vars <- c(
-  "log_species_richness", "elevation", "river_width",
-  "nitrite", "nitrate", "phosphate",
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
-  "dist_mouth_m", "year", "sandre_code", "district"
-)
-river_model_data_raw <- river_data |>
-  filter(complete.cases(river_data[richness_vars]))
-nrow(river_model_data_raw)
-```
-
 ### Collinearity check
 
 Before fitting, we check pairwise correlation between covariates, on the
@@ -374,8 +343,18 @@ first.
 #| fig-width: 12
 #| fig-height: 10
 
+candidate_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "ammonium", "nitrite", "nitrate", "phosphate",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m", "year", "sandre_code", "district"
+)
+river_model_data_raw <- river_data |>
+  filter(complete.cases(river_data[candidate_vars]))
+
 river_model_data_raw <- river_model_data_raw |>
   mutate(
+    log_ammonium = log(ammonium),
     log_nitrite = log(nitrite),
     log_nitrate = log(nitrate),
     log_phosphate = log(phosphate),
@@ -387,25 +366,81 @@ river_model_data_raw <- river_model_data_raw |>
 
 river_model_data_raw |>
   select(
-    log_nitrite, log_nitrate, log_phosphate,
+    log_ammonium, log_nitrite, log_nitrate, log_phosphate,
     log_dam_distance_downstream, log_barrier_upstream,
     log_barrier_downstream, dist_mouth_m, elevation, log_river_width
   ) |>
   GGally::ggpairs()
 ```
 
-*To discuss: whether dropping ammonium and keeping nitrite resolved the
-worst collinearity, whether log1p on the barrier variables changed their
-correlation structure the way plain log did for nutrients and
-dam_distance_downstream, and whether any remaining pair is still high
-enough to worry about before fitting.*
+We observe a strong correlation between ammonium and the other nutrients, so we
+decide to drop this variable to ensure model identifiability.
 
-### Model fit
+```{r}
+river_model_data_raw <- river_model_data_raw |>
+  select(-log_ammonium)
+```
+
+Shared term ordering/typing and plotting helper for the coefficient plots
+of all three structure models below (richness, connectance, predation
+depth), so it isn't redefined per model.
+
+```{r coefficient-plot-helper}
+term_order <- c(
+  "log_species_richness",
+  "dist_mouth_m", "elevation", "river_width",
+  "nitrate", "nitrate2", "phosphate", "phosphate2",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dam_distance_downstream:dist_mouth_m", "barrier_upstream:dist_mouth_m",
+  "barrier_downstream:dist_mouth_m"
+)
+term_type <- c(
+  log_species_richness = "richness",
+  dist_mouth_m = "physical", elevation = "physical", river_width = "physical",
+  nitrate = "nutrient", nitrate2 = "nutrient",
+  phosphate = "nutrient", phosphate2 = "nutrient",
+  dam_distance_downstream = "connectivity", barrier_upstream = "connectivity",
+  barrier_downstream = "connectivity",
+  `dam_distance_downstream:dist_mouth_m` = "interaction",
+  `barrier_upstream:dist_mouth_m` = "interaction",
+  `barrier_downstream:dist_mouth_m` = "interaction"
+)
+
+plot_coefficients <- function(fit, x_label) {
+  fit$summary.fixed |>
+    tibble::rownames_to_column("term") |>
+    filter(term %in% term_order) |>
+    mutate(
+      term = factor(term, levels = rev(term_order)),
+      type = term_type[as.character(term)]
+    ) |>
+    ggplot(aes(mean, term, color = type)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+    geom_pointrange(aes(xmin = `0.025quant`, xmax = `0.975quant`)) +
+    labs(x = x_label, y = NULL, color = "Term type")
+}
+```
+
+## Richness model
+
+$$
+\log S_i \sim \mathcal{N}(\mu_i, \sigma_i)
+$$
+$$
+\mu_i = \mathbf{x}_i^\top \boldsymbol\beta +
+\text{year}_i + \text{district}_i +
+\text{SPDE}_i
+$$
+
+where $\mathbf{x}$ is the vector of covariates (nutrients, dams, etc.) and
+$\beta$ their fixed effect.
+
 
 ```{r richness-model}
+#| cache: true
+
 river_model_data <- river_model_data_raw |>
   mutate(
-    nitrite = log(nitrite),
     nitrate = log(nitrate),
     phosphate = log(phosphate),
     dam_distance_downstream = log(dam_distance_downstream),
@@ -416,12 +451,13 @@ river_model_data <- river_model_data_raw |>
   ) |>
   mutate(across(
     c(
-      nitrite, nitrate, phosphate, dam_distance_downstream,
+      nitrate, phosphate, dam_distance_downstream,
       barrier_upstream, barrier_downstream, dist_mouth_m,
       elevation, river_width
     ),
     \(x) as.numeric(scale(x))
-  ))
+  )) |>
+  mutate(nitrate2 = nitrate^2, phosphate2 = phosphate^2)
 
 site_idx_model <- match(river_model_data$sandre_code, stations$sandre_code)
 A_model <- A[site_idx_model, ]
@@ -435,9 +471,10 @@ richness_stack <- inla.stack(
       intercept = 1,
       elevation = river_model_data$elevation,
       river_width = river_model_data$river_width,
-      nitrite = river_model_data$nitrite,
       nitrate = river_model_data$nitrate,
+      nitrate2 = river_model_data$nitrate2,
       phosphate = river_model_data$phosphate,
+      phosphate2 = river_model_data$phosphate2,
       dam_distance_downstream = river_model_data$dam_distance_downstream,
       barrier_upstream = river_model_data$barrier_upstream,
       barrier_downstream = river_model_data$barrier_downstream,
@@ -452,7 +489,7 @@ richness_stack <- inla.stack(
 fit_richness <- inla(
   y ~ -1 + intercept +
     elevation + river_width +
-    nitrite + nitrate + phosphate +
+    nitrate + nitrate2 + phosphate + phosphate2 +
     dam_distance_downstream + barrier_upstream + barrier_downstream +
     dist_mouth_m +
     dam_distance_downstream:dist_mouth_m +
@@ -470,17 +507,6 @@ fit_richness <- inla(
 summary(fit_richness)
 ```
 
-*To discuss: which fixed effects have credible intervals excluding zero
-now that elevation and river_width are in the model, whether
-barrier_upstream's effect has vanished the way it did in the smaller
-robustness checks, how much the district IID effect's variance compares to
-the SPDE field's, whether the spatial range and dist_mouth_m's sign are
-stable now versus the elevation-only checkpoint, and whether the ~35% drop
-in coverage from river_width's missingness is an acceptable cost for this
-model.*
-
-## Coefficient plot
-
 All covariates are standardized, so posterior means/CIs are directly
 comparable across terms.
 
@@ -488,101 +514,538 @@ comparable across terms.
 #| fig-width: 9
 #| fig-height: 6
 
-term_order <- c(
-  "elevation", "river_width",
-  "nitrite", "nitrate", "phosphate",
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
-  "dist_mouth_m",
-  "dam_distance_downstream:dist_mouth_m", "barrier_upstream:dist_mouth_m",
-  "barrier_downstream:dist_mouth_m"
+plot_coefficients(
+  fit_richness, "Standardized coefficient (posterior mean, 95% CI)"
 )
-term_type <- c(
-  elevation = "physical", river_width = "physical",
-  nitrite = "nutrient", nitrate = "nutrient", phosphate = "nutrient",
-  dam_distance_downstream = "connectivity", barrier_upstream = "connectivity",
-  barrier_downstream = "connectivity", dist_mouth_m = "distance",
-  `dam_distance_downstream:dist_mouth_m` = "interaction",
-  `barrier_upstream:dist_mouth_m` = "interaction",
-  `barrier_downstream:dist_mouth_m` = "interaction"
-)
-
-coef_df <- fit_richness$summary.fixed |>
-  tibble::rownames_to_column("term") |>
-  filter(term != "intercept") |>
-  mutate(
-    term = factor(term, levels = rev(term_order)),
-    type = term_type[as.character(term)]
-  )
-
-ggplot(coef_df, aes(x = mean, y = term, color = type)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(aes(xmin = `0.025quant`, xmax = `0.975quant`)) +
-  labs(
-    x = "Standardized coefficient (posterior mean, 95% CI)", y = NULL,
-    color = "Term type"
-  )
 ```
 
-## Visualizing interactions
+## Connectance model
 
-A coefficient bar for an interaction term only tells us it's non-zero, not
-what it means for the underlying relationship. Instead, for each dam
-variable we plot its *marginal effect* on richness (main effect +
-interaction x distance) as a function of distance to the river mouth,
-across the observed range, with a credible band. Since the main effect and
-interaction coefficients are correlated in the posterior, we use posterior
-samples (not the two terms' separate CIs, which would ignore that
-covariance) to build the band correctly.
+$$
+\text{connectance}_i \sim \text{Beta}(\mu_i, \phi)
+$$
+$$
+\text{logit}(\mu_i) = \gamma_r \, \text{richness}_i +
+\mathbf{x}_i^\top \boldsymbol\gamma +
+\text{year}_i + \text{district}_i + \text{SPDE}_i
+$$
 
-```{r interaction-plot}
-#| fig-width: 10
-#| fig-height: 4
+where $\mu_i \in (0, 1)$ is the mean and $\phi$ a shared precision
+hyperparameter (INLA's mean-precision parameterization of the Beta
+distribution: shape parameters $a = \mu_i\phi$, $b = (1-\mu_i)\phi$),
+$\text{richness}_i$ is standardized `log_species_richness` (the
+mediator), and $\mathbf{x}_i$ is the same covariate vector as the
+richness model.
 
-set.seed(1)
-n_samples <- 1000
-post_samples <- inla.posterior.sample(n_samples, fit_richness)
+```{r connectance-data}
+connectance_vars <- c(
+  "connectance", "log_species_richness", "elevation", "river_width",
+  "nitrate", "phosphate",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m", "year", "sandre_code", "district"
+)
+river_connectance_data <- river_data |>
+  filter(complete.cases(river_data[connectance_vars]))
+nrow(river_connectance_data)
 
-get_coef <- function(name) {
-  sapply(post_samples, function(s) {
-    s$latent[rownames(s$latent) == paste0(name, ":1"), 1]
-  })
+river_connectance_data <- river_connectance_data |>
+  mutate(
+    nitrate = log(nitrate),
+    phosphate = log(phosphate),
+    dam_distance_downstream = log(dam_distance_downstream),
+    barrier_upstream = log1p(barrier_upstream),
+    barrier_downstream = log1p(barrier_downstream),
+    river_width = log(river_width),
+    district_id = as.integer(factor(district))
+  ) |>
+  mutate(across(
+    c(
+      log_species_richness, nitrate, phosphate,
+      dam_distance_downstream, barrier_upstream, barrier_downstream,
+      dist_mouth_m, elevation, river_width
+    ),
+    \(x) as.numeric(scale(x))
+  )) |>
+  mutate(nitrate2 = nitrate^2, phosphate2 = phosphate^2)
+
+site_idx_connectance <- match(
+  river_connectance_data$sandre_code, stations$sandre_code
+)
+A_connectance <- A[site_idx_connectance, ]
+```
+
+```{r connectance-model}
+#| cache: true
+
+connectance_stack <- inla.stack(
+  data = list(y = river_connectance_data$connectance),
+  A = list(A_connectance, 1),
+  effects = list(
+    spatial.field = spatial_index,
+    data.frame(
+      intercept = 1,
+      log_species_richness = river_connectance_data$log_species_richness,
+      elevation = river_connectance_data$elevation,
+      river_width = river_connectance_data$river_width,
+      nitrate = river_connectance_data$nitrate,
+      nitrate2 = river_connectance_data$nitrate2,
+      phosphate = river_connectance_data$phosphate,
+      phosphate2 = river_connectance_data$phosphate2,
+      dam_distance_downstream = river_connectance_data$dam_distance_downstream,
+      barrier_upstream = river_connectance_data$barrier_upstream,
+      barrier_downstream = river_connectance_data$barrier_downstream,
+      dist_mouth_m = river_connectance_data$dist_mouth_m,
+      year = river_connectance_data$year,
+      district_id = river_connectance_data$district_id
+    )
+  ),
+  tag = "est"
+)
+
+fit_connectance <- inla(
+  y ~ -1 + intercept + log_species_richness + elevation + river_width +
+    nitrate + nitrate2 + phosphate + phosphate2 +
+    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    dist_mouth_m +
+    dam_distance_downstream:dist_mouth_m +
+    barrier_upstream:dist_mouth_m +
+    barrier_downstream:dist_mouth_m +
+    f(year, model = "iid") +
+    f(district_id, model = "iid") +
+    f(spatial.field, model = spde),
+  family = "beta",
+  data = inla.stack.data(connectance_stack),
+  control.predictor = list(A = inla.stack.A(connectance_stack), compute = TRUE),
+  control.compute = list(waic = TRUE, config = TRUE)
+)
+```
+
+```{r connectance-coefficient-plot}
+#| fig-width: 9
+#| fig-height: 6
+
+plot_coefficients(
+  fit_connectance, "Standardized coefficient (posterior mean, 95% CI)"
+)
+```
+
+*To discuss: whether richness's effect on connectance (path *b*) matches
+the known diversity-connectance relationship from the ecology
+literature, which covariates have a credible direct effect on
+connectance net of richness (path *c'*), and whether the dam/barrier
+pattern here echoes or differs from what we found for richness and
+predation depth.*
+
+## Trophic length model
+
+We model trophic lengths in two distinct parts as it is trimodal.
+The ordinal part models the `predation_depth`, that is, whether the community
+has:
+1) no species eating fish species;
+2) a fish species eating a non-piscivorous;
+3) a fish species eating a piscivorous species.
+Then, knowing this category, we model trophic length as a conditional gaussian
+distribution.
+
+### Ordinal part
+
+With $D_i \in \{1, 2, 3\}$ the predation-depth category (no fish eaten /
+eats a non-piscivorous fish / eats a piscivorous fish) of operation $i$,
+a proportional-odds (cumulative logit) model:
+
+$$
+\text{logit}\left[P(D_i \le k)\right] = \theta_k - \eta_i,
+\quad k \in \{1, 2\}
+$$
+$$
+\eta_i = \mathbf{x}_i^\top \boldsymbol\beta +
+\text{year}_i + \text{district}_i +
+\text{SPDE}_i
+$$
+
+where $\mathbf{x}_i$ is the same covariate vector as the richness model
+(nutrients, dam/barrier variables and their interaction with distance to
+mouth, elevation, river width) and $\theta_1 < \theta_2$ are estimated
+thresholds. A positive $\beta$ pushes towards a higher (more
+piscivorous) category.
+
+```{r trophic-length-data}
+tl_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "nitrate", "phosphate",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m", "year", "sandre_code", "district"
+)
+river_tl_foodweb <- river_foodweb |>
+  st_drop_geometry() |>
+  select(operation_id, predation_depth)
+
+river_tl_data <- river_data |>
+  filter(complete.cases(river_data[tl_vars])) |>
+  left_join(river_tl_foodweb, by = "operation_id")
+nrow(river_tl_data)
+
+river_tl_data <- river_tl_data |>
+  mutate(
+    nitrate = log(nitrate),
+    phosphate = log(phosphate),
+    dam_distance_downstream = log(dam_distance_downstream),
+    barrier_upstream = log1p(barrier_upstream),
+    barrier_downstream = log1p(barrier_downstream),
+    river_width = log(river_width),
+    district_id = as.integer(factor(district)),
+    predation_depth_int = as.integer(predation_depth)
+  ) |>
+  mutate(across(
+    c(
+      log_species_richness, nitrate, phosphate,
+      dam_distance_downstream, barrier_upstream, barrier_downstream,
+      dist_mouth_m, elevation, river_width
+    ),
+    \(x) as.numeric(scale(x))
+  )) |>
+  mutate(nitrate2 = nitrate^2, phosphate2 = phosphate^2)
+
+site_idx_tl <- match(river_tl_data$sandre_code, stations$sandre_code)
+A_tl <- A[site_idx_tl, ]
+
+tl_covariate_df <- data.frame(
+  log_species_richness = river_tl_data$log_species_richness,
+  elevation = river_tl_data$elevation,
+  river_width = river_tl_data$river_width,
+  nitrate = river_tl_data$nitrate,
+  nitrate2 = river_tl_data$nitrate2,
+  phosphate = river_tl_data$phosphate,
+  phosphate2 = river_tl_data$phosphate2,
+  dam_distance_downstream = river_tl_data$dam_distance_downstream,
+  barrier_upstream = river_tl_data$barrier_upstream,
+  barrier_downstream = river_tl_data$barrier_downstream,
+  dist_mouth_m = river_tl_data$dist_mouth_m,
+  year = river_tl_data$year,
+  district_id = river_tl_data$district_id
+)
+```
+
+```{r predation-depth-model}
+#| cache: true
+
+stk_ordinal <- inla.stack(
+  data = list(y = river_tl_data$predation_depth_int),
+  A = list(A_tl, 1),
+  effects = list(spatial.field = spatial_index, tl_covariate_df),
+  tag = "est"
+)
+
+fit_predation_depth <- inla(
+  y ~ log_species_richness + elevation + river_width +
+    nitrate + nitrate2 + phosphate + phosphate2 +
+    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    dist_mouth_m +
+    dam_distance_downstream:dist_mouth_m +
+    barrier_upstream:dist_mouth_m +
+    barrier_downstream:dist_mouth_m +
+    f(year, model = "iid") +
+    f(district_id, model = "iid") +
+    f(spatial.field, model = spde),
+  family = "pom",
+  data = inla.stack.data(stk_ordinal),
+  control.predictor = list(A = inla.stack.A(stk_ordinal), compute = TRUE),
+  control.compute = list(waic = TRUE, config = TRUE)
+)
+```
+
+```{r predation-depth-coefficient-plot}
+#| fig-width: 9
+#| fig-height: 6
+
+plot_coefficients(
+  fit_predation_depth, "Cumulative-logit coefficient (posterior mean, 95% CI)"
+)
+```
+
+```{r predation-depth-thresholds}
+thresholds <- fit_predation_depth$summary.hyperpar |>
+  tibble::rownames_to_column("term") |>
+  filter(grepl("POM", term)) |>
+  select(term, mean, sd, `0.025quant`, `0.975quant`)
+thresholds |> knitr::kable(digits = 3)
+
+# implied category split at eta = 0 (an "average-covariate" site)
+p_le1 <- plogis(thresholds$mean[1])
+p_le2 <- plogis(thresholds$mean[2])
+tibble(
+  predation_depth = levels(river_tl_data$predation_depth),
+  p = c(p_le1, p_le2 - p_le1, 1 - p_le2)
+) |>
+  knitr::kable(digits = 3)
+```
+
+$\theta_1$ is poorly constrained (95% CI on the probability scale: 0.6% to
+41%) because only ~4% of rows fall in `no fish eaten` - $\theta_2$, between
+the two well-populated categories, is tight (83.6% to 85.6%). The implied
+split at $\eta_i = 0$ (6% / 79% / 15%) differs from the raw sample split
+(4% / 42% / 54%): this is expected, not a bug - $\eta_i=0$ means every
+covariate at its mean simultaneously, and because the logistic link is
+non-linear and `log_species_richness` has a large, widely-spread effect,
+averaging predictions *across* sites is not the same as predicting *at*
+the average site.
+
+*To discuss: which covariates shift a web's mode - richness, river_width,
+nitrate, dist_mouth_m, and barrier_downstream (both its main effect and
+interaction with distance) are all credible - and whether the direction
+of each effect makes ecological sense given what we found for richness
+and connectance.*
+
+### Conditional gaussian part
+
+Conditional on the mode $D_i$, a Gaussian for the continuous variation
+within a mode, with a separate intercept per category (no shared global
+intercept, since the three category dummies already span that) and the
+same covariates and random-effect structure:
+
+$$
+\text{trophic\_length}_i \mid D_i \sim \mathcal{N}(\mu_i, \sigma^2)
+$$
+$$
+\mu_i = \alpha_{D_i} + \mathbf{x}_i^\top \boldsymbol\gamma +
+\text{year}_i + \text{district}_i + \text{SPDE}_i
+$$
+
+```{r trophic-length-model}
+#| cache: true
+
+tl_covariate_df$predation_depth <- river_tl_data$predation_depth
+
+stk_tl <- inla.stack(
+  data = list(y = river_tl_data$trophic_length),
+  A = list(A_tl, 1),
+  effects = list(spatial.field = spatial_index, tl_covariate_df),
+  tag = "est"
+)
+
+fit_trophic_length <- inla(
+  y ~ -1 + predation_depth + log_species_richness + elevation +
+    river_width +
+    nitrate + nitrate2 + phosphate + phosphate2 +
+    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    dist_mouth_m +
+    dam_distance_downstream:dist_mouth_m +
+    barrier_upstream:dist_mouth_m +
+    barrier_downstream:dist_mouth_m +
+    f(year, model = "iid") +
+    f(district_id, model = "iid") +
+    f(spatial.field, model = spde),
+  family = "gaussian",
+  data = inla.stack.data(stk_tl),
+  control.predictor = list(A = inla.stack.A(stk_tl), compute = TRUE),
+  control.compute = list(waic = TRUE, config = TRUE)
+)
+```
+
+```{r trophic-length-coefficient-plot}
+#| fig-width: 9
+#| fig-height: 6
+
+plot_coefficients(
+  fit_trophic_length, "Standardized coefficient (posterior mean, 95% CI)"
+)
+```
+
+`plot_coefficients()` drops the three `predation_depth` category
+intercepts (not in `term_order` - they're baseline levels, not effects
+on the same scale as the covariates), so they're reported separately:
+
+```{r trophic-length-category-intercepts}
+fit_trophic_length$summary.fixed |>
+  tibble::rownames_to_column("term") |>
+  filter(grepl("^predation_depth", term)) |>
+  select(term, mean, sd, `0.025quant`, `0.975quant`) |>
+  knitr::kable(digits = 3)
+```
+
+*To discuss: the three category intercepts should closely match the
+histogram modes from the checkpoint above, a good consistency check;
+which covariates have a credible effect on trophic_length once the mode
+itself is accounted for, versus the ordinal model's list above - several
+covariates that look credible for shifting the mode may not have an
+additional within-mode effect, or vice versa.*
+
+### Average marginal effect
+
+Neither model alone gives a covariate's *total* effect on
+`trophic_length`: the ordinal model gives its effect on which mode a web
+reaches, the Gaussian gives its effect within a mode. Combining them
+requires simulation, not a coefficient product, because the mode-shift
+component is a non-linear function of $x_i$ itself:
+
+$$
+E[\text{trophic\_length}_i \mid x_i] =
+\sum_{k=1}^{3} P(D_i = k \mid x_i) \cdot \mu_{i,k}
+$$
+
+We compute the average marginal effect (AME) of each covariate $x_j$ as
+the average, over all sites and over posterior draws sampled
+independently from both models, of the numerical derivative of this
+mixture expectation with respect to $x_j$ (central difference, small
+step on the standardized scale). Treating the two models' posteriors as
+independent is an approximation - it ignores any correlation between
+their uncertainty, since they were not fit jointly.
+
+```{r ame-setup}
+main_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "nitrate", "phosphate",
+  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m"
+)
+inter_pairs <- list(
+  c("dam_distance_downstream", "dist_mouth_m"),
+  c("barrier_upstream", "dist_mouth_m"),
+  c("barrier_downstream", "dist_mouth_m")
+)
+inter_names <- sapply(inter_pairs, \(p) paste0(p[1], ":", p[2]))
+# quadratic terms are derived from a main_vars column (x^2), not
+# independently perturbable - handled like interactions, not like main_vars
+quad_vars <- c("nitrate", "phosphate")
+quad_names <- paste0(quad_vars, "2")
+
+X_tl <- as.matrix(river_tl_data[main_vars])
+colnames(X_tl) <- main_vars
+year_levels_tl <- sort(unique(river_tl_data$year))
+year_idx_tl <- match(river_tl_data$year, year_levels_tl)
+district_idx_tl <- river_tl_data$district_id
+
+get_val <- function(s, name) {
+  unname(s$latent[rownames(s$latent) == paste0(name, ":1"), 1])
+}
+get_re_vec <- function(s, prefix, k) {
+  unname(sapply(
+    seq_len(k), \(i) s$latent[rownames(s$latent) == paste0(prefix, ":", i), 1]
+  ))
+}
+get_spatial_vec <- function(s) {
+  unname(s$latent[grep("^spatial.field:", rownames(s$latent)), 1])
 }
 
-dam_vars <- c(
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream"
-)
-z_grid <- seq(-2, 3, length.out = 50)
-
-marginal_df <- purrr::map_dfr(dam_vars, function(v) {
-  main <- get_coef(v)
-  inter <- get_coef(paste0(v, ":dist_mouth_m"))
-  eff <- sapply(z_grid, function(z) main + inter * z)
-  tibble::tibble(
-    variable = v,
-    z = z_grid,
-    mean = apply(eff, 2, mean),
-    lower = apply(eff, 2, quantile, 0.025),
-    upper = apply(eff, 2, quantile, 0.975)
+# everything x-independent from one ordinal posterior draw
+extract_pd <- function(s) {
+  list(
+    intercept = get_val(s, "(Intercept)"),
+    betas = setNames(sapply(main_vars, \(v) get_val(s, v)), main_vars),
+    inter_betas = setNames(
+      sapply(inter_pairs, \(p) get_val(s, paste0(p[1], ":", p[2]))), inter_names
+    ),
+    quad_betas = setNames(sapply(quad_names, \(v) get_val(s, v)), quad_names),
+    re_offset = get_re_vec(s, "year", length(year_levels_tl))[year_idx_tl] +
+      get_re_vec(s, "district_id", 4)[district_idx_tl] +
+      as.numeric(A_tl %*% get_spatial_vec(s)),
+    theta1 = s$hyperpar["theta1 for POM"],
+    theta2 = s$hyperpar["theta2 for POM"]
   )
-})
-
-ggplot(marginal_df, aes(x = z, y = mean)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_ribbon(
-    aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "steelblue"
-  ) +
-  geom_line(color = "steelblue") +
-  facet_wrap(~variable) +
-  labs(
-    x = "Distance to river mouth (standardized)",
-    y = "Estimated effect on log richness"
+}
+# everything x-independent from one conditional-gaussian posterior draw
+extract_tl <- function(s) {
+  list(
+    alpha = c(
+      get_val(s, "predation_depthno fish eaten"),
+      get_val(s, "predation_deptheats a non-piscivorous fish"),
+      get_val(s, "predation_deptheats a piscivorous fish")
+    ),
+    betas = setNames(sapply(main_vars, \(v) get_val(s, v)), main_vars),
+    inter_betas = setNames(
+      sapply(inter_pairs, \(p) get_val(s, paste0(p[1], ":", p[2]))), inter_names
+    ),
+    quad_betas = setNames(sapply(quad_names, \(v) get_val(s, v)), quad_names),
+    re_offset = get_re_vec(s, "year", length(year_levels_tl))[year_idx_tl] +
+      get_re_vec(s, "district_id", 4)[district_idx_tl] +
+      as.numeric(A_tl %*% get_spatial_vec(s))
   )
+}
+
+linpred_main <- function(Xmat, betas, inter_betas, quad_betas) {
+  out <- as.numeric(Xmat %*% betas[main_vars])
+  for (k in seq_along(inter_pairs)) {
+    p <- inter_pairs[[k]]
+    out <- out + (Xmat[, p[1]] * Xmat[, p[2]]) * inter_betas[k]
+  }
+  for (k in seq_along(quad_vars)) {
+    out <- out + (Xmat[, quad_vars[k]]^2) * quad_betas[k]
+  }
+  out
+}
+
+predicted_tl <- function(Xmat, pd, tl) {
+  eta <- pd$intercept +
+    linpred_main(Xmat, pd$betas, pd$inter_betas, pd$quad_betas) + pd$re_offset
+  p_le1 <- plogis(pd$theta1 - eta)
+  p_le2 <- plogis(pd$theta2 - eta)
+  p1 <- p_le1
+  p2 <- p_le2 - p_le1
+  p3 <- 1 - p_le2
+  shared <- linpred_main(Xmat, tl$betas, tl$inter_betas, tl$quad_betas) +
+    tl$re_offset
+  p1 * (tl$alpha[1] + shared) +
+    p2 * (tl$alpha[2] + shared) +
+    p3 * (tl$alpha[3] + shared)
+}
 ```
 
-*To discuss: barrier_downstream's effect crossing from ~0 near the mouth to
-clearly negative far upstream, barrier_upstream's effect crossing from ~0
-to clearly positive far upstream, and dam_distance_downstream staying flat
-near zero throughout (consistent with its non-credible interaction) -
-whether this is worth reporting as "connectivity effects only bite far
-from the sea" or needs more caution given the earlier confound flags on
-barrier_upstream.*
+```{r ame-compute}
+#| cache: true
+
+n_ame_draws <- 300
+ame_eps <- 0.02
+set.seed(1)
+ps_pd <- inla.posterior.sample(n_ame_draws, fit_predation_depth)
+ps_tl <- inla.posterior.sample(n_ame_draws, fit_trophic_length)
+
+ame_draws <- matrix(
+  NA, nrow = n_ame_draws, ncol = length(main_vars),
+  dimnames = list(NULL, main_vars)
+)
+for (m in seq_len(n_ame_draws)) {
+  pd <- extract_pd(ps_pd[[m]])
+  tl <- extract_tl(ps_tl[[m]])
+  for (j in main_vars) {
+    X_plus <- X_tl; X_plus[, j] <- X_plus[, j] + ame_eps
+    X_minus <- X_tl; X_minus[, j] <- X_minus[, j] - ame_eps
+    pred_plus <- predicted_tl(X_plus, pd, tl)
+    pred_minus <- predicted_tl(X_minus, pd, tl)
+    ame_draws[m, j] <- mean((pred_plus - pred_minus) / (2 * ame_eps))
+  }
+}
+
+ame_summary <- tibble(
+  term = main_vars,
+  mean = apply(ame_draws, 2, mean),
+  `0.025quant` = apply(ame_draws, 2, quantile, 0.025),
+  `0.975quant` = apply(ame_draws, 2, quantile, 0.975)
+)
+ame_summary |> knitr::kable(digits = 3)
+```
+
+```{r ame-plot}
+#| fig-width: 9
+#| fig-height: 6
+
+ame_fit <- list(summary.fixed = data.frame(
+  mean = ame_summary$mean,
+  `0.025quant` = ame_summary$`0.025quant`,
+  `0.975quant` = ame_summary$`0.975quant`,
+  row.names = ame_summary$term,
+  check.names = FALSE
+))
+plot_coefficients(
+  ame_fit,
+  "Average marginal effect on trophic_length (posterior mean, 95% CI)"
+)
+```
+
+*To discuss: log_species_richness's total effect (0.19) is much larger
+than its within-mode-only effect from the conditional Gaussian (0.08),
+because it also strongly shifts the mode (ordinal coefficient 1.57) -
+similarly nitrate and barrier_downstream are credible here despite
+having no within-mode effect, driven entirely by mode-shifting; whether
+this AME is the number worth reporting as "the" effect of a covariate on
+trophic_length, versus keeping the two mechanisms separate for
+interpretability.*
