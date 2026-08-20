@@ -285,8 +285,510 @@ continuum. Nous détaillons ces premiers résultats dans la prochaine partie.
 
 ## Résultats préliminaires {#sec-resultats}
 
-*[2-3 résultats clés, avec éventuellement une figure. Rester factuel : ce qui
-a été testé, ce qui en ressort.]*
+### Présentation du cas d'étude
+
+Dans cette partie, nous nous intéressons à un cas d'étude afin d'illustrer le
+potentiel des données, et d'éprouver les outils statistiques que nous prévoyons
+d'utiliser. Notre but initial est de quantifier l'impact des barrages et de
+l'enrichissement en nutriments sur les réseaux trophiques de poissons le long du
+continuum rivière-mer. Ici, nous proposons d'étudier cette question en nous
+limitant au continuum de la rivière, allant de l'amont à l'aval mais excluant
+les estuaires et les côtes (données de nutriments restant à harmoniser).
+Notre but ici est donc de répondre à la question : **comment est-ce que les
+barrages et l'enrichissement en nutriments altèrent les réseaux trophiques en
+rivière le long du continuum amont-aval, à l'échelle de la France ?**
+
+Avant toute analyse, nous pouvons formuler trois hypothèses :
+
+- **H1 -- Les nutriments ont un effet unimodal sur la structure des réseaux
+trophiques** ; à faible concentration ils complexifient les réseaux trophiques
+en augmentant la productivité primaire, mais à haute concentration, ils les
+simplifient en détériorant les conditions hydrochimiques et en augmentant le
+risque d'eutrophisation.
+- **H2 -- En bloquant les espèces migratrices en aval, les barrages simplifient
+les réseaux trophiques en amont** ; on s'attend ainsi à un effet barrière des
+barrages en aval particulièrement fort et négatif (sur la structure du réseau)
+proche de l'embouchure, et un effet barrière des barrages en amont fort et
+positif proche de l'embouchure également, et ces effets devraient s'estomper en
+remontant vers l'amont.
+- **H3 -- Les effets des pressions sur la structure des réseaux trophiques
+passent en partie par la richesse spécifique** ; la richesse spécifique agit
+comme médiateur d'une partie de l'effet des pressions sur la structure des
+réseaux (par contrainte topologique), on s'attend également à des effets
+directs des pressions sur les mesures de structure car celles-ci peuvent avoir
+un effet différencié selon les groupes trophiques (e.g. barrages et espèces
+migratrices qui sont souvent en haut des réseaux trophiques).
+
+### Méthodes
+
+Afin de tester ces hypothèses, nous modélisons l'effet des nutriments et des
+barrages sur la structure des écosystèmes, le long du continuum amont-aval. Nos
+modèles incluent les éléments qui suivent.
+
+**Nutriments --** Pour capturer l'effet des nutriments, nous utilisons la
+concentration en nitrate et en phosphate. Ce sont les deux nutriments testés
+qui montrent des effets robustes sur la structure des réseaux trophiques dans
+nos modèles préliminaires ; l'ammonium est écarté en raison d'une forte
+colinéarité avec les autres nutriments, et le nitrite ne montre d'effet
+significatif dans aucun des modèles testés.
+
+**Barrages --** Pour capturer l'effet des barrages, nous utilisons deux
+mesures de leur effet barrière : un effet barrière aval, défini comme la
+hauteur moyenne des barrages situés en aval du site, et un effet barrière
+amont, défini de manière symétrique pour les barrages situés en amont. Une
+hauteur plus élevée reflète un obstacle plus difficile à franchir pour les
+espèces migratrices, indépendamment de sa distance au site.
+
+*[figure principale des effets (AME) sur les trois modèles - à ajouter]*
+
+```{r river-model-setup}
+#| include: false
+
+amobio <- tar_read(amobio_aspe_data) |> sf::st_drop_geometry()
+dist_mouth <- tar_read(inland_distance_to_mouth) |>
+  dplyr::select(operation_id, district, dist_mouth_m)
+river_width_tar <- tar_read(river_width)
+river_data <- amobio |>
+  dplyr::inner_join(dist_mouth, by = "operation_id") |>
+  dplyr::left_join(river_width_tar, by = "sandre_code") |>
+  dplyr::select(
+    operation_id, sandre_code, year, survey, district, longitude, latitude,
+    log_species_richness, connectance, trophic_length,
+    elevation, river_width,
+    nitrate, phosphate,
+    barrier_upstream, barrier_downstream,
+    dist_mouth_m
+  )
+
+library(INLA)
+library(fmesher)
+library(ggplot2)
+
+stations <- river_data |>
+  dplyr::distinct(sandre_code, longitude, latitude) |>
+  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+  sf::st_transform(2154)
+coords <- sf::st_coordinates(stations)
+mesh <- fm_mesh_2d_inla(
+  loc = coords, max.edge = c(15000, 60000), offset = c(15000, 100000),
+  cutoff = 5000
+)
+spde <- inla.spde2.pcmatern(
+  mesh = mesh, prior.range = c(50000, 0.5), prior.sigma = c(1, 0.01)
+)
+A <- inla.spde.make.A(mesh = mesh, loc = coords)
+spatial_index <- inla.spde.make.index("spatial.field", n.spde = spde$n.spde)
+
+get_val <- function(s, name) {
+  # returns 0 when `name` isn't a term in this model (e.g. log_species_richness
+  # for fit_richness, where it's the response, not a covariate) - correct,
+  # since main_vars/linpred_main are shared across all four models and such a
+  # term genuinely contributes nothing to that model's linear predictor
+  v <- s$latent[rownames(s$latent) == paste0(name, ":1"), 1]
+  if (length(v) == 0) return(0)
+  unname(v)
+}
+get_re_vec <- function(s, prefix, k) {
+  unname(sapply(
+    seq_len(k), \(i) s$latent[rownames(s$latent) == paste0(prefix, ":", i), 1]
+  ))
+}
+get_spatial_vec <- function(s) {
+  unname(s$latent[grep("^spatial.field:", rownames(s$latent)), 1])
+}
+```
+
+```{r river-model-fits}
+#| include: false
+#| cache: true
+
+model_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "nitrate", "phosphate", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m", "year", "sandre_code", "district"
+)
+river_model_data <- river_data |>
+  dplyr::filter(complete.cases(river_data[model_vars])) |>
+  dplyr::mutate(
+    nitrate = log(nitrate),
+    phosphate = log(phosphate),
+    barrier_upstream = log1p(barrier_upstream),
+    barrier_downstream = log1p(barrier_downstream),
+    river_width = log(river_width),
+    district_id = as.integer(factor(district))
+  ) |>
+  dplyr::mutate(dplyr::across(
+    c(
+      log_species_richness, nitrate, phosphate,
+      barrier_upstream, barrier_downstream, dist_mouth_m,
+      elevation, river_width
+    ),
+    \(x) as.numeric(scale(x))
+  )) |>
+  dplyr::mutate(nitrate2 = nitrate^2, phosphate2 = phosphate^2)
+
+site_idx_model <- match(river_model_data$sandre_code, stations$sandre_code)
+A_model <- A[site_idx_model, ]
+
+model_formula_rhs <- paste(
+  "elevation + river_width + nitrate + nitrate2 + phosphate + phosphate2 +",
+  "barrier_upstream + barrier_downstream + dist_mouth_m +",
+  "barrier_upstream:dist_mouth_m + barrier_downstream:dist_mouth_m +",
+  "f(year, model = 'iid') + f(district_id, model = 'iid') +",
+  "f(spatial.field, model = spde)"
+)
+
+covariate_df <- data.frame(
+  intercept = 1,
+  log_species_richness = river_model_data$log_species_richness,
+  elevation = river_model_data$elevation,
+  river_width = river_model_data$river_width,
+  nitrate = river_model_data$nitrate,
+  nitrate2 = river_model_data$nitrate2,
+  phosphate = river_model_data$phosphate,
+  phosphate2 = river_model_data$phosphate2,
+  barrier_upstream = river_model_data$barrier_upstream,
+  barrier_downstream = river_model_data$barrier_downstream,
+  dist_mouth_m = river_model_data$dist_mouth_m,
+  year = river_model_data$year,
+  district_id = river_model_data$district_id
+)
+
+richness_stack <- inla.stack(
+  data = list(y = river_model_data$log_species_richness),
+  A = list(A_model, 1),
+  effects = list(spatial.field = spatial_index, covariate_df),
+  tag = "est"
+)
+fit_richness <- inla(
+  as.formula(paste("y ~ -1 + intercept +", model_formula_rhs)),
+  family = "gaussian",
+  data = inla.stack.data(richness_stack),
+  control.predictor = list(A = inla.stack.A(richness_stack), compute = TRUE),
+  control.compute = list(config = TRUE),
+  num.threads = "4:1"
+)
+
+connectance_stack <- inla.stack(
+  data = list(y = river_model_data$connectance),
+  A = list(A_model, 1),
+  effects = list(spatial.field = spatial_index, covariate_df),
+  tag = "est"
+)
+fit_connectance <- inla(
+  as.formula(paste(
+    "y ~ -1 + intercept + log_species_richness +", model_formula_rhs
+  )),
+  family = "beta",
+  data = inla.stack.data(connectance_stack),
+  control.predictor = list(A = inla.stack.A(connectance_stack), compute = TRUE),
+  control.compute = list(config = TRUE),
+  num.threads = "4:1"
+)
+```
+
+```{r river-model-fits-tl}
+#| include: false
+#| cache: true
+
+river_foodweb <- tar_read(river_foodweb_structure) |>
+  dplyr::filter(operation_id %in% river_model_data$operation_id)
+resource_list <- tar_read(resource_list)
+classify_predation_depth <- function(web, resource_list) {
+  nodes <- data.frame(node = colnames(web))
+  links <- web |>
+    as.data.frame() |>
+    dplyr::mutate(resource = rownames(web)) |>
+    tidyr::pivot_longer(-resource, names_to = "consumer") |>
+    dplyr::filter(value == 1) |>
+    dplyr::select(-value)
+  community <- cheddar::Community(
+    nodes = nodes, properties = list(title = "Community"), trophic.links = links
+  )
+  tl <- cheddar::TrophicLevels(community) |>
+    as.data.frame() |>
+    tibble::rownames_to_column("node") |>
+    dplyr::rename(TL = ChainAveragedTL)
+  top_nodes <- tl$node[!is.na(tl$TL) & tl$TL == max(tl$TL, na.rm = TRUE)]
+  fish_prey_of <- function(n) {
+    prey <- rownames(web)[web[, n] == 1]
+    prey[!(prey %in% resource_list)]
+  }
+  top_fish_prey <- unique(unlist(lapply(top_nodes, fish_prey_of)))
+  if (length(top_fish_prey) == 0) {
+    "no fish eaten"
+  } else if (any(sapply(top_fish_prey, \(p) length(fish_prey_of(p)) > 0))) {
+    "eats a piscivorous fish"
+  } else {
+    "eats a non-piscivorous fish"
+  }
+}
+river_foodweb <- river_foodweb |>
+  dplyr::mutate(
+    predation_depth = sapply(
+      foodweb, classify_predation_depth, resource_list = resource_list
+    ),
+    predation_depth = factor(
+      predation_depth,
+      levels = c(
+        "no fish eaten", "eats a non-piscivorous fish", "eats a piscivorous fish"
+      )
+    ),
+    predation_depth_int = as.integer(predation_depth)
+  ) |>
+  sf::st_drop_geometry() |>
+  dplyr::select(operation_id, predation_depth, predation_depth_int)
+
+river_tl_data <- river_model_data |>
+  dplyr::left_join(river_foodweb, by = "operation_id")
+covariate_df_tl <- covariate_df
+covariate_df_tl$predation_depth <- river_tl_data$predation_depth
+
+stk_ordinal <- inla.stack(
+  data = list(y = river_tl_data$predation_depth_int),
+  A = list(A_model, 1),
+  effects = list(spatial.field = spatial_index, covariate_df),
+  tag = "est"
+)
+fit_predation_depth <- inla(
+  as.formula(paste(
+    "y ~ log_species_richness +", model_formula_rhs
+  )),
+  family = "pom",
+  data = inla.stack.data(stk_ordinal),
+  control.predictor = list(A = inla.stack.A(stk_ordinal), compute = TRUE),
+  control.compute = list(config = TRUE),
+  control.inla = list(int.strategy = "eb", strategy = "gaussian"),
+  num.threads = "4:1"
+)
+
+stk_tl <- inla.stack(
+  data = list(y = river_tl_data$trophic_length),
+  A = list(A_model, 1),
+  effects = list(spatial.field = spatial_index, covariate_df_tl),
+  tag = "est"
+)
+fit_trophic_length <- inla(
+  as.formula(paste(
+    "y ~ -1 + predation_depth + log_species_richness +", model_formula_rhs
+  )),
+  family = "gaussian",
+  data = inla.stack.data(stk_tl),
+  control.predictor = list(A = inla.stack.A(stk_tl), compute = TRUE),
+  control.compute = list(config = TRUE),
+  num.threads = "4:1"
+)
+```
+
+```{r river-model-ame-setup}
+#| include: false
+
+main_vars <- c(
+  "log_species_richness", "elevation", "river_width", "nitrate", "phosphate",
+  "barrier_upstream", "barrier_downstream", "dist_mouth_m"
+)
+inter_pairs <- list(
+  c("barrier_upstream", "dist_mouth_m"), c("barrier_downstream", "dist_mouth_m")
+)
+inter_names <- sapply(inter_pairs, \(p) paste0(p[1], ":", p[2]))
+quad_vars <- c("nitrate", "phosphate")
+quad_names <- paste0(quad_vars, "2")
+
+X_all <- as.matrix(river_model_data[main_vars])
+colnames(X_all) <- main_vars
+year_levels <- sort(unique(river_model_data$year))
+year_idx <- match(river_model_data$year, year_levels)
+district_idx <- river_model_data$district_id
+
+linpred_main <- function(Xmat, betas, inter_betas, quad_betas) {
+  out <- as.numeric(Xmat %*% betas[main_vars])
+  for (k in seq_along(inter_pairs)) {
+    p <- inter_pairs[[k]]
+    out <- out + (Xmat[, p[1]] * Xmat[, p[2]]) * inter_betas[k]
+  }
+  for (k in seq_along(quad_vars)) {
+    out <- out + (Xmat[, quad_vars[k]]^2) * quad_betas[k]
+  }
+  out
+}
+re_offset_fn <- function(s) {
+  get_re_vec(s, "year", length(year_levels))[year_idx] +
+    get_re_vec(s, "district_id", 4)[district_idx] +
+    as.numeric(A_model %*% get_spatial_vec(s))
+}
+extract_generic <- function(s, intercept_name) {
+  list(
+    intercept = get_val(s, intercept_name),
+    betas = setNames(sapply(main_vars, \(v) get_val(s, v)), main_vars),
+    inter_betas = setNames(
+      sapply(inter_pairs, \(p) get_val(s, paste0(p[1], ":", p[2]))), inter_names
+    ),
+    quad_betas = setNames(sapply(quad_names, \(v) get_val(s, v)), quad_names),
+    re_offset = re_offset_fn(s)
+  )
+}
+predicted_gaussian <- function(Xmat, obj) {
+  obj$intercept + linpred_main(Xmat, obj$betas, obj$inter_betas, obj$quad_betas) +
+    obj$re_offset
+}
+predicted_beta <- function(Xmat, obj) {
+  plogis(predicted_gaussian(Xmat, obj))
+}
+extract_pd <- function(s) {
+  c(
+    extract_generic(s, "(Intercept)"),
+    list(
+      theta1 = s$hyperpar["theta1 for POM"], theta2 = s$hyperpar["theta2 for POM"]
+    )
+  )
+}
+extract_tl <- function(s) {
+  list(
+    alpha = c(
+      get_val(s, "predation_depthno fish eaten"),
+      get_val(s, "predation_deptheats a non-piscivorous fish"),
+      get_val(s, "predation_deptheats a piscivorous fish")
+    ),
+    betas = setNames(sapply(main_vars, \(v) get_val(s, v)), main_vars),
+    inter_betas = setNames(
+      sapply(inter_pairs, \(p) get_val(s, paste0(p[1], ":", p[2]))), inter_names
+    ),
+    quad_betas = setNames(sapply(quad_names, \(v) get_val(s, v)), quad_names),
+    re_offset = re_offset_fn(s)
+  )
+}
+predicted_tl <- function(Xmat, pd, tl) {
+  eta <- pd$intercept + linpred_main(Xmat, pd$betas, pd$inter_betas, pd$quad_betas) +
+    pd$re_offset
+  p_le1 <- plogis(pd$theta1 - eta)
+  p_le2 <- plogis(pd$theta2 - eta)
+  p1 <- p_le1; p2 <- p_le2 - p_le1; p3 <- 1 - p_le2
+  shared <- linpred_main(Xmat, tl$betas, tl$inter_betas, tl$quad_betas) + tl$re_offset
+  p1 * (tl$alpha[1] + shared) + p2 * (tl$alpha[2] + shared) + p3 * (tl$alpha[3] + shared)
+}
+predicted_tl_paired <- function(Xmat, obj) predicted_tl(Xmat, obj$pd, obj$tl)
+
+n_ame_draws <- 150
+
+# each inla.posterior.sample() call reconstructs 300 (now 150) full draws of
+# the entire latent field (fixed effects + year/district REs + the SPDE field
+# at every mesh node) - doing all four models back to back with no cleanup in
+# between let transient allocations from earlier calls pile up on top of later
+# ones, which is what produced the memory spike in this chunk. Reducing the
+# draw count and forcing gc() between each call keeps peak memory down to
+# roughly one model's worth at a time instead of the sum of all four.
+set.seed(1)
+rd_list <- lapply(inla.posterior.sample(n_ame_draws, fit_richness), \(s) extract_generic(s, "intercept"))
+gc()
+cd_list <- lapply(inla.posterior.sample(n_ame_draws, fit_connectance), \(s) extract_generic(s, "intercept"))
+gc()
+pd_list <- lapply(inla.posterior.sample(n_ame_draws, fit_predation_depth), extract_pd)
+gc()
+tl_list <- lapply(inla.posterior.sample(n_ame_draws, fit_trophic_length), extract_tl)
+gc()
+tl_draw_pairs <- Map(function(pd, tl) list(pd = pd, tl = tl), pd_list, tl_list)
+```
+
+```{r river-model-ame-compute}
+#| include: false
+#| cache: true
+
+own_curvature_ame <- function(v, predicted_fn, draw_list, eps = 0.02,
+                               probs = c(0.1, 0.5, 0.9),
+                               level_labels = c("bas", "médian", "haut")) {
+  levels_v <- quantile(X_all[, v], probs = probs)
+  rows <- list()
+  for (i in seq_along(levels_v)) {
+    lvl <- levels_v[i]
+    draws <- sapply(draw_list, \(obj) {
+      Xp <- X_all; Xp[, v] <- lvl + eps
+      Xm <- X_all; Xm[, v] <- lvl - eps
+      mean((predicted_fn(Xp, obj) - predicted_fn(Xm, obj)) / (2 * eps))
+    })
+    rows[[i]] <- tibble::tibble(
+      var = v, level = level_labels[i], mean = mean(draws),
+      `0.025quant` = quantile(draws, .025), `0.975quant` = quantile(draws, .975)
+    )
+  }
+  dplyr::bind_rows(rows) |> dplyr::mutate(level = factor(level, levels = level_labels))
+}
+dam_interaction_ame <- function(v, predicted_fn, draw_list, eps = 0.02,
+                                 probs = c(0.1, 0.5, 0.9),
+                                 level_labels = c("bas", "médian", "haut")) {
+  levels_dm <- quantile(X_all[, "dist_mouth_m"], probs = probs)
+  rows <- list()
+  for (i in seq_along(levels_dm)) {
+    lvl <- levels_dm[i]
+    draws <- sapply(draw_list, \(obj) {
+      Xp <- X_all; Xp[, v] <- Xp[, v] + eps; Xp[, "dist_mouth_m"] <- lvl
+      Xm <- X_all; Xm[, v] <- Xm[, v] - eps; Xm[, "dist_mouth_m"] <- lvl
+      mean((predicted_fn(Xp, obj) - predicted_fn(Xm, obj)) / (2 * eps))
+    })
+    rows[[i]] <- tibble::tibble(
+      var = v, level = level_labels[i], mean = mean(draws),
+      `0.025quant` = quantile(draws, .025), `0.975quant` = quantile(draws, .975)
+    )
+  }
+  dplyr::bind_rows(rows) |> dplyr::mutate(level = factor(level, levels = level_labels))
+}
+
+nutrient_vars <- c("nitrate", "phosphate")
+dam_vars <- c("barrier_upstream", "barrier_downstream")
+
+nutrient_all <- dplyr::bind_rows(
+  dplyr::bind_rows(lapply(nutrient_vars, own_curvature_ame, predicted_fn = predicted_gaussian, draw_list = rd_list)) |> dplyr::mutate(outcome = "richesse"),
+  dplyr::bind_rows(lapply(nutrient_vars, own_curvature_ame, predicted_fn = predicted_beta, draw_list = cd_list)) |> dplyr::mutate(outcome = "connectance"),
+  dplyr::bind_rows(lapply(nutrient_vars, own_curvature_ame, predicted_fn = predicted_tl_paired, draw_list = tl_draw_pairs)) |> dplyr::mutate(outcome = "longueur trophique")
+) |> dplyr::mutate(row = "Nutriments")
+
+dam_all <- dplyr::bind_rows(
+  dplyr::bind_rows(lapply(dam_vars, dam_interaction_ame, predicted_fn = predicted_gaussian, draw_list = rd_list)) |> dplyr::mutate(outcome = "richesse"),
+  dplyr::bind_rows(lapply(dam_vars, dam_interaction_ame, predicted_fn = predicted_beta, draw_list = cd_list)) |> dplyr::mutate(outcome = "connectance"),
+  dplyr::bind_rows(lapply(dam_vars, dam_interaction_ame, predicted_fn = predicted_tl_paired, draw_list = tl_draw_pairs)) |> dplyr::mutate(outcome = "longueur trophique")
+) |> dplyr::mutate(row = "Barrages × distance")
+
+ame_merged <- dplyr::bind_rows(nutrient_all, dam_all) |>
+  dplyr::mutate(
+    outcome = factor(outcome, levels = c("richesse", "connectance", "longueur trophique")),
+    row = factor(row, levels = c("Nutriments", "Barrages × distance")),
+    var_label = dplyr::recode(var,
+      nitrate = "Nitrate", phosphate = "Phosphate",
+      barrier_upstream = "Barrage amont", barrier_downstream = "Barrage aval"
+    )
+  )
+```
+
+```{r fig-ame-nutrients-barrages}
+#| echo: false
+#| label: fig-ame-nutrients-barrages
+#| fig-cap: "Effet marginal moyen (AME) du nitrate et du phosphate (auto-interaction,
+#|   ligne du haut) et des deux effets barrage (interaction avec la distance à
+#|   l'embouchure, ligne du bas), sur les trois métriques de structure des
+#|   réseaux trophiques (colonnes). Barres verticales : intervalle de crédibilité
+#|   à 95%."
+#| fig-width: 9
+#| fig-height: 5.5
+
+var_colors <- c(
+  "Nitrate" = "#1b9e77", "Phosphate" = "#d95f02",
+  "Barrage amont" = "#7570b3", "Barrage aval" = "#e7298a"
+)
+
+ggplot(ame_merged, aes(level, mean, color = var_label)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(
+    aes(ymin = `0.025quant`, ymax = `0.975quant`),
+    position = position_dodge(width = 0.4)
+  ) +
+  scale_color_manual(values = var_colors) +
+  facet_grid(row ~ outcome, scales = "free_y") +
+  labs(
+    x = "Niveau (bas / médian / haut)",
+    y = "Effet marginal moyen (pente locale)", color = NULL
+  ) +
+  nice_theme() +
+  theme(legend.position = "bottom")
+```
 
 ## Difficultés rencontrées {#sec-difficultes}
 

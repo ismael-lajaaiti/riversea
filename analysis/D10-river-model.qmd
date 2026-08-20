@@ -383,25 +383,37 @@ river_model_data_raw <- river_model_data_raw |>
 
 Shared term ordering/typing and plotting helper for the coefficient plots
 of all three structure models below (richness, connectance, predation
-depth), so it isn't redefined per model.
+depth), so it isn't redefined per model. Also defines the small helpers
+used to pull named components (fixed effects, random effect vectors,
+the spatial field) out of an `inla.posterior.sample()` draw, reused by
+every AME/interaction computation later in the notebook.
 
 ```{r coefficient-plot-helper}
+get_val <- function(s, name) {
+  unname(s$latent[rownames(s$latent) == paste0(name, ":1"), 1])
+}
+get_re_vec <- function(s, prefix, k) {
+  unname(sapply(
+    seq_len(k), \(i) s$latent[rownames(s$latent) == paste0(prefix, ":", i), 1]
+  ))
+}
+get_spatial_vec <- function(s) {
+  unname(s$latent[grep("^spatial.field:", rownames(s$latent)), 1])
+}
+
 term_order <- c(
   "log_species_richness",
   "dist_mouth_m", "elevation", "river_width",
   "nitrate", "nitrate2", "phosphate", "phosphate2",
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
-  "dam_distance_downstream:dist_mouth_m", "barrier_upstream:dist_mouth_m",
-  "barrier_downstream:dist_mouth_m"
+  "barrier_upstream", "barrier_downstream",
+  "barrier_upstream:dist_mouth_m", "barrier_downstream:dist_mouth_m"
 )
 term_type <- c(
   log_species_richness = "richness",
   dist_mouth_m = "physical", elevation = "physical", river_width = "physical",
   nitrate = "nutrient", nitrate2 = "nutrient",
   phosphate = "nutrient", phosphate2 = "nutrient",
-  dam_distance_downstream = "connectivity", barrier_upstream = "connectivity",
-  barrier_downstream = "connectivity",
-  `dam_distance_downstream:dist_mouth_m` = "interaction",
+  barrier_upstream = "connectivity", barrier_downstream = "connectivity",
   `barrier_upstream:dist_mouth_m` = "interaction",
   `barrier_downstream:dist_mouth_m` = "interaction"
 )
@@ -443,7 +455,6 @@ river_model_data <- river_model_data_raw |>
   mutate(
     nitrate = log(nitrate),
     phosphate = log(phosphate),
-    dam_distance_downstream = log(dam_distance_downstream),
     barrier_upstream = log1p(barrier_upstream),
     barrier_downstream = log1p(barrier_downstream),
     river_width = log(river_width),
@@ -451,7 +462,7 @@ river_model_data <- river_model_data_raw |>
   ) |>
   mutate(across(
     c(
-      nitrate, phosphate, dam_distance_downstream,
+      nitrate, phosphate,
       barrier_upstream, barrier_downstream, dist_mouth_m,
       elevation, river_width
     ),
@@ -475,7 +486,6 @@ richness_stack <- inla.stack(
       nitrate2 = river_model_data$nitrate2,
       phosphate = river_model_data$phosphate,
       phosphate2 = river_model_data$phosphate2,
-      dam_distance_downstream = river_model_data$dam_distance_downstream,
       barrier_upstream = river_model_data$barrier_upstream,
       barrier_downstream = river_model_data$barrier_downstream,
       dist_mouth_m = river_model_data$dist_mouth_m,
@@ -490,9 +500,8 @@ fit_richness <- inla(
   y ~ -1 + intercept +
     elevation + river_width +
     nitrate + nitrate2 + phosphate + phosphate2 +
-    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    barrier_upstream + barrier_downstream +
     dist_mouth_m +
-    dam_distance_downstream:dist_mouth_m +
     barrier_upstream:dist_mouth_m +
     barrier_downstream:dist_mouth_m +
     f(year, model = "iid") +
@@ -531,28 +540,26 @@ $$
 $$
 
 where $\mu_i \in (0, 1)$ is the mean and $\phi$ a shared precision
-hyperparameter (INLA's mean-precision parameterization of the Beta
-distribution: shape parameters $a = \mu_i\phi$, $b = (1-\mu_i)\phi$),
-$\text{richness}_i$ is standardized `log_species_richness` (the
-mediator), and $\mathbf{x}_i$ is the same covariate vector as the
-richness model.
+hyperparameter. We include richness in the model as mediator variable, so we can
+disentangle direct and richness-mediated effect of stressors on food web
+structure.
+
+We first prepare the data for the model.
 
 ```{r connectance-data}
 connectance_vars <- c(
   "connectance", "log_species_richness", "elevation", "river_width",
   "nitrate", "phosphate",
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "barrier_upstream", "barrier_downstream",
   "dist_mouth_m", "year", "sandre_code", "district"
 )
 river_connectance_data <- river_data |>
   filter(complete.cases(river_data[connectance_vars]))
-nrow(river_connectance_data)
 
 river_connectance_data <- river_connectance_data |>
   mutate(
     nitrate = log(nitrate),
     phosphate = log(phosphate),
-    dam_distance_downstream = log(dam_distance_downstream),
     barrier_upstream = log1p(barrier_upstream),
     barrier_downstream = log1p(barrier_downstream),
     river_width = log(river_width),
@@ -561,7 +568,7 @@ river_connectance_data <- river_connectance_data |>
   mutate(across(
     c(
       log_species_richness, nitrate, phosphate,
-      dam_distance_downstream, barrier_upstream, barrier_downstream,
+      barrier_upstream, barrier_downstream,
       dist_mouth_m, elevation, river_width
     ),
     \(x) as.numeric(scale(x))
@@ -573,6 +580,8 @@ site_idx_connectance <- match(
 )
 A_connectance <- A[site_idx_connectance, ]
 ```
+
+Then, we define and fit the model.
 
 ```{r connectance-model}
 #| cache: true
@@ -591,7 +600,6 @@ connectance_stack <- inla.stack(
       nitrate2 = river_connectance_data$nitrate2,
       phosphate = river_connectance_data$phosphate,
       phosphate2 = river_connectance_data$phosphate2,
-      dam_distance_downstream = river_connectance_data$dam_distance_downstream,
       barrier_upstream = river_connectance_data$barrier_upstream,
       barrier_downstream = river_connectance_data$barrier_downstream,
       dist_mouth_m = river_connectance_data$dist_mouth_m,
@@ -605,9 +613,8 @@ connectance_stack <- inla.stack(
 fit_connectance <- inla(
   y ~ -1 + intercept + log_species_richness + elevation + river_width +
     nitrate + nitrate2 + phosphate + phosphate2 +
-    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    barrier_upstream + barrier_downstream +
     dist_mouth_m +
-    dam_distance_downstream:dist_mouth_m +
     barrier_upstream:dist_mouth_m +
     barrier_downstream:dist_mouth_m +
     f(year, model = "iid") +
@@ -616,9 +623,11 @@ fit_connectance <- inla(
   family = "beta",
   data = inla.stack.data(connectance_stack),
   control.predictor = list(A = inla.stack.A(connectance_stack), compute = TRUE),
-  control.compute = list(waic = TRUE, config = TRUE)
+  control.compute = list(waic = TRUE, config = TRUE, cpo = TRUE)
 )
 ```
+
+We show the model fixed effects below.
 
 ```{r connectance-coefficient-plot}
 #| fig-width: 9
@@ -629,12 +638,152 @@ plot_coefficients(
 )
 ```
 
-*To discuss: whether richness's effect on connectance (path *b*) matches
-the known diversity-connectance relationship from the ecology
-literature, which covariates have a credible direct effect on
-connectance net of richness (path *c'*), and whether the dam/barrier
-pattern here echoes or differs from what we found for richness and
-predation depth.*
+Richness as large negative effect on connectance, which strong reflects
+topological constraint. Beyond this effect, we observe direct effects of
+stressors on food web connectance. Nitrate increases connectance, while
+phosphate has the opposite effect. This oppposite effect of nutrients is
+interesting, but further analysis are required to better understand these
+effects. The distance to downstream has a positive effect on connectance. We
+discuss the dam impact along the river continuum further below.
+
+### Sanity check
+
+Before that we run a quick sanity check to ensure that our gaussian random field
+capture properly the residual spatial structure, and so that no large spatial
+struture (e.g. basin scale) remains.
+
+```{r connectance-spatial-residual}
+#| fig-width: 9
+#| fig-height: 8
+
+proj <- inla.mesh.projector(mesh, dims = c(300, 300))
+field_grid <- inla.mesh.project(
+  proj, fit_connectance$summary.random$spatial.field$mean
+)
+grid_df <- expand.grid(x = proj$x, y = proj$y)
+grid_df$z <- as.vector(field_grid)
+grid_df <- grid_df |> filter(!is.na(z))
+
+basin_connectance <- basin |>
+  filter(district %in% unique(river_connectance_data$district)) |>
+  st_transform(2154)
+stations_connectance <- stations |>
+  filter(sandre_code %in% river_connectance_data$sandre_code)
+
+ggplot() +
+  geom_raster(data = grid_df, aes(x, y, fill = z)) +
+  scale_fill_gradient2(
+    low = "firebrick", mid = "white", high = "steelblue", midpoint = 0
+  ) +
+  geom_sf(data = basin_connectance, fill = NA, color = "grey20", linewidth = 0.4) +
+  geom_sf(data = stations_connectance, size = 0.4, alpha = 0.5, color = "black") +
+  coord_sf(crs = 2154, datum = NA) +
+  labs(
+    x = NULL, y = NULL, fill = "spatial\neffect"
+  )
+```
+
+We observe no large spatial structure, meaning that the spatial random field does the
+work.
+
+### Interaction AME setup
+
+Reused later, both by the nutrient curvature section above and the
+combined dam/barrier interaction figure at the end of the notebook -
+no standalone result here.
+
+```{r connectance-interaction-setup}
+conn_main_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "nitrate", "phosphate",
+  "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m"
+)
+conn_inter_pairs <- list(
+  c("barrier_upstream", "dist_mouth_m"),
+  c("barrier_downstream", "dist_mouth_m")
+)
+conn_inter_names <- sapply(conn_inter_pairs, \(p) paste0(p[1], ":", p[2]))
+conn_quad_vars <- c("nitrate", "phosphate")
+conn_quad_names <- paste0(conn_quad_vars, "2")
+
+X_conn <- as.matrix(river_connectance_data[conn_main_vars])
+colnames(X_conn) <- conn_main_vars
+year_levels_conn <- sort(unique(river_connectance_data$year))
+year_idx_conn <- match(river_connectance_data$year, year_levels_conn)
+district_idx_conn <- river_connectance_data$district_id
+
+extract_conn <- function(s) {
+  list(
+    intercept = get_val(s, "intercept"),
+    betas = setNames(sapply(conn_main_vars, \(v) get_val(s, v)), conn_main_vars),
+    inter_betas = setNames(
+      sapply(conn_inter_pairs, \(p) get_val(s, paste0(p[1], ":", p[2]))), conn_inter_names
+    ),
+    quad_betas = setNames(sapply(conn_quad_names, \(v) get_val(s, v)), conn_quad_names),
+    re_offset = get_re_vec(s, "year", length(year_levels_conn))[year_idx_conn] +
+      get_re_vec(s, "district_id", 4)[district_idx_conn] +
+      as.numeric(A_connectance %*% get_spatial_vec(s))
+  )
+}
+
+linpred_conn <- function(Xmat, betas, inter_betas, quad_betas) {
+  out <- as.numeric(Xmat %*% betas[conn_main_vars])
+  for (k in seq_along(conn_inter_pairs)) {
+    p <- conn_inter_pairs[[k]]
+    out <- out + (Xmat[, p[1]] * Xmat[, p[2]]) * inter_betas[k]
+  }
+  for (k in seq_along(conn_quad_vars)) {
+    out <- out + (Xmat[, conn_quad_vars[k]]^2) * quad_betas[k]
+  }
+  out
+}
+
+predicted_conn <- function(Xmat, cd) {
+  eta <- cd$intercept + linpred_conn(Xmat, cd$betas, cd$inter_betas, cd$quad_betas) + cd$re_offset
+  plogis(eta)
+}
+```
+
+```{r connectance-interaction-compute}
+#| cache: true
+
+n_ame_draws_conn <- 300
+ame_eps_conn <- 0.02
+set.seed(1)
+ps_conn <- inla.posterior.sample(n_ame_draws_conn, fit_connectance)
+cd_list <- lapply(ps_conn, extract_conn)
+
+dist_mouth_levels_conn <- quantile(river_connectance_data$dist_mouth_m, probs = c(0.1, 0.5, 0.9))
+level_labels <- c("low", "median", "high")
+
+rows <- list()
+for (pair_idx in seq_along(conn_inter_pairs)) {
+  var <- conn_inter_pairs[[pair_idx]][1]
+  for (lvl_idx in seq_along(dist_mouth_levels_conn)) {
+    lvl <- dist_mouth_levels_conn[lvl_idx]
+    draws <- numeric(n_ame_draws_conn)
+    for (m in seq_len(n_ame_draws_conn)) {
+      cd <- cd_list[[m]]
+      X_plus <- X_conn; X_plus[, var] <- X_plus[, var] + ame_eps_conn
+      X_plus[, "dist_mouth_m"] <- lvl
+      X_minus <- X_conn; X_minus[, var] <- X_minus[, var] - ame_eps_conn
+      X_minus[, "dist_mouth_m"] <- lvl
+      pred_plus <- predicted_conn(X_plus, cd)
+      pred_minus <- predicted_conn(X_minus, cd)
+      draws[m] <- mean((pred_plus - pred_minus) / (2 * ame_eps_conn))
+    }
+    rows[[length(rows) + 1]] <- tibble(
+      var = var, dist_mouth_level = level_labels[lvl_idx],
+      dist_mouth_value = as.numeric(lvl), mean = mean(draws),
+      `0.025quant` = quantile(draws, 0.025),
+      `0.975quant` = quantile(draws, 0.975)
+    )
+  }
+}
+interaction_ame_conn <- bind_rows(rows) |>
+  mutate(dist_mouth_level = factor(dist_mouth_level, levels = level_labels))
+```
 
 ## Trophic length model
 
@@ -669,11 +818,13 @@ mouth, elevation, river width) and $\theta_1 < \theta_2$ are estimated
 thresholds. A positive $\beta$ pushes towards a higher (more
 piscivorous) category.
 
+We first prepare the data,
+
 ```{r trophic-length-data}
 tl_vars <- c(
   "log_species_richness", "elevation", "river_width",
   "nitrate", "phosphate",
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "barrier_upstream", "barrier_downstream",
   "dist_mouth_m", "year", "sandre_code", "district"
 )
 river_tl_foodweb <- river_foodweb |>
@@ -683,13 +834,11 @@ river_tl_foodweb <- river_foodweb |>
 river_tl_data <- river_data |>
   filter(complete.cases(river_data[tl_vars])) |>
   left_join(river_tl_foodweb, by = "operation_id")
-nrow(river_tl_data)
 
 river_tl_data <- river_tl_data |>
   mutate(
     nitrate = log(nitrate),
     phosphate = log(phosphate),
-    dam_distance_downstream = log(dam_distance_downstream),
     barrier_upstream = log1p(barrier_upstream),
     barrier_downstream = log1p(barrier_downstream),
     river_width = log(river_width),
@@ -699,7 +848,7 @@ river_tl_data <- river_tl_data |>
   mutate(across(
     c(
       log_species_richness, nitrate, phosphate,
-      dam_distance_downstream, barrier_upstream, barrier_downstream,
+      barrier_upstream, barrier_downstream,
       dist_mouth_m, elevation, river_width
     ),
     \(x) as.numeric(scale(x))
@@ -717,7 +866,6 @@ tl_covariate_df <- data.frame(
   nitrate2 = river_tl_data$nitrate2,
   phosphate = river_tl_data$phosphate,
   phosphate2 = river_tl_data$phosphate2,
-  dam_distance_downstream = river_tl_data$dam_distance_downstream,
   barrier_upstream = river_tl_data$barrier_upstream,
   barrier_downstream = river_tl_data$barrier_downstream,
   dist_mouth_m = river_tl_data$dist_mouth_m,
@@ -725,6 +873,8 @@ tl_covariate_df <- data.frame(
   district_id = river_tl_data$district_id
 )
 ```
+
+then define and fit the model,
 
 ```{r predation-depth-model}
 #| cache: true
@@ -739,9 +889,8 @@ stk_ordinal <- inla.stack(
 fit_predation_depth <- inla(
   y ~ log_species_richness + elevation + river_width +
     nitrate + nitrate2 + phosphate + phosphate2 +
-    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    barrier_upstream + barrier_downstream +
     dist_mouth_m +
-    dam_distance_downstream:dist_mouth_m +
     barrier_upstream:dist_mouth_m +
     barrier_downstream:dist_mouth_m +
     f(year, model = "iid") +
@@ -754,6 +903,8 @@ fit_predation_depth <- inla(
 )
 ```
 
+and plot its fixed effects.
+
 ```{r predation-depth-coefficient-plot}
 #| fig-width: 9
 #| fig-height: 6
@@ -762,6 +913,17 @@ plot_coefficients(
   fit_predation_depth, "Cumulative-logit coefficient (posterior mean, 95% CI)"
 )
 ```
+
+For nutrients, we observe a positive effect of nitrate which is consistent with
+its impact on connectance. Phosphate has a humped-shape effect on trophic
+length. We observe a negative of barrier downstream, consistent with the
+trapping hypothesis discussed in the connectance model. We expect this effect to
+decreases as we move upstream.
+
+But before that, we have a look at the model parameters to ensure that the
+category inferred make sense. First, the mean and standard deviation of $\theta$.
+Second, the probability of belonging to each category $p$ (on average), which
+should roughly correspond to what is observed in the data.
 
 ```{r predation-depth-thresholds}
 thresholds <- fit_predation_depth$summary.hyperpar |>
@@ -790,11 +952,8 @@ non-linear and `log_species_richness` has a large, widely-spread effect,
 averaging predictions *across* sites is not the same as predicting *at*
 the average site.
 
-*To discuss: which covariates shift a web's mode - richness, river_width,
-nitrate, dist_mouth_m, and barrier_downstream (both its main effect and
-interaction with distance) are all credible - and whether the direction
-of each effect makes ecological sense given what we found for richness
-and connectance.*
+Next, we have a look at the gaussian part of the model, conditioned on the
+predation depth category.
 
 ### Conditional gaussian part
 
@@ -810,6 +969,8 @@ $$
 \mu_i = \alpha_{D_i} + \mathbf{x}_i^\top \boldsymbol\gamma +
 \text{year}_i + \text{district}_i + \text{SPDE}_i
 $$
+
+We fit the model,
 
 ```{r trophic-length-model}
 #| cache: true
@@ -827,9 +988,8 @@ fit_trophic_length <- inla(
   y ~ -1 + predation_depth + log_species_richness + elevation +
     river_width +
     nitrate + nitrate2 + phosphate + phosphate2 +
-    dam_distance_downstream + barrier_upstream + barrier_downstream +
+    barrier_upstream + barrier_downstream +
     dist_mouth_m +
-    dam_distance_downstream:dist_mouth_m +
     barrier_upstream:dist_mouth_m +
     barrier_downstream:dist_mouth_m +
     f(year, model = "iid") +
@@ -841,6 +1001,8 @@ fit_trophic_length <- inla(
   control.compute = list(waic = TRUE, config = TRUE)
 )
 ```
+
+and plot its fixed effects.
 
 ```{r trophic-length-coefficient-plot}
 #| fig-width: 9
@@ -895,11 +1057,10 @@ their uncertainty, since they were not fit jointly.
 main_vars <- c(
   "log_species_richness", "elevation", "river_width",
   "nitrate", "phosphate",
-  "dam_distance_downstream", "barrier_upstream", "barrier_downstream",
+  "barrier_upstream", "barrier_downstream",
   "dist_mouth_m"
 )
 inter_pairs <- list(
-  c("dam_distance_downstream", "dist_mouth_m"),
   c("barrier_upstream", "dist_mouth_m"),
   c("barrier_downstream", "dist_mouth_m")
 )
@@ -914,18 +1075,6 @@ colnames(X_tl) <- main_vars
 year_levels_tl <- sort(unique(river_tl_data$year))
 year_idx_tl <- match(river_tl_data$year, year_levels_tl)
 district_idx_tl <- river_tl_data$district_id
-
-get_val <- function(s, name) {
-  unname(s$latent[rownames(s$latent) == paste0(name, ":1"), 1])
-}
-get_re_vec <- function(s, prefix, k) {
-  unname(sapply(
-    seq_len(k), \(i) s$latent[rownames(s$latent) == paste0(prefix, ":", i), 1]
-  ))
-}
-get_spatial_vec <- function(s) {
-  unname(s$latent[grep("^spatial.field:", rownames(s$latent)), 1])
-}
 
 # everything x-independent from one ordinal posterior draw
 extract_pd <- function(s) {
@@ -1049,3 +1198,268 @@ having no within-mode effect, driven entirely by mode-shifting; whether
 this AME is the number worth reporting as "the" effect of a covariate on
 trophic_length, versus keeping the two mechanisms separate for
 interpretability.*
+
+### Interaction AME setup
+
+Reused later by the combined dam/barrier interaction figure at the end
+of the notebook - no standalone result here.
+
+```{r tl-interaction-compute}
+#| cache: true
+
+dist_mouth_levels <- quantile(river_tl_data$dist_mouth_m, probs = c(0.1, 0.5, 0.9))
+level_labels <- c("low", "median", "high")
+
+pd_list <- lapply(ps_pd, extract_pd)
+tl_list <- lapply(ps_tl, extract_tl)
+
+rows <- list()
+for (pair_idx in seq_along(inter_pairs)) {
+  var <- inter_pairs[[pair_idx]][1]
+  for (lvl_idx in seq_along(dist_mouth_levels)) {
+    lvl <- dist_mouth_levels[lvl_idx]
+    draws <- numeric(n_ame_draws)
+    for (m in seq_len(n_ame_draws)) {
+      pd <- pd_list[[m]]; tl <- tl_list[[m]]
+      X_plus <- X_tl; X_plus[, var] <- X_plus[, var] + ame_eps
+      X_plus[, "dist_mouth_m"] <- lvl
+      X_minus <- X_tl; X_minus[, var] <- X_minus[, var] - ame_eps
+      X_minus[, "dist_mouth_m"] <- lvl
+      pred_plus <- predicted_tl(X_plus, pd, tl)
+      pred_minus <- predicted_tl(X_minus, pd, tl)
+      draws[m] <- mean((pred_plus - pred_minus) / (2 * ame_eps))
+    }
+    rows[[length(rows) + 1]] <- tibble(
+      var = var, dist_mouth_level = level_labels[lvl_idx],
+      dist_mouth_value = as.numeric(lvl), mean = mean(draws),
+      `0.025quant` = quantile(draws, 0.025),
+      `0.975quant` = quantile(draws, 0.975)
+    )
+  }
+}
+interaction_ame <- bind_rows(rows) |>
+  mutate(dist_mouth_level = factor(dist_mouth_level, levels = level_labels))
+```
+
+## Nutrient curvature effect
+
+Both `nitrate`/`nitrate2` and `phosphate`/`phosphate2` mean a single
+coefficient doesn't capture their effect - the same reasoning as the
+dam/barrier interactions above, just a self-interaction (curvature)
+instead of a two-way one, so there's no second variable to hold fixed.
+Instead, for richness, connectance and trophic_length alike, we
+discretize the dose-response curve into the AME of each nutrient
+evaluated locally at its own 10th/50th/90th percentile - does the
+*slope* of the nutrient's effect change across its own range.
+
+```{r nutrient-curvature-setup}
+own_curvature_ame <- function(v, X_base, predicted_fn, draw_list, eps = 0.02,
+                               probs = c(0.1, 0.5, 0.9),
+                               level_labels = c("low", "median", "high")) {
+  levels_v <- quantile(X_base[, v], probs = probs)
+  rows <- list()
+  for (lvl_idx in seq_along(levels_v)) {
+    lvl <- levels_v[lvl_idx]
+    draws <- sapply(draw_list, \(obj) {
+      X_plus <- X_base; X_plus[, v] <- lvl + eps
+      X_minus <- X_base; X_minus[, v] <- lvl - eps
+      mean((predicted_fn(X_plus, obj) - predicted_fn(X_minus, obj)) / (2 * eps))
+    })
+    rows[[lvl_idx]] <- tibble(
+      var = v, level = level_labels[lvl_idx], value = as.numeric(lvl),
+      mean = mean(draws),
+      `0.025quant` = quantile(draws, 0.025),
+      `0.975quant` = quantile(draws, 0.975)
+    )
+  }
+  bind_rows(rows) |> mutate(level = factor(level, levels = level_labels))
+}
+
+rich_main_vars <- c(
+  "elevation", "river_width", "nitrate", "phosphate",
+  "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m"
+)
+rich_inter_pairs <- list(
+  c("barrier_upstream", "dist_mouth_m"),
+  c("barrier_downstream", "dist_mouth_m")
+)
+rich_inter_names <- sapply(rich_inter_pairs, \(p) paste0(p[1], ":", p[2]))
+rich_quad_vars <- c("nitrate", "phosphate")
+rich_quad_names <- paste0(rich_quad_vars, "2")
+
+X_rich <- as.matrix(river_model_data[rich_main_vars])
+colnames(X_rich) <- rich_main_vars
+year_levels_rich <- sort(unique(river_model_data$year))
+year_idx_rich <- match(river_model_data$year, year_levels_rich)
+district_idx_rich <- river_model_data$district_id
+
+extract_rich <- function(s) {
+  list(
+    intercept = get_val(s, "intercept"),
+    betas = setNames(sapply(rich_main_vars, \(v) get_val(s, v)), rich_main_vars),
+    inter_betas = setNames(
+      sapply(rich_inter_pairs, \(p) get_val(s, paste0(p[1], ":", p[2]))), rich_inter_names
+    ),
+    quad_betas = setNames(sapply(rich_quad_names, \(v) get_val(s, v)), rich_quad_names),
+    re_offset = get_re_vec(s, "year", length(year_levels_rich))[year_idx_rich] +
+      get_re_vec(s, "district_id", 4)[district_idx_rich] +
+      as.numeric(A_model %*% get_spatial_vec(s))
+  )
+}
+linpred_rich <- function(Xmat, betas, inter_betas, quad_betas) {
+  out <- as.numeric(Xmat %*% betas[rich_main_vars])
+  for (k in seq_along(rich_inter_pairs)) {
+    p <- rich_inter_pairs[[k]]
+    out <- out + (Xmat[, p[1]] * Xmat[, p[2]]) * inter_betas[k]
+  }
+  for (k in seq_along(rich_quad_vars)) out <- out + (Xmat[, rich_quad_vars[k]]^2) * quad_betas[k]
+  out
+}
+predicted_rich <- function(Xmat, rd) {
+  rd$intercept + linpred_rich(Xmat, rd$betas, rd$inter_betas, rd$quad_betas) + rd$re_offset
+}
+
+n_rich_draws <- 300
+set.seed(1)
+ps_richness <- inla.posterior.sample(n_rich_draws, fit_richness)
+rd_list <- lapply(ps_richness, extract_rich)
+```
+
+```{r nutrient-curvature-compute}
+#| cache: true
+
+nutrient_vars <- c("nitrate", "phosphate")
+
+predicted_tl_paired <- function(Xmat, obj) predicted_tl(Xmat, obj$pd, obj$tl)
+tl_draw_pairs <- Map(function(pd, tl) list(pd = pd, tl = tl), pd_list, tl_list)
+
+curvature_for <- function(X_base, predicted_fn, draw_list, outcome_name) {
+  bind_rows(lapply(
+    nutrient_vars, own_curvature_ame,
+    X_base = X_base, predicted_fn = predicted_fn, draw_list = draw_list
+  )) |>
+    mutate(outcome = outcome_name)
+}
+
+nutrient_curvature <- bind_rows(
+  curvature_for(X_rich, predicted_rich, rd_list, "richness"),
+  curvature_for(X_conn, predicted_conn, cd_list, "connectance"),
+  curvature_for(X_tl, predicted_tl_paired, tl_draw_pairs, "trophic_length")
+) |>
+  mutate(outcome = factor(
+    outcome, levels = c("richness", "connectance", "trophic_length")
+  ))
+```
+
+```{r nutrient-curvature-plot}
+#| fig-width: 9
+#| fig-height: 3.5
+
+nutrient_colors <- c(nitrate = "steelblue", phosphate = "darkorange")
+
+ggplot(nutrient_curvature, aes(level, mean, color = var)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(
+    aes(ymin = `0.025quant`, ymax = `0.975quant`),
+    position = position_dodge(width = 0.3)
+  ) +
+  scale_color_manual(values = nutrient_colors) +
+  facet_wrap(~outcome, scales = "free_y") +
+  labs(x = "nutrient level (own percentile)", y = "AME (local slope)", color = NULL)
+```
+
+## Dam interaction effect
+
+Same simple-slopes approach as the nutrient curvature figure, but for
+the two barrier variables against `dist_mouth_m`: the AME of each,
+with `dist_mouth_m` held fixed at its 10th/50th/90th percentile instead
+of averaged over sites. Richness didn't have this built yet, so we
+compute it here too, reusing the same setup as the nutrient curvature
+section above.
+
+```{r dam-interaction-richness}
+#| cache: true
+
+dist_mouth_levels_rich <- quantile(river_model_data$dist_mouth_m, probs = c(0.1, 0.5, 0.9))
+level_labels <- c("low", "median", "high")
+
+rows <- list()
+for (pair_idx in seq_along(rich_inter_pairs)) {
+  var <- rich_inter_pairs[[pair_idx]][1]
+  for (lvl_idx in seq_along(dist_mouth_levels_rich)) {
+    lvl <- dist_mouth_levels_rich[lvl_idx]
+    draws <- sapply(rd_list, \(rd) {
+      X_plus <- X_rich; X_plus[, var] <- X_plus[, var] + 0.02
+      X_plus[, "dist_mouth_m"] <- lvl
+      X_minus <- X_rich; X_minus[, var] <- X_minus[, var] - 0.02
+      X_minus[, "dist_mouth_m"] <- lvl
+      mean((predicted_rich(X_plus, rd) - predicted_rich(X_minus, rd)) / (2 * 0.02))
+    })
+    rows[[length(rows) + 1]] <- tibble(
+      var = var, level = level_labels[lvl_idx],
+      mean = mean(draws),
+      `0.025quant` = quantile(draws, 0.025),
+      `0.975quant` = quantile(draws, 0.975)
+    )
+  }
+}
+dam_interaction_rich <- bind_rows(rows) |>
+  mutate(level = factor(level, levels = level_labels))
+```
+
+```{r dam-interaction-combine}
+dam_interaction_all <- bind_rows(
+  dam_interaction_rich |> mutate(outcome = "richness"),
+  interaction_ame_conn |>
+    rename(level = dist_mouth_level) |>
+    select(var, level, mean, `0.025quant`, `0.975quant`) |>
+    mutate(outcome = "connectance"),
+  interaction_ame |>
+    rename(level = dist_mouth_level) |>
+    select(var, level, mean, `0.025quant`, `0.975quant`) |>
+    mutate(outcome = "trophic_length")
+) |>
+  mutate(outcome = factor(outcome, levels = c("richness", "connectance", "trophic_length")))
+```
+
+```{r dam-interaction-plot}
+#| fig-width: 10
+#| fig-height: 4
+
+dam_colors <- c(
+  barrier_upstream = "#1b9e77",
+  barrier_downstream = "#d95f02"
+)
+
+ggplot(dam_interaction_all, aes(level, mean, color = var)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(
+    aes(ymin = `0.025quant`, ymax = `0.975quant`),
+    position = position_dodge(width = 0.4)
+  ) +
+  scale_color_manual(values = dam_colors) +
+  facet_wrap(~outcome, scales = "free_y") +
+  labs(x = "distance to river mouth", y = "AME (local slope)", color = NULL)
+```
+
+We observe that downstream barrier effect has a strong negative impact on
+connectance, and this effect vanishes at high distances. By constrast, the
+barrier upstream has a strong postive impact near the river mouth and this
+effect vanishes upstream. These patterns are constitent with the hypothesis that
+first dams from the river mouth trap migratory generalist predator, whose
+presence increases the connectance locally.
+
+Both credible interactions found for trophic_length point the same
+direction, and match the same "trapping" hypothesis: dams filter out
+large, upstream-migrating predators, so they accumulate below the first
+dam they meet coming from the sea. Taller dams downstream of a site
+lower its trophic length (harder for predators from the sea to reach
+it), taller dams upstream raise it (predators blocked from going
+further accumulate in the reach below, including the site) - and both
+effects fade with distance to the mouth, consistent with dams mattering
+most where they sit closest to the sea-derived predator pool.
+
+Still a hypothesis, not a conclusion: the data can't rule out other
+differences correlated with tall dams (e.g. altered habitat immediately
+around them) as the actual driver.
