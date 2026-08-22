@@ -74,9 +74,9 @@ détaillés dans le formulaire de demande de soutien post-doctorant.*
 
 ### Données de pêche
 
-Deux campagnes de pêche en mer ont été harmonisées avec les opérations en
-rivière : Pomet (façades Atlantique et Manche, INRAE), Nurse (côtes
-françaises, 1980-2023, IFREMER) et ASPE (OFB) (@fig-stations). Le travail a
+Deux campagnes de pêche en mer -- Pomet (façades Atlantique et Manche, INRAE)
+et Nurse (côtes françaises, 1980-2023, IFREMER) -- ont été harmonisées avec les
+opérations en rivière (ASPE, OFB) (@fig-stations). Le travail a
 couvert le nettoyage des noms d'espèces
 (taxonomie changeante), l'harmonisation des unités (longueurs des poissons,
 coordonnées GPS) et le contrôle de la qualité des données, avec filtration
@@ -100,11 +100,11 @@ tar_read(plot_stations_overview)
 
 En plus des données de tailles, la reconstruction des réseaux trophiques
 nécessitait une connaissance du régime alimentaire des 158 espèces de poissons
-pêchées le long du continuum. Celles-ci comprenaient des poissons marins benthiques
+pêchées le long du continuum. Celles-ci allaient de poissons marins benthiques
 comme la sole commune (*Solea solea*) se nourrissant sur le benthos (polychètes,
-mollusques, etc.), des espèces d'eau douce pélagiques comme l'ablette (*Alburnus
-alburnus*), en passant par des espèces anadromes telles que le saumon atlantique
-(*Salmo salar*) (@fig-diet). Ce travail de collecte des informations de régime
+mollusques, etc.), en passant par des espèces d'eau douce pélagiques comme
+l'ablette (*Alburnus alburnus*), jusqu'à des espèces anadromes telles que le
+saumon atlantique (*Salmo salar*) (@fig-diet). Ce travail de collecte des informations de régime
 alimentaire a d'abord été fait automatiquement en extrayant des informations de
 la base de données FishBase avec le paquet `rfishbase`
 [@Boettiger-Lang-Wainwright-2012]. Cette première table de régime alimentaire a
@@ -195,7 +195,7 @@ et phosphate), nettoyés puis restreints aux mesures de surface et de bonne
 qualité. Nous avons également vérifié que les changements de protocole de mesure
 n'introduisaient pas de biais temporel dans les données. Ces données ont ensuite
 été interpolées dans l'espace et le temps jusqu'aux opérations de pêche en
-estuaire et en mer (nurse, pomet ; @fig-rephy). Nous avons fait cette
+estuaire et en mer (Nurse, Pomet ; @fig-rephy). Nous avons fait cette
 interpolation à l'aide d'un modèle bayésien spatio-temporel implémenté avec le
 paquet `R-INLA` [@Lindgren-Rue-2015]. L'utilisation d'INLA à cette étape avait
 un double intérêt : éprouver l'outil afin d'évaluer son applicabilité aux
@@ -262,14 +262,15 @@ tar_read(plot_distance_to_mouth_overview_report)
 
 ### Modélisation statistique spatiale
 
-La définition du modèle spatial bayésien (INLA) reliant la structure des
-réseaux trophiques, les barrages et les nutriments est en cours, sur la base
-des données désormais consolidées. Après étude approfondie, INLA nous est
-apparu comme l'outil le mieux adapté à cette tâche : sa rapidité (approximation
-de Laplace) permet de passer à l'échelle sur notre jeu de données de plus de
+Une première version du modèle spatial bayésien (INLA) reliant la structure
+des réseaux trophiques, les barrages et les nutriments a été implémentée sur
+la base des données désormais consolidées (voir les résultats préliminaires
+en @sec-resultats). Après étude approfondie, INLA nous est apparu comme
+l'outil le mieux adapté à cette tâche : sa rapidité (approximation de
+Laplace) permet de passer à l'échelle sur notre jeu de données de plus de
 17 000 points, tout en conservant une grande flexibilité de modélisation. INLA
 permet également de tenir compte de l'autocorrélation spatiale, qui pourrait
-sinon biaiser d'éventuels effets fixes, même si la formulation exacte de cette
+sinon biaiser d'éventuels effets fixes, même si la forme définitive de cette
 composante spatiale reste encore à déterminer (voir
 [perspectives](#sec-perspectives)). La participation d'I. Lajaaiti à un atelier
 sur la modélisation spatio-temporelle lors de son arrivée début février,
@@ -287,61 +288,69 @@ continuum. Nous détaillons ces premiers résultats dans la prochaine partie.
 
 ### Présentation du cas d'étude
 
-Dans cette partie, nous nous intéressons à un cas d'étude afin d'illustrer le
-potentiel des données, et d'éprouver les outils statistiques que nous prévoyons
-d'utiliser. Notre but initial est de quantifier l'impact des barrages et de
-l'enrichissement en nutriments sur les réseaux trophiques de poissons le long du
-continuum rivière-mer. Ici, nous proposons d'étudier cette question en nous
-limitant au continuum de la rivière, allant de l'amont à l'aval mais excluant
-les estuaires et les côtes (données de nutriments restant à harmoniser).
-Notre but ici est donc de répondre à la question : **comment est-ce que les
-barrages et l'enrichissement en nutriments altèrent les réseaux trophiques en
-rivière le long du continuum amont-aval, à l'échelle de la France ?**
+Une fois les données préparées, nous nous sommes intéressés à un cas d'étude.
+L'objectif est double : nous cherchons à 1) mieux comprendre les données et
+leurs limitations ; et 2) éprouver les outils statistiques que nous prévoyons
+d'utiliser. L'objectif scientifique est de **quantifier l'impact des barrages
+et de l'enrichissement en nutriments sur les réseaux trophiques de poissons le
+long du continuum de la rivière, à l'échelle de la France**. Nous limitons
+volontairement la question au continuum de la rivière, allant de l'amont à
+l'aval mais excluant les estuaires et les côtes.
 
-Avant toute analyse, nous pouvons formuler trois hypothèses :
+Avant toute analyse, nous formulons trois hypothèses :
 
 - **H1 -- Les nutriments ont un effet unimodal sur la structure des réseaux
-trophiques** ; à faible concentration ils complexifient les réseaux trophiques
-en augmentant la productivité primaire, mais à haute concentration, ils les
-simplifient en détériorant les conditions hydrochimiques et en augmentant le
-risque d'eutrophisation.
+trophiques** ; à faibles concentrations un apport en nutriments complexifie les
+réseaux trophiques en augmentant la productivité primaire, mais -- à haute
+concentrations -- les nutriments simplifient les réseaux en détériorant les
+conditions hydrochimiques.
 - **H2 -- En bloquant les espèces migratrices en aval, les barrages simplifient
-les réseaux trophiques en amont** ; on s'attend ainsi à un effet barrière des
-barrages en aval particulièrement fort et négatif (sur la structure du réseau)
-proche de l'embouchure, et un effet barrière des barrages en amont fort et
-positif proche de l'embouchure également, et ces effets devraient s'estomper en
-remontant vers l'amont.
+les réseaux trophiques en amont** ; on s'attend -- proche de l'embouchure -- à
+un effet barrière des barrages *aval* fort et négatif sur la complexité des
+réseaux, et inversement à un effet barrière des barrages *amont* fort et
+positif sur la complexité des réseaux ; de plus, on s'attend à une atténuation
+de ces deux effets en remontant de l'aval vers l'amont.
 - **H3 -- Les effets des pressions sur la structure des réseaux trophiques
-passent en partie par la richesse spécifique** ; la richesse spécifique agit
+passent en partie par la richesse spécifique** ; pour des raisons de
+contraintes topologiques, on s'attend à ce que la richesse spécifique agisse
 comme médiateur d'une partie de l'effet des pressions sur la structure des
-réseaux (par contrainte topologique), on s'attend également à des effets
-directs des pressions sur les mesures de structure car celles-ci peuvent avoir
-un effet différencié selon les groupes trophiques (e.g. barrages et espèces
+réseaux ; on s'attend également à des *effets directs* des pressions sur les
+mesures de structure des réseaux, car celles-ci peuvent avoir un impact
+variable sur les différents groupes trophiques (e.g., barrages et espèces
 migratrices qui sont souvent en haut des réseaux trophiques).
 
 ### Méthodes
 
-Afin de tester ces hypothèses, nous modélisons l'effet des nutriments et des
-barrages sur la structure des écosystèmes, le long du continuum amont-aval. Nos
-modèles incluent les éléments qui suivent.
+Afin de tester ces hypothèses, nous nous appuyons sur les données biologiques
+et environnementales de rivière présentées plus haut. Ces données couvrent
+quatre bassins versants : Loire, Adour-Garonne, Seine et Escaut-Somme. Nous détaillons dans
+ce qui suit les données sélectionnées.
 
-**Nutriments --** Pour capturer l'effet des nutriments, nous utilisons la
-concentration en nitrate et en phosphate. Ce sont les deux nutriments testés
-qui montrent des effets robustes sur la structure des réseaux trophiques dans
-nos modèles préliminaires ; l'ammonium est écarté en raison d'une forte
-colinéarité avec les autres nutriments, et le nitrite ne montre d'effet
-significatif dans aucun des modèles testés.
+**Structure des réseaux trophiques --** Nous quantifions la structure des
+réseaux trophiques par leur connectance (nombre de liens divisé par la
+richesse spécifique au carré) et leur longueur moyenne de chaîne trophique
+(calculée par le paquet `cheddar`).
 
-**Barrages --** Pour capturer l'effet des barrages, nous utilisons deux
-mesures de leur effet barrière : un effet barrière aval, défini comme la
-hauteur moyenne des barrages situés en aval du site, et un effet barrière
-amont, défini de manière symétrique pour les barrages situés en amont. Une
-hauteur plus élevée reflète un obstacle plus difficile à franchir pour les
-espèces migratrices, indépendamment de sa distance au site.
+**Nutriments --** Pour capturer l'effet des nutriments, nous
+utilisons la concentration en nitrate et en phosphate. Ce sont les deux
+nutriments testés qui montrent des effets robustes sur la structure des réseaux
+trophiques dans nos modèles préliminaires ; l'ammonium est écarté en raison
+d'une forte colinéarité avec les autres nutriments, et le nitrite ne montre
+d'effet significatif dans aucun des modèles testés.
 
-*[figure principale des effets (AME) sur les trois modèles - à ajouter]*
+**Barrages --** Pour capturer l'effet des barrages, nous utilisons deux mesures
+de leur effet barrière : un effet barrière aval, défini comme la hauteur
+moyenne des barrages situés en aval du site, le long du linéaire aval, et un
+effet barrière amont, défini sur l'ensemble des barrages situés dans le bassin
+versant en amont. Une hauteur plus élevée reflète un obstacle plus difficile à
+franchir pour les espèces migratrices, indépendamment de sa distance au site.
 
-```{r river-model-setup}
+**Habitat --** Nous incluons aussi un ensemble de variables
+physiques qui structurent fortement les écosystèmes le long du continuum
+amont-aval : la distance hydrographique à la source, l'altitude et la largeur
+du cours d'eau.
+
+```{r river-data-load}
 #| include: false
 
 amobio <- tar_read(amobio_aspe_data) |> sf::st_drop_geometry()
@@ -359,6 +368,144 @@ river_data <- amobio |>
     barrier_upstream, barrier_downstream,
     dist_mouth_m
   )
+
+model_vars <- c(
+  "log_species_richness", "elevation", "river_width",
+  "nitrate", "phosphate", "barrier_upstream", "barrier_downstream",
+  "dist_mouth_m", "year", "sandre_code", "district"
+)
+river_model_data <- river_data |>
+  dplyr::filter(complete.cases(river_data[model_vars]))
+```
+
+Par souci de simplicité, nous faisons une analyse en cas complets
+(*complete-case analysis*), enlevant ainsi toutes les opérations de pêche avec
+des covariables manquantes. Cela nous donne un jeu de données de
+`r nrow(river_model_data)` opérations, allant de
+`r min(river_model_data$year)` à `r max(river_model_data$year)`.
+
+Avec ces données, nous réalisons trois modèles : un pour la richesse
+spécifique, un pour la connectance et un pour la longueur de chaîne trophique.
+En plus d'inclure les effets des covariables listées ci-dessus, les modèles de
+connectance et de longueur de chaîne trophique incluent également la richesse
+spécifique -- afin de tester l'hypothèse H3 --, et les trois modèles incluent
+un effet aléatoire année et bassin versant -- afin de contrôler pour des
+effets résiduels temporels ou géographiques. De plus, afin de tester
+l'hypothèse H1, nous incluons des termes quadratiques pour les nutriments, ce
+qui permet de valider un effet dose éventuel. Enfin, afin de tester
+l'hypothèse H2, nous incluons une interaction entre les effets barrière des
+barrages et la distance à l'embouchure.
+
+Nous donnons l'expression formelle des modèles utilisés dans ce qui suit.
+Notons $\mathbf{x}_i$ le vecteur de covariables du site $i$ :
+
+$$
+\begin{aligned}
+\mathbf{x}_i = \big(\
+  & \text{altitude}_i,\ \text{largeur}_i,\ \text{distance}_i, \\
+  & \text{nitrate}_i,\ \text{nitrate}_i^2,\ \text{phosphate}_i,\ \text{phosphate}_i^2, \\
+  & \text{barrage}_i^{\text{amont}},\ \text{barrage}_i^{\text{aval}},\
+    \text{barrage}_i^{\text{amont}} \cdot \text{distance}_i,\
+    \text{barrage}_i^{\text{aval}} \cdot \text{distance}_i\,\big)^\top.
+\end{aligned}
+$$
+
+De plus, on note $\text{année}_i$, $\text{bassin}_i$, $\text{SPDE}_i$
+respectivement les effets aléatoires année et bassin versant, et le champ
+spatial gaussien (SPDE). Nous pouvons alors écrire les différents modèles pour
+nos trois structures de réseaux. Nous choisissons de modéliser la richesse
+spécifique par une gaussienne, car elle est non bornée et sa distribution
+observée est en cloche ; la connectance par une loi beta, car elle est bornée
+entre 0 et 1 ; et la longueur de chaîne trophique par un modèle en deux parties
+-- une partie catégorielle et une partie gaussienne conditionnelle -- car sa
+distribution observée est trimodale.
+
+**Richesse spécifique** (gaussien) :
+$$
+\log S_i \sim \mathcal{N}(\mu_i, \sigma_i)
+$$
+$$
+\mu_i = \mathbf{x}_i^\top \boldsymbol\beta + \text{année}_i + \text{bassin}_i
+  + \text{SPDE}_i
+$$
+
+**Connectance** (beta, lien logit) -- la richesse spécifique intervient comme
+covariable médiatrice (coefficient $\gamma_r$), afin de tester l'hypothèse
+H3 :
+$$
+\text{connectance}_i \sim \text{Beta}(\mu_i, \phi)
+$$
+$$
+\text{logit}(\mu_i) = \gamma_r \, \text{richesse}_i + \mathbf{x}_i^\top
+  \boldsymbol\gamma + \text{année}_i + \text{bassin}_i + \text{SPDE}_i
+$$
+
+**Longueur de chaîne trophique** -- modélisée en deux étapes, la distribution
+étant trimodale. On modélise d'abord la profondeur de prédation $D_i \in \{1,
+2, 3\}$ (aucun poisson mangé par le sommet du réseau, un poisson non-piscivore mangé,
+un poisson piscivore mangé) par un modèle ordinal :
+$$
+\text{logit}\left[P(D_i \le k)\right] = \theta_k - \eta_i, \quad k \in \{1, 2\}
+$$
+$$
+\eta_i = \gamma_r \, \text{richesse}_i + \mathbf{x}_i^\top \boldsymbol\beta
+  + \text{année}_i + \text{bassin}_i + \text{SPDE}_i
+$$
+puis, conditionnellement à $D_i$, un modèle gaussien pour la longueur de
+chaîne trophique avec une ordonnée à l'origine propre à chaque catégorie :
+$$
+\text{longueur}_i \mid D_i \sim \mathcal{N}(\mu_{i, D_i}, \sigma^2)
+$$
+$$
+\mu_{i, k} = \alpha_k + \gamma_r \, \text{richesse}_i + \mathbf{x}_i^\top
+  \boldsymbol\gamma + \text{année}_i + \text{bassin}_i + \text{SPDE}_i
+$$
+
+**Calcul des effets marginaux --** Dans ce dernier modèle, l'effet total d'une
+covariable sur la longueur de chaîne trophique combine son effet sur le mode
+($D_i$) et son effet au sein du mode : la longueur de chaîne trophique prédite
+au site $i$, $\mathbb{E}[\text{longueur}_i \mid \mathbf{x}_i]$, s'obtient en
+moyennant la prédiction de chaque catégorie $\mu_{i, k}$ par sa probabilité
+$P(D_i = k \mid \mathbf{x}_i)$, soit :
+
+$$
+\mathbb{E}[\text{longueur}_i \mid \mathbf{x}_i] = \sum_{k=1}^{3} P(D_i = k \mid
+  \mathbf{x}_i) \cdot \mu_{i, k}.
+$$
+
+Par conséquent, cet effet total est une fonction non linéaire de
+$\mathbf{x}_i$, puisque les poids $P(D_i = k \mid \mathbf{x}_i)$ en dépendent
+eux-mêmes. Nous résumons donc l'effet de chaque covariable $x_j$ par son effet
+marginal moyen (*average marginal effect*, AME), défini comme la dérivée de
+l'espérance du modèle par rapport à $x_j$, moyennée conjointement sur
+l'ensemble des sites et sur les tirages de la loi postérieure :
+
+$$
+\text{AME}_j = \left\langle \frac{\partial\, \mathbb{E}[y_i \mid
+  \mathbf{x}_i]}{\partial x_{ij}} \right\rangle_{\text{site, tirage}}.
+$$
+
+La dérivée partielle est en pratique approximée par une différence finie.
+
+Ainsi, l'effet marginal moyen capture comment un changement de la covariable
+influence, en moyenne, la variable réponse. Dans un modèle linéaire simple,
+cet effet correspond directement à l'effet fixe. Dans des modèles plus
+complexes, comme celui utilisé pour la longueur de chaîne trophique, celui-ci
+ne peut pas être lu directement dans les effets fixes, ni dans leur produit ;
+il est nécessaire de simuler un changement de covariable au sein du modèle
+afin de capturer correctement l'effet total -- ce que réalise formellement
+l'AME. Par souci de cohérence, nous calculons également l'AME pour la
+richesse spécifique et la connectance ; pour ces deux modèles, dont le
+prédicteur linéaire est additif, l'AME d'une covariable sans terme quadratique
+ni interaction se réduit alors simplement à son effet fixe.
+
+### Résultats et discussion
+
+Nous regardons à présent comment chaque covariable affecte les trois mesures
+de structure des réseaux trophiques, à travers l'AME défini plus haut.
+
+```{r river-model-setup}
+#| include: false
 
 library(INLA)
 library(fmesher)
@@ -402,13 +549,7 @@ get_spatial_vec <- function(s) {
 #| include: false
 #| cache: true
 
-model_vars <- c(
-  "log_species_richness", "elevation", "river_width",
-  "nitrate", "phosphate", "barrier_upstream", "barrier_downstream",
-  "dist_mouth_m", "year", "sandre_code", "district"
-)
-river_model_data <- river_data |>
-  dplyr::filter(complete.cases(river_data[model_vars])) |>
+river_model_data <- river_model_data |>
   dplyr::mutate(
     nitrate = log(nitrate),
     phosphate = log(phosphate),
@@ -587,6 +728,23 @@ main_vars <- c(
   "log_species_richness", "elevation", "river_width", "nitrate", "phosphate",
   "barrier_upstream", "barrier_downstream", "dist_mouth_m"
 )
+# lettered panel labels: fig-ame-main-effects has 3 panels (A-C); each panel
+# label is unique within its own figure so the text can point at, e.g., "(A)"
+# unambiguously
+outcome_labels <- c(
+  richesse = "(A) richesse", connectance = "(B) connectance",
+  "longueur trophique" = "(C) longueur trophique"
+)
+# fig-ame-nutrients-barrages stacks two rows of 3 panels each (6 total), so
+# its own panels get a distinct A-F lettering, row by row
+outcome_labels_nutrients <- c(
+  richesse = "(A) richesse", connectance = "(B) connectance",
+  "longueur trophique" = "(C) longueur trophique"
+)
+outcome_labels_dams <- c(
+  richesse = "(D) richesse", connectance = "(E) connectance",
+  "longueur trophique" = "(F) longueur trophique"
+)
 inter_pairs <- list(
   c("barrier_upstream", "dist_mouth_m"), c("barrier_downstream", "dist_mouth_m")
 )
@@ -668,7 +826,7 @@ predicted_tl <- function(Xmat, pd, tl) {
 }
 predicted_tl_paired <- function(Xmat, obj) predicted_tl(Xmat, obj$pd, obj$tl)
 
-n_ame_draws <- 150
+n_ame_draws <- 300
 
 # each inla.posterior.sample() call reconstructs 300 (now 150) full draws of
 # the entire latent field (fixed effects + year/district REs + the SPDE field
@@ -749,7 +907,15 @@ dam_all <- dplyr::bind_rows(
 
 ame_merged <- dplyr::bind_rows(nutrient_all, dam_all) |>
   dplyr::mutate(
-    outcome = factor(outcome, levels = c("richesse", "connectance", "longueur trophique")),
+    # `row` is still the raw character column here (reassigned to a factor
+    # below), so it can be used to pick which lettering applies
+    outcome = factor(
+      dplyr::case_when(
+        row == "Nutriments" ~ outcome_labels_nutrients[outcome],
+        row == "Barrages × distance" ~ outcome_labels_dams[outcome]
+      ),
+      levels = c(outcome_labels_nutrients, outcome_labels_dams)
+    ),
     row = factor(row, levels = c("Nutriments", "Barrages × distance")),
     var_label = dplyr::recode(var,
       nitrate = "Nitrate", phosphate = "Phosphate",
@@ -758,14 +924,119 @@ ame_merged <- dplyr::bind_rows(nutrient_all, dam_all) |>
   )
 ```
 
+```{r river-model-ame-main-compute}
+#| include: false
+#| cache: true
+
+generic_ame <- function(v, predicted_fn, draw_list, eps = 0.02) {
+  draws <- sapply(draw_list, \(obj) {
+    Xp <- X_all; Xp[, v] <- Xp[, v] + eps
+    Xm <- X_all; Xm[, v] <- Xm[, v] - eps
+    mean((predicted_fn(Xp, obj) - predicted_fn(Xm, obj)) / (2 * eps))
+  })
+  tibble::tibble(
+    var = v, mean = mean(draws),
+    `0.025quant` = quantile(draws, .025), `0.975quant` = quantile(draws, .975)
+  )
+}
+
+var_labels <- c(
+  log_species_richness = "Richesse spécifique (log)",
+  dist_mouth_m = "Dist. embouchure",
+  elevation = "Altitude",
+  river_width = "Largeur du cours d'eau (log)",
+  nitrate = "Nitrate",
+  phosphate = "Phosphate",
+  barrier_upstream = "Barrage amont",
+  barrier_downstream = "Barrage aval"
+)
+# top-to-bottom reading order in the plot: mediator, then habitat / nutrient /
+# dam pressure groups (reversed below since ggplot draws the first factor
+# level at the bottom of a discrete y-axis)
+var_order <- names(var_labels)
+var_category <- c(
+  log_species_richness = "Richesse spécifique",
+  dist_mouth_m = "Habitat", elevation = "Habitat", river_width = "Habitat",
+  nitrate = "Nutriments", phosphate = "Nutriments",
+  barrier_upstream = "Barrages", barrier_downstream = "Barrages"
+)
+
+main_ame <- dplyr::bind_rows(
+  dplyr::bind_rows(lapply(
+    setdiff(main_vars, "log_species_richness"), generic_ame,
+    predicted_fn = predicted_gaussian, draw_list = rd_list
+  )) |> dplyr::mutate(outcome = "richesse"),
+  dplyr::bind_rows(lapply(
+    main_vars, generic_ame, predicted_fn = predicted_beta, draw_list = cd_list
+  )) |> dplyr::mutate(outcome = "connectance"),
+  dplyr::bind_rows(lapply(
+    main_vars, generic_ame, predicted_fn = predicted_tl_paired, draw_list = tl_draw_pairs
+  )) |> dplyr::mutate(outcome = "longueur trophique")
+) |>
+  dplyr::mutate(
+    outcome = factor(outcome_labels[outcome], levels = outcome_labels),
+    covariate = factor(var_labels[var], levels = var_labels[rev(var_order)]),
+    category = factor(
+      var_category[var],
+      levels = c("Richesse spécifique", "Habitat", "Nutriments", "Barrages")
+    )
+  )
+```
+
+```{r fig-ame-main-effects}
+#| echo: false
+#| label: fig-ame-main-effects
+#| fig-cap: "Effet marginal moyen (AME) de chaque covariable sur les trois
+#|   métriques de structure des réseaux trophiques : (A) richesse
+#|   spécifique, (B) connectance, (C) longueur trophique.
+#|   Les covariables sont colorées par catégorie (richesse
+#|   spécifique, habitat, nutriments, barrages). La richesse spécifique n'est
+#|   pas incluse comme covariable du modèle de richesse (ligne vide). Les barres
+#|   horizontales représentent l'intervalle de crédibilité à 95%. Les termes
+#|   d'interaction du modèle sont représentés
+#|   en @fig-ame-nutrients-barrages."
+#| fig-width: 9
+#| fig-height: 4
+
+category_colors <- c(
+  "Richesse spécifique" = "grey40", "Habitat" = "#e6ab02",
+  "Nutriments" = "#1b9e77", "Barrages" = "#7570b3"
+)
+
+ggplot(main_ame, aes(mean, covariate, color = category)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = `0.025quant`, xmax = `0.975quant`)) +
+  scale_color_manual(values = category_colors) +
+  facet_wrap(~outcome, nrow = 1, scales = "free_x") +
+  scale_y_discrete(drop = FALSE) +
+  labs(x = "Effet marginal moyen (AME)", y = NULL, color = NULL) +
+  nice_theme() +
+  theme(legend.position = "bottom")
+```
+
+On observe que les variables d'habitat structurent très fortement les réseaux
+trophiques (@fig-ame-main-effects). En particulier, la richesse spécifique
+augmente avec la largeur des cours d'eau et la distance à l'embouchure, tandis
+qu'elle diminue avec l'altitude (@fig-ame-main-effects A). La richesse
+spécifique structure aussi fortement les réseaux : les réseaux riches ont de
+plus longues chaînes trophiques et une plus faible connectance
+(@fig-ame-main-effects B, C). De plus, les nutriments ont des effets directs
+notables sur les réseaux : en moyenne, le phosphate est associé à des
+communautés plus riches et moins connectées (@fig-ame-main-effects A, B),
+tandis que le nitrate est associé à des réseaux à plus forte connectance et de
+plus longue chaîne trophique (@fig-ame-main-effects B, C). Les effets moyens
+des barrages sont nuls (@fig-ame-main-effects A-C), mais ceux-ci peuvent cacher
+des interactions avec la distance à l'embouchure. Nous explorons ces
+interactions dans ce qui suit.
+
 ```{r fig-ame-nutrients-barrages}
 #| echo: false
 #| label: fig-ame-nutrients-barrages
-#| fig-cap: "Effet marginal moyen (AME) du nitrate et du phosphate (auto-interaction,
-#|   ligne du haut) et des deux effets barrage (interaction avec la distance à
-#|   l'embouchure, ligne du bas), sur les trois métriques de structure des
-#|   réseaux trophiques (colonnes). Barres verticales : intervalle de crédibilité
-#|   à 95%."
+#| fig-cap: "Visualisation des interactions : nutriments avec eux-mêmes (A-C),
+#|   barrages avec la distance à la source (D-F).
+#|   Les barres verticales représentent l'intervalle de
+#|   crédibilité à 95%. Les effets marginaux moyens des autres covariables
+#|   sont représentés en @fig-ame-main-effects."
 #| fig-width: 9
 #| fig-height: 5.5
 
@@ -774,21 +1045,88 @@ var_colors <- c(
   "Barrage amont" = "#7570b3", "Barrage aval" = "#e7298a"
 )
 
-ggplot(ame_merged, aes(level, mean, color = var_label)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(
-    aes(ymin = `0.025quant`, ymax = `0.975quant`),
-    position = position_dodge(width = 0.4)
-  ) +
-  scale_color_manual(values = var_colors) +
-  facet_grid(row ~ outcome, scales = "free_y") +
-  labs(
-    x = "Niveau (bas / médian / haut)",
-    y = "Effet marginal moyen (pente locale)", color = NULL
-  ) +
-  nice_theme() +
+ame_row_plot <- function(data, x_label) {
+  ggplot(data, aes(level, mean, color = var_label)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+    geom_pointrange(
+      aes(ymin = `0.025quant`, ymax = `0.975quant`),
+      position = position_dodge(width = 0.4)
+    ) +
+    scale_color_manual(values = var_colors) +
+    facet_wrap(~outcome, scales = "free_y", nrow = 1) +
+    labs(x = x_label, y = "Effet marginal moyen (AME)", color = NULL) +
+    nice_theme()
+}
+
+patchwork::wrap_plots(
+  ame_row_plot(
+    dplyr::filter(ame_merged, row == "Nutriments"), "Niveau des nutriments"
+  ),
+  ame_row_plot(
+    dplyr::filter(ame_merged, row == "Barrages × distance"), "Niveau de la distance à l'embouchure"
+  ),
+  ncol = 1
+) +
+  patchwork::plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 ```
+
+La @fig-ame-nutrients-barrages détaille ces deux interactions. Le nitrate et le
+phosphate ont un effet quadratique sur eux-mêmes (auto-interaction, afin de
+tester H1 ; @fig-ame-nutrients-barrages A-C), et les barrages ont un effet en
+interaction avec la distance à l'embouchure (afin de tester H2 ;
+@fig-ame-nutrients-barrages D-F).
+
+Premièrement, on observe un effet positif du nitrate sur la richesse à un
+niveau faible, mais négatif à un niveau élevé (@fig-ame-nutrients-barrages A).
+De plus, pour la connectance et la longueur de chaîne trophique, nous notons
+une tendance opposée entre nitrate et phosphate : à un niveau élevé, un
+enrichissement en nitrate est associé à des réseaux plus complexes, tandis
+qu'un enrichissement en phosphate est associé à des réseaux plus simples
+(@fig-ame-nutrients-barrages B, C).
+
+Deuxièmement, on observe que l'effet des barrages varie le long du continuum.
+L'effet barrière amont est associé à des réseaux plus complexes proche de
+l'embouchure ; inversement, l'effet barrière aval est associé à des réseaux
+plus simples proche de l'embouchure (@fig-ame-nutrients-barrages E, F). Ces
+deux effets s'atténuent en s'éloignant de l'embouchure
+(@fig-ame-nutrients-barrages D-F).
+
+Dans l'ensemble, ces résultats sont cohérents avec nos trois hypothèses, avec
+quelques nuances qui enrichissent ces dernières. Concernant H1, nous
+retrouvons bien un effet en cloche du nitrate sur la richesse spécifique --
+positif à faible niveau, négatif à un niveau élevé --, mais cet effet
+unimodal n'est pas retrouvé pour la connectance ou la longueur de chaîne
+trophique. De plus, nitrate et phosphate ont des effets différents, voire
+opposés, ce qui invite à creuser les mécanismes sous-jacents, qui pourraient
+par exemple être liés au nutriment limitant. Concernant H2, le patron observé
+pour les barrages correspond précisément à nos attentes : un effet barrière
+amont positif et un effet barrière aval négatif sur la complexité des réseaux
+proche de l'embouchure, tous deux s'atténuant vers l'amont. Concernant H3, la
+richesse spécifique structure fortement la connectance et la longueur de
+chaîne trophique, comme attendu, ce qui confirme son rôle de médiateur ; les
+nutriments et l'habitat conservent néanmoins des effets directs sur ces deux
+métriques, indépendamment de leur effet sur la richesse, ce qui est également
+conforme à nos attentes.
+
+Ce cas d'étude répond aux deux objectifs fixés en introduction de cette
+partie : il nous a permis de mieux cerner les données disponibles et leurs
+limites, et de valider notre chaîne d'analyse statistique. En particulier, il
+sera intéressant d'affiner les mesures de barrages pour tenir compte de leur
+passabilité au-delà de leur hauteur (e.g., passe à poissons). Concernant les
+nutriments, la question de la fenêtre temporelle utilisée pour calculer leur
+moyenne (ici un an avant l'opération) reste ouverte : des analyses de
+sensibilité seront nécessaires pour mieux comprendre à quelle échelle
+temporelle ces derniers agissent sur les communautés écologiques. De même, la
+composante spatiale du modèle repose actuellement sur un champ spatial
+gaussien continu (SPDE), qui suppose une distance euclidienne entre les sites
+; cette structure devra être affinée pour tenir compte de la distance
+hydrographique le long du réseau fluvial, plus pertinente pour ce système
+(voir [perspectives](#sec-perspectives)). Les résultats obtenus, globalement
+cohérents avec nos hypothèses, nous encouragent à étendre cette approche à
+l'ensemble du continuum rivière-mer. Nous discutons les [difficultés
+rencontrées](#sec-difficultes) lors de ce travail, ainsi que les
+[perspectives](#sec-perspectives) qu'il ouvre, dans ce qui suit.
 
 ## Difficultés rencontrées {#sec-difficultes}
 
