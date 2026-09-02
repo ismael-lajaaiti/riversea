@@ -881,15 +881,24 @@ add_edge_geometry <- function(network, paths) {
 #' @param district_kept character vector of districts to keep.
 #' @param basin sf tibble with `district`, `geometry`, e.g.
 #'   `format_basin()`'s output.
+#' @param lang "en" or "fr" legend title.
 #'
 #' @return ggplot.
 #' @export
-plot_distance_to_mouth_map <- function(distance, district_kept, basin) {
+plot_distance_to_mouth_map <- function(
+  distance, district_kept, basin, lang = c("en", "fr")
+) {
+  lang <- match.arg(lang)
   france <- rnaturalearth::ne_countries(
     geounit = "france", type = "map_units", scale = "medium",
     returnclass = "sf"
   )
   basin_kept <- basin |> dplyr::filter(district %in% district_kept)
+  legend_name <- if (lang == "fr") {
+    "Distance à l'embouchure (km)"
+  } else {
+    "Distance to river mouth (km)"
+  }
 
   ggplot2::ggplot() +
     ggplot2::geom_sf(
@@ -904,7 +913,7 @@ plot_distance_to_mouth_map <- function(distance, district_kept, basin) {
       size = 0.5, alpha = 0.8
     ) +
     ggplot2::coord_sf(xlim = c(-5.3, 8.3), ylim = c(41.2, 51.2), expand = FALSE) +
-    ggplot2::scale_color_viridis_c(name = "Distance à l'embouchure (km)") +
+    ggplot2::scale_color_viridis_c(name = legend_name) +
     ggplot2::labs(x = "Longitude", y = "Latitude") +
     ggplot2::theme(
       panel.grid = ggplot2::element_blank(),
@@ -934,6 +943,8 @@ plot_distance_to_mouth_map <- function(distance, district_kept, basin) {
 #'   `format_basin()`'s output.
 #' @param river_operation_id operation_id of the river-network example.
 #' @param sea_operation_id operation_id of the coastal-mesh example.
+#' @param lang "en" or "fr" legend/labels, passed to
+#'   `plot_sea_path_checkpoint()` and `plot_distance_to_mouth_map()`.
 #'
 #' @return patchwork object, 1 row x 3 columns.
 #' @export
@@ -947,7 +958,9 @@ plot_distance_to_mouth_overview <- function(river_network_geo,
                                              district_kept,
                                              basin,
                                              river_operation_id,
-                                             sea_operation_id) {
+                                             sea_operation_id,
+                                             lang = c("en", "fr")) {
+  lang <- match.arg(lang)
   nice_theme()
 
   op_river <- inland_distance_to_mouth |>
@@ -969,10 +982,12 @@ plot_distance_to_mouth_overview <- function(river_network_geo,
   mesh_edges <- sea_mesh_edges(sea_mesh)
   panel_b <- plot_sea_path_checkpoint(
     op_sea, path_sea, mesh_edges, sea_mesh$land,
-    "B", show_subtitle = FALSE
+    "B", lang = lang, show_subtitle = FALSE
   )
 
-  panel_c <- plot_distance_to_mouth_map(distance_to_mouth, district_kept, basin) +
+  panel_c <- plot_distance_to_mouth_map(
+    distance_to_mouth, district_kept, basin, lang = lang
+  ) +
     ggplot2::labs(title = "C")
 
   ((panel_a / panel_b) | panel_c) +

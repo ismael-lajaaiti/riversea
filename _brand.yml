@@ -11,7 +11,9 @@ typography:
   fonts:
     - family: Atkinson Hyperlegible
       source: google
-    - family: Libre Baskerville
+    - family: Inter
       source: google
   base: Atkinson Hyperlegible
-  headings: Libre Baskerville
+  headings:
+    family: Inter
+    weight: 700

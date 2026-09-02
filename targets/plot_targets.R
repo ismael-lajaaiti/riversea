@@ -28,7 +28,9 @@ plot_targets <- list(
   ),
   tar_target(
     plot_stations_overview,
-    plot_station_overview(operation_location, params$district_kept, basin)
+    plot_station_overview(
+      operation_location, params$district_kept, basin, lang = "fr"
+    )
   ),
   tar_target(
     plot_net_groups,
@@ -71,7 +73,8 @@ plot_targets <- list(
       sea_graph, sea_mesh, sea_offshore_distance_to_mouth,
       distance_to_mouth, params$district_kept, basin,
       river_operation_id = "61833954",
-      sea_operation_id = "2019_2_GIR33_1_S"
+      sea_operation_id = "2019_2_GIR33_1_S",
+      lang = "fr"
     )
   )
 )

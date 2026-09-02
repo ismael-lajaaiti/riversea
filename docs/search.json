@@ -1419,5 +1419,306 @@
     "title": "River model: impact of nutrients and dams on food web structure",
     "section": "Dam interaction effect",
     "text": "Dam interaction effect\nSame simple-slopes approach as the nutrient curvature figure, but for the two barrier variables against dist_mouth_m: the AME of each, with dist_mouth_m held fixed at its 10th/50th/90th percentile instead of averaged over sites. Richness didn’t have this built yet, so we compute it here too, reusing the same setup as the nutrient curvature section above.\n\n\nCode\ndist_mouth_levels_rich &lt;- quantile(river_model_data$dist_mouth_m, probs = c(0.1, 0.5, 0.9))\nlevel_labels &lt;- c(\"low\", \"median\", \"high\")\n\nrows &lt;- list()\nfor (pair_idx in seq_along(rich_inter_pairs)) {\n  var &lt;- rich_inter_pairs[[pair_idx]][1]\n  for (lvl_idx in seq_along(dist_mouth_levels_rich)) {\n    lvl &lt;- dist_mouth_levels_rich[lvl_idx]\n    draws &lt;- sapply(rd_list, \\(rd) {\n      X_plus &lt;- X_rich; X_plus[, var] &lt;- X_plus[, var] + 0.02\n      X_plus[, \"dist_mouth_m\"] &lt;- lvl\n      X_minus &lt;- X_rich; X_minus[, var] &lt;- X_minus[, var] - 0.02\n      X_minus[, \"dist_mouth_m\"] &lt;- lvl\n      mean((predicted_rich(X_plus, rd) - predicted_rich(X_minus, rd)) / (2 * 0.02))\n    })\n    rows[[length(rows) + 1]] &lt;- tibble(\n      var = var, level = level_labels[lvl_idx],\n      mean = mean(draws),\n      `0.025quant` = quantile(draws, 0.025),\n      `0.975quant` = quantile(draws, 0.975)\n    )\n  }\n}\ndam_interaction_rich &lt;- bind_rows(rows) |&gt;\n  mutate(level = factor(level, levels = level_labels))\n\n\n\n\nCode\ndam_interaction_all &lt;- bind_rows(\n  dam_interaction_rich |&gt; mutate(outcome = \"richness\"),\n  interaction_ame_conn |&gt;\n    rename(level = dist_mouth_level) |&gt;\n    select(var, level, mean, `0.025quant`, `0.975quant`) |&gt;\n    mutate(outcome = \"connectance\"),\n  interaction_ame |&gt;\n    rename(level = dist_mouth_level) |&gt;\n    select(var, level, mean, `0.025quant`, `0.975quant`) |&gt;\n    mutate(outcome = \"trophic_length\")\n) |&gt;\n  mutate(outcome = factor(outcome, levels = c(\"richness\", \"connectance\", \"trophic_length\")))\n\n\n\n\nCode\ndam_colors &lt;- c(\n  barrier_upstream = \"#1b9e77\",\n  barrier_downstream = \"#d95f02\"\n)\n\nggplot(dam_interaction_all, aes(level, mean, color = var)) +\n  geom_hline(yintercept = 0, linetype = \"dashed\", color = \"grey50\") +\n  geom_pointrange(\n    aes(ymin = `0.025quant`, ymax = `0.975quant`),\n    position = position_dodge(width = 0.4)\n  ) +\n  scale_color_manual(values = dam_colors) +\n  facet_wrap(~outcome, scales = \"free_y\") +\n  labs(x = \"distance to river mouth\", y = \"AME (local slope)\", color = NULL)\n\n\n\n\n\n\n\n\n\nWe observe that downstream barrier effect has a strong negative impact on connectance, and this effect vanishes at high distances. By constrast, the barrier upstream has a strong postive impact near the river mouth and this effect vanishes upstream. These patterns are constitent with the hypothesis that first dams from the river mouth trap migratory generalist predator, whose presence increases the connectance locally.\nBoth credible interactions found for trophic_length point the same direction, and match the same “trapping” hypothesis: dams filter out large, upstream-migrating predators, so they accumulate below the first dam they meet coming from the sea. Taller dams downstream of a site lower its trophic length (harder for predators from the sea to reach it), taller dams upstream raise it (predators blocked from going further accumulate in the reach below, including the site) - and both effects fade with distance to the mouth, consistent with dams mattering most where they sit closest to the sea-derived predator pool.\nStill a hypothesis, not a conclusion: the data can’t rule out other differences correlated with tall dams (e.g. altered habitat immediately around them) as the actual driver."
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#outline",
+    "href": "presentations/etat-avancement.html#outline",
+    "title": "",
+    "section": "Outline",
+    "text": "Outline\n\nIntroduction\nMethods\nPreliminary results\nChallenges\nPerspectives"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#context-and-objectives",
+    "href": "presentations/etat-avancement.html#context-and-objectives",
+    "title": "",
+    "section": "Context and objectives",
+    "text": "Context and objectives\n\nRIVERSEA studies the joint impact of dams and nutrient enrichment on aquatic food webs along the river–sea continuum\nBuilds on the meta-ecosystem framework (Loreau et al. 2003)"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#work-completed",
+    "href": "presentations/etat-avancement.html#work-completed",
+    "title": "",
+    "section": "Work completed",
+    "text": "Work completed\n\nFish survey data harmonized (river, estuary, sea)\nDiet table validated for 158 species\n&gt;17,000 local food webs reconstructed along the continuum\nEnvironmental data assembled (AMOBIO: dams and water quality; REPHY: coastal nutrients)\nDistance-to-mouth computed along the hydrographic / coastal network"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#preliminary-results",
+    "href": "presentations/etat-avancement.html#preliminary-results",
+    "title": "",
+    "section": "Preliminary results",
+    "text": "Preliminary results\n\nCase study: river continuum, four French watersheds\nBayesian spatial models (INLA) of species richness, connectance and trophic chain length\nNutrients and dams both show significant effects on food web structure"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#challenges",
+    "href": "presentations/etat-avancement.html#challenges",
+    "title": "",
+    "section": "Challenges",
+    "text": "Challenges\n\nIntegrating freshwater and marine data of very different nature\nHarmonizing sampling protocols and units across 158 species\nDoubles the data pipeline: separate surveys, separate environmental data, for river and sea"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#perspectives",
+    "href": "presentations/etat-avancement.html#perspectives",
+    "title": "",
+    "section": "Perspectives",
+    "text": "Perspectives\nNext steps\n\nFinish harmonizing environmental data across the continuum\nExtend statistical modeling to the full river–sea continuum\n\nFurther investigations\n\nModel spatial autocorrelation as a Gaussian field on a graph (MetricGraph), following hydrographic distance rather than Euclidean distance\nRefine dam impact metrics beyond height (e.g. fish passability, using ROE / Naiades)\nMake nutrient inference consistent across river and coastal data (e.g. AMOBIO vs REPHY nitrite/nitrate definitions)"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#a-connected-but-siloed-continuum",
+    "href": "presentations/etat-avancement.html#a-connected-but-siloed-continuum",
+    "title": "",
+    "section": "A connected but siloed continuum",
+    "text": "A connected but siloed continuum\n\n\n\nRivers, estuaries and seas are connected\n\nflux of nutrients, migration of species\n\nYet they are often studied in isolation (Kavanaugh et al. 2013)\n\nfreshwater vs marine ecology, separate surveys, separate models\n\nCannot seize the impacts of pressures across ecosystems\n\nDams, nutrient enrichment\n\n\n\n Garonne estuary – © CNES 2020"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#two-pressures-one-continuum",
+    "href": "presentations/etat-avancement.html#two-pressures-one-continuum",
+    "title": "",
+    "section": "Two pressures, one continuum",
+    "text": "Two pressures, one continuum\n\n\n\nDams block migratory species and alter downstream flows\nNutrient loading downstream can trigger algae blooms and shift ecosystem functioning\nBoth propagate along the river–sea continuum, but are usually studied separately"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-harmonizing-fish-survey-data",
+    "href": "presentations/etat-avancement.html#methods-harmonizing-fish-survey-data",
+    "title": "",
+    "section": "Methods – harmonizing fish survey data",
+    "text": "Methods – harmonizing fish survey data\n\n\n\n3 surveys harmonized: ASPE (river, OFB), Pomet (estuary), Nurse (sea, IFREMER)\nSpecies names, units and fish lengths standardized\nMissing sizes imputed per species from observed length distributions\n\n\n\nFigure placeholder – fig-stations"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-reconstructing-food-webs",
+    "href": "presentations/etat-avancement.html#methods-reconstructing-food-webs",
+    "title": "",
+    "section": "Methods – reconstructing food webs",
+    "text": "Methods – reconstructing food webs\n\n\n\nDiet table for 158 species\n\nrfishbase (Boettiger et al. 2012)\nvalidation with literature\n\nMetaweb built from diet table\nSubsample to get local webs\nMeasure connectance & trophic length"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-environmental-pressures",
+    "href": "presentations/etat-avancement.html#methods-environmental-pressures",
+    "title": "",
+    "section": "Methods – environmental pressures",
+    "text": "Methods – environmental pressures\n\n\n\nNutrients: nitrate and phosphate\n\nRiver: AMOBIO\nSea: REPHY, interpolated with INLA (Lindgren and Rue 2015)\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY."
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-position-along-the-continuum",
+    "href": "presentations/etat-avancement.html#methods-position-along-the-continuum",
+    "title": "",
+    "section": "Methods – position along the continuum",
+    "text": "Methods – position along the continuum\n\n\n\nDistance to the nearest river mouth, computed for every fishing operation\n\nRiver: shortest path along the hydrographic network\nSea: shortest path along a coastal mesh (INLA) excluding land\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nWe also added operation elevation and river width, when available."
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#preliminary-results-case-study-and-hypotheses",
+    "href": "presentations/etat-avancement.html#preliminary-results-case-study-and-hypotheses",
+    "title": "",
+    "section": "Preliminary results – case study and hypotheses",
+    "text": "Preliminary results – case study and hypotheses\n\nRiver continuum, four French watersheds\nH1 – nutrients have a unimodal effect on food web structure\nH2 – dams simplify food webs downstream, and the barrier effect fades moving upstream\nH3 – pressures act in part through species richness"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#preliminary-results-habitat-and-nutrients",
+    "href": "presentations/etat-avancement.html#preliminary-results-habitat-and-nutrients",
+    "title": "",
+    "section": "Preliminary results – habitat and nutrients",
+    "text": "Preliminary results – habitat and nutrients\n\n\n\n\n\n\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#preliminary-results-dam-and-nutrient-interactions",
+    "href": "presentations/etat-avancement.html#preliminary-results-dam-and-nutrient-interactions",
+    "title": "",
+    "section": "Preliminary results – dam and nutrient interactions",
+    "text": "Preliminary results – dam and nutrient interactions\n\n\n\n\n\n\nNitrate: unimodal effect on richness, consistent with H1\nDam barrier effect depends on position: upstream barriers vs downstream barriers act in opposite directions near the mouth, consistent with H2"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#perspectives-next-steps",
+    "href": "presentations/etat-avancement.html#perspectives-next-steps",
+    "title": "",
+    "section": "Perspectives – next steps",
+    "text": "Perspectives – next steps\nNext steps\n\nFinish harmonizing environmental data across the continuum\nExtend statistical modeling to the full river–sea continuum\n\nFurther investigations\n\nModel spatial autocorrelation as a Gaussian field on a graph (MetricGraph), following hydrographic distance rather than Euclidean distance\nRefine dam impact metrics beyond height (e.g. fish passability, using ROE / Naiades)\nMake nutrient inference consistent across river and coastal data (e.g. AMOBIO vs REPHY nitrite/nitrate definitions)"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#perspectives-further-investigations",
+    "href": "presentations/etat-avancement.html#perspectives-further-investigations",
+    "title": "",
+    "section": "Perspectives – further investigations",
+    "text": "Perspectives – further investigations\nFurther investigations\n\nModel spatial autocorrelation as a Gaussian field on a graph (MetricGraph), following hydrographic distance rather than Euclidean distance\nRefine dam impact metrics beyond height (e.g. fish passability, using ROE / Naiades)\nMake nutrient inference consistent across river and coastal data (e.g. AMOBIO vs REPHY nitrite/nitrate definitions)"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#hypotheses",
+    "href": "presentations/etat-avancement.html#hypotheses",
+    "title": "",
+    "section": "Hypotheses",
+    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Downstream, dams simplify food webs downstream, their effects fades moving upstream"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#a-river-sea-meta-ecosystem",
+    "href": "presentations/etat-avancement.html#a-river-sea-meta-ecosystem",
+    "title": "",
+    "section": "A river-sea meta-ecosystem",
+    "text": "A river-sea meta-ecosystem\n\n\n\n\n\n\nRiver, estuary and sea are linked by fluxes of nutrients and species\nFluxes can be mostly directional: downstream for nutrients\nContrasting habitat structure: dendritic river network vs. open sea"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#river-sea-meta-ecosystem",
+    "href": "presentations/etat-avancement.html#river-sea-meta-ecosystem",
+    "title": "",
+    "section": "river-sea meta-ecosystem",
+    "text": "river-sea meta-ecosystem\n\n\n\n\n\n\nRiver, estuary and sea are linked by fluxes of nutrients and species\nFluxes can be mostly directional: downstream for nutrients\nContrasting habitat structure: e.g., dendritic river network vs. open sea\nFluxes shape ecosystem: e.g., nutrient subsidie boosts productivity"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#taking-a-meta-ecosystem-perspective",
+    "href": "presentations/etat-avancement.html#taking-a-meta-ecosystem-perspective",
+    "title": "",
+    "section": "Taking a meta-ecosystem perspective",
+    "text": "Taking a meta-ecosystem perspective\n\n\n\n\n\n\nFluxes can be mostly directional: nutrients flow from river to the sea\nContrasting habitat structure: dendritic river network vs. open sea\nFluxes shape ecosystem: nutrient subsidies boost productivity\n\nLoreau et al. (2003)"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#cross-ecosystems-fluxes-are-altered-by-anthropogenic-pressures",
+    "href": "presentations/etat-avancement.html#cross-ecosystems-fluxes-are-altered-by-anthropogenic-pressures",
+    "title": "",
+    "section": "Cross-ecosystems fluxes are altered by anthropogenic pressures",
+    "text": "Cross-ecosystems fluxes are altered by anthropogenic pressures\n\n\n\nDams block migratory species and alter downstream flows\nNutrient loading downstream can trigger algae blooms and shift ecosystem functioning\nBoth propagate along the river–sea continuum, but are usually studied separately"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#fluxes-are-altered-by-anthropogenic-pressures",
+    "href": "presentations/etat-avancement.html#fluxes-are-altered-by-anthropogenic-pressures",
+    "title": "",
+    "section": "Fluxes are altered by anthropogenic pressures",
+    "text": "Fluxes are altered by anthropogenic pressures\n\n\n\nDams block migratory species and alter downstream flows\nNutrient loading downstream can trigger algae blooms and shift ecosystem functioning\nBoth propagate along the river–sea continuum, but are usually studied separately"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#anthroprogenic-pressuers-alter-fluxes",
+    "href": "presentations/etat-avancement.html#anthroprogenic-pressuers-alter-fluxes",
+    "title": "",
+    "section": "Anthroprogenic pressuers alter fluxes",
+    "text": "Anthroprogenic pressuers alter fluxes\n\n\n\nDams block migratory species and alter downstream flows\nNutrient loading downstream can trigger algae blooms and shift ecosystem functioning\nBoth propagate along the river–sea continuum, but are usually studied separately"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#anthroprogenic-pressures-alter-fluxes",
+    "href": "presentations/etat-avancement.html#anthroprogenic-pressures-alter-fluxes",
+    "title": "",
+    "section": "Anthroprogenic pressures alter fluxes",
+    "text": "Anthroprogenic pressures alter fluxes\n\n\n\nDams block migratory species and alter downstream flows (He et al. 2024)\nArgriculture and industry produce nutrient runoffs that enrich rivers, and downstream systems\nImpacts of both pressure propagate along the river–sea continuum\n\nWhat is there impact on local communities?"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#why-food-web-structure",
+    "href": "presentations/etat-avancement.html#why-food-web-structure",
+    "title": "",
+    "section": "Why food web structure",
+    "text": "Why food web structure\n\n\n Who eats who?\n\nFood web structure\n\nis a measure of ecosystem complexity\ncaptures different aspects than species richness\ntells how the ecosystem functions\ncaptures vertical complexity and flux of biomass or energy"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#anthroprogenic-pressures-alter-fluxes-and-so-local-communities",
+    "href": "presentations/etat-avancement.html#anthroprogenic-pressures-alter-fluxes-and-so-local-communities",
+    "title": "",
+    "section": "Anthroprogenic pressures alter fluxes, and so local communities",
+    "text": "Anthroprogenic pressures alter fluxes, and so local communities\n\n\n\nDams block migratory species and alter downstream flows (He et al. 2024)\nArgriculture and industry produce nutrient runoffs that enrich rivers, and downstream systems\nBoth pressure impacts local communities along the river-sea continuum"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#stressors-alter-fluxes-and-local-communities",
+    "href": "presentations/etat-avancement.html#stressors-alter-fluxes-and-local-communities",
+    "title": "",
+    "section": "Stressors alter fluxes and local communities",
+    "text": "Stressors alter fluxes and local communities\n\n\n\nDams block migratory species and alter downstream flows (He et al. 2024)\nArgriculture and industry produce nutrient runoffs that enrich rivers, and downstream systems\nBoth pressure impacts local communities along the river-sea continuum"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#stressors-alter-fluxes-and-so-ecosystems",
+    "href": "presentations/etat-avancement.html#stressors-alter-fluxes-and-so-ecosystems",
+    "title": "",
+    "section": "Stressors alter fluxes and so ecosystems",
+    "text": "Stressors alter fluxes and so ecosystems\n\n\n\nDams block migratory species and alter downstream flows (He et al. 2024)\nArgriculture and industry produce nutrient runoffs that enrich rivers, and downstream systems\nBoth pressures impact local communities along the river-sea continuum\n\nQuantified by foodweb structure"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-fish-survey-data",
+    "href": "presentations/etat-avancement.html#methods-fish-survey-data",
+    "title": "",
+    "section": "Methods – fish survey data",
+    "text": "Methods – fish survey data\n\n\n\n\n\n\n3 surveys harmonized\n\nASPE (river, OFB), Pomet (estuary, INRAE), Nurse (sea, IFREMER)\n\nSpecies names, units and fish lengths standardized\nMissing sizes imputed per species from observed length distributions"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#statistical-model",
+    "href": "presentations/etat-avancement.html#statistical-model",
+    "title": "",
+    "section": "Statistical model",
+    "text": "Statistical model\n\nThree Bayesian models (R-INLA): species richness (Gaussian), connectance (Beta), trophic chain length (ordinal + Gaussian)\nTesting the hypotheses\n\nH1: quadratic terms for nitrate and phosphate\nH2: dam barrier effects (upstream/downstream) interact with distance to mouth\nH3: species richness included as a covariate for connectance and trophic chain length\n\nControlling for bias\n\nYear and watershed random effects\nSpatial autocorrelation: Gaussian random field (SPDE)"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-statistical-model",
+    "href": "presentations/etat-avancement.html#methods-statistical-model",
+    "title": "",
+    "section": "Methods – statistical model",
+    "text": "Methods – statistical model\n\nThree Bayesian models (R-INLA): S, C, TL\nTesting the hypotheses\n\nH1: quadratic terms for nitrate and phosphate\nH2: dam barrier effects interact with distance to mouth\nH3: species richness included as a covariate for C and TL\n\nControlling for bias\n\nYear and watershed random effects\nSpatial autocorrelation: Gaussian random field (SPDE)\n\n\n\n\n\n\n\n\nWarning\n\n\nSpatial autocorrelation uses euclidian and not hydrographic distance, for now."
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#methods-statistical-models",
+    "href": "presentations/etat-avancement.html#methods-statistical-models",
+    "title": "",
+    "section": "Methods – statistical models",
+    "text": "Methods – statistical models\n\nThree Bayesian models (R-INLA): S, C, TL\nTesting the hypotheses\n\nH1: species richness included as a covariate for C and TL\nH2: quadratic terms for nitrate and phosphate\nH3: dam barrier effects interact with distance to mouth\n\nControlling for bias\n\nYear and watershed random effects\nSpatial autocorrelation: Gaussian random field (SPDE)\n\n\n\n\n\n\n\n\nWarning\n\n\nSpatial autocorrelation uses euclidian and not hydrographic distance, for now."
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#habitat-and-nutrients",
+    "href": "presentations/etat-avancement.html#habitat-and-nutrients",
+    "title": "",
+    "section": "Habitat and nutrients",
+    "text": "Habitat and nutrients\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H3)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#what-structures-food-web-along-the-continuum",
+    "href": "presentations/etat-avancement.html#what-structures-food-web-along-the-continuum",
+    "title": "",
+    "section": "What structures food web along the continuum",
+    "text": "What structures food web along the continuum\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H3)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#what-structures-food-webs",
+    "href": "presentations/etat-avancement.html#what-structures-food-webs",
+    "title": "",
+    "section": "What structures food webs",
+    "text": "What structures food webs\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H3)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#nonlinear-nutrient-effects",
+    "href": "presentations/etat-avancement.html#nonlinear-nutrient-effects",
+    "title": "",
+    "section": "Nonlinear nutrient effects",
+    "text": "Nonlinear nutrient effects\n\n\n\n\n\n\nNitrate has an unimodal effect on richness (consistent with H1)\nAt high concentration\n\nNitrate increase is associated to more complex food webs\nPhosphate increase is associated to simpler food webs"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#dam-effects-along-the-continuum",
+    "href": "presentations/etat-avancement.html#dam-effects-along-the-continuum",
+    "title": "",
+    "section": "Dam effects along the continuum",
+    "text": "Dam effects along the continuum\n\n\n\n\n\n\nDam effect depends on position along the continuum, in particular for food web structure\nClose to river mouth (H2 validation)\n\nDownstream dams are associated with simpler food webs\nUpstream dams are associated with more complex food webs"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#h1---direct-and-richness-mediated-effect-on-structure",
+    "href": "presentations/etat-avancement.html#h1---direct-and-richness-mediated-effect-on-structure",
+    "title": "",
+    "section": "H1 - Direct and richness mediated-effect on structure",
+    "text": "H1 - Direct and richness mediated-effect on structure\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H1)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#h1---testing-richness-mediated-effect-on-structure",
+    "href": "presentations/etat-avancement.html#h1---testing-richness-mediated-effect-on-structure",
+    "title": "",
+    "section": "H1 - Testing richness mediated-effect on structure",
+    "text": "H1 - Testing richness mediated-effect on structure\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H1)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#h1---testing-richness-mediated-effects",
+    "href": "presentations/etat-avancement.html#h1---testing-richness-mediated-effects",
+    "title": "",
+    "section": "H1 - Testing richness mediated-effects",
+    "text": "H1 - Testing richness mediated-effects\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H1)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#h2---testing-nonlinear-nutrient-effects",
+    "href": "presentations/etat-avancement.html#h2---testing-nonlinear-nutrient-effects",
+    "title": "",
+    "section": "H2 - Testing nonlinear nutrient effects",
+    "text": "H2 - Testing nonlinear nutrient effects\n\n\n\n\n\n\nNitrate has an unimodal effect on richness (consistent with H2)\nAt high concentration\n\nNitrate increase is associated to more complex food webs\nPhosphate increase is associated to simpler food webs"
+  },
+  {
+    "objectID": "presentations/etat-avancement.html#h3---dam-effects-along-the-continuum",
+    "href": "presentations/etat-avancement.html#h3---dam-effects-along-the-continuum",
+    "title": "",
+    "section": "H3 - Dam effects along the continuum",
+    "text": "H3 - Dam effects along the continuum\n\n\n\n\n\n\nDam effect depends on position along the continuum, in particular for food web structure\nClose to river mouth\n\nDownstream dams are associated with simpler food webs\nUpstream dams are associated with more complex food webs"
   }
 ]

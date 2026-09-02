@@ -138,10 +138,14 @@ plot_sampling <- function(sea_data, station_file) {
 #' @param district_kept character vector of districts to keep.
 #' @param basin sf tibble with `district`, `geometry`, e.g.
 #'   `format_basin()`'s output.
+#' @param lang "en" or "fr" axis labels.
 #'
 #' @return patchwork object combining the map and temporal-coverage panels.
 #' @export
-plot_station_overview <- function(operation, district_kept, basin) {
+plot_station_overview <- function(
+  operation, district_kept, basin, lang = c("en", "fr")
+) {
+  lang <- match.arg(lang)
   nice_theme() # self-contained: don't depend on caller-side theme_set()
   pal <- c(ASPE = "#2a78d6", Pomet = "#eb6834", Nurse = "#1baf7a")
 
@@ -181,13 +185,19 @@ plot_station_overview <- function(operation, district_kept, basin) {
     ggplot2::theme(panel.grid = ggplot2::element_blank()) +
     big_text
 
+  temporal_labs <- if (lang == "fr") {
+    list(x = "Année", y = "Nombre d'opérations")
+  } else {
+    list(x = "Year", y = "Number of operations")
+  }
+
   temporal_panel <- d |>
     count(source, year) |>
     ggplot2::ggplot(ggplot2::aes(year, n, fill = source)) +
     ggplot2::geom_col() +
     ggplot2::facet_wrap(~source, ncol = 1, scales = "free_y") +
     ggplot2::scale_fill_manual(values = pal, guide = "none") +
-    ggplot2::labs(x = "Année", y = "Nombre d'opérations") +
+    ggplot2::labs(x = temporal_labs$x, y = temporal_labs$y) +
     ggplot2::theme(
       panel.grid.minor = ggplot2::element_blank(),
       panel.grid.major.x = ggplot2::element_blank(),
