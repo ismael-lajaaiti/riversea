@@ -269,6 +269,10 @@ increase connectance and generalism.
 - @Finneran-etal-2026b plant productivity similarity predicts food web
 similarity at continental scale.
 
+- @Bauer-etal-2022 Species composition strongly changes with environmental
+gradients, but - because of resource-limiting constraints - food web structure
+does not.
+
 ### Dams
 
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
