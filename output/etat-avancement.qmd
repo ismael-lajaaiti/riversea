@@ -1,7 +1,7 @@
 ---
 title: "RIVERSEA : État d'avancement"
 subtitle: "Document à l'appui du formulaire de demande de soutien post-doctorant INRAE"
-author: "Alain Danet, Ismaël Lajaaiti, Anik Brind'Amour et Eric Edeline"
+author: "Ismaël Lajaaiti"
 date: "25 septembre 2026"
 date-format: long
 lang: fr
@@ -46,20 +46,12 @@ devtools::load_all(here::here(), quiet = TRUE)
 nice_theme()
 ```
 
-Ce document présente la progression du projet RIVERSEA, qui a débuté le 2
-février 2026, jusqu'à début septembre 2026. Il rappelle brièvement le
-[contexte général](#sec-contexte) dans lequel le projet s'inscrit, puis
-présente le [travail réalisé](#sec-travail), les [premiers résultats
-obtenus](#sec-resultats), les [difficultés rencontrées](#sec-difficultes),
-les [perspectives](#sec-perspectives), ainsi que la
-[valorisation](#sec-valorisation) du projet.
-
-## Contexte et objectifs {#sec-contexte}
+## Contexte, objectifs et originalité {#sec-contexte}
 
 Les changements globaux, le mouvement des espèces et les flux de nutriments
 transcendent les frontières traditionnelles entre écosystèmes terrestres, d'eau
 douce et marins [@Polis-Anderson-Holt-1997; @Gounand-etal-2018b]. Pourtant ces
-écosystèmes continuent souvent d'être étudiés isolément [@Kavanaugh-etal-2013].
+écosystèmes continuent souvent d'être étudiés séparément [@Kavanaugh-etal-2013].
 En réponse à ce cloisonnement, **le projet RIVERSEA vise à documenter l'impact
 des pressions anthropiques sur l'ensemble du continuum rivière-mer**. En
 particulier, RIVERSEA s'appuie sur le cadre des méta-écosystèmes
@@ -67,8 +59,74 @@ particulier, RIVERSEA s'appuie sur le cadre des méta-écosystèmes
 l'impact conjoint des barrages et de l'enrichissement en nutriments sur la
 structure et le fonctionnement des écosystèmes aquatiques**.
 
-*Les enjeux, l'état de l'art et le programme de recherche complets sont
-détaillés dans le formulaire de demande de soutien post-doctorant.*
+Le besoin d'étudier conjointement les écosystèmes d'eau douce et marins est
+régulièrement souligné dans la littérature, mais rarement mis en œuvre en
+pratique, faute de données couvrant l'ensemble du continuum et en raison du
+cloisonnement historique entre écologie d'eau douce et écologie marine.
+**L'originalité de RIVERSEA est précisément de faire ce pont entre écologie
+d'eau douce et marine, afin de couvrir l'ensemble du continuum rivière-mer.**
+
+## Vue d'ensemble du projet {#sec-vue-ensemble}
+
+La @fig-overview ci-dessous offre une vue d'ensemble du projet résumant le travail déjà
+réalisé et les étapes restantes à effectuer.
+
+```{r fig-overview}
+#| echo: false
+#| label: fig-overview
+#| fig-cap: "Vue d'ensemble de l'avancement du projet RIVERSEA."
+#| fig-width: 9
+#| fig-height: 4.7
+#| message: false
+library(ggplot2)
+library(dplyr)
+library(stringr)
+
+overview_df <- tibble::tribble(
+  ~volet, ~statut, ~detail,
+  "Données de pêche : rivière & mer [Section 3.1]", "Terminé", "Harmonisation, imputation des tailles manquantes",
+  "Réseaux trophiques [Sections 3.2 & 3.3]", "Terminé", "Régimes alimentaires, metaweb, réseaux locaux le long du continuum",
+  "Données environnementales [Sections 3.4 & 3.5]", "Terminé", "Nutriments, barrages, distance à l'embouchure",
+  "Modélisation statistique : rivière [Section 4]", "En cours", "Premiers résultats : impact des barrages et des nutriments sur la structure des réseaux",
+  "Harmonisation des données restantes [Section 6.1]", "À venir", "Cohérence REPHY / AMOBIO, examen des bases sources Naïades / ROE",
+  "Modélisation statistique : rivière & mer [Section 6.2]", "À venir", "Extension du modèle au continuum estuaire-mer, avec MetricGraph",
+  "Valorisation [Section 7]", "À venir", "Résumé soumis à BES 2026 et session thématique
+  acceptée, article en préparation"
+) |>
+  mutate(
+    row = rev(seq_len(n())),
+    statut = factor(statut, levels = c("Terminé", "En cours", "À venir")),
+    detail_wrapped = str_wrap(detail, 120),
+    stripe = row %% 2 == 0
+  )
+
+ink <- "grey20"
+muted <- "grey45"
+status_colors <- c("Terminé" = "#1b9e77", "En cours" = "#e6ab02", "À venir" = "#bdbdbd")
+status_shapes <- c("Terminé" = 16, "En cours" = 17, "À venir" = 1)
+
+ggplot(overview_df) +
+  geom_tile(aes(x = 5, y = row, width = 10, height = 0.94, alpha = stripe), fill = "grey93") +
+  scale_alpha_manual(values = c(`TRUE` = 1, `FALSE` = 0), guide = "none") +
+  geom_point(aes(x = 0.35, y = row, color = statut, shape = statut), size = 5, stroke = 1.3) +
+  geom_text(aes(x = 0.85, y = row + 0.20, label = volet), hjust = 0, vjust = 1,
+            fontface = "bold", size = 3.5, color = ink) +
+  geom_text(aes(x = 0.85, y = row - 0.04, label = detail_wrapped), hjust = 0, vjust = 1,
+            size = 2.85, color = muted, lineheight = 0.95) +
+  scale_color_manual(values = status_colors, name = NULL) +
+  scale_shape_manual(values = status_shapes, name = NULL) +
+  scale_x_continuous(limits = c(0, 10), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0.42, max(overview_df$row) + 0.55), expand = c(0, 0)) +
+  guides(color = guide_legend(override.aes = list(size = 4)), shape = guide_legend()) +
+  labs(x = NULL, y = NULL) +
+  theme_void(base_size = 12) +
+  theme(
+    legend.position = "top",
+    legend.margin = margin(b = 8),
+    legend.text = element_text(size = 10, color = ink),
+    plot.margin = margin(10, 10, 5, 10)
+  )
+```
 
 ## Travail réalisé {#sec-travail}
 

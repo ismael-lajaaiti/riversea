@@ -170,6 +170,9 @@ in braided river, New Zealand.
 - @Garcia-etal-2025 invasive make trophic structure more stable in lake fish
 communities (France)
 
+- @Wang-etal-2025 microcosm experiments supporting that unidirectional flow
+accumulates nutrients downstream.
+
 ### Multiple stressors
 
 - Synergistic and antagonistic effects of multiple stressors
