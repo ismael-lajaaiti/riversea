@@ -203,6 +203,15 @@ couramment utilisées dans la littérature, ce qui permet de formuler des
 hypothèses et de comparer nos résultats à ceux d'autres études
 [@Bonnaffé-etal-2024].
 
+Nous soulignons une limite de notre approche : les données de suivi recensent
+uniquement les poissons présents à chaque opération de pêche, si bien que seule
+la variabilité de ce compartiment est capturée par nos réseaux. Les
+compartiments basaux (zooplancton, macro-invertébrés) sont représentés de façon
+générique ce qui nous empêche -- par construction -- de capturer la diversité et
+la dynamique de ces compartiments. Cette simplification a été nécessaire pour
+couvrir l'ensemble du continuum rivière-mer à large échelle spatiale et
+temporelle.
+
 ```{r}
 #| echo: false
 #| label: fig-foodweb
