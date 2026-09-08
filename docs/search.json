@@ -1727,5 +1727,187 @@
     "title": "RIVERSEA : État d’avancement",
     "section": "Vue d’ensemble du projet",
     "text": "Vue d’ensemble du projet\nLa Figure 1 ci-dessous offre une vue d’ensemble du projet résumant le travail déjà réalisé et les étapes restantes à effectuer.\n\n\n\n\n\n\n\n\nFigure 1: Vue d’ensemble de l’avancement du projet RIVERSEA."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#a-connected-but-siloed-continuum",
+    "href": "presentations/2026-09-10_decodage.html#a-connected-but-siloed-continuum",
+    "title": "",
+    "section": "A connected but siloed continuum",
+    "text": "A connected but siloed continuum\n\n\n\nRivers, estuaries and seas are connected\n\nflux of nutrients, migration of species\n\nYet they are often studied in isolation\n\nfreshwater vs marine ecology, separate surveys, …\n\n\n\n\n\nKavanaugh et al. (2013); Figure from CNES (2020)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#taking-a-meta-ecosystem-perspective",
+    "href": "presentations/2026-09-10_decodage.html#taking-a-meta-ecosystem-perspective",
+    "title": "",
+    "section": "Taking a meta-ecosystem perspective",
+    "text": "Taking a meta-ecosystem perspective\n\n\n\n\n\n\nDams block species migration\nNutrient runoffs increase nutrient fluxes\nThese stressors alter how ecosystems are connected\n\n\nLoreau et al. (2003); Polis et al. (1997); Gounand et al. (2014) He et al. (2024)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#stressors-alter-fluxes-and-so-ecosystems",
+    "href": "presentations/2026-09-10_decodage.html#stressors-alter-fluxes-and-so-ecosystems",
+    "title": "",
+    "section": "Stressors alter fluxes and so ecosystems",
+    "text": "Stressors alter fluxes and so ecosystems\n\n\n\n\n\n\nDams block species migration\nNutrient runoffs increase nutrient fluxes\nThese stressors alter how ecosystems are connected\n\n\nHe et al. (2024); Gounand et al. (2018)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#hypotheses",
+    "href": "presentations/2026-09-10_decodage.html#hypotheses",
+    "title": "",
+    "section": "Hypotheses",
+    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Downstream, dams simplify food webs downstream, their effects fades moving upstream"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#methods-fish-survey-data",
+    "href": "presentations/2026-09-10_decodage.html#methods-fish-survey-data",
+    "title": "",
+    "section": "Methods – fish survey data",
+    "text": "Methods – fish survey data\n\n\n\n\n\n\n3 surveys harmonized\n\nASPE (river, OFB), Pomet (estuary, INRAE), Nurse (sea, IFREMER)\n\nSpecies names, units and fish lengths standardized\nMissing sizes imputed per species from observed length distributions"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#methods-reconstructing-food-webs",
+    "href": "presentations/2026-09-10_decodage.html#methods-reconstructing-food-webs",
+    "title": "",
+    "section": "Methods – reconstructing food webs",
+    "text": "Methods – reconstructing food webs\n\n\n\nDiet table for 158 species\n\nrfishbase (Boettiger et al. 2012)\nvalidation with literature\n\nMetaweb built from diet table\nSubsample to get local webs\nMeasure connectance & trophic length"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#methods-environmental-pressures",
+    "href": "presentations/2026-09-10_decodage.html#methods-environmental-pressures",
+    "title": "",
+    "section": "Methods – environmental pressures",
+    "text": "Methods – environmental pressures\n\n\n\nNutrients: nitrate and phosphate\n\nRiver: AMOBIO\nSea: REPHY, interpolated with INLA (Lindgren and Rue 2015)\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#methods-position-along-the-continuum",
+    "href": "presentations/2026-09-10_decodage.html#methods-position-along-the-continuum",
+    "title": "",
+    "section": "Methods – position along the continuum",
+    "text": "Methods – position along the continuum\n\n\n\nDistance to the nearest river mouth, computed for every fishing operation\n\nRiver: shortest path along the hydrographic network\nSea: shortest path along a coastal mesh (INLA) excluding land\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nWe also added operation elevation and river width, when available."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#methods-statistical-models",
+    "href": "presentations/2026-09-10_decodage.html#methods-statistical-models",
+    "title": "",
+    "section": "Methods – statistical models",
+    "text": "Methods – statistical models\n\nThree Bayesian models (R-INLA): S, C, TL\nTesting the hypotheses\n\nH1: species richness included as a covariate for C and TL\nH2: quadratic terms for nitrate and phosphate\nH3: dam barrier effects interact with distance to mouth\n\nControlling for bias\n\nYear and watershed random effects\nSpatial autocorrelation: Gaussian random field (SPDE)\n\n\n\n\n\n\n\n\nWarning\n\n\nSpatial autocorrelation uses euclidian and not hydrographic distance, for now."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#h1---testing-richness-mediated-effects",
+    "href": "presentations/2026-09-10_decodage.html#h1---testing-richness-mediated-effects",
+    "title": "",
+    "section": "H1 - Testing richness mediated-effects",
+    "text": "H1 - Testing richness mediated-effects\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H1)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#h2---testing-nonlinear-nutrient-effects",
+    "href": "presentations/2026-09-10_decodage.html#h2---testing-nonlinear-nutrient-effects",
+    "title": "",
+    "section": "H2 - Testing nonlinear nutrient effects",
+    "text": "H2 - Testing nonlinear nutrient effects\n\n\n\n\n\n\nNitrate has an unimodal effect on richness (consistent with H2)\nAt high concentration\n\nNitrate increase is associated to more complex food webs\nPhosphate increase is associated to simpler food webs"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#h3---dam-effects-along-the-continuum",
+    "href": "presentations/2026-09-10_decodage.html#h3---dam-effects-along-the-continuum",
+    "title": "",
+    "section": "H3 - Dam effects along the continuum",
+    "text": "H3 - Dam effects along the continuum\n\n\n\n\n\n\nDam effect depends on position along the continuum, in particular for food web structure\nClose to river mouth\n\nDownstream dams are associated with simpler food webs\nUpstream dams are associated with more complex food webs"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#perspectives",
+    "href": "presentations/2026-09-10_decodage.html#perspectives",
+    "title": "",
+    "section": "Perspectives",
+    "text": "Perspectives\nNext steps\n\nFinish harmonizing environmental data across the continuum\nExtend statistical modeling to the full river–sea continuum\n\nFurther investigations\n\nModel spatial autocorrelation as a Gaussian field on a graph (MetricGraph), following hydrographic distance rather than Euclidean distance\nRefine dam impact metrics beyond height (e.g. fish passability, using ROE / Naiades)\nMake nutrient inference consistent across river and coastal data (e.g. AMOBIO vs REPHY nitrite/nitrate definitions)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#disturbances-can-propagate-at-a-distance",
+    "href": "presentations/2026-09-10_decodage.html#disturbances-can-propagate-at-a-distance",
+    "title": "",
+    "section": "Disturbances can propagate at a distance",
+    "text": "Disturbances can propagate at a distance\n\n\n\nPerturbing one ecosystem can destabilize population dynamics in a spatially distant, connected ecosystem (McCann et al. 2021)\n\nPropagates through flux coupling (e.g. nutrients), not direct contact\n\nThe strength and configuration of connectivity mediates how far and how strongly instability travels (Tadiri et al. 2024)\nA local disturbance (dam, nutrient input) may therefore ripple along the whole river-sea continuum\n\n\n\nInstability-at-a-distance schematic\n(McCann et al. 2021; Tadiri et al. 2024)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#disturbances-propagate-at-a-distance",
+    "href": "presentations/2026-09-10_decodage.html#disturbances-propagate-at-a-distance",
+    "title": "",
+    "section": "Disturbances propagate at a distance",
+    "text": "Disturbances propagate at a distance\n\nStressing one ecosystem can propagate to an other, spatially distant ecosystem\nThe configuration of connectivity mediates how the instability travels\nA local disturbance (dam, nutrient input) may therefore ripple along the whole river-sea continuum\n\n\n\n\n\n\n\nFigure from Tadiri et al. (2024); McCann et al. (2021)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#mechanisms-remain-unclear",
+    "href": "presentations/2026-09-10_decodage.html#mechanisms-remain-unclear",
+    "title": "",
+    "section": "Mechanisms remain unclear",
+    "text": "Mechanisms remain unclear\n\nBonnaffé et al. (2024) – closest existing study of nutrient effects on food web structure\n\nbut nutrients only (no dams), river only (no estuary, no sea)\n\nCarvajal-Quintero et al. (2026) – food web structure is changing\n\nbut at a global scale, no mechanistic driver identified\n\nWe aim to resolve this with clear mechanisms, along the full river-sea continuum, in France"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#hypotheses-1",
+    "href": "presentations/2026-09-10_decodage.html#hypotheses-1",
+    "title": "",
+    "section": "Hypotheses",
+    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Downstream, dams simplify food webs downstream, their effects fades moving upstream"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#a-connected-but-siloed-continuum-1",
+    "href": "presentations/2026-09-10_decodage.html#a-connected-but-siloed-continuum-1",
+    "title": "",
+    "section": "A connected but siloed continuum",
+    "text": "A connected but siloed continuum\n\n\n\nRivers, estuaries and seas are connected\n\nflux of nutrients, migration of species\n\nYet they are often studied in isolation\n\nfreshwater vs marine ecology, separate surveys, …\n\nCannot seize the impacts of pressures across ecosystems\n\nDams, nutrient enrichment"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#food-webs-capture-who-eats-whom",
+    "href": "presentations/2026-09-10_decodage.html#food-webs-capture-who-eats-whom",
+    "title": "",
+    "section": "Food webs capture who eats whom",
+    "text": "Food webs capture who eats whom\n\n\n\nWe summarize this structure with three metrics\n\nRichness: how many species\nConnectance: how densely they’re linked\nTrophic length: how many levels\n\nThis structure is what we track along the continuum, and test against dams and nutrients"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#local-stressor-impact-the-paradox-of-enrichment",
+    "href": "presentations/2026-09-10_decodage.html#local-stressor-impact-the-paradox-of-enrichment",
+    "title": "",
+    "section": "Local stressor impact: the paradox of enrichment",
+    "text": "Local stressor impact: the paradox of enrichment\n\n\n\nA food web: nodes are species, links are predation\n\nStructured into trophic levels: producers, consumers, top predators\n\nEnriching a local ecosystem can destabilize it rather than help\n\nParadox of enrichment: more resources, wilder predator-prey cycles\n\nWe understand this locally – but at the scale of a whole connected continuum?\n\n\n\n\n\n\n\n\n\nGounand et al. (2014)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-stressor-impact-locally",
+    "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impact-locally",
+    "title": "",
+    "section": "Capturing stressor impact… locally",
+    "text": "Capturing stressor impact… locally\nAt a local scale\n\n\n\nRepresenting the ecosystem as a food web (who eats whom)\nEnriching a local ecosystem can destabilize it rather than help\n\nParadox of enrichment: more resources, wilder predator-prey cycles\n\nWe understand this locally – but at the scale of a whole connected continuum?\n\n\n\n\n\n\n\n\n\nGounand et al. (2014); Rosenzweig (1971)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-stressor-impact",
+    "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impact",
+    "title": "",
+    "section": "Capturing stressor impact",
+    "text": "Capturing stressor impact\nAt a local scale\n\n\n\nRepresenting the ecosystem as a food web (who eats whom)\nEnriching a local ecosystem can destabilize it rather than help\n\nParadox of enrichment: more resources, wilder predator-prey cycles\n\nWe understand this locally – but at the scale of a whole connected continuum?\n\n\n\n\n\n\n\n\n\nGounand et al. (2014); Rosenzweig (1971)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-stressor-impact..-locally",
+    "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impact..-locally",
+    "title": "",
+    "section": "Capturing stressor impact.. locally",
+    "text": "Capturing stressor impact.. locally\n\n\n\nRepresenting the ecosystem as a food web (who eats whom)\nEnriching a local ecosystem can destabilize it rather than help\n\nParadox of enrichment: more resources, wilder predator-prey cycles\n\nWe understand this locally – but at the scale of a whole connected continuum?\n\n\n\n\n\n\n\n\n\nGounand et al. (2014); Rosenzweig (1971)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-stressor-impacts",
+    "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impacts",
+    "title": "",
+    "section": "Capturing stressor impacts",
+    "text": "Capturing stressor impacts\nAt a local scale\n\n\n\nRepresenting the ecosystem as a food web (who eats whom)\nEnriching a local ecosystem can destabilize it rather than help\n\nParadox of enrichment: more resources, wilder predator-prey cycles\n\nWe understand this locally – but at the scale of a whole connected continuum?\n\n\n\n\n\n\n\n\n\nGounand et al. (2014); Rosenzweig (1971)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-stressors-impacts",
+    "href": "presentations/2026-09-10_decodage.html#capturing-stressors-impacts",
+    "title": "",
+    "section": "Capturing stressors impacts",
+    "text": "Capturing stressors impacts\nAt a global scale\nVery little studies\n\nBonnaffé et al. (2024) finds that nutrient and warming interact simplifying food webs food web structure\n\nbut nutrients only (no dams), river only (no estuary, no sea)\n\nCarvajal-Quintero et al. (2026) finds that food web structure is changing because of body size reduction\n\nbut no link to stressors\n\nWe aim to resolve this with clear mechanisms, along the full river-sea continuum, in France\n\n\nBonnaffé et al. (2024); Carvajal-Quintero et al. (2026)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-stressor-impacts-1",
+    "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impacts-1",
+    "title": "",
+    "section": "Capturing stressor impacts",
+    "text": "Capturing stressor impacts\nAt a global scale\nVery few studies\n\nBonnaffé et al. (2024) finds that nutrient and warming interact, simplifying food web structure\n\nbut nutrients only (no dams), river only (no estuary, no sea)\n\nCarvajal-Quintero et al. (2026) finds that food web structure is changing because of body size reduction\n\nbut no specific mechanistic driver\n\nWe aim to resolve this with clear mechanisms, along the full river-sea continuum, in France\n\n\nBonnaffé et al. (2024); Carvajal-Quintero et al. (2026)"
   }
 ]
