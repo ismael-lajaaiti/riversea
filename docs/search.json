@@ -1740,7 +1740,7 @@
     "href": "presentations/2026-09-10_decodage.html#taking-a-meta-ecosystem-perspective",
     "title": "",
     "section": "Taking a meta-ecosystem perspective",
-    "text": "Taking a meta-ecosystem perspective\n\n\n\n\n\n\nDams block species migration\nNutrient runoffs increase nutrient fluxes\nThese stressors alter how ecosystems are connected\n\n\nLoreau et al. (2003); Polis et al. (1997); Gounand et al. (2014) He et al. (2024)"
+    "text": "Taking a meta-ecosystem perspective\n\n\n\n\n\n\nDams block species migration and nutrient fluxes\nNutrient runoffs increase nutrient fluxes\nThese stressors alter how ecosystems are connected\n\n\nLoreau et al. (2003); Polis et al. (1997); Gounand et al. (2014) He et al. (2024)"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#stressors-alter-fluxes-and-so-ecosystems",
@@ -1754,7 +1754,7 @@
     "href": "presentations/2026-09-10_decodage.html#hypotheses",
     "title": "",
     "section": "Hypotheses",
-    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Downstream, dams simplify food webs downstream, their effects fades moving upstream"
+    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Dam effect decays with distance to river mouth\n\nFirst dams block piscivorous migratory species moving upstream"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#methods-fish-survey-data",
@@ -1775,7 +1775,7 @@
     "href": "presentations/2026-09-10_decodage.html#methods-environmental-pressures",
     "title": "",
     "section": "Methods – environmental pressures",
-    "text": "Methods – environmental pressures\n\n\n\nNutrients: nitrate and phosphate\n\nRiver: AMOBIO\nSea: REPHY, interpolated with INLA (Lindgren and Rue 2015)\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY."
+    "text": "Methods – environmental pressures\n\n\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)\n\nNutrients: nitrate and phosphate\n\nRiver: AMOBIO\nSea: REPHY, interpolated with INLA (Lindgren and Rue 2015)\n\n\n\n \n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY."
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#methods-position-along-the-continuum",
@@ -1796,7 +1796,7 @@
     "href": "presentations/2026-09-10_decodage.html#h1---testing-richness-mediated-effects",
     "title": "",
     "section": "H1 - Testing richness mediated-effects",
-    "text": "H1 - Testing richness mediated-effects\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H1)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+    "text": "H1 - Testing richness mediated-effects\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRichness partly mediate stressor impact on structure (validates H1)\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#h2---testing-nonlinear-nutrient-effects",
@@ -1810,7 +1810,7 @@
     "href": "presentations/2026-09-10_decodage.html#h3---dam-effects-along-the-continuum",
     "title": "",
     "section": "H3 - Dam effects along the continuum",
-    "text": "H3 - Dam effects along the continuum\n\n\n\n\n\n\nDam effect depends on position along the continuum, in particular for food web structure\nClose to river mouth\n\nDownstream dams are associated with simpler food webs\nUpstream dams are associated with more complex food webs"
+    "text": "H3 - Dam effects along the continuum\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDam effect vary along the continuum\nClose to river mouth\n\nDownstream dams are associated with simpler food webs\nUpstream dams are associated with more complex food webs"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#perspectives",
@@ -1831,7 +1831,7 @@
     "href": "presentations/2026-09-10_decodage.html#disturbances-propagate-at-a-distance",
     "title": "",
     "section": "Disturbances propagate at a distance",
-    "text": "Disturbances propagate at a distance\n\nStressing one ecosystem can propagate to an other, spatially distant ecosystem\nThe configuration of connectivity mediates how the instability travels\nA local disturbance (dam, nutrient input) may therefore ripple along the whole river-sea continuum\n\n\n\n\n\n\n\nFigure from Tadiri et al. (2024); McCann et al. (2021)"
+    "text": "Disturbances propagate at a distance\n\nExperiment of Tadiri et al. (2024)\n\nDaphnia (herbivore) eating algae & connected mesocosms\nDisturbance = input of nutrients\nThe disturbance is amplified from the input to the terminal node\n\n\n\n\n\n\n\nDisturbances can propagate along the river-sea continuum\n\nFigure from Tadiri et al. (2024); Carrara et al. (2012); McCann et al. (2021)"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#mechanisms-remain-unclear",
@@ -1845,14 +1845,14 @@
     "href": "presentations/2026-09-10_decodage.html#hypotheses-1",
     "title": "",
     "section": "Hypotheses",
-    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Downstream, dams simplify food webs downstream, their effects fades moving upstream"
+    "text": "Hypotheses\n\nH1: Pressures act in part through direct and richness-mediated effects\nH2: Nutrients have a unimodal effect on food web structure\nH3: Dam effect decays with distance to river mouth\n\nFirst dams block piscivorous migratory species moving upstream"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#a-connected-but-siloed-continuum-1",
     "href": "presentations/2026-09-10_decodage.html#a-connected-but-siloed-continuum-1",
     "title": "",
     "section": "A connected but siloed continuum",
-    "text": "A connected but siloed continuum\n\n\n\nRivers, estuaries and seas are connected\n\nflux of nutrients, migration of species\n\nYet they are often studied in isolation\n\nfreshwater vs marine ecology, separate surveys, …\n\nCannot seize the impacts of pressures across ecosystems\n\nDams, nutrient enrichment"
+    "text": "A connected but siloed continuum\n\n\n\nRivers, estuaries and seas are connected\n\nflux of nutrients, migration of species\n\nYet they are often studied in isolation\n\nfreshwater vs marine ecology, separate surveys, …\n\nInconsistency between\n\nthe ecological continuum\nsiloed research fields"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#food-webs-capture-who-eats-whom",
@@ -1894,7 +1894,7 @@
     "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impacts",
     "title": "",
     "section": "Capturing stressor impacts",
-    "text": "Capturing stressor impacts\nAt a local scale\n\n\n\nRepresenting the ecosystem as a food web (who eats whom)\nEnriching a local ecosystem can destabilize it rather than help\n\nParadox of enrichment: more resources, wilder predator-prey cycles\n\nWe understand this locally – but at the scale of a whole connected continuum?\n\n\n\n\n\n\n\n\n\nGounand et al. (2014); Rosenzweig (1971)"
+    "text": "Capturing stressor impacts\nAt a global scale\nVery few studies\n\n\n\n\n\n\nBonnaffé et al. (2024); Carvajal-Quintero et al. (2026); Ma et al. (2026)"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#capturing-stressors-impacts",
@@ -1908,6 +1908,195 @@
     "href": "presentations/2026-09-10_decodage.html#capturing-stressor-impacts-1",
     "title": "",
     "section": "Capturing stressor impacts",
-    "text": "Capturing stressor impacts\nAt a global scale\nVery few studies\n\nBonnaffé et al. (2024) finds that nutrient and warming interact, simplifying food web structure\n\nbut nutrients only (no dams), river only (no estuary, no sea)\n\nCarvajal-Quintero et al. (2026) finds that food web structure is changing because of body size reduction\n\nbut no specific mechanistic driver\n\nWe aim to resolve this with clear mechanisms, along the full river-sea continuum, in France\n\n\nBonnaffé et al. (2024); Carvajal-Quintero et al. (2026)"
+    "text": "Capturing stressor impacts\nAt a global scale\nVery few studies\n\n\n\n\n\n\nBonnaffé et al. (2024); Carvajal-Quintero et al. (2026); Ma et al. (2026)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#fish-survey-data",
+    "href": "presentations/2026-09-10_decodage.html#fish-survey-data",
+    "title": "",
+    "section": "Fish survey data",
+    "text": "Fish survey data\n\n\n\n\n\n\n3 surveys harmonized\n\nASPE (river, OFB), Pomet (estuary, INRAE), Nurse (sea, IFREMER)\n\nSpecies names, units and fish lengths standardized\nMissing lengths imputed from observed length distributions"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#reconstructing-food-webs",
+    "href": "presentations/2026-09-10_decodage.html#reconstructing-food-webs",
+    "title": "",
+    "section": "Reconstructing food webs",
+    "text": "Reconstructing food webs\n\n\n\nDiet table for 158 species\n\nrfishbase (Boettiger et al. 2012)\nvalidation with literature\n\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\nApproximated by fish lengths\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\n\n\n\n\nSteps to reconstruct the metaweb by Alain Danet"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs",
+    "href": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs",
+    "title": "",
+    "section": "Examples of reconstructed food webs",
+    "text": "Examples of reconstructed food webs\n\n3 fishing operations near Gironde estuary\nCover the river-sea continuum"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-environmental-pressures",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-environmental-pressures",
+    "title": "",
+    "section": "Quantifying environmental pressures",
+    "text": "Quantifying environmental pressures\n\n\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-environmental-pressures-1",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-environmental-pressures-1",
+    "title": "",
+    "section": "Quantifying environmental pressures",
+    "text": "Quantifying environmental pressures\n\n\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)\n\nNutrients: nitrate and phosphate\n\nRiver: AMOBIO\nSea: REPHY, interpolated with INLA (Lindgren and Rue 2015)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#getting-operation-positions-along-the-continuum",
+    "href": "presentations/2026-09-10_decodage.html#getting-operation-positions-along-the-continuum",
+    "title": "",
+    "section": "Getting operation positions along the continuum",
+    "text": "Getting operation positions along the continuum\n\n\n\nDistance to the nearest river mouth, computed for every fishing operation\n\nRiver: shortest path along the hydrographic network\nSea: shortest path along a coastal mesh (INLA) excluding land\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nWe also added operation elevation and river width, when available."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-stressors",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-stressors",
+    "title": "",
+    "section": "Quantifying stressors",
+    "text": "Quantifying stressors\n\n\n\nDam impact: mean dam height (AMOBIO)\n\nDownstream: linear, single path to the river mouth\nUpstream: dendritic, whole upstream network (heritage)\n\nNutrients: nitrate and phosphate\n\nRiver: AMOBIO\nSea: REPHY, interpolated with INLA (Lindgren and Rue 2015)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#operation-positions-along-the-continuum",
+    "href": "presentations/2026-09-10_decodage.html#operation-positions-along-the-continuum",
+    "title": "",
+    "section": "Operation positions along the continuum",
+    "text": "Operation positions along the continuum\n\n\n\nDistance to the nearest river mouth, computed for every fishing operation\n\nRiver: shortest path along the hydrographic network\nSea: shortest path along a coastal mesh (INLA) excluding land\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nWe also added operation elevation and river width, when available."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#operation-positions-along-the-continuum-1",
+    "href": "presentations/2026-09-10_decodage.html#operation-positions-along-the-continuum-1",
+    "title": "",
+    "section": "Operation positions along the continuum",
+    "text": "Operation positions along the continuum\n\n\n\nDistance to the nearest river mouth, computed for every fishing operation\n\nRiver: shortest path along the hydrographic network\nSea: shortest path along a coastal mesh (INLA) excluding land\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nWe also added operation elevation and river width, when available."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#designing-statistical-models",
+    "href": "presentations/2026-09-10_decodage.html#designing-statistical-models",
+    "title": "",
+    "section": "Designing statistical models",
+    "text": "Designing statistical models\n\n\n\n\n\n\n3 models:\n\nrichness (S) – Gaussian model\nconnectance (C) – Beta log-link (bounded between 0 and 1)\ntrophic length (TL) – two step model (ordinal & conditional Gaussian)\n\nH1: species richness included as a covariate for C and TL\nH2: quadratic terms for nitrate and phosphate\nH3: dam barrier effects interact with distance to mouth"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#designing-statistical-models-1",
+    "href": "presentations/2026-09-10_decodage.html#designing-statistical-models-1",
+    "title": "",
+    "section": "Designing statistical models",
+    "text": "Designing statistical models\n\n\n\n\n\n\n3 models:\n\nrichness (S) – Gaussian model\nconnectance (C) – Beta log-link (bounded between 0 and 1)\ntrophic length (TL) – two step model (ordinal & conditional Gaussian)\n\nH1: species richness included as a covariate for C and TL\nH2: quadratic terms for nitrate and phosphate\nH3: dam barrier effects interact with distance to mouth"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#understanding-stressor-imapcts-with-food-webs",
+    "href": "presentations/2026-09-10_decodage.html#understanding-stressor-imapcts-with-food-webs",
+    "title": "",
+    "section": "Understanding stressor imapcts with food webs",
+    "text": "Understanding stressor imapcts with food webs\nAt a local scale\n\n\n\nRepresenting the ecosystem as a food web (who eats whom)\nEnriching can destabilize it\n\nParadox of enrichment: more resources, predator-prey cycles\n\nWe understand this locally\nBut not at a global scale, between connected systems\n\n\n \n\n\nBottom right figure from Fussmann et al. (2000); Gounand et al. (2014); Rosenzweig (1971)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-changes-with-food-webs",
+    "href": "presentations/2026-09-10_decodage.html#capturing-changes-with-food-webs",
+    "title": "",
+    "section": "Capturing changes with food webs",
+    "text": "Capturing changes with food webs\nAt a local scale\n\n\n\nWho eats whom: energy and matter fluxes\nUnderstanding the paradox of enrichment\n\nEnrichment leads to consumer-resource cycles\nMake sense through a food web lens\n\nWe understand this locally\n\nAnd, at a global scale?\n\n \n\n\nBottom right figure from Fussmann et al. (2000); Gounand et al. (2014); Rosenzweig (1971)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#capturing-changes-with-food-webs-1",
+    "href": "presentations/2026-09-10_decodage.html#capturing-changes-with-food-webs-1",
+    "title": "",
+    "section": "Capturing changes with food webs",
+    "text": "Capturing changes with food webs\nAt a global scale\nVery few studies\n\n\n\n\n\n\nBonnaffé et al. (2024); Carvajal-Quintero et al. (2026); Ma et al. (2026); Danet et al. (2021)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#metaweb",
+    "href": "presentations/2026-09-10_decodage.html#metaweb",
+    "title": "",
+    "section": "Metaweb",
+    "text": "Metaweb\n\n\n\n\n\n\n\n\n\nRepresents potential interactions, not realized ones\nLimitations\n\nBinary links: no interaction strength or frequency\nPiscivory inferred from a body-length heuristic\nNo direct observations\nSame metaweb assumed across the whole continuum\n\n\nSubsample metaweb to get local webs."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs-1",
+    "href": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs-1",
+    "title": "",
+    "section": "Examples of reconstructed food webs",
+    "text": "Examples of reconstructed food webs\n\n\n\n\n\nA few observations\n\nSimpler community estuary – stressed environment\nBenthic flatfishs on the coastal food web (B. luteum, S. solea)\nRiverine fish community is the most complete here – with large piscivores (A. anguilla, S. glanis)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-dam-impact",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-dam-impact",
+    "title": "",
+    "section": "Quantifying dam impact",
+    "text": "Quantifying dam impact\n\n\nDam impact is\n\nDirectional – upstream vs downstream\nModulated by its height\n\nWe used two metrics from the AMOBIO dataset (Dézerald et al. 2020)\n\nDownstream barrier effect: mean dam height linear downstream\nUpstream barrier effect: mean dam height dendritic upstream\n\n\n\n\n\n\n\n\nDézerald et al. (2020)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-dam-indicators",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-dam-indicators",
+    "title": "",
+    "section": "Quantifying dam indicators",
+    "text": "Quantifying dam indicators\n\n\nDam impact is\n\nDirectional – upstream vs downstream\nModulated by its height\n\nWe used two metrics from the AMOBIO dataset (Dézerald et al. 2020) (ROE)\n\nDownstream barrier effect: mean dam height linear downstream\nUpstream barrier effect: mean dam height dendritic upstream\n\n\n\n\nDézerald et al. (2020)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-nutrient-indicators",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-nutrient-indicators",
+    "title": "",
+    "section": "Quantifying nutrient indicators",
+    "text": "Quantifying nutrient indicators\n\n\nNitrate and phosphate concentrations\n\nIn river, we relied on the AMOBIO dataset (Naïades)\n\nNearest neighbor interpolation\n\nIn estuaries and coasts, we used REPHY\n\nInterpolated with INLA\nMesh; random gaussian field; correlation decreasing with distance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\nWork in progress: nutrient definitions are not yet fully consistent between AMOBIO and REPHY.\n\n\n\n\nDézerald et al. (2020); Lindgren and Rue (2015)"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#positions-along-the-continuum",
+    "href": "presentations/2026-09-10_decodage.html#positions-along-the-continuum",
+    "title": "",
+    "section": "Positions along the continuum",
+    "text": "Positions along the continuum\n\n\nThe problem\nWe want to compute the distance to river mouth.\nWhy euclidian distance doesn’t do the job\n\nfish don’t fly\nhydrographic distance matters in rivers\nsea-side, the coastline should be accounted for"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#positions-along-the-continuum-1",
+    "href": "presentations/2026-09-10_decodage.html#positions-along-the-continuum-1",
+    "title": "",
+    "section": "Positions along the continuum",
+    "text": "Positions along the continuum\n\n\nThe solution\n\nDistance to river mouth operation\n\nRiver: shortest path along the hydrographic network\nSea: shortest path along a coastal mesh (INLA) excluding land\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nWe also added operation elevation and river width, when available."
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#designing-statistical-models-2",
+    "href": "presentations/2026-09-10_decodage.html#designing-statistical-models-2",
+    "title": "",
+    "section": "Designing statistical models",
+    "text": "Designing statistical models\nModel ingredients:\n\nLinear effects including\n\nspecies richness (\\(S_i\\))\nstressor covariables (\\(x_i\\))\n\nRandom effects controlling for bias\n\nConnectance (beta, logit link) \\[\n\\text{connectance}_i \\sim \\text{Beta}(\\mu_i, \\phi)\n\\] \\[\n\\begin{aligned}\n\\text{logit}(\\mu_i) &=\n  \\underbrace{\\beta_0}_{\\text{intercept}} +\n  \\underbrace{\\beta_S \\, \\text{S}_i + \\mathbf{x}_i^\\top \\boldsymbol\\beta}_{\\text{linear effects}}\n  + \\underbrace{\\text{year}_i + \\text{watershed}_i + \\text{SPDE}_i}_{\\text{random effects on intercept}}\n\\end{aligned}\n\\]"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#drivers-of-food-web-connectance",
+    "href": "presentations/2026-09-10_decodage.html#drivers-of-food-web-connectance",
+    "title": "",
+    "section": "Drivers of food web connectance",
+    "text": "Drivers of food web connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRichness partly mediate stressors impact on structure: H1 validated\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#unimodal-effect-of-nutrients-on-connectance",
+    "href": "presentations/2026-09-10_decodage.html#unimodal-effect-of-nutrients-on-connectance",
+    "title": "",
+    "section": "Unimodal effect of nutrients on connectance",
+    "text": "Unimodal effect of nutrients on connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPhosphate is consistent with H2\nNitrate has the opposite trend than expected\nThe opposite pattern could be related to the limiting nutrient"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#effect-of-nutrients-on-connectance",
+    "href": "presentations/2026-09-10_decodage.html#effect-of-nutrients-on-connectance",
+    "title": "",
+    "section": "Effect of nutrients on connectance",
+    "text": "Effect of nutrients on connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPhosphate is consistent with H2\nNitrate has the opposite trend than expected\nThe opposite pattern could be related to the limiting nutrient"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#dam-effects-along-the-continuum",
+    "href": "presentations/2026-09-10_decodage.html#dam-effects-along-the-continuum",
+    "title": "",
+    "section": "Dam effects along the continuum",
+    "text": "Dam effects along the continuum\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDam effect vary along the continuum\nClose to river mouth\n\nDownstream dams leads to simpler food webs\nUpstream dams leads to more complex food webs\n\nConsistent with H3, but overall small effects"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#in-conclusion",
+    "href": "presentations/2026-09-10_decodage.html#in-conclusion",
+    "title": "",
+    "section": "In conclusion",
+    "text": "In conclusion\n\n\n\n\n\n\nStressors have direct and richness-mediated effects\nNutrients have opposite unimodal effects\nDam barrier effects vary along the river continuum\n\n\nLimiting nutrient: model load (N+P) and stochiometric ratio (N:P)\nDam small effects: filter only for large obstacles?"
   }
 ]

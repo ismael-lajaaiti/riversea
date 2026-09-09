@@ -503,7 +503,7 @@ $$
 \text{connectance}_i \sim \text{Beta}(\mu_i, \phi)
 $$
 $$
-\text{logit}(\mu_i) = \gamma_r \, \text{richesse}_i + \mathbf{x}_i^\top
+\text{logit}(\mu_i) = \beta_0 + \gamma_r \, \text{richesse}_i + \mathbf{x}_i^\top
   \boldsymbol\gamma + \text{année}_i + \text{bassin}_i + \text{SPDE}_i
 $$
 

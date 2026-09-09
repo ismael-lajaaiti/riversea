@@ -1,7 +1,7 @@
 ---
 title: "![](../assets/logo.svg){fig-alt=\"RIVERSEA\"}"
 pagetitle: "RIVERSEA"
-subtitle: "How damming and nutrient enrichment alter food web structure along the river-sea continuum"
+subtitle: "How damming and nutrient enrichment alter food web structure along the river-sea continuum<br><span class=\"subsubtitle\">A case study on the river continuum</span>"
 author:
   - name: Ismaël Lajaaiti
     affiliations: INRAE, Rennes
@@ -9,7 +9,7 @@ author:
     affiliations: INRAE, Rennes
   - name: Anik Brind'Amour
     affiliations: Ifremer, Nantes
-date: 09-02-2026
+date: 09-10-2026
 date-format: long
 lang: en
 bibliography: ../references.bib
@@ -26,6 +26,12 @@ format:
       text: |
         <style>
         .reveal .subtitle { font-size: 1.6em; font-weight: 700; font-family: "Inter", sans-serif; }
+        .reveal .subtitle .subsubtitle { font-size: 0.6em; font-weight: 400; opacity: 0.85; display: block; margin-top: 0.3em; }
+        #title-slide .title-logos {
+          position: absolute; bottom: -60px; left: 5px;
+          display: flex; align-items: center; gap: 1em;
+        }
+        #title-slide .title-logos img { height: 60px; }
         .reveal h1.title img { max-width: 40%; height: auto; }
         .reveal section[data-background-color] { color: #fff; }
         .reveal section[data-background-color] h1,
@@ -40,6 +46,19 @@ format:
           font-size: 0.5em; color: #888;
         }
         </style>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var titleSlide = document.getElementById("title-slide");
+          if (!titleSlide) return;
+          var logos = document.createElement("div");
+          logos.className = "title-logos";
+          logos.innerHTML =
+            '<img src="assets/inrae-logo.png" alt="INRAE">' +
+            '<img src="assets/decod-logo.jpg" alt="UMR DECOD">' +
+            '<img src="assets/mscalogo.webp" alt="MSCA">';
+          titleSlide.appendChild(logos);
+        });
+        </script>
 ---
 
 ## A connected but siloed continuum
@@ -72,12 +91,13 @@ format:
   - flux of nutrients, migration of species
 - Yet they are often studied **in isolation**
   - freshwater vs marine ecology, separate surveys, ...
-- Cannot seize the impacts of pressures **across** ecosystems
-  - Dams, nutrient enrichment
+- Inconsistency between
+  - the ecological continuum
+  - siloed research fields
 :::
 
 ::: {.column width="50%"}
-![](../assets/stressors-cross-fields.png)
+![](../assets/siloed-fields.png)
 :::
 
 ::::
@@ -85,25 +105,27 @@ format:
 ## Disturbances propagate at a distance
 
 
-- Stressing one ecosystem can propagate to an other, **spatially distant**
-ecosystem
-- The **configuration of connectivity** mediates how the instability travels
-- A local disturbance (dam, nutrient input) may therefore ripple along the
-**whole** river-sea continuum 
+- Experiment of @Tadiri-etal-2024
+  - Daphnia (herbivore) eating algae & connected mesocosms
+  - Disturbance = input of nutrients
+  - The disturbance is amplified from the input to the terminal node
 
-![](../docs/assets/tadiri2024-results.png){fig-align="center"}
+![](../docs/assets/tadiri2024-results.png){fig-align="center" height=200}
+
+**Disturbances can propagate along the river-sea continuum**
 
 ::: {.credit}
 Figure from @Tadiri-etal-2024;
+@Carrara-etal-2012;
 @McCann-etal-2021c
 :::
 
 
 ## Taking a meta-ecosystem perspective
 
-![](../assets/metaecosystem-diagram.png){fig-align="center" width="60%"}
+![](../assets/metaecosystem-sketch.png){fig-align="center" width="60%"}
 
-- **Dams** block species migration
+- **Dams** block species migration and nutrient fluxes
 - **Nutrient runoffs** increase nutrient fluxes
 - These stressors alter **how ecosystems are connected**
 
@@ -113,45 +135,47 @@ Figure from @Tadiri-etal-2024;
 :::
 
 
-## Capturing stressor impacts
+## Capturing changes with food webs
 ### At a local scale
 
 :::: {.columns}
 
-::: {.column width="50%"}
-- Representing the ecosystem as a food web (who eats whom)
-- Enriching a local ecosystem can **destabilize** it rather than help
-  - *Paradox of enrichment*: more resources, wilder predator-prey cycles
-- We understand this **locally** -- but at the scale of a whole connected
-continuum?
+::: {.column width="60%"}
+- Who eats whom: energy and matter fluxes
+- Understanding the paradox of enrichment
+  - Enrichment leads to consumer-resource cycles
+  - Make sense through a food web lens
+- We understand this **locally**
+
+And, at a global scale?
 :::
 
-::: {.column width="50%"}
-![](../assets/foodweb.png){fig-align="center"}
+::: {.column width="40%"}
+![](../assets/foodweb.png){fig-align="center" fig-width="70%"}
+![](../assets/predator-prey-cycles.png)
 :::
 
 ::::
 
 ::: {.credit}
-@Gounand-etal-2014; @Rosenzweig-1971
+Bottom right figure from @Fussmann-etal-2000;
+@Gounand-etal-2014;
+@Rosenzweig-1971
 :::
 
-## Capturing stressor impacts
+## Capturing changes with food webs
 ### At a global scale
 
 Very few studies
 
-- **@Bonnaffé-etal-2024** finds that nutrient and warming interact,
-simplifying food web structure
-  - but nutrients only (no dams), river only (no estuary, no sea)
-- **@Carvajal-Quintero-etal-2026** finds that food web structure is changing
-because of body size reduction
-  - but no specific mechanistic driver
-- We aim to resolve this with **clear mechanisms**, along the full
-river-sea continuum, in France
+![](../assets/thefewstudies.png){fig-align="center" width="100%"}
+
 
 ::: {.credit}
-@Bonnaffé-etal-2024; @Carvajal-Quintero-etal-2026
+@Bonnaffé-etal-2024; 
+@Carvajal-Quintero-etal-2026; 
+@Ma-etal-2026b;
+@Danet-etal-2021
 :::
 
 # How do dams and nutrient enrichment alter food web structure along the river-sea continuum? {background-color="#275662"}
@@ -160,52 +184,135 @@ river-sea continuum, in France
 
 - **H1**: Pressures act in part through direct and richness-mediated effects
 - **H2**: Nutrients have a unimodal effect on food web structure
-- **H3**: Downstream, dams simplify food webs downstream, their effects fades
-moving upstream
+- **H3**: Dam effect decays with distance to river mouth
+  - First dams block piscivorous migratory species moving upstream
 
 ![](assets/fig-hypotheses.png){fig-align="center" width="70%"}
 
-## Methods -- fish survey data
+## Hypotheses
+
+- **H1**: Pressures act in part through direct and richness-mediated effects
+- **H2**: Nutrients have a unimodal effect on food web structure
+- **H3**: Dam effect decays with distance to river mouth
+  - First dams block piscivorous migratory species moving upstream
+
+
+![](../assets/h3-explanation.png)
+
+# Methods
+
+## Fish survey data
 
 ![](assets/fig-stations.png){fig-align="center" width="60%"}
 
 - 3 surveys harmonized
   - ASPE (river, OFB), Pomet (estuary, INRAE), Nurse (sea, IFREMER)
 - Species names, units and fish lengths standardized
-- Missing sizes imputed per species from observed length distributions
+- Missing **lengths** imputed from observed length distributions
 
-## Methods -- reconstructing food webs
+## Reconstructing food webs
 
 :::: {.columns}
 
-::: {.column width="60%"}
+::: {.column width="50%"}
 - Diet table for 158 species
   1. `rfishbase` [@Boettiger-Lang-Wainwright-2012]
   2. validation with literature
-- Metaweb built from diet table
-- Subsample to get local webs
-- Measure **connectance** & **trophic length**
+- Diet changes with ontogeny
+  - Juveniles $\neq$ adults
+  - Approximated by fish **lengths**
+- Piscivorous interaction infered with predation window
+  - Big fish eat little fish
 :::
 
-::: {.column width="40%"}
-![](assets/fig-metaweb.png){fig-align="center" height="270"}
+::: {.column width="50%"}
+![](assets/network-inference-alain.png)
+
+::: {.credit}
+Steps to reconstruct the metaweb by Alain Danet
+:::
+
 :::
 
 ::::
 
-![](assets/fig-local-foodwebs.png){fig-align="center" height="220"}
+## Metaweb
 
-## Methods -- environmental pressures
+:::: {.columns}
+
+::: {.column width="45%"}
+![](assets/fig-metaweb.png){fig-align="center" height="450"}
+:::
+
+::: {.column width="55%"}
+- Represents **potential** interactions, not realized ones
+- Limitations
+  - Binary links: no interaction strength or frequency
+  - Piscivory inferred from a body-length heuristic
+  - No direct observations
+  - Same metaweb assumed across the whole continuum
+
+Subsample metaweb to get local webs.
+:::
+
+::::
+
+## Examples of reconstructed food webs
+
+- 3 fishing operations near Gironde estuary
+- Cover the river-sea continuum
+
+![](../assets/fishing-op-selected.png){fig-align="center" width="70%"}
+
+## Examples of reconstructed food webs
+
+![](../presentations/assets/fig-local-foodwebs.png){fig-align="center" width="60%"}
+
+A few observations
+
+- Simpler community estuary -- stressed environment
+- Benthic flatfishs on the coastal food web (*B. luteum*, *S. solea*)
+- Riverine fish community is the most complete here -- with large piscivores (*A.
+anguilla*, *S. glanis*)
+
+## Quantifying dam indicators
+
+:::: {.columns}
+
+::: {.column width="50%"}
+Dam impact is
+
+- Directional -- upstream vs downstream
+- Modulated by its height
+
+We used two metrics from the AMOBIO dataset [@Dézerald-etal-2020b] (ROE)
+
+- **Downstream barrier effect**: mean dam height linear downstream
+- **Upstream barrier effect**: mean dam height dendritic upstream
+:::
+
+::: {.column width="50%"}
+![](../assets/barrier-sketch.png)
+:::
+
+::: {.credit}
+@Dézerald-etal-2020b
+:::
+
+::::
+
+## Quantifying nutrient indicators
 
 :::: {.columns}
 
 ::: {.column width="60%"}
-- **Nutrients**: nitrate and phosphate
-  - River: AMOBIO
-  - Sea: REPHY, interpolated with `INLA` [@Lindgren-Rue-2015]
-- **Dam impact**: mean dam height (AMOBIO)
-  - Downstream: linear, single path to the river mouth
-  - Upstream: dendritic, whole upstream network (heritage)
+**Nitrate** and **phosphate** concentrations
+
+- In river, we relied on the AMOBIO dataset (Naïades)
+  - Nearest neighbor interpolation
+- In estuaries and coasts, we used REPHY
+  - Interpolated with `INLA`
+  - Mesh; random gaussian field; correlation decreasing with distance
 :::
 
 ::: {.column width="40%"}
@@ -219,12 +326,43 @@ Work in progress: nutrient definitions are not yet fully consistent
 between AMOBIO and REPHY.
 :::
 
-## Methods -- position along the continuum
+::: {.credit}
+@Dézerald-etal-2020b;
+@Lindgren-Rue-2015
+:::
+
+## Positions along the continuum
+
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### The problem
+
+We want to compute the **distance to river mouth**.
+
+Why euclidian distance doesn't do the job
+
+- fish don't fly
+- hydrographic distance matters in rivers
+- sea-side, the coastline should be accounted for
+
+:::
+
+::: {.column width="50%"}
+![](../assets/position-sketch.png)
+:::
+
+::::
+
+## Positions along the continuum
 
 :::: {.columns}
 
 ::: {.column width="40%"}
-- Distance to the nearest river mouth, computed for every fishing
+### The solution
+
+- Distance to river mouth
   operation
   - **River**: shortest path along the hydrographic network
   - **Sea**: shortest path along a coastal mesh (`INLA`) excluding land
@@ -241,69 +379,123 @@ We also added operation elevation and river width, when available.
 
 ::::
 
-## Methods -- statistical models
+## Designing statistical models
 
-- Three Bayesian models (`R-INLA`): S, C, TL
-- Testing the hypotheses
-  - **H1**: species richness included as a covariate for C and TL
-  - **H2**: quadratic terms for nitrate and phosphate
-  - **H3**: dam barrier effects interact with distance to mouth
-- Controlling for bias
-  - Year and watershed random effects
-  - Spatial autocorrelation: Gaussian random field (SPDE)
+![](assets/fig-hypotheses.png){fig-align="center" height="150"}
 
-::: {.callout-warning}
-Spatial autocorrelation uses euclidian and not hydrographic distance, for now.
+- 3 models:
+  - richness (S) -- Gaussian model
+  - connectance (C) -- Beta log-link (bounded between 0 and 1)
+  - trophic length (TL) -- two step model (ordinal & conditional Gaussian)
+- **H1**: species richness included as a covariate for C and TL
+- **H2**: quadratic terms for nitrate and phosphate
+- **H3**: dam barrier effects interact with distance to mouth
+
+## Designing statistical models
+
+
+![](assets/fig-hypotheses.png){fig-align="center" height="150"}
+
+- 3 models:
+  - richness (S) -- Gaussian model
+  - **connectance (C)** -- Beta log-link (bounded between 0 and 1)
+  - trophic length (TL) -- two step model (ordinal & conditional Gaussian)
+- **H1**: species richness included as a covariate for C and TL
+- **H2**: quadratic terms for nitrate and phosphate
+- **H3**: dam barrier effects interact with distance to mouth
+
+## Designing statistical models
+
+Model ingredients:
+
+- Linear effects including 
+  - species richness ($S_i$) 
+  - stressor covariables ($x_i$)
+- Random effects controlling for bias
+
+
+**Connectance** (beta, logit link)
+$$
+\text{connectance}_i \sim \text{Beta}(\mu_i, \phi)
+$$
+$$
+\begin{aligned}
+\text{logit}(\mu_i) &=
+  \underbrace{\beta_0}_{\text{intercept}} +
+  \underbrace{\beta_S \, \text{S}_i + \mathbf{x}_i^\top \boldsymbol\beta}_{\text{linear effects}}
+  + \underbrace{\text{year}_i + \text{watershed}_i + \text{SPDE}_i}_{\text{random effects on intercept}}
+\end{aligned}
+$$
+
+# Results -- Case study on the river continuum {background-color="#275662"}
+
+## Drivers of food web connectance
+
+:::: {.columns}
+
+::: {.column width="40%"}
+![](../assets/h1-sketch.png){fig-align="right" width="50%"}
 :::
 
+::: {.column width="60%"}
+![](assets/fig-ame-main-effects.png){fig-align="left" width="70%"}
+:::
 
-# Preliminary results -- Case study on the river continuum {background-color="#275662"}
+::::
 
-## H1 - Testing richness mediated-effects
-
-![](assets/fig-ame-main-effects.png){fig-align="center" width="70%"}
-
-- Richness partly mediate stressor impact on structure *(validates H1)*
+- Richness partly mediate stressors impact on structure: H1 validated 
 - Habitat variables strongly structure food webs
 - Nutrients have opposite direct effects
 - Dams have no **average** direct effects
 
-## H2 - Testing nonlinear nutrient effects
+## Effect of nutrients on connectance
 
-![](assets/fig-ame-nutrients.png){fig-align="center" width="70%"}
+:::: {.columns}
 
-- Nitrate has an unimodal effect on richness *(consistent with H2)*
-- At high concentration
-  - **Nitrate** increase is associated to **more complex** food webs
-  - **Phosphate** increase is associated to **simpler** food webs
+::: {.column width="40%"}
+![](../assets/h2-sketch.png){fig-align="right" width="70%"}
+:::
 
-## H3 - Dam effects along the continuum
+::: {.column width="60%"}
+![](assets/fig-ame-nutrients.png){fig-align="left" width="60%"}
+:::
 
-![](assets/fig-ame-dams-distance.png){fig-align="center" width="70%"}
+::::
 
-- Dam effect depends on position along the continuum, in particular for food
-web structure
+- Phosphate is consistent with H2
+- Nitrate has the opposite trend than expected
+- The opposite pattern could be related to the limiting nutrient
+
+## Dam effects along the continuum
+
+:::: {.columns}
+
+::: {.column width="40%"}
+![](../assets/H3-sketch.png){fig-align="right" width="60%"}
+:::
+
+::: {.column width="60%"}
+![](assets/fig-ame-dams-distance.png){fig-align="left" width="50%"}
+:::
+
+::::
+
+- Dam effect vary along the continuum
 - Close to river mouth
-  - **Downstream dams** are associated with **simpler** food webs
-  - **Upstream dams** are associated with **more complex** food webs
+  - **Downstream dams** leads to **simpler** food webs
+  - **Upstream dams** leads to **more complex** food webs
+- Consistent with H3, but overall small effects
 
-## Perspectives
+## In conclusion
 
+![](../assets/summary-results.png){fig-align="center" width="60%"}
 
-#### Next steps
+1. Stressors have direct and richness-mediated effects
+2. Nutrients have opposite unimodal effects
+3. Dam barrier effects vary along the river continuum
 
-- Finish harmonizing environmental data across the continuum
-- Extend statistical modeling to the full river–sea continuum
-
-#### Further investigations
-
-- Model spatial autocorrelation as a **Gaussian field on a graph**
-  (`MetricGraph`), following hydrographic distance rather than Euclidean
-  distance
-- Refine dam impact metrics beyond height (e.g. fish passability, using
-  ROE / Naiades)
-- Make nutrient inference **consistent across river and coastal** data
-  (e.g. AMOBIO vs REPHY nitrite/nitrate definitions)
+- Limiting nutrient: model load (N+P) and stochiometric ratio (N:P)
+- Dam small effects: filter only for large obstacles?
 
 # Thank you! {background-color="#275662"}
 

@@ -12,7 +12,7 @@
   <meta name="author" content="Ismaël Lajaaiti">
   <meta name="author" content="Alain Danet">
   <meta name="author" content="Anik Brind’Amour">
-  <meta name="dcterms.date" content="2026-09-02">
+  <meta name="dcterms.date" content="2026-09-10">
   <title>RIVERSEA</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -148,6 +148,12 @@
   </style>
   <style>
   .reveal .subtitle { font-size: 1.6em; font-weight: 700; font-family: "Inter", sans-serif; }
+  .reveal .subtitle .subsubtitle { font-size: 0.6em; font-weight: 400; opacity: 0.85; display: block; margin-top: 0.3em; }
+  #title-slide .title-logos {
+    position: absolute; bottom: -60px; left: 5px;
+    display: flex; align-items: center; gap: 1em;
+  }
+  #title-slide .title-logos img { height: 60px; }
   .reveal h1.title img { max-width: 40%; height: auto; }
   .reveal section[data-background-color] { color: #fff; }
   .reveal section[data-background-color] h1,
@@ -162,6 +168,19 @@
     font-size: 0.5em; color: #888;
   }
   </style>
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var titleSlide = document.getElementById("title-slide");
+    if (!titleSlide) return;
+    var logos = document.createElement("div");
+    logos.className = "title-logos";
+    logos.innerHTML =
+      '<img src="assets/inrae-logo.png" alt="INRAE">' +
+      '<img src="assets/decod-logo.jpg" alt="UMR DECOD">' +
+      '<img src="assets/mscalogo.webp" alt="MSCA">';
+    titleSlide.appendChild(logos);
+  });
+  </script>
 </head>
 <body class="quarto-light">
   <div class="reveal">
@@ -169,7 +188,7 @@
 
 <section id="title-slide" class="quarto-title-block center">
   <h1 class="title"><img data-src="../assets/logo.svg" alt="RIVERSEA"></h1>
-  <p class="subtitle">How damming and nutrient enrichment alter food web structure along the river-sea continuum</p>
+  <p class="subtitle">How damming and nutrient enrichment alter food web structure along the river-sea continuum<br><span class="subsubtitle">A case study on the river continuum</span></p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -198,7 +217,7 @@ Anik Brind’Amour
     </div>
 </div>
 
-  <p class="date">September 2, 2026</p>
+  <p class="date">September 10, 2026</p>
 </section>
 <section id="a-connected-but-siloed-continuum" class="slide level2">
 <h2>A connected but siloed continuum</h2>
@@ -234,40 +253,45 @@ Anik Brind’Amour
 <ul>
 <li>freshwater vs marine ecology, separate surveys, …</li>
 </ul></li>
-<li>Cannot seize the impacts of pressures <strong>across</strong> ecosystems
+<li>Inconsistency between
 <ul>
-<li>Dams, nutrient enrichment</li>
+<li>the ecological continuum</li>
+<li>siloed research fields</li>
 </ul></li>
 </ul>
 </div><div class="column" style="width:50%;">
-<p><img data-src="../assets/stressors-cross-fields.png"></p>
+<p><img data-src="../assets/siloed-fields.png"></p>
 </div></div>
 </section>
 <section id="disturbances-propagate-at-a-distance" class="slide level2">
 <h2>Disturbances propagate at a distance</h2>
 <ul>
-<li>Stressing one ecosystem can propagate to an other, <strong>spatially distant</strong> ecosystem</li>
-<li>The <strong>configuration of connectivity</strong> mediates how the instability travels</li>
-<li>A local disturbance (dam, nutrient input) may therefore ripple along the <strong>whole</strong> river-sea continuum</li>
+<li>Experiment of <span class="citation" data-cites="Tadiri-etal-2024">Tadiri et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span>
+<ul>
+<li>Daphnia (herbivore) eating algae &amp; connected mesocosms</li>
+<li>Disturbance = input of nutrients</li>
+<li>The disturbance is amplified from the input to the terminal node</li>
+</ul></li>
 </ul>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="../docs/assets/tadiri2024-results.png" class="quarto-figure quarto-figure-center"></p>
+<p><img data-src="../docs/assets/tadiri2024-results.png" class="quarto-figure quarto-figure-center" height="200"></p>
 </figure>
 </div>
+<p><strong>Disturbances can propagate along the river-sea continuum</strong></p>
 <div class="credit">
-<p>Figure from <span class="citation" data-cites="Tadiri-etal-2024">Tadiri et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span>; <span class="citation" data-cites="McCann-etal-2021c">McCann et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2021</a>)</span></p>
+<p>Figure from <span class="citation" data-cites="Tadiri-etal-2024">Tadiri et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span>; <span class="citation" data-cites="Carrara-etal-2012">Carrara et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2012</a>)</span>; <span class="citation" data-cites="McCann-etal-2021c">McCann et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2021</a>)</span></p>
 </div>
 </section>
 <section id="taking-a-meta-ecosystem-perspective" class="slide level2">
 <h2>Taking a meta-ecosystem perspective</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="../assets/metaecosystem-diagram.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
+<p><img data-src="../assets/metaecosystem-sketch.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
 </figure>
 </div>
 <ul>
-<li><strong>Dams</strong> block species migration</li>
+<li><strong>Dams</strong> block species migration and nutrient fluxes</li>
 <li><strong>Nutrient runoffs</strong> increase nutrient fluxes</li>
 <li>These stressors alter <strong>how ecosystems are connected</strong></li>
 </ul>
@@ -275,47 +299,39 @@ Anik Brind’Amour
 <p><span class="citation" data-cites="Loreau-Mouquet-Holt-2003a">Loreau et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2003</a>)</span>; <span class="citation" data-cites="Polis-Anderson-Holt-1997">Polis et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">1997</a>)</span>; <span class="citation" data-cites="Gounand-etal-2014">Gounand et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2014</a>)</span> <span class="citation" data-cites="He-etal-2024">He et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span></p>
 </div>
 </section>
-<section id="capturing-stressor-impacts" class="slide level2">
-<h2>Capturing stressor impacts</h2>
+<section id="capturing-changes-with-food-webs" class="slide level2">
+<h2>Capturing changes with food webs</h2>
 <h3 id="at-a-local-scale">At a local scale</h3>
 <div class="columns">
-<div class="column" style="width:50%;">
+<div class="column" style="width:60%;">
 <ul>
-<li>Representing the ecosystem as a food web (who eats whom)</li>
-<li>Enriching a local ecosystem can <strong>destabilize</strong> it rather than help
+<li>Who eats whom: energy and matter fluxes</li>
+<li>Understanding the paradox of enrichment
 <ul>
-<li><em>Paradox of enrichment</em>: more resources, wilder predator-prey cycles</li>
+<li>Enrichment leads to consumer-resource cycles</li>
+<li>Make sense through a food web lens</li>
 </ul></li>
-<li>We understand this <strong>locally</strong> – but at the scale of a whole connected continuum?</li>
+<li>We understand this <strong>locally</strong></li>
 </ul>
-</div><div class="column" style="width:50%;">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="../assets/foodweb.png" class="quarto-figure quarto-figure-center"></p>
-</figure>
-</div>
+<p>And, at a global scale?</p>
+</div><div class="column" style="width:40%;">
+<p><img data-src="../assets/foodweb.png" class="quarto-figure quarto-figure-center" data-fig-width="70%"> <img data-src="../assets/predator-prey-cycles.png"></p>
 </div></div>
 <div class="credit">
-<p><span class="citation" data-cites="Gounand-etal-2014">Gounand et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2014</a>)</span>; <span class="citation" data-cites="Rosenzweig-1971">Rosenzweig (<a href="#/thank-you" role="doc-biblioref" onclick="">1971</a>)</span></p>
+<p>Bottom right figure from <span class="citation" data-cites="Fussmann-etal-2000">Fussmann et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2000</a>)</span>; <span class="citation" data-cites="Gounand-etal-2014">Gounand et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2014</a>)</span>; <span class="citation" data-cites="Rosenzweig-1971">Rosenzweig (<a href="#/thank-you" role="doc-biblioref" onclick="">1971</a>)</span></p>
 </div>
 </section>
-<section id="capturing-stressor-impacts-1" class="slide level2">
-<h2>Capturing stressor impacts</h2>
+<section id="capturing-changes-with-food-webs-1" class="slide level2">
+<h2>Capturing changes with food webs</h2>
 <h3 id="at-a-global-scale">At a global scale</h3>
 <p>Very few studies</p>
-<ul>
-<li><strong><span class="citation" data-cites="Bonnaffé-etal-2024">Bonnaffé et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span></strong> finds that nutrient and warming interact, simplifying food web structure
-<ul>
-<li>but nutrients only (no dams), river only (no estuary, no sea)</li>
-</ul></li>
-<li><strong><span class="citation" data-cites="Carvajal-Quintero-etal-2026">Carvajal-Quintero et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2026</a>)</span></strong> finds that food web structure is changing because of body size reduction
-<ul>
-<li>but no specific mechanistic driver</li>
-</ul></li>
-<li>We aim to resolve this with <strong>clear mechanisms</strong>, along the full river-sea continuum, in France</li>
-</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="../assets/thefewstudies.png" class="quarto-figure quarto-figure-center" style="width:100.0%"></p>
+</figure>
+</div>
 <div class="credit">
-<p><span class="citation" data-cites="Bonnaffé-etal-2024">Bonnaffé et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span>; <span class="citation" data-cites="Carvajal-Quintero-etal-2026">Carvajal-Quintero et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2026</a>)</span></p>
+<p><span class="citation" data-cites="Bonnaffé-etal-2024">Bonnaffé et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2024</a>)</span>; <span class="citation" data-cites="Carvajal-Quintero-etal-2026">Carvajal-Quintero et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2026</a>)</span>; <span class="citation" data-cites="Ma-etal-2026b">Ma et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2026</a>)</span>; <span class="citation" data-cites="Danet-etal-2021">Danet et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2021</a>)</span></p>
 </div>
 </section>
 <section>
@@ -328,7 +344,10 @@ Anik Brind’Amour
 <ul>
 <li><strong>H1</strong>: Pressures act in part through direct and richness-mediated effects</li>
 <li><strong>H2</strong>: Nutrients have a unimodal effect on food web structure</li>
-<li><strong>H3</strong>: Downstream, dams simplify food webs downstream, their effects fades moving upstream</li>
+<li><strong>H3</strong>: Dam effect decays with distance to river mouth
+<ul>
+<li>First dams block piscivorous migratory species moving upstream</li>
+</ul></li>
 </ul>
 <div class="quarto-figure quarto-figure-center">
 <figure>
@@ -336,8 +355,25 @@ Anik Brind’Amour
 </figure>
 </div>
 </section>
-<section id="methods-fish-survey-data" class="slide level2">
-<h2>Methods – fish survey data</h2>
+<section id="hypotheses-1" class="slide level2">
+<h2>Hypotheses</h2>
+<ul>
+<li><strong>H1</strong>: Pressures act in part through direct and richness-mediated effects</li>
+<li><strong>H2</strong>: Nutrients have a unimodal effect on food web structure</li>
+<li><strong>H3</strong>: Dam effect decays with distance to river mouth
+<ul>
+<li>First dams block piscivorous migratory species moving upstream</li>
+</ul></li>
+</ul>
+<p><img data-src="../assets/h3-explanation.png"></p>
+</section></section>
+<section>
+<section id="methods" class="title-slide slide level1 center">
+<h1>Methods</h1>
+
+</section>
+<section id="fish-survey-data" class="slide level2">
+<h2>Fish survey data</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
 <p><img data-src="assets/fig-stations.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
@@ -349,50 +385,120 @@ Anik Brind’Amour
 <li>ASPE (river, OFB), Pomet (estuary, INRAE), Nurse (sea, IFREMER)</li>
 </ul></li>
 <li>Species names, units and fish lengths standardized</li>
-<li>Missing sizes imputed per species from observed length distributions</li>
+<li>Missing <strong>lengths</strong> imputed from observed length distributions</li>
 </ul>
 </section>
-<section id="methods-reconstructing-food-webs" class="slide level2">
-<h2>Methods – reconstructing food webs</h2>
+<section id="reconstructing-food-webs" class="slide level2">
+<h2>Reconstructing food webs</h2>
 <div class="columns">
-<div class="column" style="width:60%;">
+<div class="column" style="width:50%;">
 <ul>
 <li>Diet table for 158 species
 <ol type="1">
 <li><code>rfishbase</code> <span class="citation" data-cites="Boettiger-Lang-Wainwright-2012">(<a href="#/thank-you" role="doc-biblioref" onclick="">Boettiger et al. 2012</a>)</span></li>
 <li>validation with literature</li>
 </ol></li>
-<li>Metaweb built from diet table</li>
-<li>Subsample to get local webs</li>
-<li>Measure <strong>connectance</strong> &amp; <strong>trophic length</strong></li>
+<li>Diet changes with ontogeny
+<ul>
+<li>Juveniles <span class="math inline">\(\neq\)</span> adults</li>
+<li>Approximated by fish <strong>lengths</strong></li>
+</ul></li>
+<li>Piscivorous interaction infered with predation window
+<ul>
+<li>Big fish eat little fish</li>
+</ul></li>
 </ul>
-</div><div class="column" style="width:40%;">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="assets/fig-metaweb.png" class="quarto-figure quarto-figure-center" height="270"></p>
-</figure>
+</div><div class="column" style="width:50%;">
+<p><img data-src="assets/network-inference-alain.png"></p>
+<div class="credit">
+<p>Steps to reconstruct the metaweb by Alain Danet</p>
 </div>
 </div></div>
+</section>
+<section id="metaweb" class="slide level2">
+<h2>Metaweb</h2>
+<div class="columns">
+<div class="column" style="width:45%;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="assets/fig-local-foodwebs.png" class="quarto-figure quarto-figure-center" height="220"></p>
+<p><img data-src="assets/fig-metaweb.png" class="quarto-figure quarto-figure-center" height="450"></p>
+</figure>
+</div>
+</div><div class="column" style="width:55%;">
+<ul>
+<li>Represents <strong>potential</strong> interactions, not realized ones</li>
+<li>Limitations
+<ul>
+<li>Binary links: no interaction strength or frequency</li>
+<li>Piscivory inferred from a body-length heuristic</li>
+<li>No direct observations</li>
+<li>Same metaweb assumed across the whole continuum</li>
+</ul></li>
+</ul>
+<p>Subsample metaweb to get local webs.</p>
+</div></div>
+</section>
+<section id="examples-of-reconstructed-food-webs" class="slide level2">
+<h2>Examples of reconstructed food webs</h2>
+<ul>
+<li>3 fishing operations near Gironde estuary</li>
+<li>Cover the river-sea continuum</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="../assets/fishing-op-selected.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
 </figure>
 </div>
 </section>
-<section id="methods-environmental-pressures" class="slide level2">
-<h2>Methods – environmental pressures</h2>
+<section id="examples-of-reconstructed-food-webs-1" class="slide level2">
+<h2>Examples of reconstructed food webs</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="../presentations/assets/fig-local-foodwebs.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
+</figure>
+</div>
+<p>A few observations</p>
+<ul>
+<li>Simpler community estuary – stressed environment</li>
+<li>Benthic flatfishs on the coastal food web (<em>B. luteum</em>, <em>S. solea</em>)</li>
+<li>Riverine fish community is the most complete here – with large piscivores (<em>A. anguilla</em>, <em>S. glanis</em>)</li>
+</ul>
+</section>
+<section id="quantifying-dam-indicators" class="slide level2">
+<h2>Quantifying dam indicators</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p>Dam impact is</p>
+<ul>
+<li>Directional – upstream vs downstream</li>
+<li>Modulated by its height</li>
+</ul>
+<p>We used two metrics from the AMOBIO dataset <span class="citation" data-cites="Dézerald-etal-2020b">(<a href="#/thank-you" role="doc-biblioref" onclick="">Dézerald et al. 2020</a>)</span> (ROE)</p>
+<ul>
+<li><strong>Downstream barrier effect</strong>: mean dam height linear downstream</li>
+<li><strong>Upstream barrier effect</strong>: mean dam height dendritic upstream</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><img data-src="../assets/barrier-sketch.png"></p>
+</div><div class="credit">
+<p><span class="citation" data-cites="Dézerald-etal-2020b">Dézerald et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2020</a>)</span></p>
+</div>
+</div>
+</section>
+<section id="quantifying-nutrient-indicators" class="slide level2">
+<h2>Quantifying nutrient indicators</h2>
 <div class="columns">
 <div class="column" style="width:60%;">
+<p><strong>Nitrate</strong> and <strong>phosphate</strong> concentrations</p>
 <ul>
-<li><strong>Nutrients</strong>: nitrate and phosphate
+<li>In river, we relied on the AMOBIO dataset (Naïades)
 <ul>
-<li>River: AMOBIO</li>
-<li>Sea: REPHY, interpolated with <code>INLA</code> <span class="citation" data-cites="Lindgren-Rue-2015">(<a href="#/thank-you" role="doc-biblioref" onclick="">Lindgren and Rue 2015</a>)</span></li>
+<li>Nearest neighbor interpolation</li>
 </ul></li>
-<li><strong>Dam impact</strong>: mean dam height (AMOBIO)
+<li>In estuaries and coasts, we used REPHY
 <ul>
-<li>Downstream: linear, single path to the river mouth</li>
-<li>Upstream: dendritic, whole upstream network (heritage)</li>
+<li>Interpolated with <code>INLA</code></li>
+<li>Mesh; random gaussian field; correlation decreasing with distance</li>
 </ul></li>
 </ul>
 </div><div class="column" style="width:40%;">
@@ -415,13 +521,33 @@ Anik Brind’Amour
 </div>
 </div>
 </div>
+<div class="credit">
+<p><span class="citation" data-cites="Dézerald-etal-2020b">Dézerald et al. (<a href="#/thank-you" role="doc-biblioref" onclick="">2020</a>)</span>; <span class="citation" data-cites="Lindgren-Rue-2015">Lindgren and Rue (<a href="#/thank-you" role="doc-biblioref" onclick="">2015</a>)</span></p>
+</div>
 </section>
-<section id="methods-position-along-the-continuum" class="slide level2">
-<h2>Methods – position along the continuum</h2>
+<section id="positions-along-the-continuum" class="slide level2">
+<h2>Positions along the continuum</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<h3 id="the-problem">The problem</h3>
+<p>We want to compute the <strong>distance to river mouth</strong>.</p>
+<p>Why euclidian distance doesn’t do the job</p>
+<ul>
+<li>fish don’t fly</li>
+<li>hydrographic distance matters in rivers</li>
+<li>sea-side, the coastline should be accounted for</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><img data-src="../assets/position-sketch.png"></p>
+</div></div>
+</section>
+<section id="positions-along-the-continuum-1" class="slide level2">
+<h2>Positions along the continuum</h2>
 <div class="columns">
 <div class="column" style="width:40%;">
+<h3 id="the-solution">The solution</h3>
 <ul>
-<li>Distance to the nearest river mouth, computed for every fishing operation
+<li>Distance to river mouth operation
 <ul>
 <li><strong>River</strong>: shortest path along the hydrographic network</li>
 <li><strong>Sea</strong>: shortest path along a coastal mesh (<code>INLA</code>) excluding land</li>
@@ -448,99 +574,157 @@ Anik Brind’Amour
 </div>
 </div>
 </section>
-<section id="methods-statistical-models" class="slide level2">
-<h2>Methods – statistical models</h2>
-<ul>
-<li>Three Bayesian models (<code>R-INLA</code>): S, C, TL</li>
-<li>Testing the hypotheses
-<ul>
-<li><strong>H1</strong>: species richness included as a covariate for C and TL</li>
-<li><strong>H2</strong>: quadratic terms for nitrate and phosphate</li>
-<li><strong>H3</strong>: dam barrier effects interact with distance to mouth</li>
-</ul></li>
-<li>Controlling for bias
-<ul>
-<li>Year and watershed random effects</li>
-<li>Spatial autocorrelation: Gaussian random field (SPDE)</li>
-</ul></li>
-</ul>
-<div class="callout callout-warning callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Warning</strong></p>
-</div>
-<div class="callout-content">
-<p>Spatial autocorrelation uses euclidian and not hydrographic distance, for now.</p>
-</div>
-</div>
-</div>
-</section></section>
-<section>
-<section id="preliminary-results-case-study-on-the-river-continuum" class="title-slide slide level1 center" data-background-color="#275662">
-<h1>Preliminary results – Case study on the river continuum</h1>
-
-</section>
-<section id="h1---testing-richness-mediated-effects" class="slide level2">
-<h2>H1 - Testing richness mediated-effects</h2>
+<section id="designing-statistical-models" class="slide level2">
+<h2>Designing statistical models</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="assets/fig-ame-main-effects.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
+<p><img data-src="assets/fig-hypotheses.png" class="quarto-figure quarto-figure-center" height="150"></p>
 </figure>
 </div>
 <ul>
-<li>Richness partly mediate stressor impact on structure <em>(validates H1)</em></li>
+<li>3 models:
+<ul>
+<li>richness (S) – Gaussian model</li>
+<li>connectance (C) – Beta log-link (bounded between 0 and 1)</li>
+<li>trophic length (TL) – two step model (ordinal &amp; conditional Gaussian)</li>
+</ul></li>
+<li><strong>H1</strong>: species richness included as a covariate for C and TL</li>
+<li><strong>H2</strong>: quadratic terms for nitrate and phosphate</li>
+<li><strong>H3</strong>: dam barrier effects interact with distance to mouth</li>
+</ul>
+</section>
+<section id="designing-statistical-models-1" class="slide level2">
+<h2>Designing statistical models</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="assets/fig-hypotheses.png" class="quarto-figure quarto-figure-center" height="150"></p>
+</figure>
+</div>
+<ul>
+<li>3 models:
+<ul>
+<li>richness (S) – Gaussian model</li>
+<li><strong>connectance (C)</strong> – Beta log-link (bounded between 0 and 1)</li>
+<li>trophic length (TL) – two step model (ordinal &amp; conditional Gaussian)</li>
+</ul></li>
+<li><strong>H1</strong>: species richness included as a covariate for C and TL</li>
+<li><strong>H2</strong>: quadratic terms for nitrate and phosphate</li>
+<li><strong>H3</strong>: dam barrier effects interact with distance to mouth</li>
+</ul>
+</section>
+<section id="designing-statistical-models-2" class="slide level2">
+<h2>Designing statistical models</h2>
+<p>Model ingredients:</p>
+<ul>
+<li>Linear effects including
+<ul>
+<li>species richness (<span class="math inline">\(S_i\)</span>)</li>
+<li>stressor covariables (<span class="math inline">\(x_i\)</span>)</li>
+</ul></li>
+<li>Random effects controlling for bias</li>
+</ul>
+<p><strong>Connectance</strong> (beta, logit link) <span class="math display">\[
+\text{connectance}_i \sim \text{Beta}(\mu_i, \phi)
+\]</span> <span class="math display">\[
+\begin{aligned}
+\text{logit}(\mu_i) &amp;=
+  \underbrace{\beta_0}_{\text{intercept}} +
+  \underbrace{\beta_S \, \text{S}_i + \mathbf{x}_i^\top \boldsymbol\beta}_{\text{linear effects}}
+  + \underbrace{\text{year}_i + \text{watershed}_i + \text{SPDE}_i}_{\text{random effects on intercept}}
+\end{aligned}
+\]</span></p>
+</section></section>
+<section>
+<section id="results-case-study-on-the-river-continuum" class="title-slide slide level1 center" data-background-color="#275662">
+<h1>Results – Case study on the river continuum</h1>
+
+</section>
+<section id="drivers-of-food-web-connectance" class="slide level2">
+<h2>Drivers of food web connectance</h2>
+<div class="columns">
+<div class="column" style="width:40%;">
+<div class="quarto-figure quarto-figure-right">
+<figure>
+<p><img data-src="../assets/h1-sketch.png" class="quarto-figure quarto-figure-right" style="width:50.0%"></p>
+</figure>
+</div>
+</div><div class="column" style="width:60%;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="assets/fig-ame-main-effects.png" class="quarto-figure quarto-figure-left" style="width:70.0%"></p>
+</figure>
+</div>
+</div></div>
+<ul>
+<li>Richness partly mediate stressors impact on structure: H1 validated</li>
 <li>Habitat variables strongly structure food webs</li>
 <li>Nutrients have opposite direct effects</li>
 <li>Dams have no <strong>average</strong> direct effects</li>
 </ul>
 </section>
-<section id="h2---testing-nonlinear-nutrient-effects" class="slide level2">
-<h2>H2 - Testing nonlinear nutrient effects</h2>
-<div class="quarto-figure quarto-figure-center">
+<section id="effect-of-nutrients-on-connectance" class="slide level2">
+<h2>Effect of nutrients on connectance</h2>
+<div class="columns">
+<div class="column" style="width:40%;">
+<div class="quarto-figure quarto-figure-right">
 <figure>
-<p><img data-src="assets/fig-ame-nutrients.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
+<p><img data-src="../assets/h2-sketch.png" class="quarto-figure quarto-figure-right" style="width:70.0%"></p>
 </figure>
 </div>
+</div><div class="column" style="width:60%;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="assets/fig-ame-nutrients.png" class="quarto-figure quarto-figure-left" style="width:60.0%"></p>
+</figure>
+</div>
+</div></div>
 <ul>
-<li>Nitrate has an unimodal effect on richness <em>(consistent with H2)</em></li>
-<li>At high concentration
-<ul>
-<li><strong>Nitrate</strong> increase is associated to <strong>more complex</strong> food webs</li>
-<li><strong>Phosphate</strong> increase is associated to <strong>simpler</strong> food webs</li>
-</ul></li>
+<li>Phosphate is consistent with H2</li>
+<li>Nitrate has the opposite trend than expected</li>
+<li>The opposite pattern could be related to the limiting nutrient</li>
 </ul>
 </section>
-<section id="h3---dam-effects-along-the-continuum" class="slide level2">
-<h2>H3 - Dam effects along the continuum</h2>
-<div class="quarto-figure quarto-figure-center">
+<section id="dam-effects-along-the-continuum" class="slide level2">
+<h2>Dam effects along the continuum</h2>
+<div class="columns">
+<div class="column" style="width:40%;">
+<div class="quarto-figure quarto-figure-right">
 <figure>
-<p><img data-src="assets/fig-ame-dams-distance.png" class="quarto-figure quarto-figure-center" style="width:70.0%"></p>
+<p><img data-src="../assets/H3-sketch.png" class="quarto-figure quarto-figure-right" style="width:60.0%"></p>
 </figure>
 </div>
+</div><div class="column" style="width:60%;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="assets/fig-ame-dams-distance.png" class="quarto-figure quarto-figure-left" style="width:50.0%"></p>
+</figure>
+</div>
+</div></div>
 <ul>
-<li>Dam effect depends on position along the continuum, in particular for food web structure</li>
+<li>Dam effect vary along the continuum</li>
 <li>Close to river mouth
 <ul>
-<li><strong>Downstream dams</strong> are associated with <strong>simpler</strong> food webs</li>
-<li><strong>Upstream dams</strong> are associated with <strong>more complex</strong> food webs</li>
+<li><strong>Downstream dams</strong> leads to <strong>simpler</strong> food webs</li>
+<li><strong>Upstream dams</strong> leads to <strong>more complex</strong> food webs</li>
 </ul></li>
+<li>Consistent with H3, but overall small effects</li>
 </ul>
 </section>
-<section id="perspectives" class="slide level2">
-<h2>Perspectives</h2>
-<h4 id="next-steps">Next steps</h4>
+<section id="in-conclusion" class="slide level2">
+<h2>In conclusion</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="../assets/summary-results.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
+</figure>
+</div>
+<ol type="1">
+<li>Stressors have direct and richness-mediated effects</li>
+<li>Nutrients have opposite unimodal effects</li>
+<li>Dam barrier effects vary along the river continuum</li>
+</ol>
 <ul>
-<li>Finish harmonizing environmental data across the continuum</li>
-<li>Extend statistical modeling to the full river–sea continuum</li>
-</ul>
-<h4 id="further-investigations">Further investigations</h4>
-<ul>
-<li>Model spatial autocorrelation as a <strong>Gaussian field on a graph</strong> (<code>MetricGraph</code>), following hydrographic distance rather than Euclidean distance</li>
-<li>Refine dam impact metrics beyond height (e.g.&nbsp;fish passability, using ROE / Naiades)</li>
-<li>Make nutrient inference <strong>consistent across river and coastal</strong> data (e.g.&nbsp;AMOBIO vs REPHY nitrite/nitrate definitions)</li>
+<li>Limiting nutrient: model load (N+P) and stochiometric ratio (N:P)</li>
+<li>Dam small effects: filter only for large obstacles?</li>
 </ul>
 </section></section>
 <section id="thank-you" class="title-slide slide level1 smaller scrollable" data-background-color="#275662">
@@ -556,8 +740,20 @@ Boettiger, C., D. T. Lang, and P. C. Wainwright. 2012. <span>“Rfishbase: Explo
 <div id="ref-Bonnaffé-etal-2024" class="csl-entry" role="listitem">
 Bonnaffé, Willem, Alain Danet, Camille Leclerc, Victor Frossard, Eric Edeline, and Arnaud Sentis. 2024. <span>“The Interaction Between Warming and Enrichment Accelerates Food-Web Simplification in Freshwater Systems.”</span> <em>Ecology Letters</em> 27 (8): e14480. <a href="https://doi.org/10.1111/ele.14480">https://doi.org/10.1111/ele.14480</a>.
 </div>
+<div id="ref-Carrara-etal-2012" class="csl-entry" role="listitem">
+Carrara, Francesco, Florian Altermatt, Ignacio Rodriguez-Iturbe, and Andrea Rinaldo. 2012. <span>“Dendritic Connectivity Controls Biodiversity Patterns in Experimental Metacommunities.”</span> <em>Proceedings of the National Academy of Sciences</em> 109 (15): 5761–66. <a href="https://doi.org/10.1073/pnas.1119651109">https://doi.org/10.1073/pnas.1119651109</a>.
+</div>
 <div id="ref-Carvajal-Quintero-etal-2026" class="csl-entry" role="listitem">
 Carvajal-Quintero, Juan D., Maria Dornelas, Lise Comte, et al. 2026. <span>“Degradation of Fish Food Webs in the Anthropocene.”</span> <em>Science Advances</em> 12 (8): eadu6540. <a href="https://doi.org/10.1126/sciadv.adu6540">https://doi.org/10.1126/sciadv.adu6540</a>.
+</div>
+<div id="ref-Danet-etal-2021" class="csl-entry" role="listitem">
+Danet, Alain, Maud Mouchet, Willem Bonnaffé, Elisa Thébault, and Colin Fontaine. 2021. <span>“Species Richness and Food-Web Structure Jointly Drive Community Biomass and Its Temporal Stability in Fish Communities.”</span> <em>Ecology Letters</em> 24 (11): 2364–77. <a href="https://doi.org/10.1111/ele.13857">https://doi.org/10.1111/ele.13857</a>.
+</div>
+<div id="ref-Dézerald-etal-2020b" class="csl-entry" role="listitem">
+Dézerald, Olivier, Cédric P. Mondy, Samuel Dembski, et al. 2020. <span>“A Diagnosis-Based Approach to Assess Specific Risks of River Degradation in a Multiple Pressure Context: Insights from Fish Communities.”</span> <em>Science of The Total Environment</em> 734 (September): 139467. <a href="https://doi.org/10.1016/j.scitotenv.2020.139467">https://doi.org/10.1016/j.scitotenv.2020.139467</a>.
+</div>
+<div id="ref-Fussmann-etal-2000" class="csl-entry" role="listitem">
+Fussmann, Gregor F., Stephen P. Ellner, Kyle W. Shertzer, and Nelson G. Hairston Jr. 2000. <span>“Crossing the Hopf Bifurcation in a Live Predator-Prey System.”</span> <em>Science</em> 290 (5495): 1358–60. <a href="https://doi.org/10.1126/science.290.5495.1358">https://doi.org/10.1126/science.290.5495.1358</a>.
 </div>
 <div id="ref-Gounand-etal-2014" class="csl-entry" role="listitem">
 Gounand, Isabelle, Nicolas Mouquet, Elsa Canard, Frédéric Guichard, Céline Hauzy, and Dominique Gravel. 2014. <span>“The Paradox of Enrichment in Metaecosystems.”</span> <em>The American Naturalist</em> 184 (6): 752–63. <a href="https://doi.org/10.1086/678406">https://doi.org/10.1086/678406</a>.
@@ -573,6 +769,9 @@ Lindgren, Finn, and Håvard Rue. 2015. <span>“Bayesian Spatial Modelling with 
 </div>
 <div id="ref-Loreau-Mouquet-Holt-2003a" class="csl-entry" role="listitem">
 Loreau, Michel, Nicolas Mouquet, and Robert D. Holt. 2003. <span>“Meta-Ecosystems: A Theoretical Framework for a Spatial Ecosystem Ecology.”</span> <em>Ecology Letters</em> 6 (8): 673–79. <a href="https://doi.org/10.1046/j.1461-0248.2003.00483.x">https://doi.org/10.1046/j.1461-0248.2003.00483.x</a>.
+</div>
+<div id="ref-Ma-etal-2026b" class="csl-entry" role="listitem">
+Ma, Fei, Hong Huang, Qi Yang, et al. 2026. <span>“Biodiversity and Habitat Complexity Buffer the Destabilizing Effects of Anthropogenic Activities on Riverine Fish Communities.”</span> <em>Nature Communications</em>, ahead of print, May 18. <a href="https://doi.org/10.1038/s41467-026-73311-w">https://doi.org/10.1038/s41467-026-73311-w</a>.
 </div>
 <div id="ref-McCann-etal-2021c" class="csl-entry" role="listitem">
 McCann, Kevin S., Kevin Cazelles, Andrew S. MacDougall, et al. 2021. <span>“Landscape Modification and Nutrient-Driven Instability at a Distance.”</span> <em>Ecology Letters</em> 24 (3): 398–414. <a href="https://doi.org/10.1111/ele.13644">https://doi.org/10.1111/ele.13644</a>.
