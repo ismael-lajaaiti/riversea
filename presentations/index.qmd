@@ -11,3 +11,5 @@ This page lists all the presentations of the RIVERSEA project.
 2026.05.25, Grenoble
 - [Data compilation at AG DECOD](https://doi.org/10.6084/m9.figshare.32531523),
 2026.06.11, St Jacut
+- [DECODage](https://doi.org/10.6084/m9.figshare.33598744),
+2026.09.10, Rennes

@@ -1103,7 +1103,7 @@
     "href": "presentations/index.html",
     "title": "Presentations",
     "section": "",
-    "text": "This page lists all the presentations of the RIVERSEA project.\n\nProject presentation at WINE webinar, 2026.04.14, Rennes\nProject presentation at GdR EcoStat, 2026.05.25, Grenoble\nData compilation at AG DECOD, 2026.06.11, St Jacut"
+    "text": "This page lists all the presentations of the RIVERSEA project.\n\nProject presentation at WINE webinar, 2026.04.14, Rennes\nProject presentation at GdR EcoStat, 2026.05.25, Grenoble\nData compilation at AG DECOD, 2026.06.11, St Jacut\nDECODage, 2026.09.10, Rennes"
   },
   {
     "objectID": "output/index.html",
@@ -1922,7 +1922,7 @@
     "href": "presentations/2026-09-10_decodage.html#reconstructing-food-webs",
     "title": "",
     "section": "Reconstructing food webs",
-    "text": "Reconstructing food webs\n\n\n\nDiet table for 158 species\n\nrfishbase (Boettiger et al. 2012)\nvalidation with literature\n\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\nApproximated by fish lengths\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\n\n\n\n\nSteps to reconstruct the metaweb by Alain Danet"
+    "text": "Reconstructing food webs\n\n\n\nDiet table for 158 species\n\nrfishbase\nvalidation with literature\n\nDiet changes with ontogeny\n\nJuveniles \\(\\neq\\) adults\nApproximated by fish lengths\n\nPiscivorous interaction infered with predation window\n\nBig fish eat little fish\n\n\n\n\n\nSteps to reconstruct the metaweb by Alain Danet\n\n\nDanet et al. (2021); Bonnaffé et al. (2024); Boettiger et al. (2012)"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs",
@@ -2013,14 +2013,14 @@
     "href": "presentations/2026-09-10_decodage.html#metaweb",
     "title": "",
     "section": "Metaweb",
-    "text": "Metaweb\n\n\n\n\n\n\n\n\n\nRepresents potential interactions, not realized ones\nLimitations\n\nBinary links: no interaction strength or frequency\nPiscivory inferred from a body-length heuristic\nNo direct observations\nSame metaweb assumed across the whole continuum\n\n\nSubsample metaweb to get local webs."
+    "text": "Metaweb\n\n\n\n\n\n\n\n\n\nRepresents potential interactions, not realized ones\nLimitations\n\nBinary links: no interaction strength or frequency\nPiscivory inferred from a body-length heuristic\nNo direct observations\nSame metaweb assumed across the whole continuum\n\n\nSubsample to get local webs.\n\nGravel et al. (2011); Thuiller et al. (2024)"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs-1",
     "href": "presentations/2026-09-10_decodage.html#examples-of-reconstructed-food-webs-1",
     "title": "",
     "section": "Examples of reconstructed food webs",
-    "text": "Examples of reconstructed food webs\n\n\n\n\n\nA few observations\n\nSimpler community estuary – stressed environment\nBenthic flatfishs on the coastal food web (B. luteum, S. solea)\nRiverine fish community is the most complete here – with large piscivores (A. anguilla, S. glanis)"
+    "text": "Examples of reconstructed food webs\n\n\n\n\n\nA few observations\n\nEstuary: simpler community – stressed environment, less species\nCoast: benthic flatfishs with large diet breadth\nRiver: large piscivorous species"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#quantifying-dam-impact",
@@ -2062,14 +2062,14 @@
     "href": "presentations/2026-09-10_decodage.html#designing-statistical-models-2",
     "title": "",
     "section": "Designing statistical models",
-    "text": "Designing statistical models\nModel ingredients:\n\nLinear effects including\n\nspecies richness (\\(S_i\\))\nstressor covariables (\\(x_i\\))\n\nRandom effects controlling for bias\n\nConnectance (beta, logit link) \\[\n\\text{connectance}_i \\sim \\text{Beta}(\\mu_i, \\phi)\n\\] \\[\n\\begin{aligned}\n\\text{logit}(\\mu_i) &=\n  \\underbrace{\\beta_0}_{\\text{intercept}} +\n  \\underbrace{\\beta_S \\, \\text{S}_i + \\mathbf{x}_i^\\top \\boldsymbol\\beta}_{\\text{linear effects}}\n  + \\underbrace{\\text{year}_i + \\text{watershed}_i + \\text{SPDE}_i}_{\\text{random effects on intercept}}\n\\end{aligned}\n\\]"
+    "text": "Designing statistical models\nIngredients\n\nLinear effects including\n\nspecies richness (\\(S_i\\))\nstressor covariables (\\(x_i\\))\n\nRandom effects controlling for bias\n\nRecipe\n\\[\n\\text{connectance}_i \\sim \\text{Beta}(\\mu_i, \\phi)\n\\] \\[\n\\begin{aligned}\n\\text{logit}(\\mu_i) &=\n  \\underbrace{\\beta_0}_{\\text{intercept}} +\n  \\underbrace{\\beta_S \\, \\text{S}_i + \\mathbf{x}_i^\\top \\boldsymbol\\beta}_{\\text{linear effects}}\n  + \\underbrace{\\text{year}_i + \\text{watershed}_i + \\text{SPDE}_i}_{\\text{random effects on intercept}}\n\\end{aligned}\n\\]"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#drivers-of-food-web-connectance",
     "href": "presentations/2026-09-10_decodage.html#drivers-of-food-web-connectance",
     "title": "",
     "section": "Drivers of food web connectance",
-    "text": "Drivers of food web connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRichness partly mediate stressors impact on structure: H1 validated\nHabitat variables strongly structure food webs\nNutrients have opposite direct effects\nDams have no average direct effects"
+    "text": "Drivers of food web connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRichness partly mediate stressors impact on structure: H1 validated\nNutrients have opposite direct effects\nDams have no average direct effects\n\nWhat about interaction terms? N:N, P:P, dam:distance"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#unimodal-effect-of-nutrients-on-connectance",
@@ -2083,14 +2083,14 @@
     "href": "presentations/2026-09-10_decodage.html#effect-of-nutrients-on-connectance",
     "title": "",
     "section": "Effect of nutrients on connectance",
-    "text": "Effect of nutrients on connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPhosphate is consistent with H2\nNitrate has the opposite trend than expected\nThe opposite pattern could be related to the limiting nutrient"
+    "text": "Effect of nutrients on connectance\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPhosphate has the expected unimodal effect on connectance\nNitrate has the opposite trend than expected\nCould be explained by the limiting nutrient (see discussion)"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#dam-effects-along-the-continuum",
     "href": "presentations/2026-09-10_decodage.html#dam-effects-along-the-continuum",
     "title": "",
     "section": "Dam effects along the continuum",
-    "text": "Dam effects along the continuum\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDam effect vary along the continuum\nClose to river mouth\n\nDownstream dams leads to simpler food webs\nUpstream dams leads to more complex food webs\n\nConsistent with H3, but overall small effects"
+    "text": "Dam effects along the continuum"
   },
   {
     "objectID": "presentations/2026-09-10_decodage.html#in-conclusion",
@@ -2098,5 +2098,26 @@
     "title": "",
     "section": "In conclusion",
     "text": "In conclusion\n\n\n\n\n\n\nStressors have direct and richness-mediated effects\nNutrients have opposite unimodal effects\nDam barrier effects vary along the river continuum\n\n\nLimiting nutrient: model load (N+P) and stochiometric ratio (N:P)\nDam small effects: filter only for large obstacles?"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#dam-effects-along-the-continuum-1",
+    "href": "presentations/2026-09-10_decodage.html#dam-effects-along-the-continuum-1",
+    "title": "",
+    "section": "Dam effects along the continuum",
+    "text": "Dam effects along the continuum\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDam effect vary along the continuum\nClose to river mouth\n\nDownstream dams leads to simpler food webs\nUpstream dams leads to more complex food webs\n\nConsistent with H3, but overall small effects"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#quantifying-food-web-structure",
+    "href": "presentations/2026-09-10_decodage.html#quantifying-food-web-structure",
+    "title": "",
+    "section": "Quantifying food web structure",
+    "text": "Quantifying food web structure\n\n\n\n\n\nWhat we measure\n\nRichness: how many species\nConnectance: how connected (link density) is the food web\nTrophic length: how long is the food web"
+  },
+  {
+    "objectID": "presentations/2026-09-10_decodage.html#designing-statistical-models-connectance",
+    "href": "presentations/2026-09-10_decodage.html#designing-statistical-models-connectance",
+    "title": "",
+    "section": "Designing statistical models – Connectance",
+    "text": "Designing statistical models – Connectance\nIngredients\n\nLinear effects including\n\nspecies richness (\\(S_i\\))\nstressor covariables (\\(x_i\\))\n\nRandom effects controlling for bias\n\nRecipe\n\\[\n\\text{connectance}_i \\sim \\text{Beta}(\\mu_i, \\phi)\n\\] \\[\n\\begin{aligned}\n\\text{logit}(\\mu_i) &=\n  \\underbrace{\\beta_0}_{\\text{intercept}} +\n  \\underbrace{\\beta_S \\, \\text{S}_i + \\mathbf{x}_i^\\top \\boldsymbol\\beta}_{\\text{linear effects}}\n  + \\underbrace{\\text{year}_i + \\text{watershed}_i + \\text{SPDE}_i}_{\\text{random effects on intercept}}\n\\end{aligned}\n\\]"
   }
 ]

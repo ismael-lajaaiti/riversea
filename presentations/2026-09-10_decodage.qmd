@@ -216,7 +216,7 @@ Very few studies
 
 ::: {.column width="50%"}
 - Diet table for 158 species
-  1. `rfishbase` [@Boettiger-Lang-Wainwright-2012]
+  1. `rfishbase`
   2. validation with literature
 - Diet changes with ontogeny
   - Juveniles $\neq$ adults
@@ -232,6 +232,12 @@ Very few studies
 Steps to reconstruct the metaweb by Alain Danet
 :::
 
+:::
+
+::: {.credit}
+@Danet-etal-2021;
+@Bonnaffé-etal-2024;
+@Boettiger-Lang-Wainwright-2012
 :::
 
 ::::
@@ -252,7 +258,12 @@ Steps to reconstruct the metaweb by Alain Danet
   - No direct observations
   - Same metaweb assumed across the whole continuum
 
-Subsample metaweb to get local webs.
+**Subsample to get local webs.**
+:::
+
+::: {.credit}
+@Gravel-etal-2011;
+@Thuiller-etal-2024
 :::
 
 ::::
@@ -262,7 +273,7 @@ Subsample metaweb to get local webs.
 - 3 fishing operations near Gironde estuary
 - Cover the river-sea continuum
 
-![](../assets/fishing-op-selected.png){fig-align="center" width="70%"}
+![](../assets/fishing-op-selected.png){fig-align="center" width="60%"}
 
 ## Examples of reconstructed food webs
 
@@ -270,10 +281,19 @@ Subsample metaweb to get local webs.
 
 A few observations
 
-- Simpler community estuary -- stressed environment
-- Benthic flatfishs on the coastal food web (*B. luteum*, *S. solea*)
-- Riverine fish community is the most complete here -- with large piscivores (*A.
-anguilla*, *S. glanis*)
+- **Estuary**: simpler community -- stressed environment, less species
+- **Coast**: benthic flatfishs with large diet breadth
+- **River**: large piscivorous species
+
+## Quantifying food web structure
+
+![](../presentations/assets/fig-local-foodwebs.png){fig-align="center" width="60%"}
+
+What we measure
+
+- **Richness**: how many species
+- **Connectance**: how connected (link density) is the food web
+- **Trophic length**: how long is the food web
 
 ## Quantifying dam indicators
 
@@ -406,7 +426,7 @@ We also added operation elevation and river width, when available.
 
 ## Designing statistical models
 
-Model ingredients:
+### Ingredients
 
 - Linear effects including 
   - species richness ($S_i$) 
@@ -414,7 +434,8 @@ Model ingredients:
 - Random effects controlling for bias
 
 
-**Connectance** (beta, logit link)
+### Recipe
+
 $$
 \text{connectance}_i \sim \text{Beta}(\mu_i, \phi)
 $$
@@ -438,15 +459,16 @@ $$
 :::
 
 ::: {.column width="60%"}
-![](assets/fig-ame-main-effects.png){fig-align="left" width="70%"}
+![](assets/fig-ame-main-effects.png){fig-align="left" width="60%"}
 :::
 
 ::::
 
 - Richness partly mediate stressors impact on structure: H1 validated 
-- Habitat variables strongly structure food webs
 - Nutrients have opposite direct effects
 - Dams have no **average** direct effects
+
+**What about interaction terms?** N:N, P:P, dam:distance
 
 ## Effect of nutrients on connectance
 
@@ -462,20 +484,34 @@ $$
 
 ::::
 
-- Phosphate is consistent with H2
+- Phosphate has the expected unimodal effect on connectance
 - Nitrate has the opposite trend than expected
-- The opposite pattern could be related to the limiting nutrient
+- Could be explained by the limiting nutrient (see discussion)
 
 ## Dam effects along the continuum
 
 :::: {.columns}
 
-::: {.column width="40%"}
-![](../assets/H3-sketch.png){fig-align="right" width="60%"}
+::: {.column width="30%"}
+![](../assets/H3-sketch.png){fig-align="right" width="70%"}
 :::
 
-::: {.column width="60%"}
-![](assets/fig-ame-dams-distance.png){fig-align="left" width="50%"}
+::: {.column width="70%"}
+![](../assets/sketch-results-h3.png){width="80%"}
+:::
+
+::::
+
+## Dam effects along the continuum
+
+:::: {.columns}
+
+::: {.column width="30%"}
+![](../assets/H3-sketch.png){fig-align="right" width="70%"}
+:::
+
+::: {.column width="70%"}
+![](assets/fig-partial-dams-distance.png){fig-align="left" width="90%"}
 :::
 
 ::::
@@ -489,6 +525,7 @@ $$
 ## In conclusion
 
 ![](../assets/summary-results.png){fig-align="center" width="60%"}
+
 
 1. Stressors have direct and richness-mediated effects
 2. Nutrients have opposite unimodal effects
