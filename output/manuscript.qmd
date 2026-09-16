@@ -258,7 +258,7 @@ combination of ecosystem size and connectivity with experimental miscrocosms.
 instability can propagate at long distance.
 
 - @Thompson-Gonzalez-2017 dispersal ensures that network can preserve similar
-structure when undergoing changes.
+structure when undergo
 
 ### Decomposing spatio-temporal patterns
 
@@ -327,6 +327,10 @@ local rather regional effects in the Loire basin.
 
 - @Ma-etal-2026 finds that human impact destabilize riverine fish communities,
 but habitat complexity buffers this destabilizing effect.
+
+- @Elser-etal-2007 find a similar N and P limitations in terrestrial and freshwater
+ecosystems; stronger N limitation in marine systems; overall, strong synergestic
+effect of N and P enrichment.
 
 ### Meta-ecosystems
 
