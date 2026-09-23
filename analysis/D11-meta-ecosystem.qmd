@@ -1,0 +1,202 @@
+---
+title: "Testing the meta-ecosystem framework along the river-sea continuum"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+## Todo
+
+- [x] Join food web structure metrics with hydrographic/sea-mesh distance to
+  river mouth (signed: river negative, sea positive)
+- [x] Trophic length and connectance vs. signed distance, all watersheds
+  pooled
+- [x] Same, split by watershed
+- [x] Zoom on the river-sea transition zone, check for a discontinuity at the
+  mouth
+- [x] Check whether the pattern is stable across years
+- [ ] **(open)**
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+## Data preparation
+
+We join each local food web's structure metrics (`foodweb_structure`) with
+its hydrographic distance to the nearest river mouth (`distance_to_mouth`,
+built in [D8](D8-distance-mouth.qmd): channel-length distance on the river
+side, water-mesh distance on the sea side). `inland` marks which of the two
+was used to compute `dist_mouth_m`. We turn this into a single signed
+distance in km, negative upstream (river) and positive offshore (sea), so
+the river-sea transition sits at 0.
+
+```{r}
+foodweb_structure <- tar_read(foodweb_structure)
+distance_to_mouth <- tar_read(distance_to_mouth)
+
+fw_dist <- foodweb_structure |>
+  inner_join(
+    distance_to_mouth |> select(operation_id, district, dist_mouth_m, inland),
+    by = "operation_id"
+  ) |>
+  mutate(dist_mouth_km = ifelse(inland, -1, 1) * dist_mouth_m / 1000)
+
+cat(sprintf(
+  "%d / %d local food webs matched to a distance-to-mouth value (%d dropped, outside the four watersheds kept in D8)\n",
+  nrow(fw_dist), nrow(foodweb_structure), nrow(foodweb_structure) - nrow(fw_dist)
+))
+```
+
+```{r}
+side_lab <- c(`TRUE` = "River", `FALSE` = "Sea")
+
+plot_metric_vs_distance <- function(data, metric, ylab) {
+  ggplot(data, aes(dist_mouth_km, .data[[metric]], color = inland)) +
+    geom_point(alpha = 0.15, size = 0.5) +
+    geom_smooth(se = TRUE) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
+    scale_color_discrete(name = NULL, labels = side_lab) +
+    labs(x = "Distance to river mouth (km)", y = ylab)
+}
+```
+
+## Trophic length and connectance vs. distance to mouth
+
+All four watersheds pooled together.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 5
+
+patchwork::wrap_plots(
+  plot_metric_vs_distance(fw_dist, "trophic_length", "Trophic length"),
+  plot_metric_vs_distance(fw_dist, "connectance", "Connectance"),
+  nrow = 1
+) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+
+*To discuss: overall shape of both metrics along the gradient (river-side
+rise with distance from the mouth, apparent dip approaching 0 from the
+river side); whether this looks like a real meta-ecosystem boundary
+signature or a sampling/effort artifact; how to interpret the very short,
+noisy sea-side range compared to the river side.*
+
+### By watershed
+
+```{r}
+#| fig-width: 11
+#| fig-height: 7
+
+plot_metric_vs_distance(fw_dist, "trophic_length", "Trophic length") +
+  facet_wrap(~district, scales = "free_x")
+```
+
+```{r}
+#| fig-width: 11
+#| fig-height: 7
+
+plot_metric_vs_distance(fw_dist, "connectance", "Connectance") +
+  facet_wrap(~district, scales = "free_x")
+```
+
+*To discuss: Escaut-Somme (much shorter max distance, ~300km vs 600-950km
+for the other three) doesn't show the same near-mouth dip that
+Ardour-Garonne/Loire/Seine share - worth deciding whether that's a real
+watershed difference or just less reach/resolution near the transition;
+whether pooling watersheds in the first plot is even appropriate given
+this heterogeneity.*
+
+## Transition zone
+
+Zooming on \(\pm\)20km around the mouth, and a direct numeric comparison of
+the two sides within \(\pm\)5km.
+
+```{r}
+#| fig-width: 12
+#| fig-height: 5
+
+zoom <- fw_dist |> filter(abs(dist_mouth_km) <= 20)
+
+patchwork::wrap_plots(
+  plot_metric_vs_distance(zoom, "trophic_length", "Trophic length"),
+  plot_metric_vs_distance(zoom, "connectance", "Connectance"),
+  nrow = 1
+) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+
+```{r}
+near_summary <- fw_dist |>
+  filter(abs(dist_mouth_km) <= 5) |>
+  mutate(side = side_lab[as.character(inland)]) |>
+  group_by(side) |>
+  summarise(
+    n = n(),
+    mean_trophic_length = mean(trophic_length),
+    mean_connectance = mean(connectance),
+    .groups = "drop"
+  )
+knitr::kable(near_summary, digits = 3)
+```
+
+*To discuss: is there an actual step/discontinuity right at the mouth, or a
+smooth crossing - the \(\pm\)5km means look close for both metrics, but the
+zoomed scatter above should be checked directly rather than trusting the
+smoother's behavior at the boundary.*
+
+## Temporal stability
+
+Same two plots, split into 4-year bins, to check whether the pattern along
+the gradient has shifted over the 2005-2022 period.
+
+```{r}
+#| fig-width: 11
+#| fig-height: 7
+
+fw_dist_year <- fw_dist |>
+  mutate(
+    year_bin = cut(
+      year,
+      breaks = c(2004, 2010, 2014, 2018, 2023),
+      labels = c("2005-2010", "2011-2014", "2015-2018", "2019-2022")
+    )
+  )
+
+plot_metric_vs_distance(fw_dist_year, "trophic_length", "Trophic length") +
+  facet_wrap(~year_bin)
+```
+
+```{r}
+#| fig-width: 11
+#| fig-height: 7
+
+plot_metric_vs_distance(fw_dist_year, "connectance", "Connectance") +
+  facet_wrap(~year_bin)
+```
+
+*To discuss: pattern looks stable across all four year bins - if so, this
+argues against a sampling-effort or year-specific artifact explanation for
+the shape seen above.*

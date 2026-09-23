@@ -28,7 +28,9 @@ status, etc.
 - [x] Location of invasive species
 - [ ] Impact of invasive/diadromous species on food web structure
 (richness-controlled)
-- [ ] **(blocked)** Structure metrics versus distance to river mouth
+- [x] Structure metrics versus distance to river mouth (moved to
+[D11](D11-meta-ecosystem.qmd), now that [D8](D8-distance-mouth.qmd) provides
+real hydrographic distance)
 
 ## Setup
 

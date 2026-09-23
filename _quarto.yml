@@ -19,8 +19,6 @@ website:
         href: analysis/index.qmd
       - text: Presentations
         href: presentations/index.qmd
-      - text: Manuscript
-        href: output/manuscript.qmd
       - text: Reports
         href: output/index.qmd
 

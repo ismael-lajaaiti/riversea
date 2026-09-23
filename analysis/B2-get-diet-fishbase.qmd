@@ -20,8 +20,6 @@ In this notebook we
 #| output: false
 library(renv)
 renv::load()
-renv::restore()
-renv::status()
 ```
 
 ```{r}

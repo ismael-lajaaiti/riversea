@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.9.36">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -39,14 +39,14 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-f418161beb48e0141c760e455f12af2c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e2982779657ccf06422058f75c9f49c9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-fe690461b80644c303a9500016ff746b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-e2982779657ccf06422058f75c9f49c9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cd0e92c3b5774ed69da3ad19969d5885.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-c24947a453de54fcdcd384e05265e554.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cd0e92c3b5774ed69da3ad19969d5885.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -108,10 +108,6 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Presentations</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./output/manuscript.html"> 
-<span class="menu-text">Manuscript</span></a>
-  </li>  
-  <li class="nav-item">
     <a class="nav-link" href="./output/index.html"> 
 <span class="menu-text">Reports</span></a>
   </li>  
@@ -165,45 +161,23 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 <section id="current-priorities" class="level2">
 <h2 class="anchored" data-anchor-id="current-priorities">Current priorities</h2>
-<p><em>Last updated 2026-08-20.</em></p>
+<p><em>Last updated 2026-09-23.</em></p>
 <p><strong>Nutrients</strong></p>
 <ul class="task-list">
 <li><label><input type="checkbox" checked="">Interpolate nutrient at fishing sites (with salinity when available)</label></li>
 <li><label><input type="checkbox" checked="">Compute distance to river-mouth</label></li>
 <li><label><input type="checkbox">Convert units so they are consistent between REPHY and AMOBIO</label></li>
-<li><label><input type="checkbox">Compute NO3+NO2 in AMOBIO</label></li>
-<li><label><input type="checkbox">Check for consistency between datasets in nutrient</label></li>
+<li><label><input type="checkbox">Filter large dams in ROE database</label></li>
 <li><label><input type="checkbox">Try interpolate nutrient concentration in AMOBIO dataset (pandora box)</label></li>
-</ul>
-<p><strong>Data pipeline &amp; analysis</strong></p>
-<ul class="task-list">
-<li><label><input type="checkbox" checked="">Validate FishBase diets against literature</label></li>
-<li><label><input type="checkbox" checked="">Update diet table within the pipeline</label></li>
-<li><label><input type="checkbox" checked="">First plot of metaweb</label></li>
-<li><label><input type="checkbox" checked="">Collect additional information on species (benthic/pelagic, native/invasive)</label></li>
-<li><label><input type="checkbox">Finish AMOBIO×ASPE×REPHY merge (unit harmonization, distance-to-mouth)</label></li>
-<li><label><input type="checkbox">Decide nutrient composite variable (individual vs.&nbsp;TN+TP+ratio vs.&nbsp;PCA — let RF pre-screening decide)</label></li>
-<li><label><input type="checkbox">Refine predation window per species</label></li>
-<li><label><input type="checkbox">New notebook: invasive species × dams (<em>Silurus glanis</em>, Tedesco et al. 2017 native/non-native status, NMDS vs.&nbsp;distance-to-dam)</label></li>
-</ul>
-<p><strong>Statistical modeling</strong></p>
-<ul class="task-list">
-<li><label><input type="checkbox">Gear-effect sensitivity analysis (electrofishing vs.&nbsp;trawl)</label></li>
-<li><label><input type="checkbox">Bayesian SEM as a robustness check alongside INLA</label></li>
-<li><label><input type="checkbox">Check/design model structure with causal models</label></li>
-<li><label><input type="checkbox">RF pre-screening to inform INLA specification</label></li>
-<li><label><input type="checkbox">Decide INLA spatial structure across the continuum (hydrologic-distance tail-down covariance + marine SPDE — to discuss with co-authors)</label></li>
-<li><label><input type="checkbox">Counterfactual scenario approach</label></li>
-<li><label><input type="checkbox">Use spatial blocked cross-validation</label></li>
 </ul>
 <p><strong>Writing</strong></p>
 <ul class="task-list">
 <li><label><input type="checkbox" checked="">Draft formal hypotheses</label></li>
 <li><label><input type="checkbox" checked="">Write BES abstract (deadline 2 September)</label></li>
-<li><label><input type="checkbox"><strong>(in progress)</strong> Postdoc extension</label></li>
-<li><label><input type="checkbox">Draft Planète-Vie piece on community structure along the river-sea continuum (deadline 1 October)</label></li>
+<li><label><input type="checkbox" checked="">Postdoc extension</label></li>
+<li><label><input type="checkbox"><strong>(in progress)</strong> Draft Planète-Vie piece on community structure along the river-sea continuum (deadline 1 October)</label></li>
 </ul>
-<p><strong>Reproducibility &amp; open science</strong></p>
+<p><strong>Reproducibility</strong></p>
 <ul class="task-list">
 <li><label><input type="checkbox" checked="">Reproducibility hygiene: <code>DESCRIPTION</code>, Docker, CI</label></li>
 <li><label><input type="checkbox">Turn the “reproducing the pipeline” README’s section into a tutorial</label></li>
