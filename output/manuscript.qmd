@@ -335,6 +335,9 @@ but habitat complexity buffers this destabilizing effect.
 ecosystems; stronger N limitation in marine systems; overall, strong synergestic
 effect of N and P enrichment.
 
+- @Cook-etal-2018 shows that the % of fertilized land in a catchment predicts
+the proportion of malgroalgae in the estuary.
+
 ### Meta-ecosystems
 
 - @Loreau-Mouquet-Holt-2003a fundational paper that defines the concept of
