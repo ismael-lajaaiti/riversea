@@ -176,6 +176,9 @@ communities (France)
 - @Wang-etal-2025 microcosm experiments supporting that unidirectional flow
 accumulates nutrients downstream.
 
+- @Thoms-Delong-2025 Higher physical heterogeneity is associated to longer food
+chain lengths in riverine food webs.
+
 ### Multiple stressors
 
 - Synergistic and antagonistic effects of multiple stressors
