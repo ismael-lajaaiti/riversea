@@ -388,6 +388,9 @@ functional space for potential invaders.
 - @Toussaint-etal-2018 Non-native species led to marked shifts in functional
 diversity of the world freshwater fish faunas
 
+- @Bierschenk-Savage-Matthaei-2017 Land use affects biological traits of benthic
+invertebrates across the entire freshwater-estuary continuum.
+
 ## Hypotheses
 
 Building on the causal structure below (Fig. 1) and the literature reviewed
