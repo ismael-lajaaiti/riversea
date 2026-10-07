@@ -375,7 +375,7 @@
     "href": "analysis/index.html#d.-environmental-driver-of-food-web-structures",
     "title": "Lab notebooks",
     "section": "D. Environmental driver of food web structures",
-    "text": "D. Environmental driver of food web structures\n\nData overview\nHow eutrophisation affect food web structures along the estuary-sea continuum\nHow community richness changes along the estuary-sea continuum\nOverview of AMOBIO data\nMerge AMOBIO and ASPE datasets\nOverview of REPHY data\nInterpolation of REPHY data\nDistance to river mouth\nFood web structures along the river-sea continuum"
+    "text": "D. Environmental driver of food web structures\n\nData overview\nHow eutrophisation affect food web structures along the estuary-sea continuum\nHow community richness changes along the estuary-sea continuum\nOverview of AMOBIO data\nMerge AMOBIO and ASPE datasets\nOverview of REPHY data\nInterpolation of REPHY data\nDistance to river mouth\nFood web structures along the river-sea continuum\nRiver model: impact of nutrients and dams on food web structure\nTesting the meta-ecosystem framework along the river-sea continuum"
   },
   {
     "objectID": "analysis/index.html#e.-invasive-species-and-dams",
@@ -718,7 +718,7 @@
     "href": "index.html#current-priorities",
     "title": "RIVERSEA project",
     "section": "Current priorities",
-    "text": "Current priorities\nLast updated 2026-09-23.\nNutrients\n\nInterpolate nutrient at fishing sites (with salinity when available)\nCompute distance to river-mouth\nConvert units so they are consistent between REPHY and AMOBIO\nFilter large dams in ROE database\nTry interpolate nutrient concentration in AMOBIO dataset (pandora box)\n\nWriting\n\nDraft formal hypotheses\nWrite BES abstract (deadline 2 September)\nPostdoc extension\n(in progress) Draft Planète-Vie piece on community structure along the river-sea continuum (deadline 1 October)\n\nReproducibility\n\nReproducibility hygiene: DESCRIPTION, Docker, CI\nTurn the “reproducing the pipeline” README’s section into a tutorial\nReorganize analysis notebooks into a clean reports reports (how-to versus rationale explanations) - Diataxis"
+    "text": "Current priorities\nLast updated 2026-10-07.\nNutrients\n\nInterpolate nutrient at fishing sites (with salinity when available)\nCompute distance to river-mouth\nConvert units so they are consistent between REPHY and AMOBIO\nFilter large dams in ROE database\nTry interpolate nutrient concentration in AMOBIO dataset (pandora box)\n\nWriting\n\nDraft formal hypotheses\nWrite BES abstract (deadline 2 September)\nPostdoc extension\nDraft Planète-Vie piece on community structure along the river-sea continuum (deadline 1 October)\n\nReproducibility\n\nReproducibility hygiene: DESCRIPTION, Docker, CI\nTurn the “reproducing the pipeline” README’s section into a tutorial\nReorganize analysis notebooks into a clean reports reports (how-to versus rationale explanations) - Diataxis"
   },
   {
     "objectID": "analysis/A1-model-eel-abundance.html",

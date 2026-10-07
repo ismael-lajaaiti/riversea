@@ -31,7 +31,7 @@ continuum in France.
 - [x] Draft formal hypotheses
 - [x] Write BES abstract (deadline 2 September)
 - [x] Postdoc extension
-- [ ] **(in progress)** Draft Planète-Vie piece on community structure along the
+- [x] Draft Planète-Vie piece on community structure along the
 river-sea continuum (deadline 1 October)
 
 **Reproducibility**
