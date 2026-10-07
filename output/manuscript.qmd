@@ -290,6 +290,9 @@ does not.
 
 ### Dams
 
+- @Dézerald-etal-2023 Fast but still transient recovery of ecological
+communities three years after the removal of Vezin’s dam.
+
 - Decrease river connectivity / reduce migration [@Dean-etal-2023b;
 @He-etal-2024; @Pedersen-etal-2012].
 
