@@ -1139,6 +1139,7 @@ join_amobio_aspe <- function(amobio, river_foodweb, river_operation) {
 amobio_selected_vars <- function(average_time) {
   c(
     "elevation",
+    "nc_area1_wd",
     "poe_ddam_l3_dam",
     "poe_ddam_l2_dam",
     "poe_bh5_l6",
@@ -1161,6 +1162,7 @@ rename_amobio <- function(average_time = "1y") {
     "date" = "date_operation",
     "sandre_code" = "id",
     "elevation" = "elevation_ign25m",
+    "drained_area" = "nc_area1_wd",
     "dam_distance_upstream" = "poe_ddam_l2_dam",
     "dam_distance_downstream" = "poe_ddam_l3_dam",
     "barrier_downstream" = "poe_bh5_l5",

@@ -296,6 +296,48 @@ data_targets <- list(
     )
   ),
   tar_target(
+    rht_zip,
+    download_rht(here("data", "geo", "rht")),
+    format = "file"
+  ),
+  tar_target(
+    rht,
+    read_rht(rht_zip)
+  ),
+  tar_target(
+    inland_operations_rht,
+    snap_operations_rht(
+      operation_location |> dplyr::filter(inland, survey == "river"), rht
+    ) |>
+      check_rht_match(
+        river_operation,
+        amobio_metrics_dedup,
+        area_ratio_max = 2, # RHT vs AMOBIO upstream catchment area.
+        snap_dist_max = 50 # Meters, when the AMOBIO area is unknown.
+      )
+  ),
+  tar_target(
+    continuum_variables_operation,
+    prepare_continuum_variables(inland_operations_rht, inland_distance_to_mouth)
+  ),
+  tar_target(
+    continuum_pca,
+    fit_continuum_pca(continuum_variables_operation)
+  ),
+  tar_target(
+    continuum_operation,
+    score_continuum_pca(continuum_variables_operation, continuum_pca)
+  ),
+  tar_target(
+    species_contribution_operation,
+    measure_species_contribution(
+      foodweb_structure |>
+        dplyr::filter(survey == "river") |>
+        dplyr::semi_join(continuum_operation, by = "operation_id"),
+      resource_list
+    )
+  ),
+  tar_target(
     inland_distance_to_mouth,
     compute_distance_to_mouth(
       river_network,
@@ -398,10 +440,20 @@ data_targets <- list(
     filter_sampling_rephy(rephy_data_recent, sampling_min = params$sampling_min)
   ),
   tar_target(
+    # Only the columns the REPHY steps use, so that changes to the food web
+    # metrics do not trigger the INLA fits and predictions downstream.
+    sea_operation_rephy,
+    foodweb_structure |>
+      dplyr::filter(survey %in% c("nurse", "pomet")) |>
+      dplyr::select(
+        operation_id, survey, longitude, latitude, year, month, salinity
+      )
+  ),
+  tar_target(
     rephy_mesh,
     build_rephy_mesh(
       rephy_data_sample,
-      foodweb_structure |> dplyr::filter(survey %in% c("nurse", "pomet"))
+      sea_operation_rephy
     )
   ),
   tar_target(
@@ -426,7 +478,7 @@ data_targets <- list(
     rephy_operation_predictions,
     predict_rephy_at_operations(
       rephy_salinity_complete,
-      foodweb_structure |> dplyr::filter(survey %in% c("nurse", "pomet")),
+      sea_operation_rephy,
       rephy_mesh
     )
   )

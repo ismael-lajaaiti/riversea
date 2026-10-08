@@ -113,7 +113,7 @@ ecosystem states (diversity, and functionning).
 @Freitas-Araújo-2025 study how communities change along environmental gradient
 in estuaries.
 
-- @Attrill-2002 critiques Remane diagram and proposes and quantitive, testable
+- @Attrill-2002 critiques Remane diagram and proposes and quantitative, testable
 alternative that consider salinity ranges instead of salinity.
 
 - @Macedo-etal-2021 Food webs are simpler during the dry season than the rainy season
@@ -131,6 +131,9 @@ develop an unified framework for managing sociohydroecosystems.
 
 - @Ho-etal-2022 how freshwater and terrestrial food webs change along elevation
 gradient.
+
+- @Wang-etal-2025a changes in food web structure associated to environmental
+changes (pollution) in the Pearl river.
 
 ### Freshwater ecosystems
 

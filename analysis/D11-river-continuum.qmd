@@ -1,0 +1,937 @@
+---
+title: "Community structure along the river continuum"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal of this notebook is to describe how fish communities change from
+upstream to downstream along the river continuum in diversity and food web
+structure.
+
+## Setup
+
+```{r}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+## Continuum variables: the RHT network
+
+The theoretical hydrographic network [RHT, @Pella-etal-2012] covers mainland
+France, one row per reach, with topographic, hydrologic and climatic
+attributes. Each river (ASPE) operation is matched to its nearest reach
+(`inland_operations_rht`). Estuarine survey operations (Pomet, Nurse) inside
+the river basins are left out: they belong to the estuary-sea side of the
+continuum.
+
+```{r}
+rht <- tar_read(rht)
+rht_operation <- tar_read(inland_operations_rht)
+basin <- tar_read(basin)
+district_kept <- tar_read(params)$district_kept
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+basin_kept <- basin |>
+  filter(district %in% district_kept) |>
+  sf::st_transform(sf::st_crs(rht))
+rht_kept <- rht |>
+  sf::st_filter(basin_kept)
+
+ggplot() +
+  geom_sf(data = basin_kept, fill = "grey97", color = "grey40") +
+  geom_sf(
+    data = rht_kept |> arrange(strahler),
+    aes(color = strahler, linewidth = strahler)
+  ) +
+  scale_color_viridis_c(name = "Strahler order", direction = -1) +
+  scale_linewidth(range = c(0.05, 1), guide = "none") +
+  theme_void()
+```
+
+```{r}
+cat(sprintf(
+  "%d reaches in total, %d in the kept watersheds\n",
+  nrow(rht), nrow(rht_kept)
+))
+```
+
+Variables of the RHT, described from the user guide shipped with the data
+(`rht_user_2020.pdf`).
+
+```{r}
+rht_description <- c(
+  id_drain = "Reach identifier (numbering follows the large basins)",
+  tjan_moy = "Mean January air temperature, 1960-1990 (°C)",
+  tjuil_moy = "Mean July air temperature, 1960-1990 (°C)",
+  noncalc = "1 if the models cannot be computed for the reach",
+  region_csp = "CSP region abbreviation",
+  d_source = "Distance to source (km)",
+  altitude = "Mean reach altitude (m)",
+  sfbvu = "Area of the reach's own (unit) catchment (km²)",
+  long_ = "Reach length (m)",
+  strahler = "Strahler order",
+  surf_bv = "Upstream catchment area (km²)",
+  pente = "Reach slope (‰)",
+  minqmx = "Natural minimum mean monthly discharge (m³/s)",
+  module_ = "Natural mean annual discharge (m³/s)",
+  ad = "Width hydraulic geometry: Width = ad * Module^bd * (Q/Module)^b",
+  bd = "Width hydraulic geometry exponent (downstream)",
+  b = "Width hydraulic geometry exponent (at-a-station)",
+  cd = "Depth hydraulic geometry: Depth = cd * Module^fd * (Q/Module)^f",
+  fd = "Depth hydraulic geometry exponent (downstream)",
+  f = "Depth hydraulic geometry exponent (at-a-station)",
+  l = "Modelled width at mean annual discharge (m)",
+  h = "Modelled depth at mean annual discharge (m)",
+  h50_Morel = "Depth at median discharge, Morel et al. 2019 (m)",
+  l50_Morel = "Width at median discharge, Morel et al. 2019 (m)",
+  b_Morel = "Width exponent, Morel et al. 2019",
+  f_Morel = "Depth exponent, Morel et al. 2019",
+  phi = "Mean sediment size, -log2(D)",
+  proba_interm = "Probability of flow intermittence",
+  qmna5_rht = "Dry-year minimum monthly discharge, 5-year return period (m³/s)",
+  qixa_10 = "Annual maximum peak discharge, 10-year return period (m³/s)"
+)
+rht_species <- c(
+  abl = "bleak", ang = "eel", baf = "barbel", bam = "Mediterranean barbel",
+  bln = "blageon", bou = "bitterling", brb = "white bream", bro = "pike",
+  cas = "crucian carp", cco = "common carp", cha = "bullhead", che = "chub",
+  epi = "three-spined stickleback", ept = "nine-spined stickleback",
+  gar = "roach", gou = "gudgeon", gre = "ruffe", hot = "nase",
+  lof = "stone loach", lot = "burbot", lpp = "brook lamprey",
+  obr = "grayling", pch = "black bullhead", per = "perch",
+  pes = "pumpkinseed", rot = "rudd", san = "pikeperch",
+  sat = "Atlantic salmon", spi = "schneider", tan = "tench",
+  tox = "toxostome", trf = "brown trout", vai = "minnow", van = "dace"
+)
+
+describe_rht_variable <- function(variable) {
+  base <- sub("(icinf|icsup|_inf|_sup)$", "", variable)
+  bound <- c(icinf = "Lower", `_inf` = "Lower", icsup = "Upper", `_sup` = "Upper")[
+    sub(paste0("^", base), "", variable)
+  ]
+  case_when(
+    variable %in% names(rht_description) ~ rht_description[variable],
+    base != variable ~ paste(bound, "bound of the confidence interval of", base),
+    grepl("^pesp_", variable) ~ paste(
+      "Presence probability:", rht_species[sub("^pesp_", "", variable)]
+    ),
+    grepl("^q[0-9]+_rht$", variable) ~ paste(
+      "Flow duration curve, quantile", sub("_rht$", "", variable), "(m³/s)"
+    )
+  )
+}
+
+rht_variables <- tibble(variable = names(sf::st_drop_geometry(rht))) |>
+  mutate(
+    description = vapply(variable, describe_rht_variable, character(1)),
+    danet = variable %in% c("altitude", "pente", "d_source", "l", "h", "strahler"),
+    pct_na_operation = round(
+      100 * colMeans(is.na(rht_operation[variable])), 1
+    )
+  )
+knitr::kable(rht_variables)
+```
+
+The six site variables used by @Danet-etal-2021 are: altitude,
+slope, distance from source, width, depth, Strahler order.
+
+### Snapping operations to the RHT
+
+Distance between each operation and its matched reach (distances below 1 m
+shown at 1 m):
+
+```{r}
+#| fig-width: 7
+#| fig-height: 4
+
+ggplot(rht_operation, aes(pmax(snap_dist_m, 1))) +
+  geom_histogram(bins = 60) +
+  scale_x_log10() +
+  labs(x = "Distance to the nearest RHT reach (m)", y = "Operations")
+```
+
+Distance alone does not tell whether an operation was matched to the right
+reach. We check it against an independent value: the upstream catchment area
+of the station in AMOBIO (`drained_area`, constant per station so joined on
+`sandre_code`), compared with the area of the matched RHT reach (`surf_bv`).
+
+```{r}
+rht_area_check <- rht_operation |>
+  mutate(small_catchment = drained_area <= 10)
+
+cat(sprintf(
+  "%d / %d operations have an AMOBIO drained area\n",
+  sum(!is.na(rht_area_check$area_ratio)), nrow(rht_area_check)
+))
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 5
+
+rht_area_check |>
+  filter(!is.na(area_ratio), area_ratio > 0) |>
+  ggplot(aes(pmax(snap_dist_m, 1), area_ratio, color = small_catchment)) +
+  annotate("rect",
+    xmin = 0, xmax = Inf, ymin = 1 / 2, ymax = 2,
+    fill = "grey85", alpha = 0.5
+  ) +
+  geom_point(alpha = 0.3, size = 0.6) +
+  geom_vline(xintercept = 50, linetype = "dashed") +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_manual(
+    values = c(`FALSE` = "grey30", `TRUE` = "tomato"),
+    labels = c(`FALSE` = "> 10 km²", `TRUE` = "<= 10 km²"),
+    name = "AMOBIO drained area"
+  ) +
+  labs(
+    x = "Distance to the nearest RHT reach (m)",
+    y = "RHT / AMOBIO catchment area"
+  )
+```
+
+Grey band: areas within a factor 2. Share of operations outside it, by
+snapping distance and catchment size:
+
+```{r}
+rht_area_check |>
+  filter(!is.na(area_ratio), area_ratio > 0) |>
+  mutate(
+    distance = cut(
+      snap_dist_m, c(0, 50, 100, 200, Inf),
+      include.lowest = TRUE
+    ),
+    mismatch = area_ratio > 2 | area_ratio < 1 / 2
+  ) |>
+  summarise(
+    n = n(),
+    pct_mismatch = round(100 * mean(mismatch), 1),
+    .by = c(distance, small_catchment)
+  ) |>
+  arrange(distance, small_catchment)
+```
+
+Rule to keep an operation: RHT and AMOBIO areas within a factor 2 when the
+AMOBIO area is known, snapping distance <= 50 m otherwise
+
+We remove operations with Strahler order 0 (2 operations), these are marked with
+NA.
+
+### Pairwise relationships between continuum variables
+
+The site variables of @Danet-etal-2021, from the RHT, plus the
+hydrographic distance to the river mouth (D8). Depth is left out: in the
+RHT, width and depth are both modelled from mean annual discharge and are
+perfectly correlated (Spearman 1), so only width is kept. Operations kept by
+the snapping rule only, one point per sampling location (repeated visits
+share the same site variables). Upper panels: Spearman correlations,
+unaffected by the log transforms of the lower panels. Slope, distance from
+source and altitude contain zeros (altitude also slightly negative values,
+down to -0.6 m), hence `log(x + 1)`.
+
+```{r}
+continuum_operation <- tar_read(continuum_operation)
+continuum_pca <- tar_read(continuum_pca)
+
+continuum_labels <- c(
+  log_altitude = "log(altitude + 1)",
+  log_slope = "log(slope + 1)",
+  log_dist_source = "log(dist. source + 1)",
+  log_width = "log(width)",
+  strahler = "strahler",
+  log_dist_mouth = "log(dist. mouth)"
+)
+continuum_location <- continuum_operation |>
+  distinct(longitude, latitude, .keep_all = TRUE)
+
+cat(sprintf("%d sampling locations\n", nrow(continuum_location)))
+```
+
+```{r}
+#| fig-width: 12
+#| fig-height: 12
+
+GGally::ggpairs(
+  continuum_location,
+  columns = names(continuum_labels),
+  columnLabels = unname(continuum_labels),
+  upper = list(continuous = GGally::wrap("cor", method = "spearman")),
+  lower = list(continuous = GGally::wrap("points", alpha = 0.1, size = 0.3)),
+  diag = list(continuous = GGally::wrap("densityDiag"))
+)
+```
+
+### PCA of the continuum variables
+
+PCA on the standardised variables above, one row per sampling location
+(`continuum_pca`). PC1 is oriented so that its scores increase with river
+width (downstream), PC2 so that they increase with distance to mouth. Every
+operation gets the scores of its location (`continuum_operation`).
+
+```{r}
+round(summary(continuum_pca)$importance, 3)
+```
+
+```{r}
+round(continuum_pca$rotation, 2)
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 7
+
+arrow_scale <- 0.9 * max(abs(continuum_pca$x[, 1:2])) /
+  max(abs(continuum_pca$rotation[, 1:2]))
+loadings <- as_tibble(continuum_pca$rotation[, 1:2], rownames = "variable") |>
+  mutate(
+    across(c(PC1, PC2), \(x) x * arrow_scale),
+    variable = continuum_labels[variable]
+  )
+pct_var <- round(100 * summary(continuum_pca)$importance[2, 1:2], 1)
+
+ggplot(continuum_location, aes(PC1, PC2)) +
+  geom_point(aes(color = district), alpha = 0.3, size = 0.6) +
+  geom_segment(
+    data = loadings,
+    aes(x = 0, y = 0, xend = PC1, yend = PC2),
+    arrow = arrow(length = unit(0.2, "cm"))
+  ) +
+  geom_label(data = loadings, aes(label = variable), size = 3) +
+  labs(
+    x = sprintf("PC1 (%.1f%%)", pct_var[1]),
+    y = sprintf("PC2 (%.1f%%)", pct_var[2]),
+    color = NULL
+  )
+```
+
+```{r}
+#| fig-width: 12
+#| fig-height: 6
+
+continuum_location |>
+  tidyr::pivot_longer(c(PC1, PC2), names_to = "axis", values_to = "score") |>
+  ggplot() +
+  geom_sf(data = basin_kept, fill = "grey97", color = "grey40") +
+  geom_point(
+    aes(longitude, latitude, color = score),
+    size = 0.6
+  ) +
+  scale_color_viridis_c() +
+  facet_wrap(~axis) +
+  coord_sf(crs = 4326) +
+  theme_void()
+```
+
+PC1 (58.6% of the variance) is a river size gradient: distance from source,
+width and Strahler order load positively, slope and altitude negatively,
+while distance to mouth barely contributes. Low scores are small, steep
+headwater streams; high scores are large, low-gradient rivers. PC2 (28.4%)
+is mostly driven by distance to mouth and altitude (the size variables load
+weakly and positively): it separates sites far inland and at higher
+altitude (high scores) from lowland sites close to the sea (low scores), and
+is uncorrelated with PC1.
+
+### Food web structure along PC1
+
+River (ASPE) food webs (`foodweb_structure`) with a PC1 score. Diet overlap
+is the mean Jaccard similarity of prey sets over all pairs of consumers,
+including the invertebrate groups; the fish-only version compares fish
+consumers only (`fish_diet_overlap`).
+
+```{r}
+fw_continuum <- tar_read(foodweb_structure) |>
+  select(
+    operation_id, log_species_richness, connectance, trophic_length,
+    diet_overlap, fish_diet_overlap
+  ) |>
+  inner_join(
+    continuum_operation |> select(operation_id, district, PC1, PC2),
+    by = "operation_id"
+  ) |>
+  mutate(species_richness = exp(log_species_richness))
+
+cat(sprintf("%d river food webs\n", nrow(fw_continuum)))
+```
+
+```{r}
+plot_fw_vs_axis <- function(axis, xlab) {
+  fw_continuum |>
+    tidyr::pivot_longer(
+      c(
+        species_richness, connectance, trophic_length, diet_overlap,
+        fish_diet_overlap
+      ),
+      names_to = "metric", values_to = "value"
+    ) |>
+    mutate(metric = factor(
+      metric,
+      levels = c(
+        "species_richness", "connectance", "trophic_length", "diet_overlap",
+        "fish_diet_overlap"
+      ),
+      labels = c(
+        "Species richness", "Connectance", "Trophic length", "Diet overlap",
+        "Diet overlap (fish only)"
+      )
+    )) |>
+    ggplot(aes(.data[[axis]], value)) +
+    geom_point(alpha = 0.1, size = 0.5) +
+    geom_smooth(aes(color = district), se = TRUE) +
+    facet_wrap(~metric, scales = "free_y", ncol = 2) +
+    labs(x = xlab, y = NULL, color = NULL)
+}
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 11
+
+plot_fw_vs_axis(
+  "PC1", sprintf("PC1 (%.1f%%), upstream to downstream", pct_var[1])
+)
+```
+
+Signal is clear and goes as expected. Downstream web are longer, wider and
+richer. Diet overlap should be computed only on fish species (excluding resource
+nodes) so we can observe a clear signal.
+
+### Food web structure along PC2
+
+Same metrics along PC2, which carries distance to mouth and altitude.
+
+```{r}
+#| fig-width: 10
+#| fig-height: 11
+
+plot_fw_vs_axis(
+  "PC2", sprintf("PC2 (%.1f%%), close to far from the sea", pct_var[2])
+)
+```
+
+Here the pattern is less much clear, showing that distance to the river mouth is
+not the only the relevant variable for food web structure (because a river can
+be thin, but close to the sea).
+
+## Beta diversity along the continuum
+
+### One species list per site
+
+Fish species lists come from the river (ASPE) operations with a food web and
+a PC1 score (`size_year_filtered`). Sites are visited repeatedly, and pooling
+visits inflates richness with the number of visits, so each site keeps a
+single visit: the most recent one. A randomly chosen visit is used as a
+check.
+
+```{r}
+site_visit <- tar_read(size_year_filtered) |>
+  filter(survey == "river") |>
+  distinct(operation_id, species_valid) |>
+  inner_join(
+    continuum_operation |> select(operation_id, district, PC1),
+    by = "operation_id"
+  ) |>
+  left_join(
+    tar_read(river_operation) |> distinct(operation_id, sandre_code, date),
+    by = "operation_id"
+  )
+visit <- site_visit |> distinct(operation_id, sandre_code, date)
+
+visit |>
+  count(sandre_code, name = "visits") |>
+  summarise(
+    sites = n(),
+    median_visits = median(visits),
+    max_visits = max(visits)
+  )
+```
+
+```{r}
+richness_by_visits <- site_visit |>
+  distinct(sandre_code, species_valid) |>
+  count(sandre_code, name = "pooled") |>
+  inner_join(
+    site_visit |>
+      semi_join(
+        visit |> slice_max(date, n = 1, with_ties = FALSE, by = sandre_code),
+        by = "operation_id"
+      ) |>
+      count(sandre_code, name = "last_visit"),
+    by = "sandre_code"
+  ) |>
+  inner_join(visit |> count(sandre_code, name = "visits"), by = "sandre_code")
+
+richness_by_visits |>
+  mutate(visits = cut(visits, c(0, 1, 3, 6, 10, Inf))) |>
+  summarise(
+    sites = n(),
+    richness_last_visit = median(last_visit),
+    richness_pooled = median(pooled),
+    .by = visits
+  ) |>
+  arrange(visits)
+```
+
+```{r}
+site_matrix <- function(selected_visit) {
+  presence <- site_visit |>
+    semi_join(selected_visit, by = "operation_id") |>
+    distinct(sandre_code, district, PC1, species_valid) |>
+    mutate(present = 1L) |>
+    tidyr::pivot_wider(
+      names_from = species_valid, values_from = present, values_fill = 0L
+    ) |>
+    arrange(sandre_code)
+  species <- presence |>
+    select(-sandre_code, -district, -PC1) |>
+    as.matrix()
+  list(
+    site = presence |> select(sandre_code, district, PC1),
+    presence = species[, sort(colnames(species))]
+  )
+}
+
+last_visit <- visit |>
+  slice_max(date, n = 1, with_ties = FALSE, by = sandre_code)
+set.seed(1)
+random_visit <- visit |>
+  slice_sample(n = 1, by = sandre_code)
+community <- list(
+  last = site_matrix(last_visit),
+  random = site_matrix(random_visit)
+)
+sorensen <- lapply(
+  community, \(x) vegan::vegdist(x$presence, method = "bray", binary = TRUE)
+)
+stopifnot(identical(
+  community$last$site$sandre_code, community$random$site$sandre_code
+))
+
+cat(sprintf(
+  "%d sites, %d species\n",
+  nrow(community$last$presence), ncol(community$last$presence)
+))
+```
+
+### Composition along PC1
+
+Principal coordinates analysis (PCoA) of the Sørensen dissimilarities
+(square-rooted, to make them Euclidean), last visit per site.
+
+```{r}
+#| fig-width: 13
+#| fig-height: 6
+
+pcoa <- cmdscale(sqrt(sorensen$last), k = 2, eig = TRUE)
+pcoa_pct <- round(100 * pcoa$eig[1:2] / sum(pcoa$eig[pcoa$eig > 0]), 1)
+pcoa_scores <- community$last$site |>
+  mutate(axis1 = pcoa$points[, 1], axis2 = pcoa$points[, 2])
+
+pcoa_plot <- function(color_var) {
+  ggplot(pcoa_scores, aes(axis1, axis2, color = .data[[color_var]])) +
+    geom_point(size = 0.7, alpha = 0.6) +
+    coord_equal() +
+    labs(
+      x = sprintf("PCoA 1 (%.1f%%)", pcoa_pct[1]),
+      y = sprintf("PCoA 2 (%.1f%%)", pcoa_pct[2])
+    )
+}
+patchwork::wrap_plots(
+  pcoa_plot("PC1") + scale_color_viridis_c(),
+  pcoa_plot("district") + labs(color = NULL)
+)
+```
+
+### Species along PC1
+
+Association of each species with PC1: Spearman correlation between presence
+and PC1 across sites (species present at >= 5% of sites). Species with
+|rho| >= 0.2 are shown, as their frequency of occurrence in tenths of the PC1
+range (equal number of sites per tenth), ordered by their mean PC1 where
+present.
+
+```{r}
+presence_long <- community$last$presence |>
+  as_tibble() |>
+  mutate(sandre_code = community$last$site$sandre_code) |>
+  tidyr::pivot_longer(-sandre_code, names_to = "species", values_to = "present") |>
+  left_join(community$last$site, by = "sandre_code") |>
+  mutate(pc1_bin = ntile(PC1, 10), .by = species)
+
+species_pc1 <- presence_long |>
+  summarise(
+    prevalence = mean(present),
+    rho = cor(present, PC1, method = "spearman"),
+    mean_pc1 = sum(PC1 * present) / sum(present),
+    .by = species
+  ) |>
+  filter(prevalence >= 0.05) |>
+  arrange(desc(abs(rho)))
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 7
+
+species_shown <- species_pc1 |>
+  filter(abs(rho) >= 0.2) |>
+  arrange(mean_pc1)
+bin_pc1 <- presence_long |>
+  distinct(sandre_code, PC1, pc1_bin) |>
+  summarise(pc1 = median(PC1), .by = pc1_bin) |>
+  arrange(pc1_bin)
+
+presence_long |>
+  filter(species %in% species_shown$species) |>
+  summarise(frequency = mean(present), .by = c(species, pc1_bin)) |>
+  mutate(species = factor(species, levels = species_shown$species)) |>
+  ggplot(aes(factor(pc1_bin), species, fill = frequency)) +
+  geom_tile() +
+  scale_x_discrete(labels = sprintf("%.1f", bin_pc1$pc1)) +
+  scale_fill_viridis_c(name = "Frequency of\noccurrence") +
+  labs(x = "PC1, median of each tenth (upstream to downstream)", y = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+### Turnover and nestedness along PC1
+
+For every pair of sites in the same watershed, the Sørensen dissimilarity
+is partitioned into turnover (species replacement, Simpson dissimilarity)
+and nestedness (species loss, the remainder) [@Baselga-2010], and related to
+the distance between the two sites along PC1. With `a` the number of shared
+species and `b`, `c` the species found at only one of the two sites:
+Sørensen = (b + c) / (2a + b + c), turnover = min(b, c) / (a + min(b, c)).
+
+```{r}
+beta_pairs <- function(presence, pc1) {
+  shared <- tcrossprod(presence)
+  only_i <- rowSums(presence) - shared
+  only_j <- t(only_i)
+  sorensen <- (only_i + only_j) / (2 * shared + only_i + only_j)
+  min_only <- pmin(only_i, only_j)
+  turnover <- min_only / (shared + min_only)
+  upper <- upper.tri(shared)
+  sorensen <- sorensen[upper]
+  turnover <- turnover[upper]
+  tibble(
+    distance_pc1 = abs(outer(pc1, pc1, "-"))[upper],
+    total = sorensen,
+    turnover = turnover,
+    nestedness = sorensen - turnover
+  )
+}
+
+beta_partition <- lapply(
+  split(seq_len(nrow(community$last$site)), community$last$site$district),
+  \(i) beta_pairs(community$last$presence[i, ], community$last$site$PC1[i])
+) |>
+  bind_rows(.id = "district")
+
+beta_partition |>
+  summarise(
+    pairs = n(),
+    across(c(total, turnover, nestedness), \(x) round(mean(x), 3)),
+    .by = district
+  )
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7
+
+beta_partition |>
+  mutate(distance_bin = cut_width(distance_pc1, 0.5, boundary = 0)) |>
+  summarise(
+    n = n(),
+    distance_pc1 = mean(distance_pc1),
+    across(c(total, turnover, nestedness), mean),
+    .by = c(district, distance_bin)
+  ) |>
+  filter(n >= 30) |>
+  tidyr::pivot_longer(
+    c(total, turnover, nestedness),
+    names_to = "component", values_to = "dissimilarity"
+  ) |>
+  mutate(component = factor(
+    component,
+    levels = c("total", "turnover", "nestedness"),
+    labels = c("Total (Sørensen)", "Turnover", "Nestedness")
+  )) |>
+  ggplot(aes(distance_pc1, dissimilarity, color = component)) +
+  geom_line() +
+  geom_point(size = 0.8) +
+  facet_wrap(~district) +
+  labs(
+    x = "Distance along PC1 between the two sites",
+    y = "Mean dissimilarity (bins of 0.5, >= 30 pairs)",
+    color = NULL
+  )
+```
+
+Sites at the same position along PC1 already differ substantially (total
+dissimilarity about 0.47-0.58), mostly through turnover (0.33-0.44). As the
+distance along PC1 increases, total dissimilarity rises to 0.75-0.88, with
+the two components taking over in turn. For small to moderate distances (up
+to about 5 PC1 units), the rise comes mostly from nestedness (0.15 to
+0.25-0.30) while turnover stays flat: pairs differ mainly because the
+downstream site holds additional species, consistent with the species
+gained downstream (cyprinids, percids) on top of widespread headwater species
+(bullhead, minnow, stone loach). For the largest distances, turnover rises
+sharply and nestedness declines, especially in the Seine and Loire: the most
+upstream and most downstream sites share few species (brown trout-dominated
+headwaters against cyprinid- and percid-rich large rivers).
+
+### Beta diversity within PC1 bins
+
+Do sites at the same position along PC1 differ more from each other upstream
+than downstream? Sites are grouped by watershed and tenth of PC1 (the same
+tenths as above). Two measures per group:
+
+- mean dissimilarity between pairs of sites of the group, partitioned as
+  above; as a mean over pairs it does not depend on the number of sites;
+- Whittaker's beta (total number of species of the group / mean number of
+  species per site), on 200 random draws of 15 sites, since the total grows
+  with the number of sites.
+
+The median distance between the sites of each pair is reported to check that
+upstream groups are not simply more spread out.
+
+```{r}
+site_bin <- community$last$site |>
+  left_join(
+    last_visit |>
+      left_join(
+        continuum_operation |> select(operation_id, longitude, latitude),
+        by = "operation_id"
+      ) |>
+      select(sandre_code, longitude, latitude),
+    by = "sandre_code"
+  ) |>
+  mutate(pc1_bin = ntile(PC1, 10))
+site_km <- site_bin |>
+  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+  sf::st_transform(2154) |>
+  sf::st_coordinates() / 1000
+
+bin_groups <- split(
+  seq_len(nrow(site_bin)),
+  list(site_bin$district, site_bin$pc1_bin),
+  drop = TRUE
+)
+bin_groups <- bin_groups[lengths(bin_groups) >= 5]
+
+beta_within_bin <- lapply(bin_groups, \(i) {
+  upper <- upper.tri(diag(length(i)))
+  beta_pairs(community$last$presence[i, ], site_bin$PC1[i]) |>
+    mutate(km = as.matrix(dist(site_km[i, ]))[upper])
+}) |>
+  bind_rows(.id = "group") |>
+  tidyr::separate(
+    group, c("district", "pc1_bin"), sep = "\\.", convert = TRUE
+  ) |>
+  summarise(
+    across(c(total, turnover, nestedness), mean),
+    median_km = median(km),
+    .by = c(district, pc1_bin)
+  ) |>
+  left_join(
+    site_bin |>
+      summarise(sites = n(), pc1 = median(PC1), .by = c(district, pc1_bin)),
+    by = c("district", "pc1_bin")
+  ) |>
+  arrange(district, pc1_bin)
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7
+
+beta_within_bin |>
+  tidyr::pivot_longer(
+    c(total, turnover, nestedness),
+    names_to = "component", values_to = "dissimilarity"
+  ) |>
+  mutate(component = factor(
+    component,
+    levels = c("total", "turnover", "nestedness"),
+    labels = c("Total (Sørensen)", "Turnover", "Nestedness")
+  )) |>
+  ggplot(aes(pc1, dissimilarity, color = component)) +
+  geom_line() +
+  geom_point(aes(size = sites)) +
+  scale_size_area(max_size = 3) +
+  facet_wrap(~district) +
+  labs(
+    x = "PC1, median of each tenth (upstream to downstream)",
+    y = "Mean dissimilarity between sites of the same tenth",
+    color = NULL
+  )
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 4.5
+
+n_draw_sites <- 15
+set.seed(1)
+whittaker <- lapply(bin_groups[lengths(bin_groups) >= n_draw_sites], \(i) {
+  draws <- replicate(200, {
+    drawn <- community$last$presence[sample(i, n_draw_sites), ]
+    c(
+      gamma = sum(colSums(drawn) > 0),
+      alpha = mean(rowSums(drawn))
+    )
+  })
+  tibble(
+    gamma = mean(draws["gamma", ]),
+    alpha = mean(draws["alpha", ]),
+    whittaker = mean(draws["gamma", ] / draws["alpha", ])
+  )
+}) |>
+  bind_rows(.id = "group") |>
+  tidyr::separate(
+    group, c("district", "pc1_bin"), sep = "\\.", convert = TRUE
+  ) |>
+  left_join(
+    beta_within_bin |> select(district, pc1_bin, pc1),
+    by = c("district", "pc1_bin")
+  )
+
+whittaker |>
+  tidyr::pivot_longer(
+    c(alpha, whittaker),
+    names_to = "measure", values_to = "value"
+  ) |>
+  mutate(measure = factor(
+    measure,
+    levels = c("alpha", "whittaker"),
+    labels = c("Species per site", "Whittaker's beta")
+  )) |>
+  ggplot(aes(pc1, value, color = district)) +
+  geom_line() +
+  geom_point(size = 1) +
+  facet_wrap(~measure, scales = "free_y") +
+  labs(
+    x = "PC1, median of each tenth (upstream to downstream)",
+    y = NULL, color = NULL
+  )
+```
+
+Sites at the same position along PC1 are more different from each other
+upstream than downstream. Mean pairwise dissimilarity falls from 0.63-0.65 in
+the most upstream tenth to 0.38-0.45 in the most downstream one (Adour-Garonne,
+Loire, Seine), and Whittaker's beta from about 4.5-5 to 2.2-2.5. Downstream
+tenths hold more species in total (about 22-24 against 36-40 species in 15
+sites; `whittaker$gamma`), but each site holds a larger share of them (about 5
+species per site upstream against 15-18 downstream). Both components
+decrease, nestedness more consistently than turnover. The distance between
+sites does not explain the pattern in the Loire and Adour-Garonne (upstream
+pairs are as close as or closer than downstream ones); in the Seine, upstream
+pairs are farther apart, which may contribute. With about 5 species per site
+upstream, a species missed at a single visit weighs heavily on dissimilarity,
+so part of the high upstream beta, especially its nestedness part, may come
+from imperfect detection.
+
+## Species contribution to food web structure
+
+Each fish species is removed in turn from each local food web, with its
+size classes and any consumer left without prey (secondary extinctions),
+and the metrics are recomputed (`species_contribution_operation`). The
+change is the metric of the full web minus the metric without the species
+(positive: the species raises the metric). Every removal lowers richness by
+one, so the change is expressed relative to the mean change over the fish
+species of the same web: this keeps the effect of the species' identity and
+removes the effect of losing any one species. Webs with a single fish species
+have no relative contribution.
+
+```{r}
+contribution <- tar_read(species_contribution_operation) |>
+  inner_join(
+    continuum_operation |> select(operation_id, district, PC1),
+    by = "operation_id"
+  ) |>
+  tidyr::pivot_longer(
+    starts_with("relative_"),
+    names_to = "metric", names_prefix = "relative_",
+    values_to = "relative"
+  ) |>
+  filter(!is.na(relative)) |>
+  mutate(metric = factor(
+    metric,
+    levels = c("trophic_length", "connectance", "fish_diet_overlap"),
+    labels = c("Trophic length", "Connectance", "Fish diet overlap")
+  ))
+
+contribution |>
+  distinct(operation_id, species, n_secondary) |>
+  summarise(
+    webs = n_distinct(operation_id),
+    removals = n(),
+    with_secondary_extinctions = mean(n_secondary > 0)
+  )
+```
+
+### Mean contribution per species
+
+Mean relative contribution over the webs where the species occurs (species
+in >= 50 webs), with an approximate 95% interval (mean +/- 2 standard
+errors). Species are ordered and coloured by their mean trophic level across
+the webs where they occur (prey-averaged, mean over their size classes;
+highest at the top).
+
+```{r}
+#| fig-width: 12
+#| fig-height: 9
+
+species_order <- contribution |>
+  distinct(operation_id, species, trophic_level) |>
+  summarise(webs = n(), trophic_level = mean(trophic_level), .by = species) |>
+  filter(webs >= 50) |>
+  arrange(trophic_level)
+
+contribution |>
+  filter(species %in% species_order$species) |>
+  summarise(
+    mean = mean(relative),
+    se = sd(relative) / sqrt(n()),
+    .by = c(species, metric)
+  ) |>
+  left_join(species_order |> select(species, trophic_level), by = "species") |>
+  mutate(species = factor(species, levels = species_order$species)) |>
+  ggplot(aes(mean, species, color = trophic_level)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = mean - 2 * se, xmax = mean + 2 * se), size = 0.3) +
+  scale_color_viridis_c(name = "Trophic\nlevel") +
+  facet_wrap(~metric, scales = "free_x") +
+  labs(x = "Mean relative contribution", y = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+Contributions to trophic length follow trophic level: piscivores raise it
+(pike, brown trout, pikeperch, perch, eel) and low-level species lower it
+(brook lamprey, roach, nase). Connectance is raised most by generalists (chub,
+eel, wels catfish). Fish diet overlap is lowered by species with distinctive
+diets (brook lamprey, black bullhead, pike, nase) and raised by common
+invertebrate feeders (grayling, stickleback, bullhead, stone loach, minnow).
+These contributions follow from the diet links of the metaweb.

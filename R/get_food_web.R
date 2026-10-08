@@ -328,13 +328,17 @@ get_frac_piscivorous <- function(web, resource) {
 
 #' Get trophic length from a food web adjacency matrix
 #'
+#' Trophic levels are prey-averaged (1 + mean trophic level of the prey).
+#' Chain-averaged levels were used before but are inflated by the many long
+#' chains of size classes eating size classes, reaching ~6 in large rivers
+#' against ~4 prey-averaged (see D11).
+#'
 #' @param web adjacency matrix of type matrix.
-#' @param tl_method string, cheddar method to compute trophic levels.
 #'
 #' @return numeric, trophic length, that is the maximal trophic level of the
 #' community.
 #' @export
-get_trophic_length <- function(web, tl_method = "ChainAveragedTL") {
+get_trophic_length <- function(web) {
   nodes <- data.frame(node = colnames(web))
   links <- web |>
     as.data.frame() |>
@@ -342,15 +346,12 @@ get_trophic_length <- function(web, tl_method = "ChainAveragedTL") {
     tidyr::pivot_longer(-one_of("resource"), names_to = "consumer") |>
     filter(value == 1) |>
     select(-value)
-  # trophic_length <-
   community <- cheddar::Community(
     nodes = nodes,
     properties = list(title = "Community"),
     trophic.links = links
   )
-  cheddar::TrophicLevels(community) |>
-    as.data.frame() |>
-    pull("ChainAveragedTL") |>
+  cheddar::PreyAveragedTrophicLevel(community) |>
     max(na.rm = TRUE)
 }
 
@@ -378,6 +379,22 @@ get_diet_overlap <- function(web) {
   jaccard <- inter / union_mat
   diag(jaccard) <- NA
   mean(jaccard[upper.tri(jaccard)], na.rm = TRUE)
+}
+
+#' Mean diet overlap between fish consumers in a food web.
+#'
+#' As [get_diet_overlap()], but only pairs of fish consumers (fish size
+#' classes with >=1 prey) are compared: invertebrate consumers are left out.
+#' Their diets are fixed (same in every web), so including them mixes in
+#' fish-invertebrate pairs, whose share grows with fish richness (see D11).
+#'
+#' @param web adjacency matrix, rows are prey and columns are predators.
+#' @param resource resource species list.
+#'
+#' @return numeric, or `NA` if fewer than 2 fish consumers.
+#' @export
+get_fish_diet_overlap <- function(web, resource) {
+  get_diet_overlap(web[, !colnames(web) %in% resource, drop = FALSE])
 }
 
 #' Collapse a trophic-species web to a species-level adjacency matrix.
@@ -900,9 +917,7 @@ get_trophic_breadth <- function(web) {
 
 #' Compute structural metrics for one local food web.
 #'
-#' `get_trophic_length()` (via `cheddar`) dominates the cost of this by
-#' roughly two orders of magnitude over the other metrics combined, so
-#' bundling every metric into one call keeps each food web's work in a
+#' Bundling every metric into one call keeps each food web's work in a
 #' single unit for `measure_foodweb_structure()` to parallelize over.
 #'
 #' @param foodweb adjacency matrix for one local food web.
@@ -922,6 +937,7 @@ compute_foodweb_metrics <- function(foodweb, resource) {
   trophic_length <- get_trophic_length(foodweb)
   frac_piscivorous <- get_frac_piscivorous(foodweb, resource = resource)
   diet_overlap <- get_diet_overlap(foodweb)
+  fish_diet_overlap <- get_fish_diet_overlap(foodweb, resource)
   tibble::tibble(
     foodweb = list(foodweb),
     log_trophic_richness = log_trophic_richness,
@@ -931,7 +947,8 @@ compute_foodweb_metrics <- function(foodweb, resource) {
     trophic_breadth_q90 = breadth$q90,
     trophic_breadth_median = breadth$median,
     frac_piscivorous = frac_piscivorous,
-    diet_overlap = diet_overlap
+    diet_overlap = diet_overlap,
+    fish_diet_overlap = fish_diet_overlap
   )
 }
 
@@ -940,8 +957,6 @@ compute_foodweb_metrics <- function(foodweb, resource) {
 #' Splits the local food webs into `n_workers` chunks and computes
 #' `compute_foodweb_metrics()` for each chunk in a forked worker (see
 #' `build_local_foodweb_parallel()` for the memory-sharing rationale).
-#' `get_trophic_length()` dominates the per-web cost, so this is worth
-#' parallelizing even though each web's computation itself is cheap.
 #'
 #' @param web_list output of `build_foodweb()` with `local = TRUE`.
 #' @param operation tibble with an `operation_id` column identifying each
