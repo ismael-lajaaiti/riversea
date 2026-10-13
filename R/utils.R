@@ -453,6 +453,44 @@ format_basin <- function(dir) {
     select(district, geometry)
 }
 
+#' Download the hydrographic sectors (BD Carthage).
+#'
+#' Sectors (`SecteurHydro`, SANDRE) are the second level of the French
+#' hydrographic zoning (region > sector > sub-sector > zone), i.e. groups of
+#' sub-catchments, downloaded from the SANDRE WFS service as a zipped
+#' GeoPackage.
+#'
+#' @param dir directory where to store the zip file.
+#' @return Path of `secteur_hydro.zip`.
+#' @export
+download_hydro_sector <- function(dir) {
+  url <- paste0(
+    "https://services.sandre.eaufrance.fr/geo/zonage?SERVICE=WFS&VERSION=2.0.0",
+    "&REQUEST=GetFeature&TYPENAMES=sa:SecteurHydro&OUTPUTFORMAT=GPKG"
+  )
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+  path <- file.path(dir, "secteur_hydro.zip")
+  curl::curl_download(url, path)
+  path
+}
+
+#' Read the hydrographic sectors.
+#'
+#' @param zip_file path of the zipped GeoPackage, e.g.
+#'   `download_hydro_sector()`'s output.
+#' @return sf tibble with `sector` code, `sector_name` and geometry (WGS84).
+#' @export
+read_hydro_sector <- function(zip_file) {
+  dir <- tempfile("sector")
+  gpkg <- utils::unzip(zip_file, exdir = dir)
+  sf::read_sf(gpkg) |>
+    sf::st_make_valid() |>
+    sf::st_transform(crs = 4326) |>
+    dplyr::select(sector = CdSecteurHydro, sector_name = LbSecteurHydro)
+}
+
 #' Assign districts and whether the operation is inland or sea-side.
 #' and restrict `river` operations to the catchments of interest.
 #'

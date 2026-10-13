@@ -1169,3 +1169,22 @@ remove_rare_river_size <- function(river_size, occurence_min) {
   river_size |>
     dplyr::filter(species_valid %in% no_rare_species)
 }
+
+#' Get the fishing protocol and effort of the ASPE river operations.
+#'
+#' @param individual_fish_file path to `output_individual_fish.rda`.
+#'
+#' @return tibble with columns operation_id, protocol, surface (fished area,
+#' m²), and has_individuals (whether the operation has individual fish
+#' records).
+#' @export
+get_river_effort <- function(individual_fish_file) {
+  out <- get(base::load(individual_fish_file))
+  out$fishing_operation |>
+    dplyr::transmute(
+      operation_id = as.character(operation_id),
+      protocol,
+      surface = computed_surface,
+      has_individuals = operation_id %in% unique(out$fish_individuals$operation_id)
+    )
+}

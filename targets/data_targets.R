@@ -88,6 +88,10 @@ data_targets <- list(
     get_river_size(individual_fish_file)
   ),
   tar_target(
+    river_effort,
+    get_river_effort(individual_fish_file)
+  ),
+  tar_target(
     river_size_no_rare,
     remove_rare_river_size(river_size, params$occurence_min)
   ),
@@ -127,6 +131,15 @@ data_targets <- list(
   tar_target(
     basin,
     format_basin(basin_dir)
+  ),
+  tar_target(
+    hydro_sector_zip,
+    download_hydro_sector(here("data", "geo", "hydrographic_sector")),
+    format = "file"
+  ),
+  tar_target(
+    hydro_sector,
+    read_hydro_sector(hydro_sector_zip)
   ),
   tar_target(
     river_operation,
@@ -303,6 +316,43 @@ data_targets <- list(
   tar_target(
     rht,
     read_rht(rht_zip)
+  ),
+  tar_target(
+    roe_zip,
+    download_roe(here("data", "geo", "roe")),
+    format = "file"
+  ),
+  tar_target(
+    roe,
+    read_roe(roe_zip)
+  ),
+  tar_target(
+    obstacle_node_amobio,
+    extract_obstacle_nodes_amobio(amobio_paths)
+  ),
+  tar_target(
+    large_dam,
+    select_large_dams(roe, obstacle_node_amobio)
+  ),
+  tar_target(
+    operation_dam,
+    locate_operations_dams(
+      river_network,
+      inland_operations_snapped |> dplyr::filter(survey == "river"),
+      large_dam,
+      river_mouth_district
+    )
+  ),
+  tar_target(
+    dam_dam, # Large dams located relative to each other.
+    locate_operations_dams(
+      river_network,
+      large_dam |>
+        sf::st_drop_geometry() |>
+        dplyr::transmute(operation_id = roe_code, node_id),
+      large_dam,
+      river_mouth_district
+    )
   ),
   tar_target(
     inland_operations_rht,
