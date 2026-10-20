@@ -331,13 +331,20 @@ data_targets <- list(
     extract_obstacle_nodes_amobio(amobio_paths)
   ),
   tar_target(
+    dam_network, # Large dams placed on the network, snapped within 10 m.
+    snap_dams_network(
+      river_network, river_network_geo,
+      select_large_dams(roe, obstacle_node_amobio), max_dist_m = 10
+    )
+  ),
+  tar_target(
     large_dam,
-    select_large_dams(roe, obstacle_node_amobio)
+    dam_network$dam
   ),
   tar_target(
     operation_dam,
     locate_operations_dams(
-      river_network,
+      dam_network$network,
       inland_operations_snapped |> dplyr::filter(survey == "river"),
       large_dam,
       river_mouth_district
@@ -346,7 +353,7 @@ data_targets <- list(
   tar_target(
     dam_dam, # Large dams located relative to each other.
     locate_operations_dams(
-      river_network,
+      dam_network$network,
       large_dam |>
         sf::st_drop_geometry() |>
         dplyr::transmute(operation_id = roe_code, node_id),

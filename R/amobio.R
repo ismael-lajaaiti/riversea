@@ -309,6 +309,42 @@ compute_distance_to_mouth <- function(network,
   })
 }
 
+#' River mouth of each operation's catchment.
+#'
+#' Same shortest channel path as `compute_distance_to_mouth()`: the mouth is
+#' the nearest same-district river mouth along the network, which defines
+#' the catchment of the operation.
+#'
+#' @param network list(nodes, edges) with edge `length`, e.g.
+#'   `restrict_river_network()`'s output.
+#' @param operation tibble with `node_id` and `district`, e.g.
+#'   `compute_distance_to_mouth()`'s output.
+#' @param river_mouth tibble with `node_id`, `district`, `matched`, e.g.
+#'   `match_mouth_district()`'s output.
+#'
+#' @return `operation` with `mouth_node` added (node id of the mouth).
+#' @export
+assign_river_mouth <- function(network, operation, river_mouth) {
+  g <- igraph::graph_from_edgelist(
+    as.matrix(network$edges[c("from", "to")]),
+    directed = FALSE
+  )
+  igraph::E(g)$weight <- network$edges$length
+
+  purrr::map_dfr(unique(operation$district), function(d) {
+    seeds <- river_mouth$node_id[
+      river_mouth$matched & river_mouth$district == d
+    ]
+    operation_d <- operation |> dplyr::filter(district == d)
+    nodes <- unique(operation_d$node_id)
+    dist <- igraph::distances(g, v = seeds, to = nodes)
+    operation_d |>
+      dplyr::mutate(
+        mouth_node = seeds[apply(dist, 2, which.min)][match(node_id, nodes)]
+      )
+  })
+}
+
 #' Channel-network path from one operation to its nearest same-district
 #' river mouth.
 #'

@@ -55,29 +55,33 @@ extract_obstacle_nodes_amobio <- function(paths) {
 
 #' Select the large dams of the ROE.
 #'
-#' Large dams are the existing obstacles whose drop height class is 5-10 m
-#' or >= 10 m, whatever their type. The class is used instead of the
-#' measured drop height, which is missing for most obstacles and holds
-#' obvious errors (weirs of more than 100 m), while the class agrees with
-#' the measured height for well-known dams (see D12).
+#' Large dams are the existing dams and weirs (ROE types "barrage" and
+#' "seuil en rivière") whose drop height class is 5-10 m or >= 10 m. Other
+#' types (culverts, bridge sills, levees, groynes, fish-farm grilles) are
+#' left out. The class is used instead of the measured drop height, which
+#' is missing for most obstacles and holds obvious errors (weirs of more
+#' than 100 m), while the class agrees with the measured height for
+#' well-known dams (see D12).
 #'
 #' @param roe sf tibble, e.g. `read_roe()`'s output.
 #' @param obstacle_node tibble with `node_id`, `roe_code`, e.g.
 #'   `extract_obstacle_nodes_amobio()`'s output.
-#' @return sf tibble, one row per large dam, with `drop_height_min` (5 or
-#'   10 m), the measured `drop_height` (m) and the AMOBIO `node_id` (`NA`
-#'   if the dam is not on the network).
+#' @return sf tibble, one row per large dam, with `kind` ("dam" or "weir"),
+#'   `drop_height_min` (5 or 10 m), the measured `drop_height` (m) and the
+#'   AMOBIO `node_id` (`NA` if the dam is not on the network).
 #' @export
 select_large_dams <- function(roe, obstacle_node) {
   roe |>
     dplyr::filter(
       LbEtOuvrage == "Existant",
-      CdHautChutClObstEcoul %in% c("7", "8")
+      CdHautChutClObstEcoul %in% c("7", "8"),
+      grepl("barrage|seuil", LbTypeOuvrage, ignore.case = TRUE)
     ) |>
     dplyr::transmute(
       roe_code = CdObstEcoul,
       name = NomPrincipalObstEcoul,
       type = LbTypeOuvrage,
+      kind = dplyr::if_else(grepl("seuil", type, ignore.case = TRUE), "weir", "dam"),
       river = NomEntiteHydrographique,
       use = LbUsageObstEcoul1,
       altitude = AltiPointCarOuvrage,
@@ -85,6 +89,77 @@ select_large_dams <- function(roe, obstacle_node) {
       drop_height = suppressWarnings(as.numeric(HautChutEtObstEcoul))
     ) |>
     dplyr::left_join(obstacle_node, by = "roe_code")
+}
+
+#' Snap the large dams that are not on the network.
+#'
+#' A large dam without a node (its ROE code is on no AMOBIO node) is placed
+#' on the nearest network edge if it lies within `max_dist_m` of it: the
+#' edge is split at the projection of the dam, with a new node, and its
+#' length is shared between the two new edges in proportion. Several dams
+#' on the same edge split it in turn.
+#'
+#' @param network list(nodes, edges) with edge `length`, e.g.
+#'   `restrict_river_network()`'s output.
+#' @param network_geo the same network with edge geometry (from `from` to
+#'   `to`), e.g. `add_edge_geometry()`'s output.
+#' @param dam sf tibble with `node_id`, e.g. `select_large_dams()`'s output.
+#' @param max_dist_m maximum distance between a dam and the edge (m).
+#' @return list(network, dam): `network` with the new nodes and split edges;
+#'   `dam` with `node_id` of the snapped dams filled, `match` ("code",
+#'   "snapped" or `NA`, left out) and `snap_dist_m`, the distance to the
+#'   nearest edge of the dams without a node.
+#' @export
+snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
+  edges <- sf::st_as_sf(network_geo$edges)
+  dam <- sf::st_transform(dam, sf::st_crs(edges))
+  off <- which(is.na(dam$node_id))
+  nearest <- sf::st_nearest_feature(dam[off, ], edges)
+  dam$snap_dist_m <- NA_real_
+  dam$snap_dist_m[off] <- as.numeric(
+    sf::st_distance(dam[off, ], edges[nearest, ], by_element = TRUE)
+  )
+  dam$match <- dplyr::if_else(is.na(dam$node_id), NA_character_, "code")
+  near <- dam$snap_dist_m[off] <= max_dist_m
+  split <- tibble::tibble(
+    dam_row = off[near],
+    from = edges$from[nearest[near]],
+    to = edges$to[nearest[near]],
+    fraction = sf::st_line_project(
+      sf::st_geometry(edges)[nearest[near]], sf::st_geometry(dam)[off[near]],
+      normalized = TRUE
+    )
+  ) |>
+    dplyr::arrange(from, to, fraction) |>
+    dplyr::mutate(node_id = max(network$nodes$node_id) + dplyr::row_number())
+  split_edge <- dplyr::semi_join(network$edges, split, by = c("from", "to"))
+  new_edge <- split |>
+    dplyr::inner_join(split_edge, by = c("from", "to")) |>
+    dplyr::reframe(
+      new_from = c(from[1], node_id),
+      new_to = c(node_id, to[1]),
+      # At least 1 cm: a zero-length edge would make two nodes each
+      # other's parent towards the mouth.
+      length = pmax(diff(c(0, fraction, 1)) * length[1], 0.01),
+      .by = c(from, to)
+    ) |>
+    dplyr::select(from = new_from, to = new_to, length)
+  new_node <- tibble::tibble(
+    node_id = split$node_id,
+    geometry = sf::st_geometry(dam)[split$dam_row],
+    is_river_mouth = FALSE
+  )
+  dam$node_id[split$dam_row] <- split$node_id
+  dam$match[split$dam_row] <- "snapped"
+  list(
+    network = list(
+      nodes = dplyr::bind_rows(network$nodes, new_node),
+      edges = dplyr::bind_rows(
+        dplyr::anti_join(network$edges, split, by = c("from", "to")), new_edge
+      )
+    ),
+    dam = dam
+  )
 }
 
 #' Locate operations upstream and downstream of dams along the network.
