@@ -331,10 +331,17 @@ data_targets <- list(
     extract_obstacle_nodes_amobio(amobio_paths)
   ),
   tar_target(
+    dam_review_file, # Manual check of left-out dams and duplicate codes.
+    here("data", "dam_review.csv"),
+    format = "file"
+  ),
+  tar_target(
     dam_network, # Large dams placed on the network, snapped within 10 m.
     snap_dams_network(
       river_network, river_network_geo,
-      select_large_dams(roe, obstacle_node_amobio), max_dist_m = 10
+      select_large_dams(roe, obstacle_node_amobio) |>
+        review_large_dams(readr::read_csv(dam_review_file, show_col_types = FALSE)),
+      max_dist_m = 10
     )
   ),
   tar_target(

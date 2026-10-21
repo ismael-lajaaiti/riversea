@@ -91,10 +91,32 @@ select_large_dams <- function(roe, obstacle_node) {
     dplyr::left_join(obstacle_node, by = "roe_code")
 }
 
+#' Apply the manual review of the large dams.
+#'
+#' The review table lists, after a check on aerial imagery, the dams left
+#' out by the snapping that should be placed on the network (`decision`
+#' "snap") and the ROE codes that duplicate another code of the same
+#' structure (`drop_roe_code`, e.g. a power plant next to its weir).
+#'
+#' @param dam sf tibble, e.g. `select_large_dams()`'s output.
+#' @param review tibble with `roe_code`, `decision`, `drop_roe_code`, e.g.
+#'   read from `data/dam_review.csv`.
+#' @return `dam` without the duplicates, with `force_snap` (TRUE for the
+#'   dams to place on the network whatever their distance).
+#' @export
+review_large_dams <- function(dam, review) {
+  dam |>
+    dplyr::filter(!roe_code %in% review$drop_roe_code) |>
+    dplyr::mutate(
+      force_snap = roe_code %in% review$roe_code[review$decision == "snap"]
+    )
+}
+
 #' Snap the large dams that are not on the network.
 #'
 #' A large dam without a node (its ROE code is on no AMOBIO node) is placed
-#' on the nearest network edge if it lies within `max_dist_m` of it: the
+#' on the nearest network edge if it lies within `max_dist_m` of it, or if
+#' its `force_snap` is TRUE (see `review_large_dams()`): the
 #' edge is split at the projection of the dam, with a new node, and its
 #' length is shared between the two new edges in proportion. Several dams
 #' on the same edge split it in turn.
@@ -103,7 +125,8 @@ select_large_dams <- function(roe, obstacle_node) {
 #'   `restrict_river_network()`'s output.
 #' @param network_geo the same network with edge geometry (from `from` to
 #'   `to`), e.g. `add_edge_geometry()`'s output.
-#' @param dam sf tibble with `node_id`, e.g. `select_large_dams()`'s output.
+#' @param dam sf tibble with `node_id`, `force_snap`, e.g.
+#'   `review_large_dams()`'s output.
 #' @param max_dist_m maximum distance between a dam and the edge (m).
 #' @return list(network, dam): `network` with the new nodes and split edges;
 #'   `dam` with `node_id` of the snapped dams filled, `match` ("code",
@@ -120,7 +143,7 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
     sf::st_distance(dam[off, ], edges[nearest, ], by_element = TRUE)
   )
   dam$match <- dplyr::if_else(is.na(dam$node_id), NA_character_, "code")
-  near <- dam$snap_dist_m[off] <= max_dist_m
+  near <- dam$snap_dist_m[off] <= max_dist_m | dam$force_snap[off]
   split <- tibble::tibble(
     dam_row = off[near],
     from = edges$from[nearest[near]],

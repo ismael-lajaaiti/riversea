@@ -26,6 +26,11 @@ We find that
 - decrease in predator size is itself mostly driven by dam impact on eel
 - act on a global rather than a local scale
 
+## To do
+
+- Investigate brown trout positive effects
+- Add spatial autocorrelation
+
 ## Setup
 
 ```{r setup}
@@ -58,8 +63,8 @@ removed from the dam count if needed.
 ### Placing the dams on the river network
 
 The number of large dams between a site and the sea is counted along the
-AMOBIO river network, in two steps (`select_large_dams()`, then
-`snap_dams_network()`):
+AMOBIO river network, in three steps (`select_large_dams()`,
+`review_large_dams()`, then `snap_dams_network()`):
 
 1. Join by code. The network has a node at each ROE obstacle, and each
    such node carries the ROE code of its obstacle (`OE_ID`): a dam is
@@ -67,8 +72,17 @@ AMOBIO river network, in two steps (`select_large_dams()`, then
 2. Snapping. A dam whose code is on no node but which lies within 10 m of
    a river segment of the network is placed on that segment: the segment
    is split at the dam with a new node.
+3. Manual review (`data/dam_review.csv`), on aerial imagery (Géoportail).
+   The left-out dams within 150 m of the network with sampled sites
+   upstream are checked one by one: 2 are real barriers and are snapped
+   (the Rance tidal power plant and Salettes), the others are duplicates
+   of a placed dam or pond dams. Pairs of dams less than 1 km apart on the
+   same flow path, with sampled sites upstream of both, are also checked:
+   the ROE often gives one structure several codes (a weir and its power
+   plant, a dam and its spillway), which would count it several times. The
+   duplicate codes are dropped, keeping the dam or weir code.
 
-Dams further than 10 m from the network are left out of the dam count. To
+The other dams further than 10 m from the network are left out of the dam count. To
 check the placement, we measure the distance between each dam (ROE
 coordinates) and its node (joined dams) or the nearest river segment
 (snapped and left out dams).
@@ -120,15 +134,14 @@ large_dam_kept |>
   labs(x = "Distance between the dam and the network (m)", y = "Dams")
 ```
 
-**Results:** of the 1,136 large dams and weirs of the four districts,
-919 are joined by their code and sit where they should: a median of 1.4 m
-from their node, at most 105 m. 51 more are snapped onto the network, most
+**Results:** of the 1,127 large dams and weirs of the four districts,
+910 are joined by their code and sit where they should: a median of 1.4 m
+from their node, at most 105 m. 53 more are snapped onto the network, most
 of them less than 1 m from a river segment (median 0.5 m): they clearly
-sit on the river, only their code was missing from the network. The 166
-left out lie further away (median 221 m), on small streams the network
-does not include, so they cannot lie between a sampled site and the sea.
-Snapping and removing the odd obstacle types change the dam count of only
-32 of the 14,359 operations.
+sit on the river, only their code was missing from the network. Two of
+them come from the manual review (77 and 99 m away). The 164 left out lie
+further away (median 222 m), mostly on small streams or ponds the network
+does not include.
 
 ```{r large-dam-map}
 #| fig-width: 10
@@ -242,9 +255,10 @@ focus_operation <- operation_dam |>
 
 ### All species upstream and downstream
 
-Occurrence of each species (share of operations where it is caught),
-downstream and upstream of each dam, for the operations with individual fish
-records. The effect of the dam is summarised by the difference in occurrence
+Occurrence of each species downstream and upstream of each dam, for the
+operations with individual fish records: the share of visits where it is
+caught at each site, averaged over the sites (each site weighs the same,
+however often it was visited). The effect of the dam is summarised by the difference in occurrence
 (upstream minus downstream; negative: less frequent upstream).
 
 ```{r case-study-presence}
@@ -262,8 +276,9 @@ focus_species <- focus_operation |>
   ) |>
   summarise(
     occurrence = mean(coalesce(present, FALSE)),
-    .by = c(dam, species_valid, position)
+    .by = c(dam, species_valid, position, sandre_code)
   ) |>
+  summarise(occurrence = mean(occurrence), .by = c(dam, species_valid, position)) |>
   tidyr::pivot_wider(
     names_from = position, values_from = occurrence, names_prefix = "occurrence_"
   ) |>
@@ -274,7 +289,7 @@ focus_species <- focus_operation |>
 
 focus_operation |>
   filter(has_individuals) |>
-  count(dam, position, name = "operations")
+  summarise(operations = n(), sites = n_distinct(sandre_code), .by = c(dam, position))
 ```
 
 ```{r case-study-difference-plot}
@@ -303,9 +318,6 @@ Upstream of dams species that migrate from the sea (e.g. eels) decreases. Dams
 slow down their migration further upstream in the river. This is the main
 expected impact of dams.
 
-Position of the operations along the continuum (D11 PC1, operations matched
-to the RHT).
-
 ## Impact on species
 
 ### Visits and dam accumulation
@@ -323,6 +335,7 @@ the sea (`dams`), the sum of the large dams (`dam_count`) and large weirs
 
 ```{r visits}
 continuum_operation <- tar_read(continuum_operation)
+species_min_sites <- 100 # Species modelled: present at >= this number of sites.
 
 presence <- tar_read(size_year_filtered) |>
   filter(survey == "river") |>
@@ -404,7 +417,7 @@ altitude and distance to mouth gradient.
 ### Presence models
 
 Next, we look at how dams affect the presence of each species. One
-model per species (present at >= 30 sites): for visit $i$ at site $s$, in
+model per species (present at >= `r species_min_sites` sites): for visit $i$ at site $s$, in
 year $t$ and catchment $c$, the presence $Y_i$ of the species is
 
 $$
@@ -412,10 +425,7 @@ $$
 Y_i &\sim \mathrm{Bernoulli}(p_i), \\
 \mathrm{logit}\, p_i &= \beta_0 + \beta_D \log(1 + D_i) + \beta_1 \mathrm{PC1}_i
 + \beta_2 \mathrm{PC2}_i + \alpha_{\mathrm{district}(i)} + \gamma_{\mathrm{protocol}(i)}
-+ \beta_A \log A_i + u_s + v_t + w_c, \\
-u_s &\sim \mathcal{N}(0, \sigma_u^2), \quad
-v_t \sim \mathcal{N}(0, \sigma_v^2), \quad
-w_c \sim \mathcal{N}(0, \sigma_w^2),
++ \beta_A \log A_i + u_s + v_t + w_c
 \end{aligned}
 $$
 
@@ -424,14 +434,11 @@ PC1 and PC2 the continuum axes (linear), the district and the fishing
 protocol as fixed effects, $A_i$ the fished surface, and random effects of
 the site ($u_s$, repeated visits), the year ($v_t$) and the catchment
 ($w_c$, the river mouth the site drains to). $\beta_D$ is the dam effect
-(posterior mean and 95% credible interval). Species are grouped as
-migratory (sea-dependent: eel, salmon, lampreys, flounder, mullets),
-non-native (FishBase) and native resident; FishBase's diadromous flag is
-not used, as it includes perch, sticklebacks, rainbow and brown trout.
+(posterior mean and 95% credible interval).
 
 ```{r presence-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, migratory, tar_read(species_traits)))
+#| cache.extra: !expr rlang::hash(list(visit, presence, migratory, species_min_sites, tar_read(species_traits)))
 control_term <- "PC1 + PC2"
 effort_term <- paste(
   "district + protocol + log_surface +",
@@ -466,9 +473,6 @@ fit_presence <- function(species, term) {
   )
 }
 
-presence_time <- system.time(fit_presence("Anguilla anguilla", "accumulation"))
-presence_time
-
 species_group <- presence |>
   distinct(species = species_valid) |>
   left_join(tar_read(species_traits) |> select(species, is_native), by = "species") |>
@@ -482,7 +486,7 @@ species_common <- presence |>
   inner_join(distinct(visit, operation_id, sandre_code), by = "operation_id") |>
   distinct(species_valid, sandre_code) |>
   count(species_valid) |>
-  filter(n >= 30) |>
+  filter(n >= species_min_sites) |>
   pull(species_valid)
 
 presence_effect <- species_common |>
@@ -509,16 +513,9 @@ presence_effect |>
   theme(axis.text.y = element_text(face = "italic"))
 ```
 
-**Results:** most species are found less often where more large dams
-stand between the site and the sea (37 of 48). This includes eel and sea
-lamprey, but also most non-native species (10 of 12) and most native
-residents (25 of 32), so the effect is not limited to fish that need the
-sea. Salmon is also less frequent with dams, but not credibly (-0.67, 95%
-CI -1.46 to 0.11). Brown trout is the only species found more often with
-dams. (One presence model takes about 3 s to fit.)
-
-*To discuss: salmon presence affected by stocking; brown trout includes sea
-trout; spatial autocorrelation within catchments not accounted for.*
+Most species are negatively affected by dams, and not only migratory species.
+Only *Salmo trutta* is positively affected by dams, that might be interesting to
+find out why.
 
 ### Distance to the mouth
 
@@ -586,239 +583,17 @@ presence_effect |>
 river: the controls explain a third of its variation, half with the
 catchment, and the distance to the mouth adds little (48%). Adding the
 distance to the mouth to the presence models keeps the same picture: the
-effects keep their ranking (correlation 0.89) but are weaker (median -0.53
-against -0.71), and 29 of 48 species stay credibly less frequent with
-dams. The migratory species keep strong negative effects (eel, sea lamprey,
-and salmon becomes credible again) and brown trout stays positive. Nine
-species lose a credible effect (black bullhead, spined loach, burbot,
-largemouth bass, perch, minnow, ninespine stickleback, rudd, tench). With
-linear controls, part of the dam effect of these species may come from
-their position along the river rather than from the dams.
-
-
-## Impact on diversity
-
-### Beta, gamma and alpha diversity against dams
-
-Diversity is computed in hydrographic sectors (BD Carthage, SANDRE; groups
-of sub-catchments, median 2,400 km²) x years (latest visit of each site in
-the year). Sector x years with >= 8 sites are kept. In each, 8 sites are
-drawn 100 times, and averaged over the draws: beta, the multi-site Sørensen
-dissimilarity of the 8 sites (Baselga 2010); gamma,
-their number of species; alpha, their mean richness.
-
-The dam measure is the dam density: number of large dams on the AMOBIO
-network per 100 km of AMOBIO river network in the sector, log(1 + x).
-Gaussian INLA models of each response on the dam density, with the mean and standard
-deviation of PC1 and PC2 of the sites (position along the continuum and
-environmental heterogeneity), the mean log fished surface of the sites
-(effort), a BYM2 spatial effect on the adjacency of the sectors (which also
-accounts for the repeated sampling of a sector over the years) and a year
-random effect (iid). All covariates are standardised: effects are
-per standard deviation of the covariate.
-
-```{r sector-diversity}
-species_list <- split(presence$species_valid, presence$operation_id)
-basin_l93 <- sf::st_transform(basin_kept, sf::st_crs(rht))
-visit_sf <- visit |>
-  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
-  sf::st_transform(sf::st_crs(rht))
-
-sector <- tar_read(hydro_sector) |>
-  sf::st_transform(sf::st_crs(rht)) |>
-  sf::st_set_geometry("geometry") |>
-  select(sector) |>
-  sf::st_filter(basin_l93)
-
-# Large dams on the AMOBIO river network and network length per sector,
-# each edge assigned to the sector of its upstream node.
-network_geo <- tar_read(river_network_geo)
-node_sector <- sf::st_as_sf(network_geo$nodes) |>
-  select(node_id) |>
-  sf::st_transform(sf::st_crs(sector)) |>
-  sf::st_join(sector) |>
-  sf::st_drop_geometry() |>
-  filter(!is.na(sector))
-sector_dam <- network_geo$edges |>
-  sf::st_drop_geometry() |>
-  inner_join(node_sector, by = c("from" = "node_id")) |>
-  summarise(river_km = sum(length) / 1000, .by = sector) |>
-  left_join(
-    large_dam |>
-      filter(!is.na(node_id)) |>
-      sf::st_transform(sf::st_crs(sector)) |>
-      sf::st_join(sector) |>
-      sf::st_drop_geometry() |>
-      filter(!is.na(sector)) |>
-      count(sector, name = "n_dams"),
-    by = "sector"
-  ) |>
-  mutate(
-    n_dams = coalesce(n_dams, 0L),
-    dam_density = 100 * n_dams / river_km
-  )
-
-# Multi-site Sørensen dissimilarity (Baselga 2010) of a site x species
-# incidence matrix.
-multi_site_sorensen <- function(incidence) {
-  pair <- combn(nrow(incidence), 2)
-  b_ij <- rowSums(incidence[pair[1, ], , drop = FALSE] & !incidence[pair[2, ], , drop = FALSE])
-  b_ji <- rowSums(incidence[pair[2, ], , drop = FALSE] & !incidence[pair[1, ], , drop = FALSE])
-  a <- sum(incidence) - ncol(incidence)
-  (sum(pmin(b_ij, b_ji)) + sum(pmax(b_ij, b_ji))) /
-    (2 * a + sum(pmin(b_ij, b_ji)) + sum(pmax(b_ij, b_ji)))
-}
-
-set.seed(1)
-sector_diversity <- visit_sf |>
-  sf::st_join(sector) |>
-  sf::st_drop_geometry() |>
-  filter(!is.na(sector)) |>
-  slice_max(date, n = 1, with_ties = FALSE, by = c(sandre_code, year)) |>
-  filter(n() >= 8, .by = c(sector, year)) |>
-  group_by(sector, year) |>
-  group_modify(function(x, key) {
-    draws <- replicate(100, {
-      operation_id <- sample(x$operation_id, 8)
-      species <- unique(unlist(species_list[operation_id]))
-      incidence <- t(vapply(
-        species_list[operation_id], \(s) species %in% s, logical(length(species))
-      ))
-      c(
-        beta = multi_site_sorensen(incidence),
-        gamma = length(species), alpha = mean(rowSums(incidence))
-      )
-    })
-    as_tibble(as.list(rowMeans(draws))) |>
-      mutate(
-        sites = nrow(x),
-        PC1 = mean(x$PC1), PC2 = mean(x$PC2),
-        sd_PC1 = sd(x$PC1), sd_PC2 = sd(x$PC2),
-        log_surface = mean(log(x$surface))
-      )
-  }) |>
-  ungroup() |>
-  left_join(sector_dam, by = "sector")
-count(sector_diversity, year)
-```
-
-```{r sector-maps}
-#| fig-width: 6
-#| fig-height: 5
-
-sector_map <- sector |>
-  inner_join(distinct(sector_diversity, sector, dam_density), by = "sector")
-ggplot() +
-  geom_sf(data = basin_l93, fill = "grey97", color = "grey40") +
-  geom_sf(data = sector_map, aes(fill = dam_density), color = "white") +
-  scale_fill_viridis_c(name = "Large dams\nper 100 km") +
-  theme_void()
-```
-
-```{r diversity-models}
-diversity_response <- c("beta", "gamma", "alpha")
-diversity_control <- c("PC1", "PC2", "sd_PC1", "sd_PC2", "log_surface")
-
-diversity_data <- sector_diversity |>
-  mutate(
-    dam_density = log1p(dam_density),
-    across(c(dam_density, all_of(diversity_control)), \(x) as.numeric(scale(x))),
-    index = match(sector, unique(sector))
-  )
-sector_kept <- sector[match(unique(diversity_data$sector), sector$sector), ]
-adjacency <- sf::st_relate(sector_kept, sector_kept, pattern = "F***T****", sparse = FALSE) * 1
-
-fit_diversity <- function(response) {
-  model <- INLA::inla(
-    as.formula(paste(
-      response, "~ dam_density +", paste(diversity_control, collapse = " + "), "+",
-      "f(index, model = 'bym2', graph = adjacency, scale.model = TRUE) +",
-      "f(year, model = 'iid')"
-    )),
-    data = diversity_data, family = "gaussian", num.threads = 1,
-    control.compute = list(config = FALSE)
-  )
-  fixed <- model$summary.fixed
-  fitted <- model$summary.fitted.values$mean
-  observed <- diversity_data[[response]]
-  gc()
-  list(
-    effect = tibble(
-      response = response, term = rownames(fixed),
-      mean = fixed$mean, lower = fixed$`0.025quant`, upper = fixed$`0.975quant`
-    ) |>
-      filter(term != "(Intercept)"),
-    point = tibble(
-      response = response,
-      x = diversity_data$dam_density,
-      year = diversity_data$year,
-      fitted = fitted,
-      residual = observed - fitted,
-      # Response minus the intercept and the controls (random effects left in).
-      partial = observed - fixed$mean[1] -
-        as.vector(as.matrix(diversity_data[diversity_control]) %*% fixed[diversity_control, "mean"])
-    )
-  )
-}
-
-diversity_fit <- lapply(diversity_response, fit_diversity)
-diversity_effect <- lapply(diversity_fit, `[[`, "effect") |>
-  bind_rows() |>
-  mutate(response = factor(response, levels = diversity_response))
-partial_point <- lapply(diversity_fit, `[[`, "point") |>
-  bind_rows() |>
-  mutate(response = factor(response, levels = diversity_response))
-```
-
-Effect of one standard deviation of each covariate on each response
-(posterior mean and 95% credible interval): the dam density and the
-environmental controls.
-
-```{r diversity-effects-plot}
-#| fig-width: 10
-#| fig-height: 3
-
-diversity_effect |>
-  filter(term != "log_surface") |>
-  mutate(term = factor(term, levels = rev(c("dam_density", "PC1", "PC2", "sd_PC1", "sd_PC2")))) |>
-  ggplot(aes(mean, term)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
-  facet_wrap(~response, nrow = 1, scales = "free_x") +
-  scale_y_discrete(labels = c(
-    dam_density = "Dam density", PC1 = "PC1, mean", PC2 = "PC2, mean",
-    sd_PC1 = "PC1, SD", sd_PC2 = "PC2, SD"
-  )) +
-  labs(x = "Effect (per SD of the covariate)", y = NULL)
-```
-
-Partial effect of dam density: response minus the intercept and the
-controls (random effects left in), with the posterior mean slope.
-
-```{r diversity-partial-plot}
-#| fig-width: 12
-#| fig-height: 4
-
-partial_point |>
-  ggplot(aes(x, partial)) +
-  geom_point(aes(color = year), size = 1, alpha = 0.7) +
-  geom_abline(
-    data = filter(diversity_effect, term == "dam_density"),
-    aes(slope = mean, intercept = 0), color = "#B2182B"
-  ) +
-  facet_wrap(~response, scales = "free_y") +
-  scale_color_viridis_c(end = 0.9) +
-  labs(x = "log(1 + large dams per 100 km of river), standardised", y = "Partial residual", color = NULL)
-```
-
-**Results:** in hydrographic sectors with more large dams per km of
-river, each site holds fewer species (alpha) and so does the sector as a
-whole (gamma), but sites are neither more alike nor more different from
-each other (beta unchanged). Dams remove species across the sector rather
-than making communities more uniform. Larger rivers (PC1) hold more
-species at both scales.
-
-*To discuss: power (about 50 sectors).*
+effects keep their ranking (correlation
+`r round(cor(presence_effect$estimate, distance_effect$estimate[match(presence_effect$species, distance_effect$species)]), 2)`)
+but are weaker (median `r round(median(distance_effect$estimate), 2)`
+against `r round(median(presence_effect$estimate), 2)`), and
+`r sum(distance_effect$upper < 0)` of `r nrow(distance_effect)` species
+stay credibly less frequent with dams. Eel and salmon keep negative effects
+(salmon credible with this model) and brown trout stays positive. Seven
+species lose a credible effect (black bullhead, sunbleak, perch, minnow,
+ninespine stickleback, rudd, tench). With linear controls, part of the dam effect of
+these species may come from their position along the river rather than
+from the dams.
 
 ## Impact on food web structure
 
@@ -827,7 +602,7 @@ Local food webs of the visits (D11 `foodweb_structure`): fish richness $S$
 trophic level) and diet overlap $O$ between fish species (mean Jaccard
 similarity of prey sets over pairs of fish consumers). Visits with fewer
 than 3 fish species are left out (too few species to reconstruct a
-network). Webs without a piscivore have a trophic length of about 3.2 (a
+network). Webs without a piscivore have a trophic length of about 3 (a
 fish eating invertebrates), apart from the other webs: trophic length is
 modelled in two parts, the presence of a piscivore $P$ and the trophic
 length of the webs with a piscivore.
@@ -959,22 +734,19 @@ foodweb_effect |>
   labs(x = "Effect", y = NULL, color = NULL)
 ```
 
-**Results:** with more dams downstream, webs have fewer fish species
-(about -13% with one dam, -33% with six), slightly shorter food chains
-(-0.08 trophic levels from 0 to 6 dams, for a spread of 0.19 between
-visits) and fish species that share more of their prey (diet overlap
-+0.05, spread 0.11). These two changes in structure mostly follow from the
-loss of species: at equal richness, the trophic length effect disappears
-and the diet overlap effect is more than halved. A piscivore is present in
-nearly all webs (96%) whatever the number of dams, and at equal richness
-even more often with dams. Along the continuum, larger rivers (PC1) have
+**Results:** with more dams downstream, webs have fewer fish species,
+slightly shorter food chains, and fish species that share more of their
+prey. The changes in structure mostly follow from the loss of species: at
+equal richness, the effect on chain length disappears and the effect on
+diet overlap is much weaker. Almost all webs have a fish-eating species,
+whatever the number of dams (at equal richness, even more often with dams). Along the continuum, larger rivers (PC1) have
 more species, longer chains and less diet overlap.
 
 ### Size structure of the food webs
 
 The food webs are built from size classes: each species is split into
 classes of body length that set its diet (ontogenetic shifts), so the size
-of the individuals caught shapes the web. Three measures of size structure,
+of the individuals caught shapes the web. Two measures of size structure,
 from the individual lengths $L$ (cm) of the visits with at least 3 fish
 species, each fitted with the model above (Gaussian):
 
@@ -984,15 +756,7 @@ species, each fitted with the model above (Gaussian):
    all visits $m_s$, $\tilde{x}_i = \sum_s \frac{n_{is}}{N_i} m_s$ ($n_{is}$
    individuals of species $s$), and a within-species part,
    $\bar{x}_i - \tilde{x}_i$ (Lepš et al. 2011).
-2. Size spectrum. The body masses $w = L^3$ of the individuals of at least
-   5 cm (smaller fish are under-sampled by electrofishing) follow a bounded
-   power law, $f(w) = \frac{(b + 1)\, w^b}{w_{\max}^{b+1} - w_{\min}^{b+1}}$
-   for $w_{\min} \leq w \leq w_{\max}$, whose exponent $b$ is estimated by
-   maximum likelihood in each visit with at least 20 such individuals
-   (Edwards et al. 2017). $b$ is the slope of the abundance density against
-   body mass on log scales: a steeper (more negative) slope means
-   relatively more small fish.
-3. Path from dams to trophic length (webs with a piscivore and at least one
+2. Path from dams to trophic length (webs with a piscivore and at least one
    fish-eating individual). The top predator size is the log length of the
    largest individual above the length at which its species eats fish (diet
    stages). Dams act on the top predator size and on fish richness
@@ -1021,27 +785,12 @@ fish_eating_length <- tar_read(diet) |>
   filter(fish == 1) |>
   summarise(fish_from = min(length_min), .by = species)
 
-# Exponent of a bounded power law fitted by maximum likelihood to `w`.
-fit_spectrum <- function(w) {
-  n <- length(w)
-  w_min <- min(w)
-  w_max <- max(w)
-  sum_log <- sum(log(w))
-  negative_loglik <- function(b) {
-    -(n * log(abs((b + 1) / (w_max^(b + 1) - w_min^(b + 1)))) + b * sum_log)
-  }
-  optimize(negative_loglik, c(-4, 1))$minimum
-}
-
-spectrum_min_length <- 5
 size_visit <- size_individual |>
   mutate(log_length = log(length)) |>
   mutate(species_log_length = mean(log_length), .by = species) |>
   summarise(
     total = mean(log_length),
     turnover = mean(species_log_length),
-    spectrum_n = sum(length >= spectrum_min_length),
-    spectrum_b = if (spectrum_n >= 20) fit_spectrum(length[length >= spectrum_min_length]^3) else NA_real_,
     .by = operation_id
   ) |>
   mutate(intraspecific = total - turnover) |>
@@ -1053,70 +802,7 @@ size_visit <- size_individual |>
     by = "operation_id"
   )
 foodweb_size <- inner_join(foodweb_visit, size_visit, by = "operation_id")
-c(
-  visits = nrow(foodweb_size), spectrum = sum(!is.na(foodweb_size$spectrum_b)),
-  top_predator = sum(!is.na(foodweb_size$log_top_predator))
-)
-```
-
-Size spectra of four visits with an increasing number of large dams
-downstream (in each class, the visit with at least 300 fish of at least 5 cm
-whose exponent is closest to the median exponent of all visits of the
-class; the examples illustrate the method, the dam effect is estimated
-with the controls below). Points: abundance density, the number of
-individuals in a logarithmic body mass bin (width 0.5 in natural log, a
-factor 1.65) divided by the bin width in mass units (individuals per cm³ of
-body mass); line: the fitted bounded power law, $n f(w)$, whose slope on
-log scales is the exponent $b$.
-
-```{r size-spectrum-example-plot}
-#| fig-width: 12
-#| fig-height: 3.5
-
-spectrum_example <- foodweb_size |>
-  filter(!is.na(spectrum_b)) |>
-  mutate(dam_class = cut(dams, c(-Inf, 0, 1, 3, Inf), c("0 dams", "1 dam", "2-3 dams", "4+ dams"))) |>
-  arrange(dam_class) |>
-  mutate(class_median = median(spectrum_b), .by = dam_class) |>
-  filter(spectrum_n >= 300) |>
-  slice_min(abs(spectrum_b - class_median), n = 1, with_ties = FALSE, by = dam_class) |>
-  select(operation_id, dam_class, dams, spectrum_b, spectrum_n)
-
-spectrum_mass <- size_individual |>
-  filter(length >= spectrum_min_length) |>
-  inner_join(spectrum_example, by = "operation_id") |>
-  mutate(mass = length^3)
-spectrum_bin <- spectrum_mass |>
-  mutate(
-    bin = floor((log(mass) - log(spectrum_min_length^3)) / 0.5),
-    bin_lower = spectrum_min_length^3 * exp(0.5 * bin),
-    bin_upper = spectrum_min_length^3 * exp(0.5 * (bin + 1))
-  ) |>
-  summarise(n = n(), .by = c(dam_class, bin_lower, bin_upper)) |>
-  mutate(mass = sqrt(bin_lower * bin_upper), density = n / (bin_upper - bin_lower))
-spectrum_line <- spectrum_mass |>
-  summarise(w_min = min(mass), w_max = max(mass), .by = c(dam_class, spectrum_b, spectrum_n)) |>
-  tidyr::crossing(step = seq(0, 1, length.out = 50)) |>
-  mutate(
-    mass = exp(log(w_min) + step * (log(w_max) - log(w_min))),
-    density = spectrum_n * (spectrum_b + 1) * mass^spectrum_b /
-      (w_max^(spectrum_b + 1) - w_min^(spectrum_b + 1))
-  )
-ggplot(spectrum_bin, aes(mass, density)) +
-  geom_point() +
-  geom_line(data = spectrum_line, color = "#B2182B") +
-  geom_text(
-    data = spectrum_example,
-    aes(x = Inf, y = Inf, label = sprintf("b = %.2f\nn = %d", spectrum_b, spectrum_n)),
-    hjust = 1.1, vjust = 1.3, size = 3
-  ) +
-  facet_wrap(~dam_class, nrow = 1) +
-  scale_x_log10() +
-  scale_y_log10() +
-  labs(
-    x = expression("Body mass (length"^3 * ", cm"^3 * ")"),
-    y = "Abundance density\n(individuals per unit mass)"
-  )
+c(visits = nrow(foodweb_size), top_predator = sum(!is.na(foodweb_size$log_top_predator)))
 ```
 
 ```{r size-structure-models}
@@ -1129,8 +815,7 @@ fit_size <- function(data, response) {
     filter(term == "accumulation")
 }
 size_effect <- bind_rows(
-  lapply(c("total", "turnover", "intraspecific"), \(x) fit_size(foodweb_size, x)),
-  fit_size(filter(foodweb_size, !is.na(spectrum_b)), "spectrum_b")
+  lapply(c("total", "turnover", "intraspecific"), \(x) fit_size(foodweb_size, x))
 )
 
 path_visit <- filter(foodweb_size, piscivore == 1, !is.na(log_top_predator))
@@ -1160,26 +845,22 @@ nrow(path_visit)
 ```
 
 Effects of log(1 + dams) on the community mean log length and its two
-parts, and on the size spectrum exponent (posterior mean and 95% credible
-interval).
+parts (posterior mean and 95% credible interval).
 
 ```{r size-effects-plot}
-#| fig-width: 9
+#| fig-width: 5
 #| fig-height: 2.5
 
 size_effect |>
-  mutate(
-    measure = if_else(response == "spectrum_b", "Size spectrum exponent b", "Mean log length"),
-    response = factor(
-      response, rev(c("total", "turnover", "intraspecific", "spectrum_b")),
-      rev(c("total", "species turnover", "within species", "exponent b"))
-    )
-  ) |>
+  mutate(response = factor(
+    response, rev(c("total", "turnover", "intraspecific")),
+    rev(c("total", "species turnover", "within species"))
+  )) |>
   ggplot(aes(mean, response)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
   geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
-  facet_wrap(~measure, scales = "free") +
-  labs(x = "Effect of log(1 + large dams downstream)", y = NULL)
+  labs(x = "Effect of log(1 + large dams downstream)
+on the mean log length", y = NULL)
 ```
 
 Path from the number of dams to trophic length (webs with a piscivore):
@@ -1232,22 +913,13 @@ ggplot() +
   theme_void()
 ```
 
-**Results:** with more dams, the fish caught are larger on average (about
-+10% in length per unit of log(1 + dams), +21% from 0 to 6 dams). This
-comes from which species are present (small-bodied species drop out), not
-from individuals being larger within a species, and shows as a flatter
-size spectrum: relatively fewer small fish. At the top, however, the
-largest fish-eating individual is smaller (about -13% per unit). Shorter
-food chains come from two things: fewer species (about 60% of the dam
-effect on trophic length) and smaller top predators (about 40%); once both
-are accounted for, dams have no direct effect left on trophic length. The
-flatter spectrum is a parallel change in the bulk of the community, not in
-the top predator: in a separate check (not shown), the spectrum exponent
-does not predict trophic length.
-
-*To discuss: the indirect effects assume no unmeasured variable linking the
-top predator size or richness to trophic length; the two mediators are
-correlated (0.51), and the split between them depends on fitting both.*
+**Results:** with more dams, the fish caught are larger on average. This
+is because small-bodied species drop out, not because individuals grow
+larger within a species. At the top of the web it is the reverse: the
+largest fish-eating fish is smaller. Food chains are shorter with dams for
+two reasons: there are fewer species, and the top predators are smaller.
+Fewer species is the larger part. Once both are accounted for, dams have no
+direct effect left on trophic length.
 
 ### Identity of the top predator
 
@@ -1337,18 +1009,15 @@ eel_effect_plot <- eel_effect |>
 patchwork::wrap_plots(top_share_plot, eel_effect_plot, widths = c(1, 1.3))
 ```
 
-**Results:** without dams, the top predator is usually the eel (58% of the
-webs); with 4 dams or more, it is almost always brown trout (80%), a much
-smaller top predator (median 27 cm against 62 cm for the eel). Where eels
-remain above dams, the largest one is also smaller. The eel therefore
-explains most of why top predators shrink with dams: half of the dam
-effect on top predator size goes once eel presence is accounted for, and
-the effect is much stronger in webs with eel than without. Its weight in
-shorter food chains is more modest, about a quarter of the dam effect on
-trophic length (-0.042 to -0.031 with eel presence): top predator size is
-only a weak lever on chain length, and most of the shortening comes from
-the loss of species. Consistently, within webs with eel and within webs
-without, dams shorten chains by similar amounts.
+**Results:** without dams, the top predator is usually the eel; with
+several dams, it is usually brown trout, a much smaller fish. Where
+eels remain above dams, the largest one is also smaller. The eel explains
+much of why top predators shrink with dams: the dam effect on top predator
+size is much stronger in webs with eel than without, and it shrinks a lot
+once eel presence is accounted for. Its weight in shorter food chains is
+more modest: top predator size only weakly drives chain length, and most
+of the shortening comes from the loss of species. Within webs with eel and
+within webs without, dams shorten chains by similar amounts.
 
 ### Distance decay of the dam effect
 
@@ -1516,27 +1185,9 @@ dam_pc2 |>
 
 **Results:** the loss of species with dams depends on the position along
 the river: near the sea and in the lowlands (low PC2), dams barely change
-or even slightly increase the number of species (+0.16), while upstream
-(high PC2) they strongly reduce it (-0.27). Only for richness does this
+or even slightly increase the number of species (+0.17), while upstream
+(high PC2) they strongly reduce it (-0.28). Only for richness does this
 gradient clearly improve the model; for the structure metrics (piscivore
 presence, trophic length, diet overlap) the trends along PC2 are there but
 weak.
 
-## To do
-
-- Brown trout positive effect: +0.72 with the catchment random effect,
-  +0.43 with the distance to the mouth (both with quadratic PC1 + PC2,
-  since replaced by linear terms).
-- Spatial autocorrelation within catchments: a spatial (SPDE) random
-  effect tried on 4 species (scratch): eel -1.14, brown trout +0.58, chub
-  -0.55, pumpkinseed -0.23 (no longer credible); to run on all species
-  (about 30 min).
-- INLA warning "vb.correction is aborted" for 12 presence models of rare or
-  range-restricted species (e.g. burbot, Mediterranean barbel, salmon,
-  grayling, wels catfish): the correction is then not applied. It does not
-  slow the fits; disabling it for all species saves 8% of the time but moves
-  the other estimates by a median 0.7 posterior SD.
-- Keep in mind: dams also change river width and depth, which could leak
-  into PC1 (RHT width is modelled, to check).
-- Literature (references to add through Zotero, DOIs given in the chat):
-  reservoirs and invasions vs barriers blocking upstream spread.
