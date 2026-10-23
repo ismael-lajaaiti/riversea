@@ -45,6 +45,7 @@ station_file <- "data/river/station_analysis.csv"
 
 list(
   data_targets,
+  dam_web_targets,
   plot_targets,
   report_targets
 )

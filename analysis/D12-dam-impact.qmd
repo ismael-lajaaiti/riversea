@@ -19,16 +19,14 @@ continuum in four french watersheds (Loire, Somme, Seine, Gironde).
 
 We find that 
 
-- dams decrease species richness
-- dams simplify food webs (lower trophic length, higher diet overlap)
-- this simplification is magnified upstream and dampened downstream
-- reduction in trophic length is driven by loss in richness and decrease in predator size
-- decrease in predator size is itself mostly driven by dam impact on eel
-- act on a global rather than a local scale
+- dams decrease species richness, mostly through migratory and lowland species; this loss may be stronger at high altitude (weak support)
+- dams do not credibly change food web structure (trophic length, diet overlap, piscivore presence) once the position along the river is properly controlled
+- top predators are smaller with dams, entirely through the eel: eels are rarer and smaller above dams
+- the number of dams matters, not how close they are
+- dam effects are confounded with altitude: dams are concentrated in the uplands, where lowland species drop out anyway
 
 ## To do
 
-- Investigate brown trout positive effects
 - Add spatial autocorrelation
 
 ## Setup
@@ -331,7 +329,10 @@ the D8 distance to the mouth). Sampling effort is the fishing protocol and the f
 for the partial protocol by points, the number of points x 12.5 m², most
 often 75 points). Dam accumulation is the number of large dams between the site and
 the sea (`dams`), the sum of the large dams (`dam_count`) and large weirs
-(`weir_count`): to leave weirs out, use `dam_count` instead.
+(`weir_count`): to leave weirs out, use `dam_count` instead. The position of
+the site along the river is described by the log river width (RHT, as in
+D11), the log altitude and the log distance to the mouth (D8), all centred
+(see "Choice of the position controls").
 
 ```{r visits}
 continuum_operation <- tar_read(continuum_operation)
@@ -372,11 +373,18 @@ visit <- continuum_operation |>
   ) |>
   left_join(dam_accumulation, by = "operation_id") |>
   inner_join(operation_mouth, by = "operation_id") |>
+  left_join(
+    tar_read(continuum_variables_operation) |> select(operation_id, log_width),
+    by = "operation_id"
+  ) |>
   mutate(
     dam_count = coalesce(dam_count, 0L),
     weir_count = coalesce(weir_count, 0L),
     dams = dam_count + weir_count,
     log_dist = log(dist_mouth_m / 1000) - mean(log(dist_mouth_m / 1000)),
+    log_alt = log_altitude - mean(log_altitude),
+    width = exp(log_width),
+    log_width = log_width - mean(log_width),
     catchment = as.integer(factor(mouth_node)),
     # Indices for INLA.
     log_surface = log(surface),
@@ -386,33 +394,44 @@ c(
   visits = nrow(visit), sites = n_distinct(visit$sandre_code),
   catchments = n_distinct(visit$catchment)
 )
+
+# Position controls of all models, and their coefficients.
+control_term <- "log_width + log_alt + I(log_alt^2) + log_dist"
+control_coef <- c("log_width", "log_alt", "I(log_alt^2)", "log_dist")
 ```
 
-Number of large dams and large weirs between each site and the sea along
-the two continuum axes (one point per site).
+Number of large dams and large weirs between each site and the sea against
+the river width, the altitude and the distance to the mouth (one point per
+site).
 
 ```{r visits-dams-plot}
-#| fig-width: 10
+#| fig-width: 12
 #| fig-height: 7
 
 visit_site <- distinct(visit, sandre_code, .keep_all = TRUE)
 visit_site |>
-  select(sandre_code, PC1, PC2, dam_count, weir_count, dams) |>
+  transmute(
+    sandre_code, dam_count, weir_count, dams,
+    width,
+    altitude = exp(log_altitude), distance = dist_mouth_m / 1000
+  ) |>
   tidyr::pivot_longer(c(dam_count, weir_count, dams), names_to = "obstacle", values_to = "count") |>
-  tidyr::pivot_longer(c(PC1, PC2), names_to = "axis", values_to = "score") |>
+  tidyr::pivot_longer(c(width, altitude, distance), names_to = "axis", values_to = "value") |>
   mutate(
     obstacle = factor(obstacle, c("dam_count", "weir_count", "dams"), c("Dams", "Weirs", "Total (dams + weirs)")),
-    axis = factor(axis, c("PC1", "PC2"), c("PC1 (river size)", "PC2 (altitude, distance to the mouth)"))
+    axis = factor(axis, c("width", "altitude", "distance"), c("River width (m)", "Altitude (m)", "Distance to the mouth (km)"))
   ) |>
-  ggplot(aes(score, count)) +
+  ggplot(aes(value, count)) +
   geom_jitter(height = 0.15, width = 0, size = 0.4, alpha = 0.3) +
   facet_grid(obstacle ~ axis, scales = "free_x", switch = "x") +
+  scale_x_log10(labels = scales::label_number()) +
   labs(x = NULL, y = "Large obstacles downstream") +
   theme(strip.placement = "outside")
 ```
 
-Weirs matter and can be large. Obstacles accumulate along PC2 which captures the
-altitude and distance to mouth gradient.
+Weirs matter and can be large. Obstacles accumulate with altitude, much
+more than with the distance to the mouth: almost all mountain sites have
+several large dams or weirs downstream.
 
 ### Presence models
 
@@ -423,14 +442,16 @@ year $t$ and catchment $c$, the presence $Y_i$ of the species is
 $$
 \begin{aligned}
 Y_i &\sim \mathrm{Bernoulli}(p_i), \\
-\mathrm{logit}\, p_i &= \beta_0 + \beta_D \log(1 + D_i) + \beta_1 \mathrm{PC1}_i
-+ \beta_2 \mathrm{PC2}_i + \alpha_{\mathrm{district}(i)} + \gamma_{\mathrm{protocol}(i)}
+\mathrm{logit}\, p_i &= \beta_0 + \beta_D \log(1 + D_i) + \beta_W W_i
++ \beta_H H_i + \beta_{H^2} H_i^2 + \beta_M M_i \\
+&\quad + \alpha_{\mathrm{district}(i)} + \gamma_{\mathrm{protocol}(i)}
 + \beta_A \log A_i + u_s + v_t + w_c
 \end{aligned}
 $$
 
 with $D_i$ the number of large dams and weirs between the site and the sea,
-PC1 and PC2 the continuum axes (linear), the district and the fishing
+$W_i$ the log river width, $H_i$ the log altitude (with a quadratic term)
+and $M_i$ the log distance to the mouth (all centred), the district and the fishing
 protocol as fixed effects, $A_i$ the fished surface, and random effects of
 the site ($u_s$, repeated visits), the year ($v_t$) and the catchment
 ($w_c$, the river mouth the site drains to). $\beta_D$ is the dam effect
@@ -438,26 +459,26 @@ the site ($u_s$, repeated visits), the year ($v_t$) and the catchment
 
 ```{r presence-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, migratory, species_min_sites, tar_read(species_traits)))
-control_term <- "PC1 + PC2"
+#| cache.extra: !expr rlang::hash(list(visit, presence, migratory, species_min_sites, tar_read(species_traits), control_term))
 effort_term <- paste(
   "district + protocol + log_surface +",
   "f(site, model = 'iid') + f(year, model = 'iid') + f(catchment, model = 'iid')"
 )
 
-# INLA model of `response` on `term` + controls + effort, gc() after each
-# fit (memory).
+# INLA model of `response` on `term` + effort, gc() after each fit
+# (memory).
 fit_inla <- function(data, response, term, family, ...) {
   model <- INLA::inla(
-    as.formula(paste(response, "~", term, "+", control_term, "+", effort_term)),
+    as.formula(paste(response, "~", term, "+", effort_term)),
     family = family, data = data, num.threads = 4,
-    control.compute = list(config = FALSE), ...
+    control.compute = list(config = FALSE, waic = TRUE), ...
   )
   gc()
   model
 }
 
-# Effect of log(1 + dams) in the presence model of `species` on `term`.
+# Effect of log(1 + dams) in the presence model of `species` on `term`
+# (dam and position terms), with the WAIC.
 fit_presence <- function(species, term) {
   data <- visit |>
     mutate(
@@ -466,10 +487,12 @@ fit_presence <- function(species, term) {
       ),
       accumulation = log1p(dams)
     )
-  effect <- fit_inla(data, "present", term, "binomial")$summary.fixed["accumulation", ]
+  model <- fit_inla(data, "present", term, "binomial")
+  effect <- model$summary.fixed["accumulation", ]
   tibble(
     species = species, presences = sum(data$present),
-    estimate = effect$mean, lower = effect$`0.025quant`, upper = effect$`0.975quant`
+    estimate = effect$mean, lower = effect$`0.025quant`, upper = effect$`0.975quant`,
+    waic = model$waic$waic
   )
 }
 
@@ -490,7 +513,7 @@ species_common <- presence |>
   pull(species_valid)
 
 presence_effect <- species_common |>
-  lapply(fit_presence, term = "accumulation") |>
+  lapply(fit_presence, term = paste("accumulation +", control_term)) |>
   bind_rows() |>
   left_join(species_group |> select(species, group), by = "species")
 ```
@@ -513,62 +536,147 @@ presence_effect |>
   theme(axis.text.y = element_text(face = "italic"))
 ```
 
-Most species are negatively affected by dams, and not only migratory species.
-Only *Salmo trutta* is positively affected by dams, that might be interesting to
-find out why.
+**Results:** about half of the species are found less often where more
+large dams stand between the site and the sea
+(`r sum(presence_effect$upper < 0)` of `r nrow(presence_effect)`). The
+strongest effects are on the migratory species (eel and salmon) and on
+species of large lowland rivers, native or not (toxostoma, ruffe, white
+bream, nase, wels catfish, pikeperch, topmouth gudgeon). Many headwater and
+widespread species show no effect (stone loach, bullhead, minnow, brook
+lamprey, perch, roach). Brown trout is the only species found more often
+with dams; this positive effect is half as large once altitude is properly
+controlled (see below), and may still partly reflect its upland
+range.
 
-### Distance to the mouth
+### Choice of the position controls
 
-The number of dams downstream grows with the distance to the mouth by
-construction. PC2 carries part of this distance (Spearman correlation with
-log distance to the mouth 0.85). Two checks. First, the variation of
-log(1 + dams) left once the controls, the distance to the mouth and the
-catchment are known (linear models, one row per site): the dam effect is
-estimated from this residual variation. Second, the presence models with
-the log distance to the mouth added to the controls.
+Dams are not spread evenly along the rivers: they are built where there is
+a drop, in the uplands. Below 100 m few sites have a large dam downstream;
+above 300 m almost all do, and above 800 m all of them (table below).
+Species ranges also change with altitude, and not along a straight line:
+many lowland species are frequent up to about 300 m, then drop out
+quickly. With a linear altitude term, or with the D11 continuum axes (PC1,
+river size; PC2, altitude and distance to the mouth), which are linear
+combinations of these variables, the model cannot follow this drop. The dam
+count, high exactly where the drop happens, then takes it over, and the dam
+effects are overestimated. A quadratic term in log altitude lets the
+presence curve bend down.
 
-```{r dam-variation}
-visit_site <- visit_site |>
-  mutate(log_dams = log1p(dams), catchment = factor(catchment))
-cor(visit_site$PC2, visit_site$log_dist, method = "spearman")
-dam_variation <- list(
-  controls = log_dams ~ PC1 + PC2 + district,
-  `+ catchment` = log_dams ~ PC1 + PC2 + district + catchment,
-  `+ catchment + distance` = log_dams ~ PC1 + PC2 + district + catchment + log_dist
-) |>
-  lapply(\(formula) lm(formula, visit_site))
-tibble(
-  model = names(dam_variation),
-  r2 = sapply(dam_variation, \(m) summary(m)$r.squared),
-  residual_sd = sapply(dam_variation, \(m) sd(resid(m)))
-) |>
-  add_row(model = "none", r2 = 0, residual_sd = sd(visit_site$log_dams), .before = 1)
+The position controls are therefore the log river width (river size: PC1
+is mostly width, correlation 0.94), the log altitude with its square, and
+the log distance to the mouth. All describe the geography of the site,
+which the dams do not change. Above about 500 m, there are almost no sites
+without a dam to compare with: there, the dam effect rests on the shape of
+the altitude curve.
+
+```{r altitude-dams}
+altitude_band <- function(altitude) {
+  cut(
+    altitude, c(-Inf, 100, 300, 500, 800, Inf),
+    c("< 100 m", "100-300 m", "300-500 m", "500-800 m", "> 800 m")
+  )
+}
+visit |>
+  mutate(altitude_band = altitude_band(exp(log_altitude))) |>
+  summarise(
+    visits = n(), with_dam = round(mean(dams > 0), 2), mean_dams = round(mean(dams), 1),
+    .by = altitude_band
+  ) |>
+  arrange(altitude_band)
 ```
 
-```{r distance-models}
+Share of the visits where each species is caught, by altitude band, at
+sites with and without a large dam downstream (bands with at least 20
+visits).
+
+```{r altitude-occurrence-plot}
+#| fig-width: 12
+#| fig-height: 3.5
+
+altitude_species <- c(
+  "Anguilla anguilla", "Squalius cephalus", "Gobio gobio", "Barbus barbus",
+  "Rutilus rutilus", "Salmo trutta"
+)
+visit |>
+  transmute(
+    operation_id, altitude_band = altitude_band(exp(log_altitude)),
+    dam = if_else(dams > 0, "with a dam", "without a dam")
+  ) |>
+  tidyr::crossing(species = altitude_species) |>
+  left_join(
+    presence |> transmute(operation_id, species = species_valid, present = 1),
+    by = c("operation_id", "species")
+  ) |>
+  summarise(
+    occurrence = mean(coalesce(present, 0)), visits = n(),
+    .by = c(species, altitude_band, dam)
+  ) |>
+  filter(visits >= 20) |>
+  mutate(species = factor(species, altitude_species)) |>
+  ggplot(aes(altitude_band, occurrence, color = dam, group = dam)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~species, nrow = 1) +
+  scale_color_manual(values = c(`with a dam` = "#B2182B", `without a dam` = "grey40")) +
+  labs(x = "Altitude", y = "Share of visits", color = NULL) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(face = "italic")
+  )
+```
+
+The presence models are refitted with two other sets of position controls:
+the D11 axes (PC1 + PC2) and the same variables with a linear altitude. For
+each set, the number of species credibly less frequent with dams, the
+median dam effect, and the WAIC compared with the chosen controls
+(per species; negative: the chosen controls fit better).
+
+```{r control-comparison}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, species_common))
-distance_effect <- species_common |>
-  lapply(fit_presence, term = "accumulation + log_dist") |>
+#| cache.extra: !expr rlang::hash(list(visit, presence, species_common, control_term))
+control_set <- c(
+  `D11 axes (PC1 + PC2)` = "PC1 + PC2",
+  `width + altitude + distance, linear` = "log_width + log_alt + log_dist"
+)
+control_effect <- tidyr::expand_grid(species = species_common, control = names(control_set)) |>
+  purrr::pmap(\(species, control) {
+    fit_presence(species, paste("accumulation +", control_set[[control]])) |>
+      mutate(control = control)
+  }) |>
   bind_rows() |>
+  bind_rows(mutate(presence_effect, control = "width + quadratic altitude + distance")) |>
+  select(-group) |>
   left_join(species_group |> select(species, group), by = "species")
 ```
 
-Effect of log(1 + dams) per species without (x) and with (y) the distance
-to the mouth; filled points: credible with the distance.
+```{r control-comparison-table}
+control_effect |>
+  left_join(
+    presence_effect |> select(species, waic_chosen = waic),
+    by = "species"
+  ) |>
+  summarise(
+    negative = sum(upper < 0), positive = sum(lower > 0),
+    median_effect = round(median(estimate), 2),
+    median_waic_vs_chosen = round(median(waic_chosen - waic), 1),
+    chosen_fits_better = sum(waic_chosen < waic - 2),
+    .by = control
+  )
+```
 
-```{r distance-models-plot}
+Effect of log(1 + dams) per species with the D11 axes (x) and with the
+chosen controls (y); filled points: credible with the chosen controls.
+
+```{r control-comparison-plot}
 #| fig-width: 7
 #| fig-height: 6
 
-presence_effect |>
-  select(species, group, estimate) |>
-  left_join(
-    distance_effect |> select(species, estimate_distance = estimate, lower, upper),
-    by = "species"
-  ) |>
+control_effect |>
+  filter(control == "D11 axes (PC1 + PC2)") |>
+  select(species, group, estimate_pc = estimate) |>
+  left_join(presence_effect |> select(species, estimate, lower, upper), by = "species") |>
   mutate(credible = upper < 0 | lower > 0) |>
-  ggplot(aes(estimate, estimate_distance, color = group)) +
+  ggplot(aes(estimate_pc, estimate, color = group)) +
   geom_abline(linetype = "dashed", color = "grey50") +
   geom_hline(yintercept = 0, color = "grey80") +
   geom_vline(xintercept = 0, color = "grey80") +
@@ -576,24 +684,24 @@ presence_effect |>
   ggrepel::geom_text_repel(aes(label = species), size = 2.5, fontface = "italic", show.legend = FALSE) +
   scale_color_manual(values = group_color) +
   scale_shape_manual(values = c(`TRUE` = 16, `FALSE` = 1)) +
-  labs(x = "Effect, controls", y = "Effect, controls + distance to the mouth", color = NULL, shape = "Credible")
+  labs(x = "Effect, D11 axes (PC1 + PC2)", y = "Effect, chosen controls", color = NULL, shape = "Credible")
 ```
 
-**Results:** the number of dams is only partly tied to position along the
-river: the controls explain a third of its variation, half with the
-catchment, and the distance to the mouth adds little (48%). Adding the
-distance to the mouth to the presence models keeps the same picture: the
-effects keep their ranking (correlation
-`r round(cor(presence_effect$estimate, distance_effect$estimate[match(presence_effect$species, distance_effect$species)]), 2)`)
-but are weaker (median `r round(median(distance_effect$estimate), 2)`
-against `r round(median(presence_effect$estimate), 2)`), and
-`r sum(distance_effect$upper < 0)` of `r nrow(distance_effect)` species
-stay credibly less frequent with dams. Eel and salmon keep negative effects
-(salmon credible with this model) and brown trout stays positive. Seven
-species lose a credible effect (black bullhead, sunbleak, perch, minnow,
-ninespine stickleback, rudd, tench). With linear controls, part of the dam effect of
-these species may come from their position along the river rather than
-from the dams.
+**Results:** the altitude curve is what matters. At the same altitude,
+sites with and without a dam downstream hold chub, gudgeon, barbel and
+roach about as often: their drop above 300 m happens with or without
+dams. The eel, by contrast, is clearly rarer above dams at the same
+altitude. With the D11 axes or a linear altitude, the drop of lowland
+species in the uplands is attributed to the dams: most species then appear
+credibly less frequent with dams, and the effects are about twice as
+strong. The quadratic altitude term fits better for most species
+and roughly halves the dam effects of the resident species, while the migratory
+and large-river species keep strong negative effects.
+
+*To discuss: above about 500 m, nearly all sites have a dam downstream, so
+the dam effect there depends on the shape of the altitude curve; brown
+trout keeps a positive effect whose cause is unclear (no sign of stocking
+of catchable fish in the size structure).*
 
 ## Impact on food web structure
 
@@ -609,16 +717,15 @@ length of the webs with a piscivore.
 
 Dam metric: $D_i$, the number of large dams (ROE obstacles with a drop
 height $\geq$ 5 m, on the AMOBIO river network) between the site of visit
-$i$ and the sea. Environmental controls: the D11 continuum axes $\mathrm{PC1}$
-(river size: width, Strahler order, distance to the source) and
-$\mathrm{PC2}$ (altitude and distance to the mouth). Sampling effort: the
-fishing protocol and the fished surface $A_i$. PC1 and PC2 are linear, as
-in the presence models. For visit $i$ at site
+$i$ and the sea. Position controls, as in the presence models: the log
+river width $W_i$, the log altitude $H_i$ (with a quadratic term) and the
+log distance to the mouth $M_i$. Sampling effort: the
+fishing protocol and the fished surface $A_i$. For visit $i$ at site
 $s$, in year $t$ and catchment $c$, the linear predictor is
 
 $$
-\eta_i = \beta_0 + \beta_D \log(1 + D_i) + \beta_1 \mathrm{PC1}_i
-+ \beta_2 \mathrm{PC2}_i
+\eta_i = \beta_0 + \beta_D \log(1 + D_i) + \beta_W W_i
++ \beta_H H_i + \beta_{H^2} H_i^2 + \beta_M M_i
 + \alpha_{\mathrm{district}(i)} + \gamma_{\mathrm{protocol}(i)}
 + \beta_A \log A_i + u_s + v_t + w_c,
 $$
@@ -646,7 +753,7 @@ dam effect at equal richness.
 
 ```{r foodweb-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, tar_read(foodweb_structure)))
+#| cache.extra: !expr rlang::hash(list(visit, presence, tar_read(foodweb_structure), control_term))
 foodweb_visit <- visit |>
   inner_join(
     tar_read(foodweb_structure) |>
@@ -674,11 +781,11 @@ foodweb_family <- c(
   trophic_length = "gaussian", fish_diet_overlap = "gaussian"
 )
 
-# Effects of the `dam` terms, PC1, PC2 (and log richness) on `response` in
-# `data`, with the log marginal likelihood.
+# Effects of the `dam` terms, the position controls (and log richness) on
+# `response` in `data`, with the log marginal likelihood.
 fit_foodweb <- function(data, response, family, richness, dam) {
   term <- paste(c(
-    dam, if (richness) "log_richness", "PC1 + PC2 + district",
+    dam, if (richness) "log_richness", control_term, "district",
     "protocol + log_surface",
     "f(site, model = 'iid') + f(year, model = 'iid') + f(catchment, model = 'iid')"
   ), collapse = " + ")
@@ -687,7 +794,7 @@ fit_foodweb <- function(data, response, family, richness, dam) {
     family = family, data = data, num.threads = 4,
     control.compute = list(config = FALSE)
   )
-  effect <- model$summary.fixed[c(all.vars(as.formula(paste("~", dam))), "PC1", "PC2", if (richness) "log_richness"), ]
+  effect <- model$summary.fixed[c(all.vars(as.formula(paste("~", dam))), control_coef, if (richness) "log_richness"), ]
   gc()
   tibble(
     response = response, family = family, richness = richness,
@@ -709,7 +816,7 @@ foodweb_effect <- bind_rows(foodweb_fit) |>
   mutate(response = factor(response, names(foodweb_response), foodweb_response))
 ```
 
-Effects of log(1 + dams), PC1 and PC2 (posterior mean and 95% credible
+Effects of log(1 + dams) and of the position controls (posterior mean and 95% credible
 interval; log scale for fish richness, logit scale for the presence of a
 piscivore), without and with log fish richness as a covariate.
 
@@ -721,7 +828,10 @@ foodweb_effect |>
   filter(term != "log_richness") |>
   mutate(
     model = if_else(richness, "richness controlled", "richness not controlled"),
-    term = factor(term, c("PC2", "PC1", "accumulation"), c("PC2", "PC1", "log(1 + dams)"))
+    term = factor(
+      term, rev(c("accumulation", control_coef)),
+      rev(c("log(1 + dams)", "log width", "log altitude", "log altitude²", "log distance to the mouth"))
+    )
   ) |>
   ggplot(aes(mean, term, color = model)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
@@ -734,13 +844,13 @@ foodweb_effect |>
   labs(x = "Effect", y = NULL, color = NULL)
 ```
 
-**Results:** with more dams downstream, webs have fewer fish species,
-slightly shorter food chains, and fish species that share more of their
-prey. The changes in structure mostly follow from the loss of species: at
-equal richness, the effect on chain length disappears and the effect on
-diet overlap is much weaker. Almost all webs have a fish-eating species,
-whatever the number of dams (at equal richness, even more often with dams). Along the continuum, larger rivers (PC1) have
-more species, longer chains and less diet overlap.
+**Results:** with more dams downstream, webs have fewer fish species. The
+structure of the webs does not credibly change: chain length, diet overlap
+and the presence of a piscivore are about the same with or without dams,
+whether richness is controlled or not. The position along the river
+matters more: webs have more species in wider rivers and further from the
+sea, and fewer at high altitude, where chains are shorter and fish species
+share more of their prey.
 
 ### Size structure of the food webs
 
@@ -807,7 +917,7 @@ c(visits = nrow(foodweb_size), top_predator = sum(!is.na(foodweb_size$log_top_pr
 
 ```{r size-structure-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(foodweb_size)
+#| cache.extra: !expr rlang::hash(list(foodweb_size, control_term))
 set.seed(1)
 # Effect of log(1 + dams) on a size measure.
 fit_size <- function(data, response) {
@@ -913,13 +1023,12 @@ ggplot() +
   theme_void()
 ```
 
-**Results:** with more dams, the fish caught are larger on average. This
-is because small-bodied species drop out, not because individuals grow
-larger within a species. At the top of the web it is the reverse: the
-largest fish-eating fish is smaller. Food chains are shorter with dams for
-two reasons: there are fewer species, and the top predators are smaller.
-Fewer species is the larger part. Once both are accounted for, dams have no
-direct effect left on trophic length.
+**Results:** with more dams, the fish caught are slightly larger on
+average, mostly because individuals are larger within species rather than
+because small species drop out. At the top of the web it is the reverse:
+the largest fish-eating fish is smaller. Fewer species and smaller top
+predators both go with shorter chains, but these indirect paths are small,
+and the total dam effect on trophic length is not credible.
 
 ### Identity of the top predator
 
@@ -935,7 +1044,7 @@ classes.
 
 ```{r top-predator-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(path_visit, size_individual, fish_eating_length))
+#| cache.extra: !expr rlang::hash(list(path_visit, size_individual, fish_eating_length, control_term))
 top_predator <- size_individual |>
   inner_join(fish_eating_length, by = "species") |>
   filter(length >= fish_from) |>
@@ -1010,14 +1119,12 @@ patchwork::wrap_plots(top_share_plot, eel_effect_plot, widths = c(1, 1.3))
 ```
 
 **Results:** without dams, the top predator is usually the eel; with
-several dams, it is usually brown trout, a much smaller fish. Where
-eels remain above dams, the largest one is also smaller. The eel explains
-much of why top predators shrink with dams: the dam effect on top predator
-size is much stronger in webs with eel than without, and it shrinks a lot
-once eel presence is accounted for. Its weight in shorter food chains is
-more modest: top predator size only weakly drives chain length, and most
-of the shortening comes from the loss of species. Within webs with eel and
-within webs without, dams shorten chains by similar amounts.
+several dams, it is usually brown trout, a much smaller fish. Where eels
+remain above dams, the largest one is also smaller. The eel explains why
+top predators shrink with dams: in webs without eel, dams do not change
+the size of the top predator, and the effect disappears once eel presence
+is accounted for. None of these models shows a credible dam effect on
+trophic length.
 
 ### Distance decay of the dam effect
 
@@ -1036,7 +1143,7 @@ infinity and compared by their log marginal likelihood.
 
 ```{r dam-decay}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(foodweb_visit, operation_dam))
+#| cache.extra: !expr rlang::hash(list(foodweb_visit, operation_dam, control_term))
 dam_distance <- operation_dam |>
   filter(position == "upstream") |>
   transmute(operation_id, distance_km = river_dist_m / 1000)
@@ -1091,38 +1198,38 @@ patchwork::wrap_plots(
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-**Results:** a dam far downstream counts as much as one close to the site:
-weighting dams by their distance never fits better than simply counting
-them, for fish richness, trophic length and diet overlap. What matters is
-how many large dams separate a site from the sea, not how close they
-are.
+**Results:** for fish richness, a dam far downstream counts as much as
+one close to the site: weighting dams by their distance never fits better
+than simply counting them. What matters is how many large dams separate a
+site from the sea, not how close they are. For the structure metrics, no
+decay length gives a credible dam effect, and the fit hardly changes with
+it.
 
-### Dam effect along the river continuum
+### Dam effect along the altitude gradient
 
-Does the dam effect change along the continuum? The models (without
-richness as a covariate) are fitted with an interaction between
-log(1 + dams) and PC2 (altitude and distance to the mouth), and compared by
-WAIC to the models without it. The dam effect at a given PC2 is
-$\beta_D + \beta_{D \times \mathrm{PC2}}\, \mathrm{PC2}$, computed as a
-linear combination of the posterior for PC2 between its 5% and 95%
-quantiles.
+Does the dam effect change with altitude? The models (without richness as
+a covariate) are fitted with an interaction between log(1 + dams) and the
+log altitude, and compared by WAIC to the models without it. The dam
+effect at a given altitude is $\beta_D + \beta_{D \times H}\, H$,
+computed as a linear combination of the posterior for altitudes between
+the 5% and 95% quantiles of the visits.
 
-```{r dam-pc2-models}
+```{r dam-altitude-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(foodweb_visit)
-pc2_value <- seq(
-  quantile(foodweb_visit$PC2, 0.05), quantile(foodweb_visit$PC2, 0.95),
+#| cache.extra: !expr rlang::hash(list(foodweb_visit, control_term))
+alt_value <- seq(
+  quantile(foodweb_visit$log_alt, 0.05), quantile(foodweb_visit$log_alt, 0.95),
   length.out = 20
 )
 
-# Dam effect along PC2 and WAIC difference with the model without the
-# interaction, for `response`.
-fit_dam_pc2 <- function(response) {
+# Dam effect along the altitude and WAIC difference with the model without
+# the interaction, for `response`.
+fit_dam_altitude <- function(response) {
   data <- if (response == "trophic_length") filter(foodweb_visit, piscivore == 1) else foodweb_visit
   fit <- function(dam, ...) {
     INLA::inla(
       as.formula(paste(
-        response, "~", dam, "+ PC1 + PC2 + district + protocol + log_surface +",
+        response, "~", dam, "+", control_term, "+ district + protocol + log_surface +",
         "f(site, model = 'iid') + f(year, model = 'iid') + f(catchment, model = 'iid')"
       )),
       family = foodweb_family[[response]], data = data, num.threads = 4,
@@ -1130,16 +1237,16 @@ fit_dam_pc2 <- function(response) {
     )
   }
   model <- fit(
-    "accumulation + accumulation:PC2",
+    "accumulation + accumulation:log_alt",
     lincomb = INLA::inla.make.lincombs(
-      accumulation = rep(1, length(pc2_value)), `accumulation:PC2` = pc2_value
+      accumulation = rep(1, length(alt_value)), `accumulation:log_alt` = alt_value
     )
   )
   waic_main <- fit("accumulation")$waic$waic
-  coefficient <- model$summary.fixed["accumulation:PC2", ]
+  coefficient <- model$summary.fixed["accumulation:log_alt", ]
   gc()
   tibble(
-    response = response, PC2 = pc2_value,
+    response = response, altitude = exp(alt_value + mean(visit$log_altitude)),
     mean = model$summary.lincomb.derived$mean,
     lower = model$summary.lincomb.derived$`0.025quant`,
     upper = model$summary.lincomb.derived$`0.975quant`,
@@ -1149,29 +1256,29 @@ fit_dam_pc2 <- function(response) {
     delta_waic = model$waic$waic - waic_main
   )
 }
-dam_pc2 <- lapply(names(foodweb_response), fit_dam_pc2) |>
+dam_altitude <- lapply(names(foodweb_response), fit_dam_altitude) |>
   bind_rows() |>
   mutate(response = factor(response, names(foodweb_response), foodweb_response))
 ```
 
-Effect of log(1 + dams) along PC2 (posterior mean and 95% credible
+Effect of log(1 + dams) along the altitude (posterior mean and 95% credible
 interval); in each panel, the interaction coefficient and the WAIC
 difference with the model without it (negative: the interaction fits
 better).
 
-```{r dam-pc2-plot}
+```{r dam-altitude-plot}
 #| fig-width: 12
 #| fig-height: 3.5
 
-dam_pc2 |>
-  ggplot(aes(PC2, mean)) +
+dam_altitude |>
+  ggplot(aes(altitude, mean)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "grey80") +
   geom_line() +
   geom_text(
     data = \(d) distinct(d, response, interaction, interaction_lower, interaction_upper, delta_waic),
     aes(
-      x = -Inf, y = Inf,
+      x = 0, y = Inf,
       label = sprintf(
         "interaction %+.3f (%+.3f, %+.3f)\nWAIC - WAIC without: %+.1f",
         interaction, interaction_lower, interaction_upper, delta_waic
@@ -1180,14 +1287,14 @@ dam_pc2 |>
     hjust = -0.05, vjust = 1.3, size = 2.8
   ) +
   facet_wrap(~response, nrow = 1, scales = "free_y") +
-  labs(x = "PC2 (altitude and distance to the mouth)", y = "Effect of log(1 + dams)")
+  scale_x_log10() +
+  labs(x = "Altitude (m)", y = "Effect of log(1 + dams)")
 ```
 
-**Results:** the loss of species with dams depends on the position along
-the river: near the sea and in the lowlands (low PC2), dams barely change
-or even slightly increase the number of species (+0.17), while upstream
-(high PC2) they strongly reduce it (-0.28). Only for richness does this
-gradient clearly improve the model; for the structure metrics (piscivore
-presence, trophic length, diet overlap) the trends along PC2 are there but
-weak.
+**Results:** the loss of species with dams depends on altitude: in the
+lowlands, dams do not credibly change the number of species, while in the
+uplands they reduce it. The interaction is credible, but it does not
+improve the fit (WAIC), so this gradient should be read with care. For the
+structure metrics, the dam effect hardly changes with altitude, apart
+from slightly shorter chains with dams in the lowlands.
 

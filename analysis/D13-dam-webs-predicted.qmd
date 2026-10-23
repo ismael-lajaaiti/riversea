@@ -1,0 +1,888 @@
+---
+title: "Dam impacts on food webs predicted from species presence"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+D12 relates the observed food webs of each visit to the number of large
+dams between the site and the sea. The webs are reconstructed from the fish
+caught, so they are noisy: most of the variation of trophic length is from
+one visit to the next at the same site. Here, food webs are instead
+predicted from models of the presence of each species, in three steps:
+
+1. Fit a presence model for each species, with the dams and the position
+   along the river.
+2. Check that the webs generated from these models reproduce the observed
+   ones.
+3. Generate webs with and without the dams, and measure the dam impact on
+   their structure.
+
+The uncertainty of the presence models is carried through to the webs and
+the dam impacts by working with joint posterior draws. Food webs are built
+at the species level throughout.
+
+## Summary
+
+- presence models of 48 species (99.7% of the fish caught), with the dams
+  and the position along the river, generate food webs that reproduce the
+  observed ones (calibrated, correlation 0.7-0.9 per visit)
+- the species lost with dams are enough to shorten food chains slightly
+  and raise diet overlap slightly, at species level
+- the dam effects on the observed webs match those on the generated webs:
+  dams change food web structure through which species are present, with
+  no sign of a further effect
+- the dam effect on trophic length is clearer at the species level than with
+  size classes, because it comes from the change of top predator (eel, pike,
+  salmon replaced by brown trout)
+- the number of dams fits as well as any weighting of the dams by rank
+- a few dams, first from the sea on large rivers, would bring back most of
+  the species if removed; predicted over the whole network, a dam matters
+  through the river length it cuts off and its rank from the sea
+- this ranking is close to the diadromous connectivity index (river length
+  reachable from the sea) with a dam passability of about 0.75
+
+## To do
+
+- Test fragmentation beyond the dams downstream: add the length of the free
+  segment holding each site to the presence models; if it matters, the dam
+  ranking needs a potamodromous (DCI_p-like) part
+- Fix the Roanne-Digoin canal lock: the network routes the upper Loire through it
+- Predictive scores of the generated webs across dam weightings (needs the
+  presence models refitted for each weighting)
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+## Visits
+
+All visits of river (ASPE) sites with fish records, as in D12 (target
+`dam_visit`): dams are the large dams and weirs (ROE, drop height
+$\geq$ 5 m) between the site and the sea, placed on the AMOBIO network
+after a manual review (see D12).
+
+```{r visits}
+visit <- tar_read(dam_visit)
+settings <- tar_read(dam_web_settings)
+c(
+  visits = nrow(visit), sites = n_distinct(visit$sandre_code),
+  catchments = n_distinct(visit$catchment), with_dam = mean(visit$dams > 0)
+)
+```
+
+## Presence models
+
+One model per species found at >= `r settings$min_sites` sites (target
+`dam_presence_sample`). For visit $i$ at site $s$, in year $t$ and
+catchment $c$, the presence $Y_i$ of the species is
+
+$$
+\begin{aligned}
+Y_i &\sim \mathrm{Bernoulli}(p_i), \\
+\mathrm{logit}\, p_i &= \beta_0 + \beta_D \log(1 + D_i) + \beta_W W_i
++ \beta_H H_i + \beta_{H^2} H_i^2 + \beta_M M_i \\
+&\quad + \alpha_{\mathrm{district}(i)} + \gamma_{\mathrm{protocol}(i)}
++ \beta_A \log A_i + u_s + v_t + w_c
+\end{aligned}
+$$
+
+with $D_i$ the number of large dams and weirs between the site and the sea,
+$W_i$ the log river width, $H_i$ the log altitude and $M_i$ the log
+distance to the mouth (centred; see D12 for the choice of these controls),
+$A_i$ the fished surface, and iid random effects of the site ($u_s$), the
+year ($v_t$) and the catchment ($w_c$). From each model,
+`r settings$n_draws` joint draws of the posterior are kept: the linear
+predictor of each visit (which includes the random effects) and the dam
+effect $\beta_D$, from the same draws.
+
+```{r presence-species}
+presence <- tar_read(river_presence)
+presence_species <- tar_read(dam_presence_species)
+c(
+  species = length(presence_species),
+  share_of_occurrences = mean(
+    presence$species_valid[presence$operation_id %in% visit$operation_id] %in% presence_species
+  )
+)
+```
+
+Dam effect $\beta_D$ per species (posterior mean and 95% credible
+interval).
+
+```{r presence-effect-plot}
+#| fig-width: 8
+#| fig-height: 10
+
+tar_read(dam_presence_effect) |>
+  mutate(
+    species = reorder(species, -mean),
+    credible = if_else(upper < 0 | lower > 0, "credible", "not credible")
+  ) |>
+  ggplot(aes(mean, species, color = credible)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
+  scale_color_manual(values = c(credible = "black", `not credible` = "grey60")) +
+  labs(x = "Effect of log(1 + large dams downstream)", y = NULL, color = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+**Results:** the `r length(presence_species)` modelled species cover
+almost all the fish caught. About half of them are credibly less frequent
+with more dams downstream: the migratory species (sea lamprey, eel,
+salmon) and species of large lowland rivers, native or not. As in D12,
+brown trout is more frequent with dams; so is the ide, a rare species with
+an uncertain effect.
+
+## Species-level food webs
+
+The food web of a set of species is cut out of the species-level metaweb
+(target `species_metaweb`): two species are linked if any size class of
+the predator eats any size class of the prey. The 10 resources (detritus,
+biofilm, macrophytes, phytoplankton, zooplankton, worms, molluscs,
+crustaceans, insects, echinoderms) are in every web. Four measures:
+
+- fish richness $S$, the number of fish species;
+- trophic length $L$, the maximum prey-averaged trophic level;
+- piscivore presence $P$, whether a fish species eats another fish;
+- diet overlap $O$, the mean Jaccard similarity of the prey of pairs of
+  fish species.
+
+The observed species-level webs are built from the species caught, keeping
+only the modelled species (target `dam_web_observed`), so that observed
+and generated webs are comparable. They differ from the size-class webs of
+D11 and D12, which only keep the size classes caught.
+
+```{r observed-webs}
+observed <- tar_read(dam_web_observed)
+size_class <- tar_read(foodweb_structure) |>
+  filter(survey == "river") |>
+  distinct(operation_id, .keep_all = TRUE) |>
+  mutate(operation_id = as.character(operation_id)) |>
+  select(operation_id, trophic_length, fish_diet_overlap)
+observed |>
+  mutate(operation_id = as.character(operation_id)) |>
+  inner_join(size_class, by = "operation_id", suffix = c("", "_size_class")) |>
+  summarise(
+    trophic_length = cor(trophic_length, trophic_length_size_class, use = "complete"),
+    fish_diet_overlap = cor(fish_diet_overlap, fish_diet_overlap_size_class, use = "complete")
+  )
+```
+
+## Do the presence models reproduce the observed webs?
+
+For each visit and posterior draw, the presence of each species is drawn
+from its presence probability, the web of the species present is built,
+and its structure measured (target `dam_web_simulated`). Each visit thus
+has `r settings$n_draws` generated webs, whose spread carries the
+uncertainty of the presence models and the chance of which species are
+caught.
+
+```{r generated-webs}
+simulated <- tar_read(dam_web_simulated)
+metric_label <- c(
+  richness = "S: fish richness", trophic_length = "L: trophic length",
+  piscivore = "P: piscivore present", fish_diet_overlap = "O: diet overlap (fish)"
+)
+generated <- lapply(names(metric_label), function(m) {
+  web <- simulated$web[, , m, "dams"]
+  tibble(
+    operation_id = simulated$operation_id, metric = m,
+    mean = rowMeans(web, na.rm = TRUE),
+    q05 = apply(web, 1, quantile, 0.05, na.rm = TRUE),
+    q25 = apply(web, 1, quantile, 0.25, na.rm = TRUE),
+    q75 = apply(web, 1, quantile, 0.75, na.rm = TRUE),
+    q95 = apply(web, 1, quantile, 0.95, na.rm = TRUE)
+  )
+}) |>
+  bind_rows() |>
+  inner_join(
+    observed |> tidyr::pivot_longer(-operation_id, names_to = "metric", values_to = "observed"),
+    by = c("operation_id", "metric")
+  ) |>
+  filter(!is.na(observed), !is.na(mean)) |>
+  left_join(distinct(visit, operation_id, sandre_code), by = "operation_id")
+```
+
+Observed against generated structure (mean of the generated webs), one
+point per visit; dashed line: 1:1.
+
+```{r generated-observed-plot}
+#| fig-width: 12
+#| fig-height: 3.5
+
+generated |>
+  filter(metric != "piscivore") |>
+  mutate(metric = factor(metric, names(metric_label), metric_label)) |>
+  ggplot(aes(mean, observed)) +
+  geom_point(size = 0.4, alpha = 0.2) +
+  geom_abline(linetype = "dashed", color = "#B2182B") +
+  facet_wrap(~metric, nrow = 1, scales = "free") +
+  labs(x = "Generated (mean over draws)", y = "Observed")
+```
+
+Agreement between observed and generated structure: correlation per visit
+and per site (means over the visits of a site), and share of the visits
+whose observed value falls within the central 50% and 90% of the
+generated webs (expected: 0.5 and 0.9 if the generated webs are
+calibrated).
+
+```{r generated-observed-table}
+generated |>
+  summarise(
+    correlation_visit = cor(mean, observed),
+    coverage_50 = mean(observed >= q25 & observed <= q75),
+    coverage_90 = mean(observed >= q05 & observed <= q95),
+    .by = metric
+  ) |>
+  left_join(
+    generated |>
+      summarise(mean = mean(mean), observed = mean(observed), .by = c(metric, sandre_code)) |>
+      summarise(correlation_site = cor(mean, observed), .by = metric),
+    by = "metric"
+  ) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+The species are drawn independently of each other, given their presence
+probabilities. Co-occurrence of each pair of species: observed number of
+visits where both are caught against the number expected from the
+presence probabilities (pairs expected at >= 20 visits).
+
+```{r cooccurrence-plot}
+#| fig-width: 6
+#| fig-height: 5
+
+probability <- tar_read(dam_presence_probability)
+caught <- sapply(
+  colnames(probability),
+  \(s) as.numeric(rownames(probability) %in% presence$operation_id[presence$species_valid == s])
+)
+pair <- upper.tri(diag(ncol(probability)))
+cooccurrence <- tibble(
+  observed = (t(caught) %*% caught)[pair],
+  expected = (t(probability) %*% probability)[pair]
+) |>
+  filter(expected >= 20)
+cooccurrence |>
+  ggplot(aes(expected, observed)) +
+  geom_point(size = 0.8, alpha = 0.4) +
+  geom_abline(linetype = "dashed", color = "#B2182B") +
+  scale_x_continuous(transform = "log1p") +
+  scale_y_continuous(transform = "log1p") +
+  labs(x = "Expected co-occurrences (independent species)", y = "Observed co-occurrences")
+```
+
+**Results:** the generated webs reproduce the observed ones well. Fish
+richness, trophic length and diet overlap of the generated webs follow the
+observed values closely, visit by visit and even more site by site, and
+they are calibrated: the observed value falls within the central 50% and
+90% of the generated webs about as often as expected. Piscivore presence
+is the exception, but only because almost every web has a piscivore, so
+there is little to predict. Species pairs co-occur about as often as
+expected from independent presences, with some exceptions: a few species
+cluster more than predicted (spined loach with lowland species), and some
+upland and lowland species are predicted to co-occur at a few sites where
+they are never caught together.
+
+*To discuss: the species-level webs keep all the size classes of each
+species, so they differ from the size-class webs of D11 and D12
+(correlation about 0.7-0.75 for trophic length and diet overlap).*
+
+## Dam impacts on the generated webs
+
+### Webs without dams
+
+Each visit's webs are generated a second time with the dam term of every
+presence model set to 0, with the same posterior draws and the same random
+numbers (target `dam_web_counterfactual`). The difference between the two
+sets of webs is the change in structure due to the species that the dams
+remove or add. For each posterior draw, the differences are averaged over
+the visits with at least one dam, overall and by number of dams; the spread
+over the draws gives the uncertainty.
+
+```{r counterfactual}
+counterfactual <- tar_read(dam_web_counterfactual) |>
+  summarise(
+    mean = mean(difference, na.rm = TRUE),
+    lower = quantile(difference, 0.025, na.rm = TRUE),
+    upper = quantile(difference, 0.975, na.rm = TRUE),
+    .by = c(dam_class, metric)
+  ) |>
+  mutate(
+    metric = factor(metric, names(metric_label), metric_label),
+    dam_class = factor(dam_class, c("1", "2-3", "4+", "all"), c("1 dam", "2-3 dams", "4+ dams", "all dammed visits"))
+  )
+```
+
+Change in the structure of the generated webs, observed dams minus no dam,
+at the visits with dams (posterior mean and 95% credible interval).
+
+```{r counterfactual-plot}
+#| fig-width: 12
+#| fig-height: 3.5
+
+counterfactual |>
+  ggplot(aes(mean, dam_class)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
+  facet_wrap(~metric, nrow = 1, scales = "free_x") +
+  scale_y_discrete(limits = rev) +
+  labs(x = "Observed dams - no dam", y = NULL)
+```
+
+**Results:** the species that the dams remove are enough to change the
+webs. At the visits with dams, the generated webs without dams have about
+one more fish species, slightly longer food chains and slightly less diet
+overlap between fish species. These changes grow with the number of dams.
+Piscivore presence does not change: almost every web keeps a piscivore.
+The changes are small compared with the differences between visits.
+
+### Dam effect fitted to generated and observed webs
+
+The D12 models of web structure on log(1 + dams) (fish richness, Poisson;
+trophic length of the webs with a piscivore and diet overlap, Gaussian;
+same controls and random effects as the presence models; visits with at
+least 3 fish species) are fitted to the observed species-level webs and to
+`r length(tar_read(dam_realisation))` realisations of the generated webs,
+each from one posterior draw of the presence models (targets
+`dam_structure_observed` and `dam_structure_generated`). Each realisation
+uses the same parameter values at every visit, so it keeps the uncertainty
+of the presence models that is shared across visits (e.g. the dam effect
+of the eel). The posterior draws of the dam effect are pooled over the
+realisations: their spread combines the uncertainty of the presence models
+and of the structure model.
+
+```{r structure-dam}
+structure_label <- metric_label[c("richness", "trophic_length", "fish_diet_overlap")]
+structure_dam <- bind_rows(
+  generated = tar_read(dam_structure_generated),
+  observed = tar_read(dam_structure_observed),
+  .id = "webs"
+) |>
+  mutate(response = factor(response, names(structure_label), structure_label))
+structure_dam |>
+  summarise(
+    mean = mean(draw), lower = quantile(draw, 0.025), upper = quantile(draw, 0.975),
+    .by = c(webs, response)
+  ) |>
+  arrange(response, webs) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+Posterior of the dam effect fitted to the observed webs and to the
+generated webs (pooled over realisations).
+
+```{r structure-dam-plot}
+#| fig-width: 12
+#| fig-height: 3.5
+
+structure_dam |>
+  ggplot(aes(draw, fill = webs, color = webs)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_density(alpha = 0.3) +
+  facet_wrap(~response, nrow = 1, scales = "free") +
+  scale_fill_manual(values = c(observed = "grey30", generated = "#B2182B")) +
+  scale_color_manual(values = c(observed = "grey30", generated = "#B2182B")) +
+  labs(x = "Effect of log(1 + large dams downstream)", y = "Posterior density", fill = NULL, color = NULL)
+```
+
+**Results:** fitted to the generated webs, the model gives about the same
+dam effects as fitted to the observed webs: fewer species, slightly
+shorter chains and slightly more diet overlap with more dams, all
+credible, with similar sizes. Since the generated webs change with the
+dams only through which species are present, the dam effects on the
+observed webs are what the loss of species predicts: there is no sign of
+a further effect of the dams on web structure. Pooling over realisations
+matters: the uncertainty of the presence models is about as large as that
+of the structure model.
+
+*To discuss: the change from removing all dams (above) is larger than the
+fitted dam effect per unit of log(1 + dams); the structure model controls
+for the position and has site random effects, which may absorb part of
+the difference between dammed and undammed sites. The two quantities are
+not the same, and the comparison with the observed webs is made with the
+fitted model.*
+
+## Species-level and size-class webs
+
+The dam effects on the observed webs are clearer at the species level
+than with the size-class webs of D11 and D12. Same model, same visits,
+fitted to the species-level and to the size-class metrics (fish richness
+is the same in both; targets `dam_structure_observed` and
+`dam_structure_size_class`).
+
+```{r aggregation-effect}
+bind_rows(
+  `species level` = tar_read(dam_structure_observed),
+  `size classes` = tar_read(dam_structure_size_class),
+  .id = "webs"
+) |>
+  summarise(
+    mean = mean(draw), lower = quantile(draw, 0.025), upper = quantile(draw, 0.975),
+    .by = c(response, webs)
+  ) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+Species holding the highest trophic level of each web, by number of dams
+downstream (share of the visits; species at the top of at least 5% of the
+webs of a class), and mean trophic length of the webs topped by each
+species, at both levels (target `top_trophic_species`).
+
+```{r top-species}
+top <- tar_read(top_trophic_species) |>
+  left_join(select(visit, operation_id, dams), by = "operation_id") |>
+  mutate(dam_class = cut(dams, c(-Inf, 0, 1, 3, Inf), c("0", "1", "2-3", "4+")))
+top |>
+  count(dam_class, top_species) |>
+  mutate(share = round(n / sum(n), 2), .by = dam_class) |>
+  filter(max(share) >= 0.05, .by = top_species) |>
+  select(-n) |>
+  tidyr::pivot_wider(names_from = dam_class, values_from = share, values_fill = 0)
+top |>
+  summarise(
+    webs = n(),
+    trophic_length_species = round(mean(trophic_length_species), 2),
+    trophic_length_size_class = round(mean(trophic_length_size_class), 2),
+    .by = top_species
+  ) |>
+  filter(webs >= 100) |>
+  arrange(desc(webs))
+```
+
+**Results:** fish richness responds the same at both levels, and diet
+overlap almost the same (only less precisely with size classes). Trophic
+length differs: its dam effect is about twice as strong at the species
+level. The reason is the change of top predator: with more dams, the eel,
+the pike and the salmon give way to brown trout at the top of the webs. At
+the species level, each species carries the diet of all its size classes,
+so pike or pikeperch sit well above brown trout. In the size-class webs,
+they only reach their high trophic level when large individuals are
+caught, so the gap with brown trout is about half as large, and so is the
+dam effect. Species-level trophic length measures which species are
+present; size-class trophic length also depends on the sizes caught.
+
+## Dam weighting
+
+Does every dam count the same? The $k$-th dam between the site and the sea
+is weighted by $w^{k-1}$: $w = 1$ gives the number of dams (used above),
+$w = 0$ only the first dam, $0 < w < 1$ a saturating count and $w > 1$ an
+accelerating one; $\log(1 + \text{weighted dams})$ replaces
+$\log(1 + D_i)$. The models of the observed species-level structure
+(target `dam_weight_structure`) and the presence models of the 48 species
+(coarser grid of $w$; target `dam_weight_presence`) are refitted for each
+$w$ and compared by their log marginal likelihood. WAIC is not used here:
+it is unstable for the rare species (differences of thousands between
+neighbouring weights).
+
+```{r dam-weight}
+weight_structure <- tar_read(dam_weight_structure) |>
+  mutate(delta = mlik - mlik[weight == 1], .by = response) |>
+  mutate(panel = metric_label[response])
+weight_presence <- tar_read(dam_weight_presence) |>
+  mutate(delta = mlik - mlik[weight == 1], .by = species)
+weight_presence |>
+  slice_max(mlik, n = 1, by = species) |>
+  count(best_weight = weight, name = "species")
+```
+
+Log marginal likelihood of each weighting relative to the number of dams
+($w = 1$): web structure (observed species-level webs) and the presence
+models summed over the 48 species (grey band: within 2).
+
+```{r dam-weight-plot}
+#| fig-width: 12
+#| fig-height: 3.5
+
+bind_rows(
+  weight_structure |> select(panel, weight, delta),
+  weight_presence |>
+    summarise(delta = sum(delta), .by = weight) |>
+    mutate(panel = "Presence, sum over species")
+) |>
+  mutate(panel = factor(panel, c(metric_label[c("richness", "trophic_length", "fish_diet_overlap")], "Presence, sum over species"))) |>
+  ggplot(aes(weight, delta)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -2, ymax = 2, fill = "grey90") +
+  geom_hline(yintercept = 0, color = "grey60") +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~panel, nrow = 1, scales = "free_y") +
+  labs(x = "Rank weight w (0: first dam only, 1: number of dams)", y = "Log marginal likelihood\n- number of dams")
+```
+
+Species whose presence model fits clearly better (by more than 2) with
+another weighting than the number of dams.
+
+```{r dam-weight-species}
+weight_presence |>
+  slice_max(mlik, n = 1, by = species) |>
+  filter(delta > 2) |>
+  transmute(species, best_weight = weight, delta = round(delta, 1)) |>
+  arrange(desc(delta))
+```
+
+**Results:** counting every dam the same fits as well as any other
+weighting. For fish richness, the number of dams fits best, and counting
+only the first dam fits clearly worse. For trophic length and diet
+overlap, all weightings fit about equally: the data cannot tell how the
+dams add up for the web structure. Summed over the 48 species, a
+saturating count (the first dams matter more) fits slightly better than the
+number of dams, and an accelerating count clearly worse; most species show
+no clear preference. The eel needs the number of dams: counting only the
+first dam, or making later dams weigh more, fits clearly worse. A few
+lowland species (white bream, minnow, sunbleak, pikeperch, wels catfish,
+*Leuciscus burdigalensis*) fit better with the first dam only.
+
+## Dam removal
+
+How much would removing each dam change the species and the webs
+upstream? Removing any one of the dams downstream of a site lowers its
+number of dams by one, so the webs of each visit are generated once more
+with one dam fewer, with the same draws and random numbers (target
+`dam_web_one_less`). The importance of a dam is the change at the sampled
+sites upstream of it (mean over the visits of each site), summed over
+these sites, for each posterior draw (target `dam_removal`). The gain in
+fish richness of a dam is thus the expected number of species found in
+addition, summed over the sites upstream.
+
+```{r dam-removal}
+removal <- tar_read(dam_removal)
+dam_info <- tar_read(large_dam) |>
+  sf::st_drop_geometry() |>
+  select(roe_code, name, river, kind, drop_height_min, altitude)
+dams_below <- tar_read(dam_dam) |>
+  filter(position == "upstream") |>
+  count(roe_code = operation_id, name = "dams_below")
+importance <- removal$web |>
+  summarise(
+    sites = first(sites),
+    lower = quantile(total, 0.025), upper = quantile(total, 0.975),
+    total = mean(total), per_site = mean(per_site),
+    .by = c(roe_code, metric)
+  ) |>
+  left_join(dam_info, by = "roe_code") |>
+  left_join(dams_below, by = "roe_code") |>
+  mutate(
+    rank = coalesce(dams_below, 0L) + 1,
+    rank_class = cut(rank, c(0, 1, 2, 4, Inf), c("1st", "2nd", "3rd-4th", "5th+"))
+  )
+richness_gain <- filter(importance, metric == "richness")
+c(
+  dams = nrow(richness_gain),
+  credible_gain = sum(richness_gain$lower > 0),
+  share_top_20 = sum(sort(richness_gain$total, decreasing = TRUE)[1:20]) / sum(richness_gain$total)
+)
+```
+
+The 15 dams whose removal would add the most fish species (summed over the
+sites upstream, posterior mean and 95% credible interval), with the change
+in trophic length summed over the same sites.
+
+```{r dam-removal-table}
+richness_gain |>
+  arrange(desc(total)) |>
+  head(15) |>
+  left_join(
+    importance |> filter(metric == "trophic_length") |> select(roe_code, trophic_length = total),
+    by = "roe_code"
+  ) |>
+  transmute(
+    roe_code, name = stringr::str_trunc(name, 30), river = stringr::str_trunc(river, 22),
+    kind, height = paste0(">= ", drop_height_min, " m"), rank, sites,
+    richness = sprintf("%.1f (%.1f, %.1f)", total, lower, upper),
+    trophic_length = round(trophic_length, 2)
+  ) |>
+  knitr::kable()
+```
+
+Richness gain of each dam against the number of sampled sites upstream
+(left) and per site against its rank from the sea (right).
+
+```{r dam-removal-plot}
+#| fig-width: 11
+#| fig-height: 4
+
+patchwork::wrap_plots(
+  richness_gain |>
+    ggplot(aes(sites, total, color = rank_class)) +
+    geom_point(alpha = 0.7) +
+    scale_x_log10() +
+    scale_color_viridis_d(end = 0.9) +
+    labs(x = "Sampled sites upstream", y = "Species gained,\nsummed over the sites", color = "Rank from\nthe sea"),
+  richness_gain |>
+    ggplot(aes(rank_class, per_site)) +
+    geom_boxplot(outlier.size = 0.8) +
+    labs(x = "Rank from the sea", y = "Species gained per site")
+)
+```
+
+Species that would gain the most (expected number of sites upstream where
+each is found in addition, summed over the removals of single dams).
+
+```{r dam-removal-species}
+#| fig-width: 7
+#| fig-height: 5
+
+removal$species |>
+  summarise(sites_gained = sum(sites_gained), .by = species) |>
+  filter(abs(sites_gained) >= 5) |>
+  mutate(species = reorder(species, sites_gained)) |>
+  ggplot(aes(sites_gained, species)) +
+  geom_col() +
+  labs(x = "Sites gained, summed over single-dam removals", y = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+**Results:** most dams matter little for the sampled sites: about a fifth
+of the `r nrow(richness_gain)` dams with sites upstream would credibly add
+species if removed, and 20 dams account for most of the total gain. The
+most important dams are those with many sampled sites upstream and few
+other dams downstream: the first dam from the sea on large rivers, such as
+the weir of Vichy on the Allier, Châtellerault on the Vienne or the
+Abattoir weir on the Cher. Per site, the gain falls quickly with the rank
+of the dam from the sea; this follows partly from the model itself, in
+which a dam adds less where there are already many. The species that would
+gain most are the eel, the salmon and lowland species (topmouth gudgeon,
+chub, gudgeon, bitterling, white bream); brown trout would lose sites.
+
+*To discuss: the second most important dam is a lock of the Roanne-Digoin
+canal, with 66 sites upstream: the network may route the upper Loire
+through the canal, which would be a topology artefact to check (as for the
+canal of restitution "GHE"). Importance is measured at sampled sites only,
+so it depends on where sampling took place, not on the length of river
+upstream.*
+
+### Dam importance over the river network
+
+The importance above depends on where sampling took place. Here, presence
+is predicted on every reach of the river network instead (RHT reaches of
+the four districts, placed on the AMOBIO network by their midpoint, within
+the range of width, altitude and distance to the mouth of the visits;
+target `network_reach`), for a typical site and year (reference protocol,
+median fished surface), with the observed number of dams downstream and
+with one dam fewer. The dam weighting is averaged over the rank weights
+(Bayesian model averaging): each species is refitted for each weight
+(target `dam_presence_weight_sample`), and each posterior draw comes from
+one weight, drawn with probabilities from the log marginal likelihoods.
+The importance of a dam is the change in presence summed over the species
+and over the reaches upstream, weighted by their length: species x km
+gained (target `dam_removal_network`).
+
+```{r network-removal}
+network <- tar_read(dam_removal_network)
+traits <- tar_read(dam_traits)
+network_gain <- network$richness |>
+  summarise(
+    lower = quantile(gain, 0.025), upper = quantile(gain, 0.975), gain = mean(gain),
+    .by = roe_code
+  ) |>
+  left_join(network$upstream_km, by = "roe_code") |>
+  mutate(per_km = gain / km) |>
+  left_join(traits, by = "roe_code")
+c(
+  reaches = nrow(tar_read(network_reach)), dams = nrow(network_gain),
+  credible_gain = sum(network_gain$lower > 0),
+  share_top_20 = sum(sort(network_gain$gain, decreasing = TRUE)[1:20]) / sum(network_gain$gain)
+)
+network$model_weight |>
+  summarise(mean_probability = round(mean(probability), 2), .by = weight)
+```
+
+The 15 dams whose removal would add the most species x km (posterior mean
+and 95% credible interval), with the river length upstream and the gain per
+km.
+
+```{r network-removal-table}
+network_gain |>
+  arrange(desc(gain)) |>
+  head(15) |>
+  transmute(
+    roe_code, name = stringr::str_trunc(name, 30), river = stringr::str_trunc(river, 22),
+    kind, rank, dist_mouth_km = round(dist_mouth_km), upstream_km = round(km),
+    gain = sprintf("%.0f (%.0f, %.0f)", gain, lower, upper), per_km = round(per_km, 2)
+  ) |>
+  knitr::kable()
+```
+
+### What do the most important dams have in common?
+
+Spearman correlation of the total gain and of the gain per km of river
+upstream with the position and characteristics of the dams (target
+`dam_traits`): river length upstream (within the range of the visits),
+share of the river length of its catchment upstream of the dam, drained
+area and Strahler order at the dam, rank from the sea, number of large dams
+upstream, distance to the mouth, altitude and drop height class.
+
+```{r dam-traits-correlation}
+network_gain |>
+  transmute(
+    gain, per_km, upstream_km = km, upstream_share, drained_area, strahler,
+    rank, dams_upstream, dist_mouth_km, altitude, height = drop_height_min
+  ) |>
+  cor(method = "spearman", use = "pairwise") |>
+  (\(x) x[c("gain", "per_km"), -(1:2)])() |>
+  round(2)
+```
+
+Total gain against the river length upstream (left) and gain per km
+against the rank from the sea (middle) and the altitude of the dam
+(right).
+
+```{r dam-traits-plot}
+#| fig-width: 12
+#| fig-height: 4
+
+network_gain <- network_gain |>
+  mutate(rank_class = cut(rank, c(0, 1, 2, 4, Inf), c("1st", "2nd", "3rd-4th", "5th+")))
+patchwork::wrap_plots(
+  ggplot(network_gain, aes(km, gain, color = rank_class)) +
+    geom_point(alpha = 0.7) +
+    scale_x_log10() +
+    scale_y_log10() +
+    scale_color_viridis_d(end = 0.9) +
+    labs(x = "River upstream (km)", y = "Species x km gained", color = "Rank from\nthe sea"),
+  ggplot(network_gain, aes(rank_class, per_km)) +
+    geom_boxplot(outlier.size = 0.8) +
+    labs(x = "Rank from the sea", y = "Species gained per km"),
+  ggplot(network_gain, aes(altitude, per_km, color = rank_class)) +
+    geom_point(alpha = 0.7) +
+    scale_x_log10() +
+    scale_color_viridis_d(end = 0.9, guide = "none") +
+    labs(x = "Altitude of the dam (m)", y = "Species gained per km"),
+  widths = c(1.2, 1, 1)
+)
+```
+
+**Results:** predicted over the whole network, the ranking is close to the
+one from the sampled sites, but it covers more dams and no longer depends
+on where sampling took place. Removing almost any dam would credibly bring
+back some species upstream, but a few dams dominate: 20 dams account for
+more than half of the total gain. They are the first dams from the sea on
+large rivers: the weir of Vichy on the Allier, Châtellerault on the
+Vienne, the Abattoir weir on the Cher, Le Temple on the Lot, Saint
+Fraimbault on the Mayenne. Two things make a dam important. First, how
+much river it cuts off: the total gain follows the river length upstream,
+the drained area and the share of its catchment above it. Second, how
+many dams already stand downstream: the gain per km of river falls
+steeply with the rank of the dam from the sea, and it is also larger for
+dams at low altitude, where the reaches upstream hold more of the species
+that dams remove. The drop height plays almost no role. The averaging gives
+slightly more weight to the weightings in which the first dams count most,
+so the data do not contradict this rank effect, but it remains largely set
+by the shape of the model, in which a dam adds less where there are
+already many.
+
+*To discuss: a lock of the Roanne-Digoin canal ranks fourth because the
+network routes the upper Loire through the canal: it is the only large dam
+downstream of Villerest. This adds a dam to every upper-Loire site in all
+the analyses (D12 and D13) and needs fixing in the network or in the dam
+review. The importance only covers the reaches within the range of the
+visits, and assumes that all dams act the same (no effect of height, type
+or fish pass in the presence models).*
+
+### Dam importance and river connectivity
+
+The dendritic connectivity index (DCI, Cote et al. 2009, Landscape
+Ecology) is the usual way to score river fragmentation. It has two forms,
+computed here on the same reaches (target `dam_connectivity`):
+
+- diadromous (DCI_d): the share of river length reachable from the sea. A
+  reach with D dams downstream counts its length times p^D, with p the
+  passability of a dam, so removing one of the dams adds the length of each
+  reach upstream times p^(D-1) (1-p)
+- potamodromous (DCI_p): the chance that two points of the river are
+  connected. Removing an impassable dam joins the free segment above it to
+  the one holding it, adding twice the product of their lengths
+
+Both are usually divided by the river length of the catchment (and its
+square for DCI_p), to score each catchment from 0 to 1; both forms are
+shown. Spearman correlation of the species x km gained with the gain in
+each index, and number of dams in common in the top 20.
+
+```{r connectivity-comparison}
+connectivity <- network_gain |>
+  select(roe_code, gain, km) |>
+  inner_join(tar_read(dam_connectivity), by = "roe_code") |>
+  mutate(
+    dci_d_0.5_catchment = dci_d_0.5 / catchment_km,
+    dci_p_catchment = dci_p / catchment_km^2
+  )
+index <- c(
+  km = "River upstream (km)",
+  dci_d_0.25 = "DCI_d, p = 0.25", dci_d_0.5 = "DCI_d, p = 0.5", dci_d_0.75 = "DCI_d, p = 0.75",
+  dci_d_0.5_catchment = "DCI_d, p = 0.5, per catchment",
+  dci_p = "DCI_p", dci_p_catchment = "DCI_p, per catchment"
+)
+top_20 <- function(score) connectivity$roe_code[order(score, decreasing = TRUE)[1:20]]
+tibble(
+  index = index,
+  spearman = sapply(names(index), \(v) cor(connectivity$gain, connectivity[[v]], method = "spearman")),
+  top_20_shared = sapply(names(index), \(v) length(intersect(top_20(connectivity$gain), top_20(connectivity[[v]]))))
+) |>
+  mutate(spearman = round(spearman, 2)) |>
+  knitr::kable()
+```
+
+Species x km gained against the gain in DCI_d with p = 0.75 (left) and in
+DCI_p (right).
+
+```{r connectivity-plot}
+#| fig-width: 10
+#| fig-height: 4
+
+connectivity <- connectivity |>
+  left_join(select(network_gain, roe_code, rank_class), by = "roe_code")
+patchwork::wrap_plots(
+  ggplot(connectivity, aes(dci_d_0.75, gain, color = rank_class)) +
+    geom_point(alpha = 0.7) +
+    scale_x_log10() +
+    scale_y_log10() +
+    scale_color_viridis_d(end = 0.9, guide = "none") +
+    labs(x = "DCI_d gain, p = 0.75 (km)", y = "Species x km gained"),
+  ggplot(connectivity, aes(dci_p + 1, gain, color = rank_class)) +
+    geom_point(alpha = 0.7) +
+    scale_x_log10() +
+    scale_y_log10() +
+    scale_color_viridis_d(end = 0.9) +
+    labs(x = "DCI_p gain + 1 (km²)", y = "Species x km gained", color = "Rank from\nthe sea")
+)
+```
+
+**Results:** the dam ranking is almost the same as the one given by the
+diadromous connectivity index with a passability of about 0.75: the two
+share 19 of their top 20 dams. This is expected from the form of the
+models: the gain of a dam is a sum over the river upstream, weighted by
+length, of a change that shrinks with the number of dams already
+downstream, which is how the diadromous index is built. The models fix how
+fast it shrinks (about as fast as a passability of 0.75) and weight each km
+by the species it could hold, but this second part changes the ranking
+little. The potamodromous index ranks dams differently, favouring dams
+that split two long free segments wherever they stand. Dividing by the
+catchment length gives another ranking again, led by small coastal rivers:
+it scores the improvement within a catchment, not the absolute gain.
+
+*To discuss: the presence models only count the dams downstream of a site,
+so they cannot capture fragmentation away from the sea, which is what the
+potamodromous index measures; the weak match with it follows from the
+model and is not a finding. Whether fragmentation matters beyond the dams
+downstream is the segment-length test in the To do list.*
