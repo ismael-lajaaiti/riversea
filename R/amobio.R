@@ -107,12 +107,16 @@ match_mouth_district <- function(river_mouth, district, dist_max, district_kept)
 #' full edge geometries). Keeps only what a shortest-path distance
 #' computation needs: node geometry and the river-mouth flag, and edge
 #' topology with the precomputed length (dropping edge geometry, which is
-#' most of the memory).
+#' most of the memory), the river name and whether the edge is an
+#' artificial channel (canal, diversion, mill race, feeder channel,
+#' penstock, marsh drainage channel or ditch, from its name, except two
+#' canalised rivers), which routing avoids (see `route_to_mouth()`).
 #'
 #' @param paths character vector of AMOBIO file paths.
 #'
 #' @return list(nodes, edges): `nodes` has `node_id`, `geometry`,
-#'   `is_river_mouth`; `edges` has `from`, `to`, `length` (meters).
+#'   `is_river_mouth`; `edges` has `from`, `to`, `length` (meters), `name`
+#'   and `artificial`.
 #' @export
 extract_river_network <- function(paths) {
   network_file <- paths[grepl("NETWORK_AMOBIO.Rdata", paths)]
@@ -132,7 +136,22 @@ extract_river_network <- function(paths) {
     sfnetworks::activate("edges") |>
     tibble::as_tibble() |>
     tibble::as_tibble() |>
-    dplyr::select(from, to, length = length_meters_num)
+    dplyr::transmute(
+      from, to,
+      length = length_meters_num,
+      name = TOPO_TOPONYME,
+      artificial = grepl(
+        paste0(
+          "^(grand |contre-?)?canal|^d.rivation|^bief|^rigole|^conduite forc",
+          # Marsh drainage channels and ditches.
+          "|^(contre-?)?bot\\b|^achenal|^foss"
+        ),
+        tolower(iconv(name, to = "ASCII//TRANSLIT"))
+      ) &
+        # Canalised rivers, whose canal name covers the river bed (checked
+        # against the RHT distances to the sea, see D12).
+        !grepl("^canal de nantes|^canal de la dive", tolower(name))
+    )
 
   list(nodes = nodes, edges = edges)
 }
@@ -165,7 +184,9 @@ patch_river_network <- function(network) {
     endpoints[endpoints$node_id == to_id, ]
   ))
 
-  patch_edge <- tibble::tibble(from = from_id, to = to_id, length = patch_length)
+  patch_edge <- tibble::tibble(
+    from = from_id, to = to_id, length = patch_length, artificial = FALSE
+  )
   network$edges <- dplyr::bind_rows(network$edges, patch_edge)
   network
 }
@@ -248,15 +269,82 @@ snap_operations <- function(operation, network) {
     sf::st_drop_geometry()
 }
 
+#' Routing weight of the river network edges.
+#'
+#' The edge length, 100 times longer for artificial channels, so that a
+#' route goes through a canal only when no river leads to the mouth: the
+#' network holds canals and diversions running beside rivers, which would
+#' otherwise be taken as shortcuts.
+#'
+#' @param edges tibble with `length`, `artificial`, e.g.
+#'   `extract_river_network()`'s `edges`.
+#' @return numeric vector of edge weights.
+#' @export
+route_weight <- function(edges) {
+  edges$length * ifelse(edges$artificial, 100, 1)
+}
+
+#' Routes from every node of the river network to the nearest river mouth.
+#'
+#' Shortest-path tree from the river mouths, with the routing weight of
+#' `route_weight()`: each node flows to its parent towards the mouth, and
+#' its distance to the mouth is the real channel length along that route.
+#'
+#' @param network list(nodes, edges) with edge `length`, `artificial`, e.g.
+#'   `restrict_river_network()`'s output.
+#' @param seeds node ids of the river mouths.
+#' @return list(parent, dist, source): for each node id, its `parent`
+#'   (`source`, a virtual node joined to all mouths, for the mouths; `NA`
+#'   if it reaches no mouth) and `dist`, the channel length to the mouth
+#'   (m).
+#' @export
+route_to_mouth <- function(network, seeds) {
+  g <- igraph::graph_from_edgelist(
+    as.matrix(network$edges[c("from", "to")]),
+    directed = FALSE
+  )
+  source <- igraph::vcount(g) + 1L
+  g <- igraph::add_vertices(g, 1)
+  g <- igraph::add_edges(g, as.vector(rbind(source, as.integer(seeds))))
+  weight <- c(route_weight(network$edges), rep(0, length(seeds)))
+  length <- c(network$edges$length, rep(0, length(seeds)))
+  cost <- igraph::distances(g, v = source, weights = weight)[1, ]
+
+  # Parent of each node: the neighbour on its cheapest route to the mouth.
+  edge <- igraph::as_data_frame(g, what = "edges")
+  edge <- data.frame(
+    node = c(edge$to, edge$from),
+    parent = c(edge$from, edge$to),
+    weight = c(weight, weight),
+    length = c(length, length)
+  )
+  edge <- edge[which(abs(cost[edge$parent] + edge$weight - cost[edge$node]) < 1e-6), ]
+  edge <- edge[!duplicated(edge$node) & edge$node != source, ]
+  parent <- rep(NA_integer_, length(cost))
+  parent[edge$node] <- edge$parent
+  step <- rep(NA_real_, length(cost))
+  step[edge$node] <- edge$length
+
+  # Channel length along the route, parents first.
+  dist <- rep(NA_real_, length(cost))
+  dist[source] <- 0
+  reached <- order(cost)[seq_len(sum(is.finite(cost)))]
+  for (node in reached[reached != source]) {
+    dist[node] <- dist[parent[node]] + step[node]
+  }
+  list(parent = parent, dist = dist, source = source)
+}
+
 #' Compute the channel-length distance from each operation to the nearest
 #' river mouth of its own catchment.
 #'
 #' Runs a separate multi-source Dijkstra per district (seeded from that
 #' district's own matched river mouths only), so an operation's distance
-#' is always to a mouth of its own catchment. `dist_mouth_m` includes the
+#' is always to a mouth of its own catchment. Routes avoid artificial
+#' channels (see `route_to_mouth()`). `dist_mouth_m` includes the
 #' operation's own offset from its snapped node.
 #'
-#' @param network list(nodes, edges) with edge `length`, e.g.
+#' @param network list(nodes, edges) with edge `length`, `artificial`, e.g.
 #'   `restrict_river_network()`'s output.
 #' @param operation tibble with `node_id`, `longitude`, `latitude`,
 #'   `district`, e.g. `snap_operations()`'s output.
@@ -289,19 +377,7 @@ compute_distance_to_mouth <- function(network,
       river_mouth$matched & river_mouth$district == d
     ]
 
-    g <- igraph::graph_from_edgelist(
-      as.matrix(network$edges[c("from", "to")]),
-      directed = FALSE
-    )
-    igraph::E(g)$weight <- network$edges$length
-    source <- igraph::vcount(g) + 1L
-    g <- igraph::add_vertices(g, 1)
-    g <- igraph::add_edges(
-      g, as.vector(rbind(source, as.integer(seeds))),
-      weight = 0
-    )
-
-    dist <- igraph::distances(g, v = source, weights = igraph::E(g)$weight)[1, ]
+    dist <- route_to_mouth(network, seeds)$dist
 
     is_d <- operation_kept$district == d
     operation_kept[is_d, ] |>
@@ -315,7 +391,7 @@ compute_distance_to_mouth <- function(network,
 #' the nearest same-district river mouth along the network, which defines
 #' the catchment of the operation.
 #'
-#' @param network list(nodes, edges) with edge `length`, e.g.
+#' @param network list(nodes, edges) with edge `length`, `artificial`, e.g.
 #'   `restrict_river_network()`'s output.
 #' @param operation tibble with `node_id` and `district`, e.g.
 #'   `compute_distance_to_mouth()`'s output.
@@ -329,7 +405,7 @@ assign_river_mouth <- function(network, operation, river_mouth) {
     as.matrix(network$edges[c("from", "to")]),
     directed = FALSE
   )
-  igraph::E(g)$weight <- network$edges$length
+  igraph::E(g)$weight <- route_weight(network$edges)
 
   purrr::map_dfr(unique(operation$district), function(d) {
     seeds <- river_mouth$node_id[
@@ -370,7 +446,7 @@ river_mouth_path <- function(op_row, network, river_mouth) {
     as.matrix(sf::st_drop_geometry(network$edges)[c("from", "to")]),
     directed = FALSE
   )
-  igraph::E(g)$weight <- network$edges$length
+  igraph::E(g)$weight <- route_weight(network$edges)
   source <- igraph::vcount(g) + 1L
   g <- igraph::add_vertices(g, 1)
   g <- igraph::add_edges(

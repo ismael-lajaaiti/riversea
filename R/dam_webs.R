@@ -513,7 +513,7 @@ summarise_dam_removal <- function(simulated, one_less, operation_dam, visit) {
   site <- sort(unique(site_of[!is.na(site_of)]))
   site_mean <- vapply(metric, function(m) {
     rowsum(difference[, , m], site_of, na.rm = TRUE)[site, , drop = FALSE] /
-      as.vector(rowsum(as.numeric(!is.na(difference[, 1, m])), site_of)[site, ])
+      rowsum(1 * !is.na(difference[, , m]), site_of)[site, , drop = FALSE]
   }, matrix(0, length(site), dim(difference)[2]))
   change_site <- rowsum(one_less$presence_change, site_of)[site, , drop = FALSE] /
     as.vector(table(site_of)[site])

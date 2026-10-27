@@ -39,9 +39,9 @@ at the species level throughout.
 - the dam effects on the observed webs match those on the generated webs:
   dams change food web structure through which species are present, with
   no sign of a further effect
-- the dam effect on trophic length is clearer at the species level than with
+- the dam effect on trophic length is larger at the species level than with
   size classes, because it comes from the change of top predator (eel, pike,
-  salmon replaced by brown trout)
+  salmon replaced by brown trout), but it is uncertain
 - the number of dams fits as well as any weighting of the dams by rank
 - a few dams, first from the sea on large rivers, would bring back most of
   the species if removed; predicted over the whole network, a dam matters
@@ -51,10 +51,6 @@ at the species level throughout.
 
 ## To do
 
-- Test fragmentation beyond the dams downstream: add the length of the free
-  segment holding each site to the presence models; if it matters, the dam
-  ranking needs a potamodromous (DCI_p-like) part
-- Fix the Roanne-Digoin canal lock: the network routes the upper Loire through it
 - Predictive scores of the generated webs across dam weightings (needs the
   presence models refitted for each weighting)
 
@@ -147,11 +143,11 @@ tar_read(dam_presence_effect) |>
 ```
 
 **Results:** the `r length(presence_species)` modelled species cover
-almost all the fish caught. About half of them are credibly less frequent
-with more dams downstream: the migratory species (sea lamprey, eel,
-salmon) and species of large lowland rivers, native or not. As in D12,
-brown trout is more frequent with dams; so is the ide, a rare species with
-an uncertain effect.
+almost all the fish caught. More than half of them are credibly less
+frequent with more dams downstream: the migratory species (sea lamprey, eel, salmon) and
+species of large lowland rivers, native or not. As in D12, brown trout is
+more frequent with dams; so is the Albanian roach (*Pachychilon pictum*),
+an introduced species.
 
 ## Species-level food webs
 
@@ -407,9 +403,10 @@ structure_dam |>
 ```
 
 **Results:** fitted to the generated webs, the model gives about the same
-dam effects as fitted to the observed webs: fewer species, slightly
-shorter chains and slightly more diet overlap with more dams, all
-credible, with similar sizes. Since the generated webs change with the
+dam effects as fitted to the observed webs: fewer species with more dams,
+credibly, and slightly shorter chains and slightly more diet overlap, with
+similar sizes, but these two are not credible (the higher diet overlap is
+at the edge of credibility). Since the generated webs change with the
 dams only through which species are present, the dam effects on the
 observed webs are what the loss of species predicts: there is no sign of
 a further effect of the dams on web structure. Pooling over realisations
@@ -425,8 +422,8 @@ fitted model.*
 
 ## Species-level and size-class webs
 
-The dam effects on the observed webs are clearer at the species level
-than with the size-class webs of D11 and D12. Same model, same visits,
+The dam effect on the trophic length of the observed webs is larger at the
+species level than with the size-class webs of D11 and D12. Same model, same visits,
 fitted to the species-level and to the size-class metrics (fish richness
 is the same in both; targets `dam_structure_observed` and
 `dam_structure_size_class`).
@@ -472,14 +469,14 @@ top |>
 
 **Results:** fish richness responds the same at both levels, and diet
 overlap almost the same (only less precisely with size classes). Trophic
-length differs: its dam effect is about twice as strong at the species
-level. The reason is the change of top predator: with more dams, the eel,
+length differs: its dam effect is several times larger at the species
+level, although uncertain at both levels. The reason is the change of top predator: with more dams, the eel,
 the pike and the salmon give way to brown trout at the top of the webs. At
 the species level, each species carries the diet of all its size classes,
 so pike or pikeperch sit well above brown trout. In the size-class webs,
 they only reach their high trophic level when large individuals are
-caught, so the gap with brown trout is about half as large, and so is the
-dam effect. Species-level trophic length measures which species are
+caught, so the gap with brown trout is about half as large, and the dam
+effect smaller. Species-level trophic length measures which species are
 present; size-class trophic length also depends on the sizes caught.
 
 ## Dam weighting
@@ -546,12 +543,13 @@ weighting. For fish richness, the number of dams fits best, and counting
 only the first dam fits clearly worse. For trophic length and diet
 overlap, all weightings fit about equally: the data cannot tell how the
 dams add up for the web structure. Summed over the 48 species, a
-saturating count (the first dams matter more) fits slightly better than the
-number of dams, and an accelerating count clearly worse; most species show
-no clear preference. The eel needs the number of dams: counting only the
-first dam, or making later dams weigh more, fits clearly worse. A few
-lowland species (white bream, minnow, sunbleak, pikeperch, wels catfish,
-*Leuciscus burdigalensis*) fit better with the first dam only.
+saturating count (the first dams matter more) fits better than the number
+of dams, counting only the first dam worse, and an accelerating count
+clearly worse; most species show no clear preference. The eel needs the
+number of dams: counting only the first dam fits clearly worse. A few
+species fit better with the first dam only (white bream, Mediterranean
+barbel, bitterling), and the topmouth gudgeon and the Albanian roach with
+a saturating count.
 
 ## Dam removal
 
@@ -653,24 +651,21 @@ removal$species |>
   theme(axis.text.y = element_text(face = "italic"))
 ```
 
-**Results:** most dams matter little for the sampled sites: about a fifth
+**Results:** most dams matter little for the sampled sites: about a quarter
 of the `r nrow(richness_gain)` dams with sites upstream would credibly add
 species if removed, and 20 dams account for most of the total gain. The
 most important dams are those with many sampled sites upstream and few
 other dams downstream: the first dam from the sea on large rivers, such as
-the weir of Vichy on the Allier, Châtellerault on the Vienne or the
-Abattoir weir on the Cher. Per site, the gain falls quickly with the rank
+Poses on the Seine, Malause on the Garonne, the weir of Vichy on the
+Allier, Châtellerault on the Vienne or Tuilières on the Dordogne. Per site, the gain falls quickly with the rank
 of the dam from the sea; this follows partly from the model itself, in
 which a dam adds less where there are already many. The species that would
-gain most are the eel, the salmon and lowland species (topmouth gudgeon,
-chub, gudgeon, bitterling, white bream); brown trout would lose sites.
+gain most are the eel and lowland species, native or not (topmouth
+gudgeon, chub, pumpkinseed, barbel, black bullhead, white bream), and the
+brook lamprey; brown trout and the Albanian roach would lose sites.
 
-*To discuss: the second most important dam is a lock of the Roanne-Digoin
-canal, with 66 sites upstream: the network may route the upper Loire
-through the canal, which would be a topology artefact to check (as for the
-canal of restitution "GHE"). Importance is measured at sampled sites only,
-so it depends on where sampling took place, not on the length of river
-upstream.*
+*To discuss: importance is measured at sampled sites only, so it depends
+on where sampling took place, not on the length of river upstream.*
 
 ### Dam importance over the river network
 
@@ -777,10 +772,10 @@ patchwork::wrap_plots(
 one from the sampled sites, but it covers more dams and no longer depends
 on where sampling took place. Removing almost any dam would credibly bring
 back some species upstream, but a few dams dominate: 20 dams account for
-more than half of the total gain. They are the first dams from the sea on
-large rivers: the weir of Vichy on the Allier, Châtellerault on the
-Vienne, the Abattoir weir on the Cher, Le Temple on the Lot, Saint
-Fraimbault on the Mayenne. Two things make a dam important. First, how
+more than two thirds of the total gain. They are the first dams from the
+sea on large rivers: Malause on the Garonne, Poses on the Seine, Tuilières
+on the Dordogne, the weir of Vichy on the Allier, Châtellerault on the
+Vienne, Villerest on the Loire, Le Temple on the Lot. Two things make a dam important. First, how
 much river it cuts off: the total gain follows the river length upstream,
 the drained area and the share of its catchment above it. Second, how
 many dams already stand downstream: the gain per km of river falls
@@ -792,13 +787,9 @@ so the data do not contradict this rank effect, but it remains largely set
 by the shape of the model, in which a dam adds less where there are
 already many.
 
-*To discuss: a lock of the Roanne-Digoin canal ranks fourth because the
-network routes the upper Loire through the canal: it is the only large dam
-downstream of Villerest. This adds a dam to every upper-Loire site in all
-the analyses (D12 and D13) and needs fixing in the network or in the dam
-review. The importance only covers the reaches within the range of the
-visits, and assumes that all dams act the same (no effect of height, type
-or fish pass in the presence models).*
+*To discuss: the importance only covers the reaches within the range of
+the visits, and assumes that all dams act the same (no effect of height,
+type or fish pass in the presence models).*
 
 ### Dam importance and river connectivity
 
@@ -870,7 +861,7 @@ patchwork::wrap_plots(
 
 **Results:** the dam ranking is almost the same as the one given by the
 diadromous connectivity index with a passability of about 0.75: the two
-share 19 of their top 20 dams. This is expected from the form of the
+share 17 of their top 20 dams. This is expected from the form of the
 models: the gain of a dam is a sum over the river upstream, weighted by
 length, of a change that shrinks with the number of dams already
 downstream, which is how the diadromous index is built. The models fix how
@@ -884,5 +875,6 @@ it scores the improvement within a catchment, not the absolute gain.
 *To discuss: the presence models only count the dams downstream of a site,
 so they cannot capture fragmentation away from the sea, which is what the
 potamodromous index measures; the weak match with it follows from the
-model and is not a finding. Whether fragmentation matters beyond the dams
-downstream is the segment-length test in the To do list.*
+model and is not a finding. Adding the length of the free segment holding each site to the presence
+models of five species (barbel, nase, chub, brown trout, eel) showed no
+effect beyond the dams downstream, so the ranking was kept diadromous.*

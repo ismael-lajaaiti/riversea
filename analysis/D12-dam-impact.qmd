@@ -17,10 +17,14 @@ continuum in four french watersheds (Loire, Somme, Seine, Gironde).
 
 ## Summary
 
-We find that 
+::: {.callout-warning}
+To update
+:::
+
+We find that
 
 - dams decrease species richness, mostly through migratory and lowland species; this loss may be stronger at high altitude (weak support)
-- dams do not credibly change food web structure (trophic length, diet overlap, piscivore presence) once the position along the river is properly controlled
+- dams do not credibly change food web structure (trophic length, diet overlap) once the position along the river is properly controlled; at equal richness, a piscivore is slightly more often present with more dams
 - top predators are smaller with dams, entirely through the eel: eels are rarer and smaller above dams
 - the number of dams matters, not how close they are
 - dam effects are confounded with altitude: dams are concentrated in the uplands, where lowland species drop out anyway
@@ -47,99 +51,377 @@ nice_theme()
 
 ## Large dams
 
-Dams come from the ROE (Référentiel des Obstacles à l'Écoulement, OFB),
-which lists the artificial obstacles of mainland French rivers
-(downloaded from the SANDRE WFS service). We keep the existing dams and
-weirs (ROE types "barrage" and "seuil en rivière") whose drop height class
-(`LbHautChutClObstEcoul`) is 5-10 m or >= 10 m: the measured drop height
-is missing for most obstacles and contains errors, so the class is used
-instead. Other obstacle types with a large drop height class (culverts,
-bridge sills, levees, groynes, fish-farm grilles) are left out. Each
-obstacle is tagged as a dam or a weir (`kind`), so that weirs can be
-removed from the dam count if needed.
+```{r roe-count}
+basin_kept <- tar_read(basin) |>
+  filter(district %in% tar_read(params)$district_kept)
+roe_kept <- tar_read(roe) |>
+  sf::st_filter(sf::st_transform(basin_kept, sf::st_crs(tar_read(roe)))) |>
+  sf::st_drop_geometry()
+dam_weir_unknown_n <- roe_kept |>
+  filter(
+    grepl("barrage|seuil", LbTypeOuvrage, ignore.case = TRUE),
+    !CdHautChutClObstEcoul %in% as.character(1:8)
+  ) |>
+  nrow()
+large_dam_evidence <- tar_read(large_dam) |>
+  sf::st_filter(sf::st_transform(basin_kept, sf::st_crs(tar_read(large_dam)))) |>
+  sf::st_drop_geometry() |>
+  count(evidence)
+evidence_n <- setNames(large_dam_evidence$n, large_dam_evidence$evidence)
+large_dam_n <- sum(evidence_n)
+```
+
+We use the ROE database from OFB. The database lists artificial obstacles in
+French rivers. We keep dams and weirs with a drop height of 5 meters or more.
+We keep four dams marked as destroyed they were removed at the very end of our
+sampling or after.
+
+The drop height class is missing for many obstacles, some large dam may be among
+them.
+
+Obstacles only matter here if they lie on the river network with sampled
+sites upstream of them. Each obstacle is snapped on the network with a threshold
+of 50 m.
+
+```{r drop-height-missing}
+#| fig-width: 7
+#| fig-height: 3.5
+#| cache: true
+
+district_label <- c(
+  "Ardour-Garonne" = "Adour-Garonne", "Escaut-Somme" = "Escaut-Somme",
+  "Loire" = "Loire", "Seine" = "Seine"
+)
+dam_network <- tar_read(dam_network)$network
+river_edge <- sf::st_as_sf(tar_read(river_network_geo)$edges)
+dam_review <- readr::read_csv(here::here("data", "dam_review.csv"), show_col_types = FALSE)
+obstacle <- tar_read(roe) |>
+  sf::st_join(
+    sf::st_transform(select(basin_kept, district), sf::st_crs(tar_read(roe))),
+    join = sf::st_within, left = FALSE
+  ) |>
+  sf::st_transform(sf::st_crs(river_edge)) |>
+  transmute(
+    roe_code = CdObstEcoul,
+    district = district_label[district],
+    kind = if_else(grepl("seuil", LbTypeOuvrage, ignore.case = TRUE), "weir", "dam"),
+    drop_class = if_else(CdHautChutClObstEcoul %in% as.character(1:8), "known", "missing"),
+    group = case_when(
+      !LbEtOuvrage %in% c("Existant", "Détruit entièrement", "Détruit partiellement") ~ "planned or no status",
+      !grepl("barrage|seuil", LbTypeOuvrage, ignore.case = TRUE) ~ "other type",
+      roe_code %in% tar_read(large_dam)$roe_code ~ "large (kept)",
+      roe_code %in% dam_review$drop_roe_code ~ "duplicate code",
+      CdHautChutClObstEcoul %in% as.character(1:6) ~ "small (< 5 m)",
+      TRUE ~ "unknown size"
+    )
+  )
+dam_weir <- filter(obstacle, group %in% c("large (kept)", "small (< 5 m)", "unknown size"))
+dam_weir$snap_dist_m <- as.numeric(sf::st_distance(
+  dam_weir, river_edge[sf::st_nearest_feature(dam_weir, river_edge), ], by_element = TRUE
+))
+dam_weir_on <- filter(dam_weir, snap_dist_m <= 50)
+network_node <- sf::st_as_sf(dam_network$nodes)
+dam_weir_on$node_id <- network_node$node_id[sf::st_nearest_feature(dam_weir_on, network_node)]
+dam_weir_visit <- locate_operations_dams(
+  dam_network,
+  tar_read(inland_operations_snapped) |> filter(survey == "river"),
+  dam_weir_on,
+  tar_read(river_mouth_district)
+) |>
+  filter(position == "upstream", operation_id %in% tar_read(dam_visit)$operation_id) |>
+  distinct(roe_code)
+dam_weir <- dam_weir |>
+  sf::st_drop_geometry() |>
+  mutate(
+    position = case_when(
+      snap_dist_m > 50 ~ "too far from the network (> 50 m)",
+      roe_code %in% dam_weir_visit$roe_code ~ "on the network, sites upstream",
+      TRUE ~ "on the network, no site upstream"
+    )
+  )
+dam_weir_relevant <- filter(dam_weir, position == "on the network, sites upstream")
+dam_weir_relevant |>
+  count(district, kind, drop_class) |>
+  ggplot(aes(district, n, fill = drop_class)) +
+  geom_col() +
+  facet_wrap(~kind, scales = "free_y") +
+  scale_fill_manual(values = c(known = "#4A90C2", missing = "grey70")) +
+  labs(x = NULL, y = "Obstacles", fill = "Drop height\nclass") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+Dams and weirs on the network with sampled sites upstream, with a known
+or missing drop height class.
+
+For the obstacles of unknown class, the drop height is inferred from the
+structure height, when it is available. Drop height raises with obstacle height.
+
+From available data, we use the following thresholds:
+
+1. A dam of 7.5 m or more is set to a drop of 5 m or more
+2. A dam of 15 m or more is set to a drop of 10 m or more
+
+```{r drop-height-calibration}
+#| fig-width: 6
+#| fig-height: 3.5
+
+tar_read(roe) |>
+  sf::st_drop_geometry() |>
+  filter(
+    LbEtOuvrage == "Existant",
+    grepl("barrage", LbTypeOuvrage, ignore.case = TRUE),
+    CdHautChutClObstEcoul %in% as.character(1:8)
+  ) |>
+  mutate(structure_height = suppressWarnings(as.numeric(HautMaxTer))) |>
+  filter(structure_height > 0) |>
+  mutate(band = cut(structure_height, c(0, 2, 3, 4, 5, 6, 7.5, 10, 12.5, 15, 20, 30, 50, Inf), right = FALSE)) |>
+  summarise(
+    height = median(structure_height), dams = n(),
+    `5 m or more` = mean(CdHautChutClObstEcoul %in% c("7", "8")),
+    `10 m or more` = mean(CdHautChutClObstEcoul == "8"),
+    .by = band
+  ) |>
+  tidyr::pivot_longer(c(`5 m or more`, `10 m or more`), names_to = "drop", values_to = "share") |>
+  mutate(drop = factor(drop, c("5 m or more", "10 m or more"))) |>
+  ggplot(aes(height, share, color = drop)) +
+  geom_vline(xintercept = c(7.5, 15), linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 0.9, linetype = "dotted", color = "grey50") +
+  geom_line() +
+  geom_point(aes(size = dams)) +
+  scale_x_log10(breaks = c(1, 2, 5, 7.5, 15, 30, 100)) +
+  scale_color_manual(values = c("#E69F00", "#B2182B")) +
+  scale_size_area(max_size = 4) +
+  labs(x = "Structure height (m)", y = "Share of dams", color = "Drop height", size = "Dams")
+```
+
+
+The measured drop height and the structure height of weirs are not used:
+they hold impossible values (weirs of tens to hundreds of meters, often their
+length).
+
+Large dams whose drop height class and structure height are both missing are
+left out: we may miss some, but we assume that we keep most of them.
+
+This leaves us with `r format(large_dam_n, big.mark = ",")` obstacles
+(hereafter "dams" for simplicity): `r format(evidence_n[["class"]], big.mark = ",")`
+from their drop height class and `r evidence_n[["structure height"]]` from
+their structure height. The table below gives why the other obstacles are
+left out.
+
+Obstacles of the four districts by group, and for the dams and weirs, by
+position: too far from the river network (more than 50 m from a river
+segment), or on it with or without sampled sites upstream (nearest network
+node, an approximation of the placement below). Only the obstacles on the
+network with sites upstream can change the dam counts of the sites.
+
+```{r left-out-reason}
+options(knitr.kable.NA = "")
+bind_rows(
+  sf::st_drop_geometry(obstacle) |>
+    filter(!group %in% dam_weir$group) |>
+    count(group, name = "total"),
+  dam_weir |>
+    count(group, kind, position) |>
+    tidyr::pivot_wider(names_from = position, values_from = n, values_fill = 0) |>
+    mutate(total = rowSums(across(where(is.numeric))))
+) |>
+  mutate(group = factor(group, c(
+    "large (kept)", "small (< 5 m)", "unknown size", "duplicate code",
+    "other type", "planned or no status"
+  ))) |>
+  arrange(group, kind) |>
+  select(
+    group, kind, total, `too far from the network (> 50 m)`,
+    `on the network, no site upstream`, `on the network, sites upstream`
+  ) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+```{r large-dam-district}
+#| fig-width: 7
+#| fig-height: 3.5
+
+district_label <- c(
+  "Ardour-Garonne" = "Adour-Garonne", "Escaut-Somme" = "Escaut-Somme",
+  "Loire" = "Loire", "Seine" = "Seine"
+)
+dam_with_site <- tar_read(operation_dam) |>
+  filter(position == "upstream", operation_id %in% tar_read(dam_visit)$operation_id) |>
+  distinct(roe_code)
+large_dam_district <- tar_read(large_dam) |>
+  semi_join(dam_with_site, by = "roe_code") |>
+  sf::st_join(
+    tar_read(basin) |>
+      filter(district %in% tar_read(params)$district_kept) |>
+      sf::st_transform(sf::st_crs(tar_read(large_dam))) |>
+      select(district),
+    join = sf::st_within, left = FALSE
+  ) |>
+  sf::st_drop_geometry() |>
+  mutate(
+    district = district_label[district],
+    drop_height = factor(drop_height_min, c(5, 10), c("5-10 m", ">= 10 m"))
+  )
+large_dam_district |>
+  count(district, kind, drop_height) |>
+  ggplot(aes(district, n, fill = drop_height)) +
+  geom_col() +
+  facet_wrap(~kind, scales = "free_y") +
+  scale_fill_manual(values = c("#E69F00", "#B2182B")) +
+  labs(x = NULL, y = "Obstacles", fill = "Drop height") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+Large dams on the network with sampled sites upstream (those that enter
+the dam counts of the sites), by district, kind and drop height class.
 
 ### Placing the dams on the river network
 
-The number of large dams between a site and the sea is counted along the
-AMOBIO river network, in three steps (`select_large_dams()`,
-`review_large_dams()`, then `snap_dams_network()`):
+The dams between a site and the sea are counted along the AMOBIO river
+network. Each dam is placed on the network from its own ROE coordinates,
+in four steps (`select_large_dams()`, `review_large_dams()`,
+`snap_dams_network()`, then `route_to_mouth()`):
 
-1. Join by code. The network has a node at each ROE obstacle, and each
-   such node carries the ROE code of its obstacle (`OE_ID`): a dam is
-   placed on the node with its code, without spatial snapping.
-2. Snapping. A dam whose code is on no node but which lies within 10 m of
-   a river segment of the network is placed on that segment: the segment
-   is split at the dam with a new node.
-3. Manual review (`data/dam_review.csv`), on aerial imagery (Géoportail).
-   The left-out dams within 150 m of the network with sampled sites
-   upstream are checked one by one: 2 are real barriers and are snapped
-   (the Rance tidal power plant and Salettes), the others are duplicates
-   of a placed dam or pond dams. Pairs of dams less than 1 km apart on the
-   same flow path, with sampled sites upstream of both, are also checked:
-   the ROE often gives one structure several codes (a weir and its power
-   plant, a dam and its spillway), which would count it several times. The
-   duplicate codes are dropped, keeping the dam or weir code.
+1. **Snapping.** The dam is placed on the nearest river segment, if it is
+   within 50 m of the ROE coordinates. The segment is split at the dam,
+   with a new node. The network also has nodes carrying the ROE codes of
+   the obstacles (`OE_ID`), but they are not used: some sit on the wrong
+   line (the Grangent dam on the Canal du Forez, 40 m from the Loire), and
+   one is 950 km away from its dam.
+2. **River name.** When a segment bearing the ROE river name lies within
+   50 m, it is preferred to a nearer segment of another river: at a
+   confluence or beside a canal, the nearest segment can be the wrong river
+   (Le Caty, on a tributary of the Agout, was placed on the Agout).
+3. **Manual review** (`data/dam_review.csv`), on aerial imagery
+   (Géoportail). The dams left out within 150 m of the network with
+   sampled sites upstream were checked one by one: two are real barriers,
+   placed whatever their distance (the Rance tidal power plant and
+   Salettes), the others are duplicates of a placed dam or pond dams, and
+   stay out. Pairs of dams less than 1 km apart on the same flow path, with
+   sampled sites upstream of both, were also checked: the ROE often gives
+   one structure several codes (a weir and its power plant, a dam and its
+   spillway), which would count it several times. The duplicate codes are
+   dropped, keeping the dam or weir code.
+4. **Routing.** The dams of a site are those on its route to the sea, the
+   shortest path through the network to the river mouth, which also gives
+   the distance to the mouth. The network holds canals and diversion
+   channels running beside the rivers, which a plain shortest path takes
+   as shortcuts: the upper Loire went through the Roanne-Digoin canal
+   (counting one of its locks for every upper-Loire site), Garonne sites
+   went around the Malause dam, Seine sites around the Poses dam, and
+   sites near Rennes reached the sea through the Ille-et-Rance canal and
+   the Rance instead of the Vilaine. Routes therefore avoid artificial
+   channels: segments named canal, diversion, mill race, feeder channel,
+   penstock, marsh drainage channel or ditch count 100 times their length when choosing the route (but
+   their real length in the distance), so that a canal is used only where
+   no river leads to the sea. Two canalised rivers, whose canal name
+   covers the river bed, are kept as rivers (the Canal de Nantes à Brest
+   and the Canal de la Dive).
 
-The other dams further than 10 m from the network are left out of the dam count. To
-check the placement, we measure the distance between each dam (ROE
-coordinates) and its node (joined dams) or the nearest river segment
-(snapped and left out dams).
+The routes were checked against the RHT, a theoretical network built from
+the relief, which has no canals: for the 1,877 visits whose distance to
+the mouth changes by more than 10 km with the routing rule, the new
+distance is closer to the distance along the RHT for 1,777. The other 100
+are on the Escaut, whose route now goes through Belgium, beyond the end of
+the RHT.
 
 ```{r large-dam}
 large_dam <- tar_read(large_dam)
 basin_kept <- tar_read(basin) |>
   filter(district %in% tar_read(params)$district_kept) |>
   sf::st_transform(sf::st_crs(large_dam))
-network_node <- tar_read(river_network_full)$nodes |>
-  sf::st_as_sf() |>
-  sf::st_transform(sf::st_crs(large_dam))
 large_dam_kept <- large_dam |>
   sf::st_filter(basin_kept) |>
   mutate(
     drop_height = factor(drop_height_min, c(5, 10), c("5-10 m", ">= 10 m")),
-    match = factor(coalesce(match, "left out"), c("code", "snapped", "left out")),
-    node_dist_m = NA_real_
+    match = factor(coalesce(match, "left out"), c("nearest", "name", "left out"))
   )
-joined <- which(large_dam_kept$match == "code")
-large_dam_kept$node_dist_m[joined] <- as.numeric(sf::st_distance(
-  large_dam_kept[joined, ],
-  network_node[match(large_dam_kept$node_id[joined], network_node$node_id), ],
-  by_element = TRUE
-))
+placement <- sf::st_drop_geometry(large_dam_kept) |>
+  mutate(placed = match != "left out")
+placed_dist <- placement$snap_dist_m[placement$placed]
+forced_dist <- round(sort(placement$snap_dist_m[placement$force_snap]))
+left_far <- filter(placement, !placed, !leave_out)
 sf::st_drop_geometry(large_dam_kept) |>
   count(kind, match) |>
   tidyr::pivot_wider(names_from = match, values_from = n, values_fill = 0)
 ```
 
-Distance between each dam and the network: to the node of its ROE code
-(joined by code), or to the nearest river segment (snapped within 10 m,
-left out beyond).
+Distance between each placed dam and its river segment (the nearest one,
+or the one bearing its river name).
 
 ```{r large-dam-match-plot}
-#| fig-width: 9
+#| fig-width: 7
 #| fig-height: 3
 
 large_dam_kept |>
   sf::st_drop_geometry() |>
+  filter(match != "left out") |>
   mutate(
-    distance_m = coalesce(node_dist_m, snap_dist_m),
-    match = factor(match, c("code", "snapped", "left out"), c("joined by code\n(to its node)", "snapped\n(to the segment)", "left out\n(to the nearest segment)"))
+    match = factor(match, c("nearest", "name"), c("nearest segment", "segment with its river name"))
   ) |>
-  ggplot(aes(pmax(distance_m, 0.1))) +
+  ggplot(aes(pmax(snap_dist_m, 0.1))) +
   geom_histogram(bins = 40) +
   facet_wrap(~match, scales = "free_y") +
   scale_x_log10(labels = scales::label_number()) +
-  labs(x = "Distance between the dam and the network (m)", y = "Dams")
+  labs(x = "Distance between the dam and its segment (m)", y = "Dams")
 ```
 
-**Results:** of the 1,127 large dams and weirs of the four districts,
-910 are joined by their code and sit where they should: a median of 1.4 m
-from their node, at most 105 m. 53 more are snapped onto the network, most
-of them less than 1 m from a river segment (median 0.5 m): they clearly
-sit on the river, only their code was missing from the network. Two of
-them come from the manual review (77 and 99 m away). The 164 left out lie
-further away (median 222 m), mostly on small streams or ponds the network
-does not include.
+**Results:** of the `r format(nrow(placement), big.mark = ",")` large dams
+and weirs of the four districts, `r format(sum(placement$placed), big.mark = ",")`
+are placed on the network, and they sit on the river: half of them less
+than `r round(median(placed_dist), 1)` m from their segment, nine in ten
+less than `r round(quantile(placed_dist, 0.9))` m (the two placed by the
+manual review are `r forced_dist[1]` and `r forced_dist[2]` m away). For
+`r sum(placement$match == "name")` of them, a segment bearing their river
+name was preferred to a nearer segment of another river, mostly at
+confluences.
+
+The other `r sum(!placement$placed)` dams
+(`r round(100 * mean(!placement$placed))`%) are left out:
+`r sum(placement$leave_out)` by the manual review (duplicates and pond
+dams), and `r nrow(left_far)` because they lie more than 50 m from any
+river segment (median `r round(median(left_far$snap_dist_m), -1)` m),
+mostly pond and reservoir embankments on small streams the network does
+not include. To check that leaving
+them out does not matter, each was placed on its nearest network node and
+the visits upstream of it were counted.
+
+```{r left-out-dam}
+dam_network <- tar_read(dam_network)$network
+network_node <- sf::st_as_sf(dam_network$nodes)
+left_out <- large_dam_kept |>
+  filter(match == "left out", !leave_out) |>
+  sf::st_transform(sf::st_crs(network_node))
+left_out$node_id <- network_node$node_id[sf::st_nearest_feature(left_out, network_node)]
+left_out_visit <- locate_operations_dams(
+  dam_network,
+  tar_read(inland_operations_snapped) |> filter(survey == "river"),
+  left_out,
+  tar_read(river_mouth_district)
+) |>
+  filter(position == "upstream", operation_id %in% tar_read(dam_visit)$operation_id) |>
+  count(roe_code, name = "visits_upstream")
+left_out_upstream <- left_out |>
+  sf::st_drop_geometry() |>
+  inner_join(left_out_visit, by = "roe_code")
+left_out_upstream |>
+  transmute(roe_code, name, type, distance_m = round(snap_dist_m), visits_upstream) |>
+  arrange(desc(visits_upstream)) |>
+  knitr::kable()
+```
+
+**Results:** only `r nrow(left_out_upstream)` of the `r nrow(left_far)`
+dams left out for their distance would have sampled visits upstream
+(`r sum(left_out_upstream$visits_upstream)` visits in all), and these lie
+`r round(min(left_out_upstream$snap_dist_m), -1)` to
+`r round(max(left_out_upstream$snap_dist_m), -1)` m from the network, mostly
+pond dams: placing them on the nearest node would
+put them on the river next to the pond, where they do not stand. The
+left-out dams therefore do not change the dam counts of the sites.
+
+Large dams on the network with sampled sites upstream (those that enter the
+dam counts of the sites), by drop height class and kind, on the RHT rivers
+of Strahler order 3 or more.
 
 ```{r large-dam-map}
 #| fig-width: 10
@@ -154,17 +436,11 @@ ggplot() +
   geom_sf(data = basin_kept, fill = "grey97", color = "grey40") +
   geom_sf(data = river_line, aes(linewidth = strahler), color = "#4A90C2") +
   geom_sf(
-    data = large_dam_kept |> filter(match != "left out") |> arrange(drop_height_min),
-    aes(color = drop_height, shape = kind), size = 1.2
-  ) +
-  geom_sf(
-    data = filter(large_dam_kept, match == "left out"),
-    aes(shape = "left out"), size = 1.8, stroke = 0.8
+    data = large_dam_kept |> semi_join(dam_with_site, by = "roe_code") |> arrange(drop_height_min),
+    aes(color = drop_height, shape = kind), size = 2
   ) +
   scale_linewidth(range = c(0.1, 1), guide = "none") +
-  scale_shape_manual(
-    name = "Obstacle", values = c(dam = 16, weir = 17, `left out` = 4), breaks = c("dam", "weir", "left out")
-  ) +
+  scale_shape_manual(name = "Obstacle", values = c(dam = 16, weir = 17)) +
   scale_color_manual(name = "Drop height", values = c("#E69F00", "#B2182B")) +
   theme_void()
 ```
@@ -539,13 +815,12 @@ presence_effect |>
 **Results:** about half of the species are found less often where more
 large dams stand between the site and the sea
 (`r sum(presence_effect$upper < 0)` of `r nrow(presence_effect)`). The
-strongest effects are on the migratory species (eel and salmon) and on
-species of large lowland rivers, native or not (toxostoma, ruffe, white
-bream, nase, wels catfish, pikeperch, topmouth gudgeon). Many headwater and
-widespread species show no effect (stone loach, bullhead, minnow, brook
-lamprey, perch, roach). Brown trout is the only species found more often
-with dams; this positive effect is half as large once altitude is properly
-controlled (see below), and may still partly reflect its upland
+strongest effects are on the migratory species (eel and salmon) and on species of large lowland rivers, native or not
+(toxostoma, ruffe, white bream, nase, wels catfish, pikeperch, topmouth
+gudgeon). Many headwater and widespread species show no effect (stone
+loach, bullhead, minnow, perch, roach). Brown trout is the only species
+found more often with dams; this positive effect is smaller once altitude
+is properly controlled (see below), and may still partly reflect its upland
 range.
 
 ### Choice of the position controls
@@ -599,7 +874,8 @@ altitude_species <- c(
 )
 visit |>
   transmute(
-    operation_id, altitude_band = altitude_band(exp(log_altitude)),
+    operation_id,
+    altitude_band = altitude_band(exp(log_altitude)),
     dam = if_else(dams > 0, "with a dam", "without a dam")
   ) |>
   tidyr::crossing(species = altitude_species) |>
@@ -836,7 +1112,8 @@ foodweb_effect |>
   ggplot(aes(mean, term, color = model)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
   geom_pointrange(
-    aes(xmin = lower, xmax = upper), size = 0.3,
+    aes(xmin = lower, xmax = upper),
+    size = 0.3,
     position = position_dodge(width = 0.5)
   ) +
   facet_wrap(~response, nrow = 1, scales = "free_x") +
@@ -845,9 +1122,10 @@ foodweb_effect |>
 ```
 
 **Results:** with more dams downstream, webs have fewer fish species. The
-structure of the webs does not credibly change: chain length, diet overlap
-and the presence of a piscivore are about the same with or without dams,
-whether richness is controlled or not. The position along the river
+structure of the webs does not credibly change: chain length and diet
+overlap are about the same with or without dams, whether richness is
+controlled or not. A piscivore is about as often present with or without
+dams; at equal richness, it is slightly more often present with more dams. The position along the river
 matters more: webs have more species in wider rivers and further from the
 sea, and fewer at high altitude, where chains are shorter and fish species
 share more of their prey.
@@ -1024,11 +1302,12 @@ ggplot() +
 ```
 
 **Results:** with more dams, the fish caught are slightly larger on
-average, mostly because individuals are larger within species rather than
-because small species drop out. At the top of the web it is the reverse:
-the largest fish-eating fish is smaller. Fewer species and smaller top
-predators both go with shorter chains, but these indirect paths are small,
-and the total dam effect on trophic length is not credible.
+average, in similar parts because individuals are larger within species
+and because small species drop out. At the top of the web it is the
+reverse: the largest fish-eating fish is smaller. Fewer species and
+smaller top predators both go with shorter chains, but these indirect
+paths are small and offset by a slightly positive direct effect of the
+dams, so the total dam effect on trophic length is not credible.
 
 ### Identity of the top predator
 
@@ -1087,7 +1366,10 @@ eel_visit |>
 #| fig-width: 10
 #| fig-height: 3.5
 
-top_main <- eel_visit |> count(top_species) |> slice_max(n, n = 6) |> pull(top_species)
+top_main <- eel_visit |>
+  count(top_species) |>
+  slice_max(n, n = 6) |>
+  pull(top_species)
 top_share <- eel_visit |>
   mutate(top_species = factor(if_else(top_species %in% top_main, top_species, "other"), c(top_main, "other"))) |>
   count(dam_class, top_species) |>
@@ -1202,8 +1484,8 @@ patchwork::wrap_plots(
 one close to the site: weighting dams by their distance never fits better
 than simply counting them. What matters is how many large dams separate a
 site from the sea, not how close they are. For the structure metrics, no
-decay length gives a credible dam effect, and the fit hardly changes with
-it.
+decay length gives a credible dam effect; trophic length fits slightly
+better with a short decay length, but its dam effect stays uncertain.
 
 ### Dam effect along the altitude gradient
 
@@ -1295,6 +1577,7 @@ dam_altitude |>
 lowlands, dams do not credibly change the number of species, while in the
 uplands they reduce it. The interaction is credible, but it does not
 improve the fit (WAIC), so this gradient should be read with care. For the
-structure metrics, the dam effect hardly changes with altitude, apart
-from slightly shorter chains with dams in the lowlands.
+structure metrics, the dam effect hardly changes with altitude, apart from
+slightly shorter chains with dams in the lowlands (at the edge of
+credibility).
 

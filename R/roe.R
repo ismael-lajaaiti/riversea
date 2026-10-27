@@ -33,48 +33,38 @@ read_roe <- function(zip_file) {
   sf::read_sf(gpkg)
 }
 
-#' Extract the ROE obstacles placed on the AMOBIO river network.
-#'
-#' AMOBIO nodes include the ROE obstacles (`OE_ID`), so obstacles are
-#' positioned on the network without snapping.
-#'
-#' @param paths character vector of AMOBIO file paths.
-#' @return tibble with `node_id`, `roe_code`.
-#' @export
-extract_obstacle_nodes_amobio <- function(paths) {
-  network_file <- paths[grepl("NETWORK_AMOBIO.Rdata", paths)]
-  network <- get(base::load(network_file))
-  network |>
-    sfnetworks::activate("nodes") |>
-    tibble::as_tibble() |>
-    tibble::as_tibble() |>
-    dplyr::filter(!is.na(OE_ID)) |>
-    dplyr::distinct(roe_code = OE_ID, .keep_all = TRUE) |>
-    dplyr::select(node_id, roe_code)
-}
-
 #' Select the large dams of the ROE.
 #'
-#' Large dams are the existing dams and weirs (ROE types "barrage" and
-#' "seuil en rivière") whose drop height class is 5-10 m or >= 10 m. Other
-#' types (culverts, bridge sills, levees, groynes, fish-farm grilles) are
-#' left out. The class is used instead of the measured drop height, which
-#' is missing for most obstacles and holds obvious errors (weirs of more
-#' than 100 m), while the class agrees with the measured height for
-#' well-known dams (see D12).
+#' Large dams are the dams and weirs (ROE types "barrage" and "seuil en
+#' rivière") with a drop height of 5 m or more, existing or destroyed (the
+#' destroyed large dams with sampled sites upstream were removed at the end
+#' of the sampling or after). Other types (culverts, bridge sills, levees,
+#' groynes, fish-farm grilles) are left out. The drop height class is
+#' unknown for many obstacles, so the drop height is taken from (see D12):
+#'
+#' 1. the ROE drop height class (5-10 m or >= 10 m);
+#' 2. when the class is unknown, the structure height of dams (not weirs):
+#'    >= 7.5 m for a drop of 5 m or more and >= 15 m for 10 m or more. Among
+#'    the ROE dams with both heights known, nine in ten or more above these
+#'    thresholds have such a drop.
+#'
+#' The measured drop height and the structure height of weirs are not used:
+#' they hold impossible values (weirs of tens to hundreds of metres, often
+#' their length). A dam added by rule 2 within `max_dist_m` of a dam with a
+#' known class is left out, as another code of the same structure.
 #'
 #' @param roe sf tibble, e.g. `read_roe()`'s output.
-#' @param obstacle_node tibble with `node_id`, `roe_code`, e.g.
-#'   `extract_obstacle_nodes_amobio()`'s output.
+#' @param max_dist_m maximum distance between two codes of the same
+#'   structure (m).
 #' @return sf tibble, one row per large dam, with `kind` ("dam" or "weir"),
-#'   `drop_height_min` (5 or 10 m), the measured `drop_height` (m) and the
-#'   AMOBIO `node_id` (`NA` if the dam is not on the network).
+#'   `status`, the ROE `river` name, `drop_height_min` (5 or 10 m), the
+#'   measured `drop_height` (m), the `structure_height` (m) and the
+#'   `evidence` of its drop height ("class" or "structure height").
 #' @export
-select_large_dams <- function(roe, obstacle_node) {
-  roe |>
+select_large_dams <- function(roe, max_dist_m) {
+  obstacle <- roe |>
     dplyr::filter(
-      LbEtOuvrage == "Existant",
-      CdHautChutClObstEcoul %in% c("7", "8"),
+      LbEtOuvrage %in% c("Existant", "Détruit entièrement", "Détruit partiellement"),
       grepl("barrage|seuil", LbTypeOuvrage, ignore.case = TRUE)
     ) |>
     dplyr::transmute(
@@ -82,80 +72,139 @@ select_large_dams <- function(roe, obstacle_node) {
       name = NomPrincipalObstEcoul,
       type = LbTypeOuvrage,
       kind = dplyr::if_else(grepl("seuil", type, ignore.case = TRUE), "weir", "dam"),
+      status = LbEtOuvrage,
       river = NomEntiteHydrographique,
       use = LbUsageObstEcoul1,
       altitude = AltiPointCarOuvrage,
-      drop_height_min = dplyr::if_else(CdHautChutClObstEcoul == "8", 10, 5),
-      drop_height = suppressWarnings(as.numeric(HautChutEtObstEcoul))
+      class = CdHautChutClObstEcoul,
+      drop_height = suppressWarnings(as.numeric(HautChutEtObstEcoul)),
+      structure_height = suppressWarnings(as.numeric(HautMaxTer))
+    )
+  unknown <- !obstacle$class %in% as.character(1:8) # Class "0": unknown.
+  large <- obstacle |>
+    dplyr::mutate(
+      evidence = dplyr::case_when(
+        class %in% c("7", "8") ~ "class",
+        unknown & kind == "dam" & dplyr::coalesce(structure_height >= 7.5, FALSE) ~ "structure height"
+      ),
+      drop_height_min = dplyr::case_when(
+        class == "8" ~ 10,
+        evidence == "structure height" & structure_height >= 15 ~ 10,
+        TRUE ~ 5
+      )
     ) |>
-    dplyr::left_join(obstacle_node, by = "roe_code")
+    dplyr::filter(!is.na(evidence)) |>
+    dplyr::select(-class)
+  added <- which(large$evidence != "class")
+  same <- lengths(sf::st_is_within_distance(
+    large[added, ], large[large$evidence == "class", ], max_dist_m
+  )) > 0
+  if (any(same)) large[-added[same], ] else large
 }
 
 #' Apply the manual review of the large dams.
 #'
-#' The review table lists, after a check on aerial imagery, the dams left
-#' out by the snapping that should be placed on the network (`decision`
-#' "snap") and the ROE codes that duplicate another code of the same
-#' structure (`drop_roe_code`, e.g. a power plant next to its weir).
+#' The review table lists, after a check on aerial imagery, the dams away
+#' from the network that should be placed on it (`decision` "snap") or left
+#' out (`decision` "skip"), and the ROE codes that duplicate another code of
+#' the same structure (`drop_roe_code`, e.g. a power plant next to its
+#' weir).
 #'
 #' @param dam sf tibble, e.g. `select_large_dams()`'s output.
 #' @param review tibble with `roe_code`, `decision`, `drop_roe_code`, e.g.
 #'   read from `data/dam_review.csv`.
 #' @return `dam` without the duplicates, with `force_snap` (TRUE for the
-#'   dams to place on the network whatever their distance).
+#'   dams to place on the network whatever their distance) and `leave_out`
+#'   (TRUE for the dams not to place).
 #' @export
 review_large_dams <- function(dam, review) {
   dam |>
     dplyr::filter(!roe_code %in% review$drop_roe_code) |>
     dplyr::mutate(
-      force_snap = roe_code %in% review$roe_code[review$decision == "snap"]
+      force_snap = roe_code %in% review$roe_code[review$decision == "snap"],
+      leave_out = roe_code %in% review$roe_code[review$decision == "skip"]
     )
 }
 
-#' Snap the large dams that are not on the network.
+#' Simplified river name, for comparing names across sources.
 #'
-#' A large dam without a node (its ROE code is on no AMOBIO node) is placed
-#' on the nearest network edge if it lies within `max_dist_m` of it, or if
-#' its `force_snap` is TRUE (see `review_large_dams()`): the
-#' edge is split at the projection of the dam, with a new node, and its
-#' length is shared between the two new edges in proportion. Several dams
-#' on the same edge split it in turn.
+#' @param name character vector of river names.
+#' @return lower-case names without accents, generic words ("rivière",
+#'   "ruisseau", articles, ...) and punctuation.
+#' @export
+simplify_river_name <- function(name) {
+  name <- tolower(iconv(name, to = "ASCII//TRANSLIT"))
+  name <- gsub("['-]", " ", name)
+  name <- gsub(
+    "\\b(riviere|fleuve|ruisseau|torrent|gave|la|le|les|l|d|de|du|des|et|a)\\b",
+    " ", name
+  )
+  trimws(gsub("\\s+", " ", name))
+}
+
+#' Place the large dams on the river network.
+#'
+#' Each dam is placed on the nearest network edge within `max_dist_m`,
+#' preferring an edge with the dam's ROE river name: at a confluence or
+#' beside a canal, the nearest edge can be the wrong river. Dams with
+#' `force_snap` (see `review_large_dams()`) are placed whatever their
+#' distance, those with `leave_out` are not placed. The edge is split at
+#' the projection of the dam, with a new node, and its length is shared
+#' between the two new edges in proportion. Several dams on the same edge
+#' split it in turn.
 #'
 #' @param network list(nodes, edges) with edge `length`, e.g.
 #'   `restrict_river_network()`'s output.
 #' @param network_geo the same network with edge geometry (from `from` to
-#'   `to`), e.g. `add_edge_geometry()`'s output.
-#' @param dam sf tibble with `node_id`, `force_snap`, e.g.
+#'   `to`) and `name`, e.g. `add_edge_geometry()`'s output.
+#' @param dam sf tibble with `river`, `force_snap`, `leave_out`, e.g.
 #'   `review_large_dams()`'s output.
 #' @param max_dist_m maximum distance between a dam and the edge (m).
 #' @return list(network, dam): `network` with the new nodes and split edges;
-#'   `dam` with `node_id` of the snapped dams filled, `match` ("code",
-#'   "snapped" or `NA`, left out) and `snap_dist_m`, the distance to the
-#'   nearest edge of the dams without a node.
+#'   `dam` with the `node_id` of the placed dams (`NA` if left out),
+#'   `match` ("nearest", "name" when an edge with its river name was
+#'   preferred to the nearest, `NA` if left out) and `snap_dist_m`, the
+#'   distance to the edge.
 #' @export
 snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
   edges <- sf::st_as_sf(network_geo$edges)
   dam <- sf::st_transform(dam, sf::st_crs(edges))
-  off <- which(is.na(dam$node_id))
-  nearest <- sf::st_nearest_feature(dam[off, ], edges)
-  dam$snap_dist_m <- NA_real_
-  dam$snap_dist_m[off] <- as.numeric(
-    sf::st_distance(dam[off, ], edges[nearest, ], by_element = TRUE)
+  nearest <- sf::st_nearest_feature(dam, edges)
+  # Nearest edge with the dam's river name, within `max_dist_m`.
+  river <- simplify_river_name(dam$river)
+  candidate <- sf::st_is_within_distance(dam, edges, max_dist_m)
+  named <- mapply(function(edge, r, i) {
+    if (is.na(r) || r == "") return(NA_integer_)
+    name <- simplify_river_name(edges$name[edge])
+    same <- !is.na(name) & name != "" &
+      (vapply(name, grepl, logical(1), x = r, fixed = TRUE) | grepl(r, name, fixed = TRUE))
+    if (!any(same)) return(NA_integer_)
+    edge <- edge[same]
+    edge[which.min(as.numeric(sf::st_distance(dam[i, ], edges[edge, ])))]
+  }, candidate, river, seq_len(nrow(dam)))
+  chosen <- dplyr::coalesce(named, nearest)
+  dam$snap_dist_m <- as.numeric(sf::st_distance(dam, edges[chosen, ], by_element = TRUE))
+  placed <- (dam$snap_dist_m <= max_dist_m | dam$force_snap) & !dam$leave_out
+  dam$match <- dplyr::case_when(
+    !placed ~ NA_character_,
+    !is.na(named) & named != nearest ~ "name",
+    TRUE ~ "nearest"
   )
-  dam$match <- dplyr::if_else(is.na(dam$node_id), NA_character_, "code")
-  near <- dam$snap_dist_m[off] <= max_dist_m | dam$force_snap[off]
   split <- tibble::tibble(
-    dam_row = off[near],
-    from = edges$from[nearest[near]],
-    to = edges$to[nearest[near]],
+    dam_row = which(placed),
+    from = edges$from[chosen[placed]],
+    to = edges$to[chosen[placed]],
     fraction = sf::st_line_project(
-      sf::st_geometry(edges)[nearest[near]], sf::st_geometry(dam)[off[near]],
+      sf::st_geometry(edges)[chosen[placed]], sf::st_geometry(dam)[placed],
       normalized = TRUE
     )
   ) |>
     dplyr::arrange(from, to, fraction) |>
     dplyr::mutate(node_id = max(network$nodes$node_id) + dplyr::row_number())
-  split_edge <- dplyr::semi_join(network$edges, split, by = c("from", "to"))
+  # One edge per pair of nodes: parallel duplicates are replaced by the split edge.
+  split_edge <- network$edges |>
+    dplyr::semi_join(split, by = c("from", "to")) |>
+    dplyr::distinct(from, to, .keep_all = TRUE)
   new_edge <- split |>
     dplyr::inner_join(split_edge, by = c("from", "to")) |>
     dplyr::reframe(
@@ -164,16 +213,18 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
       # At least 1 cm: a zero-length edge would make two nodes each
       # other's parent towards the mouth.
       length = pmax(diff(c(0, fraction, 1)) * length[1], 0.01),
+      name = name[1],
+      artificial = artificial[1],
       .by = c(from, to)
     ) |>
-    dplyr::select(from = new_from, to = new_to, length)
+    dplyr::select(from = new_from, to = new_to, length, name, artificial)
   new_node <- tibble::tibble(
     node_id = split$node_id,
     geometry = sf::st_geometry(dam)[split$dam_row],
     is_river_mouth = FALSE
   )
+  dam$node_id <- NA_integer_
   dam$node_id[split$dam_row] <- split$node_id
-  dam$match[split$dam_row] <- "snapped"
   list(
     network = list(
       nodes = dplyr::bind_rows(network$nodes, new_node),
@@ -188,7 +239,8 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
 #' Locate operations upstream and downstream of dams along the network.
 #'
 #' The river network is oriented by the shortest-path tree from the river
-#' mouths: each node flows to its parent towards the nearest mouth. An
+#' mouths: each node flows to its parent towards the nearest mouth, avoiding
+#' artificial channels (see `route_to_mouth()`). An
 #' operation is upstream of a dam if the dam lies on its path to the mouth,
 #' and downstream if it lies on the dam's path to the mouth. Operations
 #' and dams on the same node are left out.
@@ -206,29 +258,10 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
 #'   dam) and the `river_dist_m` between them.
 #' @export
 locate_operations_dams <- function(network, operation, dam, river_mouth) {
-  g <- igraph::graph_from_edgelist(
-    as.matrix(network$edges[c("from", "to")]),
-    directed = FALSE
-  )
-  igraph::E(g)$weight <- network$edges$length
-  seeds <- river_mouth$node_id[river_mouth$matched]
-  source <- igraph::vcount(g) + 1L
-  g <- igraph::add_vertices(g, 1)
-  g <- igraph::add_edges(g, as.vector(rbind(source, as.integer(seeds))), weight = 0)
-  dist <- igraph::distances(g, v = source, weights = igraph::E(g)$weight)[1, ]
-
-  # Parent of each node: the neighbour on its shortest path to the mouth.
-  edge <- igraph::as_data_frame(g, what = "edges")
-  edge <- data.frame(
-    node = c(edge$to, edge$from),
-    parent = c(edge$from, edge$to),
-    weight = c(edge$weight, edge$weight)
-  )
-  edge <- edge[abs(dist[edge$parent] + edge$weight - dist[edge$node]) < 1e-6, ]
-  edge <- edge[!duplicated(edge$node), ]
-  parent <- rep(NA_integer_, length(dist))
-  parent[edge$node] <- edge$parent
-  parent[source] <- NA_integer_
+  route <- route_to_mouth(network, river_mouth$node_id[river_mouth$matched])
+  parent <- route$parent
+  dist <- route$dist
+  source <- route$source
 
   # Pairs (start, target) where target is on the path from start to the mouth.
   walk <- function(start, target) {
