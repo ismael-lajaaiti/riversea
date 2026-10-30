@@ -327,22 +327,16 @@ data_targets <- list(
     read_roe(roe_zip)
   ),
   tar_target(
-    dam_review_file, # Manual check of left-out dams and duplicate codes.
-    here("data", "dam_review.csv"),
-    format = "file"
-  ),
-  tar_target(
-    dam_network, # Large dams placed on the network, snapped within 50 m.
+    dam_network, # Large dams placed on the network, snapped within 100 m.
     snap_dams_network(
-      river_network, river_network_geo,
-      select_large_dams(roe, max_dist_m = 300) |>
-        review_large_dams(readr::read_csv(dam_review_file, show_col_types = FALSE)),
-      max_dist_m = 50
+      river_network, river_network_geo, select_large_dams(roe), max_dist_m = 100
     )
   ),
   tar_target(
-    large_dam,
-    dam_network$dam
+    large_dam, # Dams less than 1 km apart on the same flow path count as one.
+    merge_close_dams(
+      dam_network$network, dam_network$dam, river_mouth_district, max_dist_m = 1000
+    )
   ),
   tar_target(
     operation_dam,

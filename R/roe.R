@@ -50,18 +50,15 @@ read_roe <- function(zip_file) {
 #'
 #' The measured drop height and the structure height of weirs are not used:
 #' they hold impossible values (weirs of tens to hundreds of metres, often
-#' their length). A dam added by rule 2 within `max_dist_m` of a dam with a
-#' known class is left out, as another code of the same structure.
+#' their length).
 #'
 #' @param roe sf tibble, e.g. `read_roe()`'s output.
-#' @param max_dist_m maximum distance between two codes of the same
-#'   structure (m).
 #' @return sf tibble, one row per large dam, with `kind` ("dam" or "weir"),
 #'   `status`, the ROE `river` name, `drop_height_min` (5 or 10 m), the
 #'   measured `drop_height` (m), the `structure_height` (m) and the
 #'   `evidence` of its drop height ("class" or "structure height").
 #' @export
-select_large_dams <- function(roe, max_dist_m) {
+select_large_dams <- function(roe) {
   obstacle <- roe |>
     dplyr::filter(
       LbEtOuvrage %in% c("Existant", "Détruit entièrement", "Détruit partiellement"),
@@ -81,7 +78,7 @@ select_large_dams <- function(roe, max_dist_m) {
       structure_height = suppressWarnings(as.numeric(HautMaxTer))
     )
   unknown <- !obstacle$class %in% as.character(1:8) # Class "0": unknown.
-  large <- obstacle |>
+  obstacle |>
     dplyr::mutate(
       evidence = dplyr::case_when(
         class %in% c("7", "8") ~ "class",
@@ -95,35 +92,6 @@ select_large_dams <- function(roe, max_dist_m) {
     ) |>
     dplyr::filter(!is.na(evidence)) |>
     dplyr::select(-class)
-  added <- which(large$evidence != "class")
-  same <- lengths(sf::st_is_within_distance(
-    large[added, ], large[large$evidence == "class", ], max_dist_m
-  )) > 0
-  if (any(same)) large[-added[same], ] else large
-}
-
-#' Apply the manual review of the large dams.
-#'
-#' The review table lists, after a check on aerial imagery, the dams away
-#' from the network that should be placed on it (`decision` "snap") or left
-#' out (`decision` "skip"), and the ROE codes that duplicate another code of
-#' the same structure (`drop_roe_code`, e.g. a power plant next to its
-#' weir).
-#'
-#' @param dam sf tibble, e.g. `select_large_dams()`'s output.
-#' @param review tibble with `roe_code`, `decision`, `drop_roe_code`, e.g.
-#'   read from `data/dam_review.csv`.
-#' @return `dam` without the duplicates, with `force_snap` (TRUE for the
-#'   dams to place on the network whatever their distance) and `leave_out`
-#'   (TRUE for the dams not to place).
-#' @export
-review_large_dams <- function(dam, review) {
-  dam |>
-    dplyr::filter(!roe_code %in% review$drop_roe_code) |>
-    dplyr::mutate(
-      force_snap = roe_code %in% review$roe_code[review$decision == "snap"],
-      leave_out = roe_code %in% review$roe_code[review$decision == "skip"]
-    )
 }
 
 #' Simplified river name, for comparing names across sources.
@@ -146,9 +114,7 @@ simplify_river_name <- function(name) {
 #'
 #' Each dam is placed on the nearest network edge within `max_dist_m`,
 #' preferring an edge with the dam's ROE river name: at a confluence or
-#' beside a canal, the nearest edge can be the wrong river. Dams with
-#' `force_snap` (see `review_large_dams()`) are placed whatever their
-#' distance, those with `leave_out` are not placed. The edge is split at
+#' beside a canal, the nearest edge can be the wrong river. The edge is split at
 #' the projection of the dam, with a new node, and its length is shared
 #' between the two new edges in proportion. Several dams on the same edge
 #' split it in turn.
@@ -157,8 +123,7 @@ simplify_river_name <- function(name) {
 #'   `restrict_river_network()`'s output.
 #' @param network_geo the same network with edge geometry (from `from` to
 #'   `to`) and `name`, e.g. `add_edge_geometry()`'s output.
-#' @param dam sf tibble with `river`, `force_snap`, `leave_out`, e.g.
-#'   `review_large_dams()`'s output.
+#' @param dam sf tibble with `river`, e.g. `select_large_dams()`'s output.
 #' @param max_dist_m maximum distance between a dam and the edge (m).
 #' @return list(network, dam): `network` with the new nodes and split edges;
 #'   `dam` with the `node_id` of the placed dams (`NA` if left out),
@@ -172,7 +137,8 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
   nearest <- sf::st_nearest_feature(dam, edges)
   # Nearest edge with the dam's river name, within `max_dist_m`.
   river <- simplify_river_name(dam$river)
-  candidate <- sf::st_is_within_distance(dam, edges, max_dist_m)
+  # Buffer intersection: indexed, unlike st_is_within_distance() here.
+  candidate <- sf::st_intersects(sf::st_buffer(dam, max_dist_m), edges)
   named <- mapply(function(edge, r, i) {
     if (is.na(r) || r == "") return(NA_integer_)
     name <- simplify_river_name(edges$name[edge])
@@ -184,7 +150,7 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
   }, candidate, river, seq_len(nrow(dam)))
   chosen <- dplyr::coalesce(named, nearest)
   dam$snap_dist_m <- as.numeric(sf::st_distance(dam, edges[chosen, ], by_element = TRUE))
-  placed <- (dam$snap_dist_m <= max_dist_m | dam$force_snap) & !dam$leave_out
+  placed <- dam$snap_dist_m <= max_dist_m
   dam$match <- dplyr::case_when(
     !placed ~ NA_character_,
     !is.na(named) & named != nearest ~ "name",
@@ -234,6 +200,53 @@ snap_dams_network <- function(network, network_geo, dam, max_dist_m) {
     ),
     dam = dam
   )
+}
+
+#' Count the dams close to each other along a river as one.
+#'
+#' Two dams less than `max_dist_m` apart on the same flow path act as one
+#' barrier for fish moving along the river (and are often two ROE codes of
+#' one structure: a weir and its power plant, a dam and its spillway).
+#' Going up from the sea, a dam is merged into the nearest kept dam
+#' downstream if it lies within `max_dist_m` of it, so that a series of
+#' dams is not merged into one beyond that distance.
+#'
+#' @param network list(nodes, edges), e.g. `snap_dams_network()`'s output.
+#' @param dam sf tibble with `roe_code`, `node_id`, `match`, e.g.
+#'   `snap_dams_network()`'s output.
+#' @param river_mouth tibble with `node_id`, `matched`, e.g.
+#'   `match_mouth_district()`'s output.
+#' @param max_dist_m maximum river distance between two dams counted as one
+#'   (m).
+#' @return `dam` with `merged_into` (ROE code of the kept dam, `NA` if
+#'   kept); the merged dams get `match` "merged" and no `node_id`, so that
+#'   they are not counted.
+#' @export
+merge_close_dams <- function(network, dam, river_mouth, max_dist_m) {
+  placed <- dam |>
+    sf::st_drop_geometry() |>
+    dplyr::filter(!is.na(node_id)) |>
+    dplyr::select(roe_code, node_id)
+  close <- locate_operations_dams(
+    network, dplyr::rename(placed, operation_id = roe_code), dam, river_mouth
+  ) |>
+    dplyr::filter(position == "upstream", river_dist_m <= max_dist_m, operation_id != roe_code)
+  route <- route_to_mouth(network, river_mouth$node_id[river_mouth$matched])
+  placed <- placed[order(route$dist[placed$node_id]), ]
+  kept <- character(0)
+  dam$merged_into <- NA_character_
+  for (code in placed$roe_code) {
+    below <- close[close$operation_id == code & close$roe_code %in% kept, ]
+    if (nrow(below) > 0) {
+      dam$merged_into[dam$roe_code == code] <- below$roe_code[which.min(below$river_dist_m)]
+    } else {
+      kept <- c(kept, code)
+    }
+  }
+  merged <- !is.na(dam$merged_into)
+  dam$match[merged] <- "merged"
+  dam$node_id[merged] <- NA_integer_
+  dam
 }
 
 #' Locate operations upstream and downstream of dams along the network.
