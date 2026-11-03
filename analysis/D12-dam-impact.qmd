@@ -1,5 +1,5 @@
 ---
-title: "Impact of large dams on species and food webs"
+title: "Impact of large dams on species presence"
 bibliography: ../references.bib
 format:
   html:
@@ -12,26 +12,17 @@ execute:
     warning: false
 ---
 
-Here, we quantify how large dams impact fish communities along the river
+Here, we quantify how large dams impact the presence of fish species along the river
 continuum in four french watersheds (Loire, Somme, Seine, Gironde).
 
 ## Summary
 
-::: {.callout-warning}
-To update
-:::
-
 We find that
 
-- dams decrease species richness, mostly through migratory and lowland species; this loss may be stronger at high altitude (weak support)
-- dams do not credibly change food web structure (trophic length, diet overlap) once the position along the river is properly controlled; at equal richness, a piscivore is slightly more often present with more dams
-- top predators are smaller with dams, entirely through the eel: eels are rarer and smaller above dams
-- the number of dams matters, not how close they are
-- dam effects are confounded with altitude: dams are concentrated in the uplands, where lowland species drop out anyway
-
-## To do
-
-- Add spatial autocorrelation
+- dams accumulate with altitude, so their effect is confounded with the position along the river
+- 6 of 48 species are credibly less frequent above dams: the eel, brackish-tolerant species and the wels catfish
+- the spatial field absorbs part of the dam effect: without it, three times more species respond
+- the spatial fields share a cold-water vs warm-water axis that follows summer temperature
 
 ## Setup
 
@@ -555,70 +546,16 @@ between the site and the sea. An important thing to have in mind is that
 accumulation of dams increases as we go upstream (see below).
 
 ```{r visits}
+# Visits and presences shared with the presence models (targets `dam_visit`,
+# `river_presence`): position controls centred, dams = large dams + large
+# weirs between the site and the sea.
 continuum_operation <- tar_read(continuum_operation)
-species_min_sites <- 100 # Species modelled: present at >= this number of sites.
-
-presence <- tar_read(size_year_filtered) |>
-  filter(survey == "river") |>
-  distinct(operation_id, species_valid)
-
-dam_accumulation <- operation_dam |>
-  filter(position == "upstream") |>
-  summarise(dam_count = sum(kind == "dam"), weir_count = sum(kind == "weir"), .by = operation_id)
-
-operation_mouth <- tar_read(inland_distance_to_mouth) |>
-  semi_join(presence, by = "operation_id") |>
-  assign_river_mouth(
-    tar_read(river_network),
-    operation = _,
-    river_mouth = sf::st_drop_geometry(tar_read(river_mouth_district))
-  ) |>
-  select(operation_id, mouth_node, dist_mouth_m)
-
-visit <- continuum_operation |>
-  select(operation_id, longitude, latitude, district, PC1, PC2, log_altitude, log_slope) |>
-  filter(!is.na(log_altitude)) |>
-  semi_join(presence, by = "operation_id") |>
-  inner_join(
-    tar_read(river_operation) |> distinct(operation_id, sandre_code, date, year),
-    by = "operation_id"
-  ) |>
-  left_join(river_effort |> select(operation_id, protocol, surface), by = "operation_id") |>
-  filter(!is.na(surface)) |>
-  left_join(
-    tar_read(inland_operations_rht) |>
-      sf::st_drop_geometry() |>
-      select(operation_id, altitude, july_temperature = tjuil_moy),
-    by = "operation_id"
-  ) |>
-  left_join(dam_accumulation, by = "operation_id") |>
-  inner_join(operation_mouth, by = "operation_id") |>
-  left_join(
-    tar_read(continuum_variables_operation) |> select(operation_id, log_width),
-    by = "operation_id"
-  ) |>
-  mutate(
-    dam_count = coalesce(dam_count, 0L),
-    weir_count = coalesce(weir_count, 0L),
-    dams = dam_count + weir_count,
-    log_dist = log(dist_mouth_m / 1000) - mean(log(dist_mouth_m / 1000)),
-    log_alt = log_altitude - mean(log_altitude),
-    log_slope = log_slope - mean(log_slope),
-    width = exp(log_width),
-    log_width = log_width - mean(log_width),
-    catchment = as.integer(factor(mouth_node)),
-    # Indices for INLA.
-    log_surface = log(surface),
-    site = as.integer(factor(sandre_code))
-  )
+presence <- tar_read(river_presence)
+visit <- tar_read(dam_visit)
 c(
   visits = nrow(visit), sites = n_distinct(visit$sandre_code),
   catchments = n_distinct(visit$catchment)
 )
-
-# Position controls of all models, and their coefficients.
-control_term <- "log_width + log_alt + I(log_alt^2) + log_dist"
-control_coef <- c("log_width", "log_alt", "I(log_alt^2)", "log_dist")
 ```
 
 Number of large dams and large weirs between each site and the sea against
@@ -756,15 +693,10 @@ To begin with we need to generate a mesh for the spatial random field.
 #| fig-height: 7
 
 # Spatial random field of the presence models: SPDE mesh over the sites
-# (Lambert-93, km) and projection of the field at the visits.
-site_xy <- visit |>
-  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
-  sf::st_transform(2154) |>
-  sf::st_coordinates() / 1000
-spatial_mesh <- INLA::inla.mesh.2d(loc = unique(site_xy), max.edge = c(40, 150), cutoff = 5)
-spde <- INLA::inla.spde2.pcmatern(
-  spatial_mesh, prior.range = c(50, 0.5), prior.sigma = c(1, 0.01)
-)
+# (Lambert-93, km, target `presence_mesh`) and projection of the field at
+# the visits.
+site_xy <- visit_coordinates(visit)
+spatial_mesh <- tar_read(presence_mesh)
 spatial_A <- INLA::inla.spde.make.A(spatial_mesh, loc = site_xy)
 mesh_box <- sf::st_bbox(c(
   xmin = min(spatial_mesh$loc[, 1]), xmax = max(spatial_mesh$loc[, 1]),
@@ -789,54 +721,16 @@ We show below the effects of the model for these three species.
 
 ```{r first-model}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh))
+#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh, deparse(fit_presence_model)))
 
 # Presence model of `species` on `term` (dam and position terms) + effort
-# + site and year effects + spatial field. The site variance starts at 1:
-# from INLA's default start (near 0) the fit can stay in a much worse mode
-# where a short-range field replaces the site effect.
-fit_presence_model <- function(species, term) {
-  data <- visit |>
-    transmute(
-      present = as.numeric(
-        operation_id %in% presence$operation_id[presence$species_valid == species]
-      ),
-      accumulation = log1p(dams), log_width, log_alt, log_dist, log_slope, PC1, PC2,
-      district = factor(district), protocol = factor(protocol), log_surface,
-      site, year
-    )
-  # District and protocol as 0/1 columns: without an implicit intercept, a
-  # factor would get all its levels.
-  sampling <- model.matrix(~ district + protocol, data)[, -1, drop = FALSE]
-  colnames(sampling) <- make.names(colnames(sampling))
-  data <- bind_cols(select(data, -district, -protocol), as_tibble(sampling))
-  # The intercept goes with the field: each row of the projection matrix
-  # sums to 1, so it enters every visit once.
-  stack <- INLA::inla.stack(
-    data = list(present = data$present),
-    A = list(spatial_A, 1),
-    effects = list(
-      list(spatial = seq_len(spde$n.spde), Intercept = 1), select(data, -present)
-    )
-  )
-  model <- INLA::inla(
-    as.formula(paste(
-      "present ~ -1 + Intercept +", term, "+", paste(colnames(sampling), collapse = " + "),
-      "+ log_surface +",
-      "f(site, model = 'iid', hyper = list(prec = list(initial = 0))) +",
-      "f(year, model = 'iid') + f(spatial, model = spde)"
-    )),
-    family = "binomial", data = INLA::inla.stack.data(stack), num.threads = 4,
-    control.predictor = list(A = INLA::inla.stack.A(stack)),
-    control.fixed = list(correlation.matrix = TRUE),
-    control.compute = list(config = FALSE, waic = TRUE)
-  )
-  gc()
-  model
-}
-
+# + site and year effects + spatial field: `fit_presence_model()`, also used
+# by the targets of all species.
 first_coefficient <- purrr::map_dfr(c("Gobio gobio", "Salmo trutta", "Abramis brama"), function(species) {
-  model <- fit_presence_model(species, "accumulation + log_width + log_alt + log_dist + log_slope")
+  model <- fit_presence_model(
+    visit, presence, spatial_mesh, species,
+    "accumulation + log_width + log_alt + log_dist + log_slope"
+  )
   as_tibble(model$summary.fixed, rownames = "term") |>
     transmute(
       species, term, estimate = mean, lower = `0.025quant`, upper = `0.975quant`
@@ -879,7 +773,7 @@ truly captured by the covariates.
 
 ```{r distance-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh))
+#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh, deparse(fit_presence_model)))
 
 map_species <- c("Gobio gobio", "Salmo trutta", "Abramis brama")
 distance_term <- c(
@@ -903,7 +797,7 @@ site_probability <- function(model) {
 }
 species_fit <- tidyr::expand_grid(species = map_species, model = names(distance_term)) |>
   mutate(fit = purrr::map2(species, model, function(s, m) {
-    model <- fit_presence_model(s, distance_term[[m]])
+    model <- fit_presence_model(visit, presence, spatial_mesh, s, distance_term[[m]])
     list(prediction = site_probability(model), field = model$summary.random$spatial$mean)
   }))
 species_prediction <- species_fit |>
@@ -1058,13 +952,15 @@ can affect it.
 
 ```{r altitude-shape-models}
 #| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh, deparse(site_probability)))
+#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh, deparse(fit_presence_model), deparse(site_probability)))
 
 altitude_term <- c(
   linear = "accumulation + log_width + log_alt + log_dist + log_slope",
   quadratic = "accumulation + log_width + log_alt + I(log_alt^2) + log_dist + log_slope"
 )
-altitude_model <- lapply(altitude_term, \(term) fit_presence_model("Gobio gobio", term))
+altitude_model <- lapply(
+  altitude_term, \(term) fit_presence_model(visit, presence, spatial_mesh, "Gobio gobio", term)
+)
 altitude_fit <- purrr::imap_dfr(altitude_model, \(m, shape) tibble(
   shape,
   dam_effect = sprintf(
@@ -1079,9 +975,8 @@ altitude_site <- purrr::imap_dfr(
 rm(altitude_model)
 ```
 
-Predicted minus observed presence of the gudgeon models with a linear and
-with a quadratic log altitude, averaged over the visits in hexagons of
-40 km (as in the residual map above).
+We plot predicted minus observed presence of the gudgeon models with a linear
+and with a quadratic log altitude averaged over the visits in hexagons.
 
 ```{r altitude-shape-map}
 #| fig-width: 10
@@ -1102,9 +997,7 @@ altitude_site |>
   theme(strip.text = element_text(size = 11))
 ```
 
-WAIC and log marginal likelihood of the linear altitude model against the
-quadratic one (WAIC: positive, worse than the quadratic; log marginal
-likelihood: negative, worse than the quadratic), and dam effect.
+We extract model WAIC and likelihood to compare their performance.
 
 ```{r altitude-shape-fit}
 altitude_fit |>
@@ -1116,51 +1009,19 @@ altitude_fit |>
   knitr::kable()
 ```
 
-**Results:** on the map, the linear model predicts too many gudgeons in the
-uplands (the eastern Massif Central and the foothills of the Pyrenees); the
-quadratic model removes most of this excess. The quadratic term improves
-the gudgeon's WAIC by
-`r round(with(altitude_fit, waic[shape == "linear"] - waic[shape == "quadratic"]))`
-and its log marginal likelihood by
-`r round(with(altitude_fit, mlik[shape == "quadratic"] - mlik[shape == "linear"]))`,
-and halves its dam effect: with a linear altitude, the dam count takes over
-the drop the line misses.
-
-*To discuss:* keep the quadratic term for all species, or only where it
-improves the fit.
+For the gudgeon, the model with quadratic altitude is clearly better (lower
+WAIC, larger likelihood). The map of residuals tells us where it performs
+better. The linear model over-predicts gudgeons in the uplands (Massif Central
+and Pyrenees), while the quadratic model remove this excess. We then decide to
+keep the quadratic altitude term for all species, to account for such trends
+that could otherwise bias the dams term.
 
 ```{r presence-models}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, migratory, species_min_sites, tar_read(species_traits), control_term, spatial_mesh))
-effort_term <- paste(
-  "district + protocol + log_surface +",
-  "f(site, model = 'iid') + f(year, model = 'iid')"
-)
-
-# INLA model of `response` on `term` + effort, gc() after each fit
-# (memory).
-fit_inla <- function(data, response, term, family, ...) {
-  model <- INLA::inla(
-    as.formula(paste(response, "~", term, "+", effort_term)),
-    family = family, data = data, num.threads = 4,
-    control.compute = list(config = FALSE, waic = TRUE), ...
-  )
-  gc()
-  model
-}
-
-# Effect of log(1 + dams) in the presence model of `species` on `term`,
-# with the WAIC.
-fit_presence <- function(species, term) {
-  model <- fit_presence_model(species, term)
-  effect <- model$summary.fixed["accumulation", ]
-  tibble(
-    species = species,
-    presences = sum(visit$operation_id %in% presence$operation_id[presence$species_valid == species]),
-    estimate = effect$mean, lower = effect$`0.025quant`, upper = effect$`0.975quant`,
-    waic = model$waic$waic
-  )
-}
+# Presence models of all the species found at >= 30 sites (targets
+# `dam_presence_species`, `presence_model`), with the controls of the
+# target `presence_term`, and the same models without the spatial field
+# (target `presence_model_nofield`).
+presence_model <- tar_read(presence_model)
 
 species_group <- presence |>
   distinct(species = species_valid) |>
@@ -1171,864 +1032,184 @@ species_group <- presence |>
     .default = "native resident"
   ))
 
-species_common <- presence |>
-  inner_join(distinct(visit, operation_id, sandre_code), by = "operation_id") |>
-  distinct(species_valid, sandre_code) |>
-  count(species_valid) |>
-  filter(n >= species_min_sites) |>
-  pull(species_valid)
-
-species_model <- c(
-  "Anguilla anguilla", "Salmo trutta", "Squalius cephalus", "Gobio gobio", "Barbus barbus"
-)
-presence_effect <- species_model |>
-  lapply(fit_presence, term = paste("accumulation +", control_term)) |>
-  bind_rows() |>
-  left_join(species_group |> select(species, group), by = "species")
+# Posterior mean and 95% credible interval of the dam effect of `model`.
+dam_effect <- function(model) {
+  effect <- model$summary.fixed["accumulation", ]
+  tibble(
+    species = model$species,
+    estimate = effect$mean, lower = effect$`0.025quant`, upper = effect$`0.975quant`
+  )
+}
+presence_effect <- bind_rows(
+  `with spatial field` = purrr::map_dfr(presence_model, dam_effect),
+  `without spatial field` = purrr::map_dfr(tar_read(presence_model_nofield), dam_effect),
+  .id = "model"
+) |>
+  left_join(species_group |> select(species, group), by = "species") |>
+  # Imprecise: 95% interval of the main model wider than 2 logit units.
+  mutate(
+    imprecise = any(model == "with spatial field" & upper - lower > 2),
+    .by = species
+  )
 ```
 
+Effect of the dams on the presence of each species, with (main model) and
+without the spatial field. 
+We separate species whose inference is imprecise, this is due to poor sampling,
+and in particular indicates little site with a dam downstream have been sampled.
+
 ```{r presence-models-plot}
-#| fig-width: 7
-#| fig-height: !expr 1.5 + 0.2 * length(species_model)
+#| fig-width: 8
+#| fig-height: !expr 2 + 0.25 * length(tar_read(dam_presence_species))
 
 group_color <- c(
   migratory = "#B2182B", `non-native` = "#E69F00", `native resident` = "grey40"
 )
+species_order <- presence_effect |>
+  filter(model == "with spatial field") |>
+  arrange(desc(estimate)) |>
+  pull(species)
 presence_effect |>
-  mutate(species = reorder(species, -estimate)) |>
-  ggplot(aes(estimate, species, color = group)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
-  scale_color_manual(values = group_color) +
-  coord_cartesian(xlim = c(-3, 2)) +
-  labs(x = "Effect of log(1 + large dams downstream)", y = NULL, color = NULL) +
-  theme(axis.text.y = element_text(face = "italic"))
-```
-
-**Results:** about half of the species are found less often where more
-large dams stand between the site and the sea
-(`r sum(presence_effect$upper < 0)` of `r nrow(presence_effect)`). The
-strongest effects are on the migratory species (eel and salmon) and on species of large lowland rivers, native or not
-(toxostoma, ruffe, white bream, nase, wels catfish, pikeperch, topmouth
-gudgeon). Many headwater and widespread species show no effect (stone
-loach, bullhead, minnow, perch, roach). Brown trout is the only species
-found more often with dams; this positive effect is smaller once altitude
-is properly controlled (see below), and may still partly reflect its upland
-range.
-
-### Choice of the position controls
-
-Dams are not spread evenly along the rivers: they are built where there is
-a drop, in the uplands. Below 100 m few sites have a large dam downstream;
-above 300 m almost all do, and above 800 m all of them (table below).
-Species ranges also change with altitude, and not along a straight line:
-many lowland species are frequent up to about 300 m, then drop out
-quickly. With a linear altitude term, or with the D11 continuum axes (PC1,
-river size; PC2, altitude and distance to the mouth), which are linear
-combinations of these variables, the model cannot follow this drop. The dam
-count, high exactly where the drop happens, then takes it over, and the dam
-effects are overestimated. A quadratic term in log altitude lets the
-presence curve bend down.
-
-The position controls are therefore the log river width (river size: PC1
-is mostly width, correlation 0.94), the log altitude with its square, and
-the log distance to the mouth. All describe the geography of the site,
-which the dams do not change. Above about 500 m, there are almost no sites
-without a dam to compare with: there, the dam effect rests on the shape of
-the altitude curve.
-
-Other descriptors of the river size, such as the Strahler order, are not
-included: they carry the same information as the width (see the VIFs
-above).
-
-The VIFs only look at the covariates, not at the random effects and the
-spatial field, which can compete with covariates that also vary smoothly
-over space (dams and altitude do). The posterior correlations between the
-coefficients of the fitted model, field included, show directly whether the
-data separate the dam effect from the position effects: a correlation close
-to $\pm 1$ between two coefficients means that the data can raise one and
-lower the other with almost no loss of fit. Below, for the eel and the
-gudgeon (presence models with the chosen controls).
-
-```{r posterior-correlation}
-#| fig-width: 9
-#| fig-height: 4
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, spatial_mesh, control_term))
-
-coefficient_label <- c(
-  accumulation = "log(1 + dams)", log_width = "log width", log_alt = "log altitude",
-  `I(log_alt^2)` = "log altitude²", log_dist = "log distance to the mouth"
-)
-posterior_correlation <- purrr::map_dfr(c("Anguilla anguilla", "Gobio gobio"), function(species) {
-  model <- fit_presence_model(species, paste("accumulation +", control_term))
-  correlation <- model$misc$lincomb.derived.correlation.matrix
-  rownames(correlation) <- colnames(correlation) <- rownames(model$summary.fixed)
-  correlation <- correlation[names(coefficient_label), names(coefficient_label)]
-  as_tibble(correlation, rownames = "x") |>
-    tidyr::pivot_longer(-x, names_to = "y", values_to = "rho") |>
-    mutate(species = species)
-})
-posterior_correlation |>
   mutate(
-    x = factor(coefficient_label[x], coefficient_label),
-    y = factor(coefficient_label[y], rev(coefficient_label))
+    species = factor(species, species_order),
+    panel = if_else(imprecise, "imprecise", "precise") |> factor(c("precise", "imprecise"))
   ) |>
-  filter(as.integer(x) < length(coefficient_label) + 1 - as.integer(y)) |>
-  ggplot(aes(x, y, fill = rho)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = sprintf("%.2f", rho)), size = 3.5) +
-  facet_wrap(~species) +
-  scale_fill_gradient2(low = "#2166AC", high = "#B2182B", limits = c(-1, 1)) +
-  labs(x = NULL, y = NULL, fill = "Posterior\ncorrelation") +
-  theme(
-    axis.text.x = element_text(angle = 30, hjust = 1), panel.grid = element_blank(),
-    strip.text = element_text(face = "italic")
-  )
+  ggplot(aes(estimate, species, color = group, shape = model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(
+    aes(xmin = lower, xmax = upper), size = 0.3,
+    position = position_dodge(width = 0.6)
+  ) +
+  facet_grid(panel ~ ., scales = "free_y", space = "free_y") +
+  scale_color_manual(values = group_color) +
+  scale_shape_manual(values = c(`with spatial field` = 16, `without spatial field` = 1)) +
+  coord_cartesian(xlim = c(-3, 2)) +
+  labs(x = "Effect of log(1 + large dams downstream)", y = NULL, color = NULL, shape = NULL) +
+  theme(axis.text.y = element_text(face = "italic"), legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 2), shape = guide_legend(nrow = 2))
 ```
 
-**Results:** in the fitted models, the dam effect is only weakly correlated
-with the position effects: about `r sprintf("%.2f", posterior_correlation |> filter(x == "accumulation", y == "log_alt", species == "Anguilla anguilla") |> pull(rho))`
-(eel) and `r sprintf("%.2f", posterior_correlation |> filter(x == "accumulation", y == "log_alt", species == "Gobio gobio") |> pull(rho))`
-(gudgeon) with the altitude, and almost none with the distance to the mouth
-or the width. The strongest correlation, between the altitude and the
-distance to the mouth (about -0.55), stays well away from $\pm 1$. Even with
-the spatial field, the data separate the dam effect from the position of
-the sites.
+With the spatial field 6 species are credibly found less frequently upstream of
+dams:
 
-```{r altitude-dams}
-altitude_band <- function(altitude) {
-  cut(
-    altitude, c(-Inf, 100, 300, 500, 800, Inf),
-    c("< 100 m", "100-300 m", "300-500 m", "500-800 m", "> 800 m")
-  )
-}
-visit |>
-  mutate(altitude_band = altitude_band(exp(log_altitude))) |>
-  summarise(
-    visits = n(), with_dam = round(mean(dams > 0), 2), mean_dams = round(mean(dams), 1),
-    .by = altitude_band
-  ) |>
-  arrange(altitude_band)
-```
+- Eel (*Anguilla anguilla*)
+- Wels catfish (*Silurus glanis*)
+- Ruffe (*Gymnocephalus cernua*)
+- Sander (*Sander luciopera*)
+- Blicca (*Blicca bjoerkna*)
+- Stone moroko (*Pseudorasbora parva*)
 
-Share of the visits where each species is caught, by altitude band, at
-sites with and without a large dam downstream (bands with at least 20
-visits).
+We find the obvious anadromous eel, as well as species that can live in brackish
+waters (Blicca, Sander, Ruffe, Stone moroko), and the invasive wels catfish.
+This suggest that dams block upstream colonisation of brackish species and the
+colonisation of new areas by the wels.
 
-```{r altitude-occurrence-plot}
-#| fig-width: 12
-#| fig-height: 3.5
+Below, we analyse the spatial fields for each species, to look for patterns that
+we may have missed.
 
-altitude_species <- c(
-  "Anguilla anguilla", "Squalius cephalus", "Gobio gobio", "Barbus barbus",
-  "Rutilus rutilus", "Salmo trutta"
-)
-visit |>
-  transmute(
-    operation_id,
-    altitude_band = altitude_band(exp(log_altitude)),
-    dam = if_else(dams > 0, "with a dam", "without a dam")
-  ) |>
-  tidyr::crossing(species = altitude_species) |>
-  left_join(
-    presence |> transmute(operation_id, species = species_valid, present = 1),
-    by = c("operation_id", "species")
-  ) |>
-  summarise(
-    occurrence = mean(coalesce(present, 0)), visits = n(),
-    .by = c(species, altitude_band, dam)
-  ) |>
-  filter(visits >= 20) |>
-  mutate(species = factor(species, altitude_species)) |>
-  ggplot(aes(altitude_band, occurrence, color = dam, group = dam)) +
-  geom_line() +
-  geom_point() +
-  facet_wrap(~species, nrow = 1) +
-  scale_color_manual(values = c(`with a dam` = "#B2182B", `without a dam` = "grey40")) +
-  labs(x = "Altitude", y = "Share of visits", color = NULL) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    strip.text = element_text(face = "italic")
-  )
-```
+### Patterns shared by the spatial fields
 
-The presence models are refitted with two other sets of position controls:
-the D11 axes (PC1 + PC2) and the same variables with a linear altitude. For
-each set, the number of species credibly less frequent with dams, the
-median dam effect, and the WAIC compared with the chosen controls
-(per species; negative: the chosen controls fit better).
+The spatial field of each species takes up what the covariates miss at the scale
+of tens to hundreds of kilometres. If several species share the same pattern, it
+might suggest that something regional that the covariates do not capture
+(climate, geology, colonisation history, other stressors) acts on all of them.
+To find these shared patterns, we compute the field of each species at the sites
+and run a PCA.
 
-```{r control-comparison}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, species_model, control_term))
-control_set <- c(
-  `D11 axes (PC1 + PC2)` = "PC1 + PC2",
-  `width + altitude + distance, linear` = "log_width + log_alt + log_dist"
-)
-control_effect <- tidyr::expand_grid(species = species_model, control = names(control_set)) |>
-  purrr::pmap(\(species, control) {
-    fit_presence(species, paste("accumulation +", control_set[[control]])) |>
-      mutate(control = control)
-  }) |>
-  bind_rows() |>
-  bind_rows(mutate(presence_effect, control = "width + quadratic altitude + distance")) |>
-  select(-group) |>
+```{r field-pca}
+site <- distinct(visit, sandre_code, .keep_all = TRUE)
+site_A <- INLA::inla.spde.make.A(spatial_mesh, loc = visit_coordinates(site))
+field_site <- sapply(presence_model, \(model) as.vector(site_A %*% model$summary.random$spatial$mean))
+colnames(field_site) <- sapply(presence_model, `[[`, "species")
+field_pca <- prcomp(field_site, scale. = TRUE)
+round(summary(field_pca)$importance[2, 1:5], 2)
+
+field_score <- site |>
+  select(sandre_code, longitude, latitude, district, dams, log_alt, log_dist, log_width, log_slope) |>
+  bind_cols(as_tibble(field_pca$x[, 1:2]))
+field_loading <- as_tibble(field_pca$rotation[, 1:2], rownames = "species") |>
   left_join(species_group |> select(species, group), by = "species")
 ```
 
-```{r control-comparison-table}
-control_effect |>
-  left_join(
-    presence_effect |> select(species, waic_chosen = waic),
-    by = "species"
-  ) |>
-  summarise(
-    negative = sum(upper < 0), positive = sum(lower > 0),
-    median_effect = round(median(estimate), 2),
-    median_waic_vs_chosen = round(median(waic_chosen - waic), 1),
-    chosen_fits_better = sum(waic_chosen < waic - 2),
-    .by = control
-  )
-```
+Score of each site on the first two axes.
 
-Effect of log(1 + dams) per species with the D11 axes (x) and with the
-chosen controls (y); filled points: credible with the chosen controls.
-
-```{r control-comparison-plot}
-#| fig-width: 5.5
+```{r field-pca-map}
+#| fig-width: 10
 #| fig-height: 4.5
 
-control_effect |>
-  filter(control == "D11 axes (PC1 + PC2)") |>
-  select(species, group, estimate_pc = estimate) |>
-  left_join(presence_effect |> select(species, estimate, lower, upper), by = "species") |>
-  mutate(credible = upper < 0 | lower > 0) |>
-  ggplot(aes(estimate_pc, estimate, color = group)) +
-  geom_abline(linetype = "dashed", color = "grey50") +
-  geom_hline(yintercept = 0, color = "grey80") +
-  geom_vline(xintercept = 0, color = "grey80") +
-  geom_point(aes(shape = credible), size = 2) +
-  ggrepel::geom_text_repel(aes(label = species), size = 2.5, fontface = "italic", show.legend = FALSE) +
-  scale_color_manual(values = group_color) +
-  scale_shape_manual(values = c(`TRUE` = 16, `FALSE` = 1)) +
-  labs(x = "Effect, D11 axes (PC1 + PC2)", y = "Effect, chosen controls", color = NULL, shape = "Credible")
-```
-
-**Results:** the altitude curve is what matters. At the same altitude,
-sites with and without a dam downstream hold chub, gudgeon, barbel and
-roach about as often: their drop above 300 m happens with or without
-dams. The eel, by contrast, is clearly rarer above dams at the same
-altitude. With the D11 axes or a linear altitude, the drop of lowland
-species in the uplands is attributed to the dams: most species then appear
-credibly less frequent with dams, and the effects are about twice as
-strong. The quadratic altitude term fits better for most species
-and roughly halves the dam effects of the resident species, while the migratory
-and large-river species keep strong negative effects.
-
-*To discuss: above about 500 m, nearly all sites have a dam downstream, so
-the dam effect there depends on the shape of the altitude curve; brown
-trout keeps a positive effect whose cause is unclear (no sign of stocking
-of catchable fish in the size structure).*
-
-## Impact on food web structure
-
-Local food webs of the visits (D11 `foodweb_structure`): fish richness $S$
-(number of fish species caught), trophic length $L$ (maximum prey-averaged
-trophic level) and diet overlap $O$ between fish species (mean Jaccard
-similarity of prey sets over pairs of fish consumers). Visits with fewer
-than 3 fish species are left out (too few species to reconstruct a
-network). Webs without a piscivore have a trophic length of about 3 (a
-fish eating invertebrates), apart from the other webs: trophic length is
-modelled in two parts, the presence of a piscivore $P$ and the trophic
-length of the webs with a piscivore.
-
-Dam metric: $D_i$, the number of large dams (ROE obstacles with a drop
-height $\geq$ 5 m, on the AMOBIO river network) between the site of visit
-$i$ and the sea. Position controls, as in the presence models: the log
-river width $W_i$, the log altitude $H_i$ (with a quadratic term) and the
-log distance to the mouth $M_i$. Sampling effort: the
-fishing protocol and the fished surface $A_i$. For visit $i$ at site
-$s$ and in year $t$, the linear predictor is
-
-$$
-\eta_i = \beta_0 + \beta_D \log(1 + D_i) + \beta_W W_i
-+ \beta_H H_i + \beta_{H^2} H_i^2 + \beta_M M_i
-+ \alpha_{\mathrm{district}(i)} + \gamma_{\mathrm{protocol}(i)}
-+ \beta_A \log A_i + u_s + v_t,
-$$
-
-$$
-u_s \sim \mathcal{N}(0, \sigma_u^2), \quad
-v_t \sim \mathcal{N}(0, \sigma_v^2),
-$$
-
-with its own parameters for each response:
-
-$$
-\begin{aligned}
-S_i &\sim \mathrm{Poisson}(\lambda_i), & \log \lambda_i &= \eta_i, \\
-P_i &\sim \mathrm{Bernoulli}(\pi_i), & \mathrm{logit}\, \pi_i &= \eta_i + \beta_S \log S_i, \\
-L_i \mid P_i = 1 &\sim \mathcal{N}(\mu_i, \sigma^2), & \mu_i &= \eta_i + \beta_S \log S_i, \\
-O_i &\sim \mathcal{N}(\mu_i, \sigma^2), & \mu_i &= \eta_i + \beta_S \log S_i.
-\end{aligned}
-$$
-
-The structure metrics ($P$, $L$, $O$) are fitted without ($\beta_S = 0$)
-and with log fish richness (centred) as a covariate: $\beta_D$ is then the
-dam effect at equal richness.
-
-```{r foodweb-models}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(visit, presence, tar_read(foodweb_structure), control_term))
-foodweb_visit <- visit |>
-  inner_join(
-    tar_read(foodweb_structure) |>
-      distinct(operation_id, .keep_all = TRUE) |>
-      select(operation_id, trophic_length, frac_piscivorous, fish_diet_overlap),
-    by = "operation_id"
-  ) |>
-  left_join(count(presence, operation_id, name = "fish_richness"), by = "operation_id") |>
-  filter(fish_richness >= 3) |>
-  mutate(
-    accumulation = log1p(dams),
-    log_richness = log(fish_richness) - mean(log(fish_richness)),
-    piscivore = as.numeric(frac_piscivorous > 0)
-  )
-c(visits = nrow(foodweb_visit), piscivore = sum(foodweb_visit$piscivore))
-
-foodweb_response <- c(
-  fish_richness = "S: fish richness",
-  piscivore = "TL, part 1:\npiscivore present",
-  trophic_length = "TL, part 2: trophic length\n(webs with a piscivore)",
-  fish_diet_overlap = "O: diet overlap (fish)"
-)
-foodweb_family <- c(
-  fish_richness = "poisson", piscivore = "binomial",
-  trophic_length = "gaussian", fish_diet_overlap = "gaussian"
-)
-
-# Effects of the `dam` terms, the position controls (and log richness) on
-# `response` in `data`, with the log marginal likelihood.
-fit_foodweb <- function(data, response, family, richness, dam) {
-  term <- paste(c(
-    dam, if (richness) "log_richness", control_term, "district",
-    "protocol + log_surface",
-    "f(site, model = 'iid') + f(year, model = 'iid')"
-  ), collapse = " + ")
-  model <- INLA::inla(
-    as.formula(paste(response, "~", term)),
-    family = family, data = data, num.threads = 4,
-    control.compute = list(config = FALSE)
-  )
-  effect <- model$summary.fixed[c(all.vars(as.formula(paste("~", dam))), control_coef, if (richness) "log_richness"), ]
-  gc()
-  tibble(
-    response = response, family = family, richness = richness,
-    term = rownames(effect), mean = effect$mean, sd = effect$sd,
-    lower = effect$`0.025quant`, upper = effect$`0.975quant`,
-    mlik = model$mlik[1, 1]
-  )
-}
-
-foodweb_fit <- tidyr::expand_grid(
-  response = names(foodweb_response), richness = c(FALSE, TRUE)
-) |>
-  filter(!(response == "fish_richness" & richness)) |>
-  purrr::pmap(\(response, richness) fit_foodweb(
-    if (response == "trophic_length") filter(foodweb_visit, piscivore == 1) else foodweb_visit,
-    response, foodweb_family[[response]], richness, "accumulation"
-  ))
-foodweb_effect <- bind_rows(foodweb_fit) |>
-  mutate(response = factor(response, names(foodweb_response), foodweb_response))
-```
-
-Effects of log(1 + dams) and of the position controls (posterior mean and 95% credible
-interval; log scale for fish richness, logit scale for the presence of a
-piscivore), without and with log fish richness as a covariate.
-
-```{r foodweb-effects-plot}
-#| fig-width: 12
-#| fig-height: 3.5
-
-foodweb_effect |>
-  filter(term != "log_richness") |>
-  mutate(
-    model = if_else(richness, "richness controlled", "richness not controlled"),
-    term = factor(
-      term, rev(c("accumulation", control_coef)),
-      rev(c("log(1 + dams)", "log width", "log altitude", "log altitude²", "log distance to the mouth"))
-    )
-  ) |>
-  ggplot(aes(mean, term, color = model)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(
-    aes(xmin = lower, xmax = upper),
-    size = 0.3,
-    position = position_dodge(width = 0.5)
+field_score |>
+  tidyr::pivot_longer(c(PC1, PC2), names_to = "axis", values_to = "score") |>
+  ggplot(aes(longitude, latitude)) +
+  geom_sf(
+    data = sf::st_transform(basin_kept, 4326), fill = "grey97",
+    color = "grey40", inherit.aes = FALSE
   ) +
-  facet_wrap(~response, nrow = 1, scales = "free_x") +
-  scale_color_manual(values = c(`richness not controlled` = "black", `richness controlled` = "grey60")) +
-  labs(x = "Effect", y = NULL, color = NULL)
+  geom_point(aes(color = score), size = 0.6) +
+  facet_wrap(~axis) +
+  scale_color_distiller(palette = "PuOr", direction = 1, name = "Score") +
+  theme_void() +
+  theme(strip.text = element_text(size = 11))
 ```
 
-**Results:** with more dams downstream, webs have fewer fish species. The
-structure of the webs does not credibly change: chain length and diet
-overlap are about the same with or without dams, whether richness is
-controlled or not. A piscivore is about as often present with or without
-dams; at equal richness, it is slightly more often present with more dams. The position along the river
-matters more: webs have more species in wider rivers and further from the
-sea, and fewer at high altitude, where chains are shorter and fish species
-share more of their prey.
+Loading of each species on the first two axes.
 
-### Size structure of the food webs
-
-The food webs are built from size classes: each species is split into
-classes of body length that set its diet (ontogenetic shifts), so the size
-of the individuals caught shapes the web. Two measures of size structure,
-from the individual lengths $L$ (cm) of the visits with at least 3 fish
-species, each fitted with the model above (Gaussian):
-
-1. Community mean size. The mean log length over the $N_i$ individuals of
-   visit $i$, $\bar{x}_i = \frac{1}{N_i} \sum_k \log L_k$, is split into a
-   species turnover part, with each species $s$ at its mean log length over
-   all visits $m_s$, $\tilde{x}_i = \sum_s \frac{n_{is}}{N_i} m_s$ ($n_{is}$
-   individuals of species $s$), and a within-species part,
-   $\bar{x}_i - \tilde{x}_i$ (Lepš et al. 2011).
-2. Path from dams to trophic length (webs with a piscivore and at least one
-   fish-eating individual). The top predator size is the log length of the
-   largest individual above the length at which its species eats fish (diet
-   stages). Dams act on the top predator size and on fish richness
-   (coefficients $a$), which both act on trophic length (coefficients $b$,
-   fitted together with the direct effect $c'$ of the dams):
-   $$
-   \begin{aligned}
-   \log L^{\mathrm{top}}_i &= \ldots + a_1 \log(1 + D_i), &
-   \log S_i &= \ldots + a_2 \log(1 + D_i), \\
-   \mathrm{TL}_i &= \ldots + c' \log(1 + D_i) + b_1 \log L^{\mathrm{top}}_i + b_2 \log S_i,
-   \end{aligned}
-   $$
-   with the indirect effects $a_1 b_1$ and $a_2 b_2$ (product of the
-   posterior marginals, 100,000 draws).
-
-```{r size-structure-data}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(foodweb_visit, tar_read(size_year_filtered), tar_read(diet)))
-size_individual <- tar_read(size_year_filtered) |>
-  filter(
-    survey == "river", operation_id %in% foodweb_visit$operation_id,
-    !is.na(length), length > 0
-  ) |>
-  select(operation_id, species = species_valid, length)
-fish_eating_length <- tar_read(diet) |>
-  filter(fish == 1) |>
-  summarise(fish_from = min(length_min), .by = species)
-
-size_visit <- size_individual |>
-  mutate(log_length = log(length)) |>
-  mutate(species_log_length = mean(log_length), .by = species) |>
-  summarise(
-    total = mean(log_length),
-    turnover = mean(species_log_length),
-    .by = operation_id
-  ) |>
-  mutate(intraspecific = total - turnover) |>
-  left_join(
-    size_individual |>
-      inner_join(fish_eating_length, by = "species") |>
-      filter(length >= fish_from) |>
-      summarise(log_top_predator = log(max(length)), .by = operation_id),
-    by = "operation_id"
-  )
-foodweb_size <- inner_join(foodweb_visit, size_visit, by = "operation_id")
-c(visits = nrow(foodweb_size), top_predator = sum(!is.na(foodweb_size$log_top_predator)))
-```
-
-```{r size-structure-models}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(foodweb_size, control_term))
-set.seed(1)
-# Effect of log(1 + dams) on a size measure.
-fit_size <- function(data, response) {
-  fit_foodweb(data, response, "gaussian", FALSE, "accumulation") |>
-    filter(term == "accumulation")
-}
-size_effect <- bind_rows(
-  lapply(c("total", "turnover", "intraspecific"), \(x) fit_size(foodweb_size, x))
-)
-
-path_visit <- filter(foodweb_size, piscivore == 1, !is.na(log_top_predator))
-path_a <- bind_rows(
-  fit_size(path_visit, "log_top_predator"),
-  fit_size(path_visit, "log_richness")
-)
-path_total <- fit_size(path_visit, "trophic_length")
-path_b <- fit_foodweb(
-  path_visit, "trophic_length", "gaussian", FALSE,
-  "accumulation + log_top_predator + log_richness"
-)
-path_draw <- \(x) rnorm(1e5, x$mean, x$sd)
-path_indirect <- tibble(
-  path = c("log_top_predator", "log_richness"),
-  draw = list(
-    path_draw(path_a[1, ]) * path_draw(filter(path_b, term == "log_top_predator")),
-    path_draw(path_a[2, ]) * path_draw(filter(path_b, term == "log_richness"))
-  )
-) |>
-  mutate(
-    mean = sapply(draw, mean),
-    lower = sapply(draw, quantile, 0.025), upper = sapply(draw, quantile, 0.975)
-  ) |>
-  select(-draw)
-nrow(path_visit)
-```
-
-Effects of log(1 + dams) on the community mean log length and its two
-parts (posterior mean and 95% credible interval).
-
-```{r size-effects-plot}
-#| fig-width: 5
-#| fig-height: 2.5
-
-size_effect |>
-  mutate(response = factor(
-    response, rev(c("total", "turnover", "intraspecific")),
-    rev(c("total", "species turnover", "within species"))
-  )) |>
-  ggplot(aes(mean, response)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
-  labs(x = "Effect of log(1 + large dams downstream)
-on the mean log length", y = NULL)
-```
-
-Path from the number of dams to trophic length (webs with a piscivore):
-posterior mean of each coefficient (95% credible interval), solid when the
-interval excludes 0; indirect effects ($a \times b$), direct and total
-effect below.
-
-```{r size-path-diagram}
+```{r field-pca-loading}
 #| fig-width: 9
-#| fig-height: 5
+#| fig-height: 7
 
-path_label <- \(x) sprintf("%+.3f\n(%+.3f, %+.3f)", x$mean, x$lower, x$upper)
-path_node <- tibble(
-  node = c("Large dams downstream\nlog(1 + D)", "Top predator size\nlog length", "Fish richness\nlog S", "Trophic length"),
-  x = c(0, 1, 1, 2), y = c(0, 1, -1, 0)
-)
-path_edge <- bind_rows(
-  path_a |> mutate(x = 0, y = 0, xend = 1, yend = c(1, -1)),
-  path_b |> filter(term %in% c("log_top_predator", "log_richness")) |>
-    mutate(x = 1, y = c(1, -1), xend = 2, yend = 0),
-  path_b |> filter(term == "accumulation") |> mutate(x = 0, y = 0, xend = 2, yend = 0)
-) |>
-  mutate(
-    credible = lower > 0 | upper < 0,
-    label = path_label(pick(mean, lower, upper)),
-    # Arrows stop at the box edges.
-    x_start = x + 0.22 * sign(xend - x), x_end = xend - 0.22 * sign(xend - x),
-    y_start = y + 0.22 * (yend - y) / abs(xend - x), y_end = yend - 0.22 * (yend - y) / abs(xend - x)
-  )
-path_summary <- sprintf(
-  "Indirect via top predator size: %s   Indirect via richness: %s\nDirect: %s   Total: %s",
-  sub("\n", " ", path_label(path_indirect[1, ])), sub("\n", " ", path_label(path_indirect[2, ])),
-  sub("\n", " ", path_label(filter(path_b, term == "accumulation"))), sub("\n", " ", path_label(path_total))
-)
-ggplot() +
-  geom_segment(
-    data = path_edge,
-    aes(x = x_start, y = y_start, xend = x_end, yend = y_end, linetype = credible),
-    arrow = arrow(length = unit(0.25, "cm"), type = "closed"), linewidth = 0.6
-  ) +
-  geom_label(
-    data = path_edge,
-    aes(x = (x + xend) / 2, y = (y + yend) / 2, label = label),
-    size = 3, label.size = 0, fill = "white"
-  ) +
-  geom_label(data = path_node, aes(x, y, label = node), size = 3.5, label.padding = unit(0.4, "lines")) +
-  annotate("text", x = 1, y = -1.65, label = path_summary, size = 3.2) +
-  scale_linetype_manual(values = c(`TRUE` = "solid", `FALSE` = "dashed"), guide = "none") +
-  coord_cartesian(xlim = c(-0.3, 2.3), ylim = c(-1.9, 1.3)) +
-  theme_void()
+ggplot(field_loading, aes(PC1, PC2, color = group)) +
+  geom_hline(yintercept = 0, color = "grey70") +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = species), size = 2.7, fontface = "italic", max.overlaps = 40, show.legend = FALSE) +
+  scale_color_manual(values = group_color) +
+  labs(color = NULL)
 ```
 
-**Results:** with more dams, the fish caught are slightly larger on
-average, in similar parts because individuals are larger within species
-and because small species drop out. At the top of the web it is the
-reverse: the largest fish-eating fish is smaller. Fewer species and
-smaller top predators both go with shorter chains, but these indirect
-paths are small and offset by a slightly positive direct effect of the
-dams, so the total dam effect on trophic length is not credible.
+Correlation of the site scores with the dam count and the position
+covariates.
 
-### Identity of the top predator
+```{r field-pca-covariates}
+field_score |>
+  transmute(PC1, PC2, accumulation = log1p(dams), log_alt, log_dist, log_width, log_slope) |>
+  cor() |>
+  (\(x) x[c("PC1", "PC2"), -(1:2)])() |>
+  round(2) |>
+  knitr::kable()
+```
 
-Species of the top predator (the largest fish-eating individual) in the
-webs of the path analysis, by number of large dams downstream. The models
-of top predator size and trophic length above are refitted with the
-presence of the eel as a covariate, then with an interaction between the
-dams and eel presence: one dam slope for the webs without eel
-($\log(1 + D_i)(1 - E_i)$) and one for the webs with eel
-($\log(1 + D_i) E_i$), with $E_i$ the eel presence (both slopes in one model,
-with the same controls). The largest eel is also compared between dam
-classes.
+The Brittany axis points to something regional that the position covariates
+miss. The first axis may reflect water temperature: the species with high
+loadings are cold-water species, those with low loadings warm-water ones. We
+compare the site scores with the mean July air temperature of the river reach
+(RHT, 1960-1990).
 
-```{r top-predator-models}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(path_visit, size_individual, fish_eating_length, control_term))
-top_predator <- size_individual |>
-  inner_join(fish_eating_length, by = "species") |>
-  filter(length >= fish_from) |>
-  slice_max(length, n = 1, with_ties = FALSE, by = operation_id) |>
-  select(operation_id, top_species = species, top_length = length)
-eel_visit <- path_visit |>
-  inner_join(top_predator, by = "operation_id") |>
-  mutate(
-    eel = as.numeric(operation_id %in% presence$operation_id[presence$species_valid == "Anguilla anguilla"]),
-    dam_class = cut(dams, c(-Inf, 0, 1, 3, Inf), c("0 dams", "1 dam", "2-3 dams", "4+ dams")),
-    accumulation_without_eel = accumulation * (1 - eel),
-    accumulation_with_eel = accumulation * eel
-  )
-eel_model <- c(
-  `all webs` = "accumulation", `all webs, + eel presence` = "accumulation + eel",
-  `dams x eel` = "eel + accumulation_without_eel + accumulation_with_eel"
-)
-eel_effect <- tidyr::expand_grid(response = c("log_top_predator", "trophic_length"), model = names(eel_model)) |>
-  purrr::pmap(\(response, model) fit_foodweb(eel_visit, response, "gaussian", FALSE, eel_model[[model]]) |>
-    mutate(model = model)) |>
-  bind_rows() |>
-  filter(startsWith(term, "accumulation"))
-eel_largest <- size_individual |>
-  filter(species == "Anguilla anguilla") |>
-  summarise(eel_largest = max(length), .by = operation_id) |>
-  inner_join(eel_visit, by = "operation_id") |>
-  summarise(
-    webs = n(), eel_largest = median(eel_largest), top_is_eel = mean(top_species == "Anguilla anguilla"),
-    .by = dam_class
+```{r field-pca-temperature}
+#| fig-width: 6
+#| fig-height: 4.5
+
+field_temperature <- field_score |>
+  left_join(
+    site |> select(sandre_code, operation_id),
+    by = "sandre_code"
   ) |>
-  arrange(dam_class)
-c(webs = nrow(eel_visit), without_eel = sum(eel_visit$eel == 0))
-eel_largest
-eel_visit |>
-  summarise(top_length = median(top_length), .by = top_species) |>
-  filter(top_species %in% c("Anguilla anguilla", "Salmo trutta"))
-```
-
-```{r top-predator-plot}
-#| fig-width: 10
-#| fig-height: 3.5
-
-top_main <- eel_visit |>
-  count(top_species) |>
-  slice_max(n, n = 6) |>
-  pull(top_species)
-top_share <- eel_visit |>
-  mutate(top_species = factor(if_else(top_species %in% top_main, top_species, "other"), c(top_main, "other"))) |>
-  count(dam_class, top_species) |>
-  mutate(share = n / sum(n), .by = dam_class)
-top_share_plot <- ggplot(top_share, aes(dam_class, share, fill = top_species)) +
-  geom_col() +
-  scale_fill_brewer(palette = "Set2") +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Large dams downstream", y = "Share of webs", fill = "Top predator") +
-  theme(legend.text = element_text(face = "italic"))
-eel_effect_plot <- eel_effect |>
-  mutate(
-    response = factor(response, c("log_top_predator", "trophic_length"), c("Top predator size\n(log length)", "Trophic length")),
-    model = factor(
-      case_when(
-        term == "accumulation_without_eel" ~ "dams x eel:\nwebs without eel",
-        term == "accumulation_with_eel" ~ "dams x eel:\nwebs with eel",
-        .default = model
-      ),
-      rev(c("all webs", "all webs, + eel presence", "dams x eel:\nwebs without eel", "dams x eel:\nwebs with eel"))
-    )
-  ) |>
-  ggplot(aes(mean, model)) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3) +
-  facet_wrap(~response, scales = "free_x") +
-  labs(x = "Effect of log(1 + large dams downstream)", y = NULL)
-patchwork::wrap_plots(top_share_plot, eel_effect_plot, widths = c(1, 1.3))
-```
-
-**Results:** without dams, the top predator is usually the eel; with
-several dams, it is usually brown trout, a much smaller fish. Where eels
-remain above dams, the largest one is also smaller. The eel explains why
-top predators shrink with dams: in webs without eel, dams do not change
-the size of the top predator, and the effect disappears once eel presence
-is accounted for. None of these models shows a credible dam effect on
-trophic length.
-
-### Distance decay of the dam effect
-
-Do nearby dams weigh more than distant ones? Each large dam $j$ downstream
-of the site of visit $i$ is weighted by its river distance $d_{ij}$, with a
-decay length $\lambda$:
-
-$$
-\mathrm{impact}_i(\lambda) = \sum_{j \,\in\, \text{dams downstream of } i} e^{-d_{ij} / \lambda},
-$$
-
-which enters the models as $\log(1 + \mathrm{impact}_i)$ instead of
-$\log(1 + D_i)$ ($\lambda \to \infty$ gives back $D_i$). The models
-(without richness as a covariate) are fitted for $\lambda$ from 5 km to
-infinity and compared by their log marginal likelihood.
-
-```{r dam-decay}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(foodweb_visit, operation_dam, control_term))
-dam_distance <- operation_dam |>
-  filter(position == "upstream") |>
-  transmute(operation_id, distance_km = river_dist_m / 1000)
-decay_length <- c(5, 10, 25, 50, 100, 200, 500, 1000, Inf)
-
-dam_decay <- tidyr::expand_grid(lambda = decay_length, response = names(foodweb_response)) |>
-  mutate(effect = purrr::map2(lambda, response, function(lambda, response) {
-    data <- foodweb_visit |>
-      left_join(
-        dam_distance |> summarise(impact = sum(exp(-distance_km / lambda)), .by = operation_id),
-        by = "operation_id"
-      ) |>
-      mutate(impact = log1p(coalesce(impact, 0)))
-    if (response == "trophic_length") data <- filter(data, piscivore == 1)
-    fit_foodweb(data, response, foodweb_family[[response]], FALSE, "impact") |>
-      filter(term == "impact") |>
-      select(mean, lower, upper, mlik)
-  })) |>
-  tidyr::unnest(effect) |>
-  mutate(
-    delta_mlik = mlik - max(mlik), .by = response
-  ) |>
-  mutate(response = factor(response, names(foodweb_response), foodweb_response))
-```
-
-Log marginal likelihood relative to the best decay length (top) and effect
-of $\log(1 + \mathrm{impact})$ (bottom) against the decay length; the
-rightmost point is $\lambda = \infty$ (number of dams).
-
-```{r dam-decay-plot}
-#| fig-width: 12
-#| fig-height: 5
-
-decay_break <- c(5, 10, 25, 50, 100, 200, 500, 1000, 3000)
-dam_decay_plot <- dam_decay |>
-  mutate(lambda = if_else(is.finite(lambda), lambda, 3000))
-patchwork::wrap_plots(
-  ggplot(dam_decay_plot, aes(lambda, delta_mlik)) +
-    geom_line() +
-    geom_point() +
-    facet_wrap(~response, nrow = 1, scales = "free_y") +
-    scale_x_log10(breaks = decay_break, labels = c(head(decay_break, -1), "Inf")) +
-    labs(x = NULL, y = "Log marginal likelihood\n- best"),
-  ggplot(dam_decay_plot, aes(lambda, mean)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    geom_pointrange(aes(ymin = lower, ymax = upper), size = 0.3) +
-    facet_wrap(~response, nrow = 1, scales = "free_y") +
-    scale_x_log10(breaks = decay_break, labels = c(head(decay_break, -1), "Inf")) +
-    labs(x = "Decay length (km)", y = "Effect of\nlog(1 + impact)"),
-  ncol = 1
-) &
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-**Results:** for fish richness, a dam far downstream counts as much as
-one close to the site: weighting dams by their distance never fits better
-than simply counting them. What matters is how many large dams separate a
-site from the sea, not how close they are. For the structure metrics, no
-decay length gives a credible dam effect; trophic length fits slightly
-better with a short decay length, but its dam effect stays uncertain.
-
-### Dam effect along the altitude gradient
-
-Does the dam effect change with altitude? The models (without richness as
-a covariate) are fitted with an interaction between log(1 + dams) and the
-log altitude, and compared by WAIC to the models without it. The dam
-effect at a given altitude is $\beta_D + \beta_{D \times H}\, H$,
-computed as a linear combination of the posterior for altitudes between
-the 5% and 95% quantiles of the visits.
-
-```{r dam-altitude-models}
-#| cache: true
-#| cache.extra: !expr rlang::hash(list(foodweb_visit, control_term))
-alt_value <- seq(
-  quantile(foodweb_visit$log_alt, 0.05), quantile(foodweb_visit$log_alt, 0.95),
-  length.out = 20
-)
-
-# Dam effect along the altitude and WAIC difference with the model without
-# the interaction, for `response`.
-fit_dam_altitude <- function(response) {
-  data <- if (response == "trophic_length") filter(foodweb_visit, piscivore == 1) else foodweb_visit
-  fit <- function(dam, ...) {
-    INLA::inla(
-      as.formula(paste(
-        response, "~", dam, "+", control_term, "+ district + protocol + log_surface +",
-        "f(site, model = 'iid') + f(year, model = 'iid')"
-      )),
-      family = foodweb_family[[response]], data = data, num.threads = 4,
-      control.compute = list(waic = TRUE, config = FALSE), ...
-    )
-  }
-  model <- fit(
-    "accumulation + accumulation:log_alt",
-    lincomb = INLA::inla.make.lincombs(
-      accumulation = rep(1, length(alt_value)), `accumulation:log_alt` = alt_value
-    )
+  left_join(
+    tar_read(inland_operations_rht) |>
+      sf::st_drop_geometry() |>
+      select(operation_id, july_temperature = tjuil_moy),
+    by = "operation_id"
   )
-  waic_main <- fit("accumulation")$waic$waic
-  coefficient <- model$summary.fixed["accumulation:log_alt", ]
-  gc()
-  tibble(
-    response = response, altitude = exp(alt_value + mean(visit$log_altitude)),
-    mean = model$summary.lincomb.derived$mean,
-    lower = model$summary.lincomb.derived$`0.025quant`,
-    upper = model$summary.lincomb.derived$`0.975quant`,
-    interaction = coefficient$mean,
-    interaction_lower = coefficient$`0.025quant`,
-    interaction_upper = coefficient$`0.975quant`,
-    delta_waic = model$waic$waic - waic_main
+temperature_cor <- with(field_temperature, cor(PC1, july_temperature, use = "complete.obs"))
+
+ggplot(field_temperature, aes(july_temperature, PC1)) +
+  geom_point(size = 0.6, alpha = 0.4) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "#B2182B") +
+  labs(
+    x = "Mean July air temperature (°C)", y = "Site score on PC1",
+    subtitle = paste("Correlation:", round(temperature_cor, 2))
   )
-}
-dam_altitude <- lapply(names(foodweb_response), fit_dam_altitude) |>
-  bind_rows() |>
-  mutate(response = factor(response, names(foodweb_response), foodweb_response))
 ```
 
-Effect of log(1 + dams) along the altitude (posterior mean and 95% credible
-interval); in each panel, the interaction coefficient and the WAIC
-difference with the model without it (negative: the interaction fits
-better).
-
-```{r dam-altitude-plot}
-#| fig-width: 12
-#| fig-height: 3.5
-
-dam_altitude |>
-  ggplot(aes(altitude, mean)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "grey80") +
-  geom_line() +
-  geom_text(
-    data = \(d) distinct(d, response, interaction, interaction_lower, interaction_upper, delta_waic),
-    aes(
-      x = 0, y = Inf,
-      label = sprintf(
-        "interaction %+.3f (%+.3f, %+.3f)\nWAIC - WAIC without: %+.1f",
-        interaction, interaction_lower, interaction_upper, delta_waic
-      )
-    ),
-    hjust = -0.05, vjust = 1.3, size = 2.8
-  ) +
-  facet_wrap(~response, nrow = 1, scales = "free_y") +
-  scale_x_log10() +
-  labs(x = "Altitude (m)", y = "Effect of log(1 + dams)")
-```
-
-**Results:** the loss of species with dams depends on altitude: in the
-lowlands, dams do not credibly change the number of species, while in the
-uplands they reduce it. The interaction is credible, but it does not
-improve the fit (WAIC), so this gradient should be read with care. For the
-structure metrics, the dam effect hardly changes with altitude, apart from
-slightly shorter chains with dams in the lowlands (at the edge of
-credibility).
+The hypothesis that most spatial field capture a water effect is supported by
+the correlation between PC1 and July air temperature.
 

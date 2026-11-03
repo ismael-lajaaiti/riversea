@@ -2,7 +2,8 @@
 #'
 #' One row per river (ASPE) operation with fish records, a continuum score,
 #' a fished surface and a catchment, as in D12. Position controls are
-#' centred: log river width, log altitude and log distance to the mouth.
+#' centred: log river width, log altitude, log distance to the mouth and log
+#' slope.
 #' Dam accumulation is the number of large dams and weirs between the site
 #' and the sea.
 #'
@@ -39,7 +40,7 @@ prepare_dam_visits <- function(
       .by = operation_id
     )
   continuum_operation |>
-    dplyr::select(operation_id, longitude, latitude, district, log_altitude) |>
+    dplyr::select(operation_id, longitude, latitude, district, log_altitude, log_slope) |>
     dplyr::filter(!is.na(log_altitude)) |>
     dplyr::semi_join(presence, by = "operation_id") |>
     dplyr::inner_join(
@@ -67,6 +68,7 @@ prepare_dam_visits <- function(
       accumulation = log1p(dams),
       log_dist = log(dist_mouth_m / 1000) - mean(log(dist_mouth_m / 1000)),
       log_alt = log_altitude - mean(log_altitude),
+      log_slope = log_slope - mean(log_slope),
       log_width = log_width - mean(log_width),
       log_surface = log(surface),
       # Indices for INLA.
