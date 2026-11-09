@@ -5,16 +5,6 @@ plot_targets <- list(
     create_plot_dag()
   ),
   tar_target(
-    foodweb_fig,
-    {
-      dot_file <- "figures/foodweb.dot"
-      out_file <- "figures/foodweb.png"
-      system2("dot", c("-Tpng", dot_file, "-o", out_file))
-      out_file
-    },
-    format = "file"
-  ),
-  tar_target(
     venn_diagram,
     {
       fname <- "figures/venn-diagram.png"

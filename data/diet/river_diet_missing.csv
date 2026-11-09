@@ -1,10 +1,8 @@
 species,stage,length_min,length_max,crustacean,insect,worm,zooplankton,detritus,macrophyte,mollusk,fish,biofilm,phytoplankton,echinoderm,Validated?,Reference_ID,Confidence,Notes
 Salmo salar,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
 Salmo salar,,2.00002,,1,1,0,0,0,0,0,1,0,0,0,Revised,REN11; AND05; DES09,Medium,Diet shifts along the river-continuum.
-Petromyzon marinus,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
-Petromyzon marinus,,2.00002,,0,0,0,0,0,0,0,1,0,0,0,Revised,SIL14,Medium,More a parastic interaction than a proper feeding interaction.
-Lampetra fluviatilis,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
-Lampetra fluviatilis,,2.00002,,0,0,0,0,0,0,0,1,0,0,0,Revised,MAI84,Medium,More a parastic interaction than a proper feeding interaction.
+Petromyzon marinus,larvae,0,,0,0,0,0,1,0,0,0,1,1,0,Revised,MOO80,Medium,"Larval diet of Lampetra planeri (MOO80) at all sizes: larvae filter feed, and adults do not feed during the freshwater run."
+Lampetra fluviatilis,larvae,0,,0,0,0,0,1,0,0,0,1,1,0,Revised,MOO80,Medium,"Larval diet of Lampetra planeri (MOO80) at all sizes: larvae filter feed, and adults do not feed during the freshwater run."
 Lampetra planeri,larvae,0,,0,0,0,0,1,0,0,0,1,1,0,Revised,MOO80,Medium,A single stage for the entire life.
 Proterorhinus semilunaris,larvae,0,2.00001,0,0,0,1,0,0,0,0,0,0,0,Confirmed,LH,,
 Proterorhinus semilunaris,,2.00002,,1,1,0,1,0,0,0,0,0,0,0,Revised,VSE14,Medium,

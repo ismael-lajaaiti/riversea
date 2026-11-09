@@ -133,15 +133,6 @@ data_targets <- list(
     format_basin(basin_dir)
   ),
   tar_target(
-    hydro_sector_zip,
-    download_hydro_sector(here("data", "geo", "hydrographic_sector")),
-    format = "file"
-  ),
-  tar_target(
-    hydro_sector,
-    read_hydro_sector(hydro_sector_zip)
-  ),
-  tar_target(
     river_operation,
     get_river_operation(individual_fish_file, basin)
   ),
@@ -218,14 +209,6 @@ data_targets <- list(
   tar_target(
     river_foodweb_structure,
     foodweb_structure |> dplyr::filter(survey == "river")
-  ),
-  tar_target(
-    foodweb_size_info_combined,
-    get_combined_foodweb_size_info(
-      size_year_filtered,
-      diet,
-      operation_year_filtered
-    )
   ),
   tar_target(dir_environment, "data/sea/raw/environment", format = "file"),
   tar_target(

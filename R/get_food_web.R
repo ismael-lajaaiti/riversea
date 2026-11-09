@@ -1104,8 +1104,8 @@ get_river_operation <- function(individual_fish_file, basin) {
 #'
 #' @param individual_fish_file path to `output_individual_fish.rda`.
 #'
-#' @return tibble with columns operation_id, batch_id, length (cm),
-#' latin_name, species_valid, is_valid. Can be passed directly to
+#' @return tibble with columns operation_id, batch_id, length (cm), weight
+#' (g), latin_name, species_valid, is_valid. Can be passed directly to
 #' `build_foodweb()`.
 #' @export
 get_river_size <- function(individual_fish_file) {
@@ -1113,7 +1113,7 @@ get_river_size <- function(individual_fish_file) {
 
   size <- out$fish_individuals |>
     dplyr::mutate(length = size_mm / 10) |>
-    dplyr::select(operation_id, batch_id, species_code, length)
+    dplyr::select(operation_id, batch_id, species_code, length, weight = weight_g)
 
   code_to_name <- out$species_ref_aspe |>
     dplyr::select(species_code, latin_name) |>

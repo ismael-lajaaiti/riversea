@@ -1,0 +1,566 @@
+---
+title: "Impact of large dams on food webs"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal of this notebook is to quantify the impact of large dams (see
+[D12-dam-impact-presence.qmd]) on food web structure. To do so, we need to
+
+- find descriptors of food web structure that can capture changes induced by
+dams
+- these descriptors can be based on presence-absence data or account for species
+  biomass
+- model the impact of dams on these descriptors
+- investigate how the dam impact is mediated by species
+- synthetise dam impacts and species-mediated effect on all descriptors
+- investigate model residuals to see where the models fail
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+## Descriptors of food web structure
+
+### List of descriptors
+
+We use the visits of the presence models of D12 (target `dam_visit`) and
+their observed food webs (D11), built from size classes: each fish species
+is split into classes of body length that set its diet. For each web we
+measure two types of metrics.
+
+First, metrics based on presence-absence:
+
+- **fish richness**: the number of fish species present
+- **mean trophic level**: mean trophic level over the fish size classes
+- **fish diet overlap**: the mean Jaccard similarity of the prey sets over pairs
+  of fish size classes
+- **trophic redundancy**: one minus the number of distinct trophic roles divided
+  by the number of fish size classes, a role being a unique set of prey and
+  predators.
+
+Second, metrics based on biomass:
+
+- **total biomass**: biomass summed over all individuals
+- **mean trophic level**: the mean trophic level over the fish size classes,
+weighted by their biomass
+- **biomass-trophic level correlation**: the correlation between log biomass and
+  trophic level of fish size classes.
+
+### An illustrative example
+
+To see what each metric measures, we compute them on a small invented web., with
+The web as four species (A to D), split into two size classes for B, C and D,
+and A has a single size class. D plays the role of a top predator, we look at
+how the metrics respond to its loss.
+
+```{r example-web}
+metric_label <- c(
+  fish_richness = "Fish richness",
+  mean_trophic_level = "Mean trophic level",
+  fish_diet_overlap = "Fish diet overlap",
+  trophic_redundancy = "Trophic redundancy",
+  log_biomass = "Total biomass (log)",
+  biomass_trophic_level = "Mean trophic level (biomass)",
+  biomass_pyramid = "Biomass-trophic level correlation"
+)
+example_resource <- c("biofilm", "detritus", "insect")
+example_diet <- list(
+  insect = c("biofilm", "detritus"),
+  A_1 = c("biofilm", "insect"),
+  B_1 = c("biofilm", "insect"),
+  B_2 = c("insect", "A_1", "B_1"),
+  C_1 = c("insect", "A_1", "B_1"),
+  C_2 = c("insect", "B_2", "C_1"),
+  D_1 = "insect",
+  D_2 = c("B_2", "C_1", "C_2")
+)
+example_biomass <- c(
+  A_1 = 900, B_1 = 1200, B_2 = 400, C_1 = 350, C_2 = 150, D_1 = 200, D_2 = 800
+)
+example_node <- c("biofilm", "detritus", names(example_diet))
+example_full <- matrix(
+  0L, length(example_node), length(example_node),
+  dimnames = list(example_node, example_node)
+)
+for (predator in names(example_diet)) {
+  example_full[example_diet[[predator]], predator] <- 1L
+}
+example_kept <- !startsWith(example_node, "D_")
+example_web <- list(
+  `Full web` = example_full,
+  `Without species D` = example_full[example_kept, example_kept]
+)
+example_metric <- purrr::map_dfr(
+  example_web, measure_web, resource = example_resource,
+  biomass = example_biomass, .id = "web"
+)
+```
+
+Here are the web we consider for our illustrative exercise.
+
+```{r example-web-plot}
+#| fig-width: 9
+#| fig-height: 5.5
+
+example_x <- c(
+  biofilm = 1, detritus = 3, insect = 2.3, A_1 = 0.9, B_1 = 1.8, B_2 = 1.3,
+  C_1 = 2.2, C_2 = 1.75, D_1 = 3.3, D_2 = 2.9
+)
+example_position <- purrr::imap_dfr(example_web, \(foodweb, web) tibble(
+  web, node = colnames(foodweb),
+  level = compute_prey_averaged_trophic_level(
+    igraph::graph_from_adjacency_matrix(foodweb), example_resource
+  ),
+  x = example_x[node]
+))
+example_link <- purrr::imap_dfr(example_web, \(foodweb, web) {
+  link <- which(foodweb > 0, arr.ind = TRUE)
+  tibble(web, prey = rownames(foodweb)[link[, 1]], predator = colnames(foodweb)[link[, 2]])
+}) |>
+  left_join(example_position, by = c("web", "prey" = "node")) |>
+  left_join(example_position, by = c("web", "predator" = "node"), suffix = c("", "_end"))
+example_fish <- example_position |>
+  filter(!node %in% example_resource) |>
+  mutate(
+    biomass = example_biomass[node],
+    species = if_else(startsWith(node, "D_"), "Species D", "Species A to C"),
+    label = sub("_", "", node)
+  )
+ggplot() +
+  geom_segment(
+    data = example_link, aes(x, level, xend = x_end, yend = level_end),
+    color = "grey75", linewidth = 0.4
+  ) +
+  geom_point(
+    data = filter(example_position, node %in% example_resource), aes(x, level),
+    shape = 15, size = 3, color = "grey45"
+  ) +
+  geom_text(
+    data = filter(example_position, node %in% example_resource),
+    aes(x, level, label = node), nudge_y = -0.22, size = 3.3, color = "grey20"
+  ) +
+  geom_point(
+    data = example_fish, aes(x, level, size = biomass, fill = species),
+    shape = 21, color = "white", stroke = 0.8
+  ) +
+  geom_text(
+    data = example_fish, aes(x, level, label = label),
+    nudge_x = 0.2, nudge_y = 0.17, size = 3.3, color = "grey20"
+  ) +
+  facet_wrap(~web) +
+  scale_size_area(max_size = 13, breaks = c(200, 500, 1000)) +
+  scale_fill_manual(values = c(`Species A to C` = "#2166AC", `Species D` = "#B2182B")) +
+  scale_x_continuous(NULL, breaks = NULL, expand = expansion(mult = 0.1)) +
+  scale_y_continuous(breaks = 1:5, limits = c(0.7, 5)) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5)),
+    size = guide_legend(override.aes = list(fill = "grey60"))
+  ) +
+  labs(y = "Trophic level", size = "Biomass (g)", fill = NULL) +
+  theme(legend.position = "top", panel.grid.minor = element_blank())
+```
+
+And here are the values of the selected metrics for the two webs.
+
+```{r example-web-metrics}
+example_metric |>
+  tidyr::pivot_longer(-web, names_to = "metric") |>
+  filter(metric %in% names(metric_label)) |>
+  tidyr::pivot_wider(names_from = web) |>
+  mutate(metric = factor(metric_label[metric], metric_label)) |>
+  arrange(metric) |>
+  rename(Metric = metric) |>
+  knitr::kable(digits = 2)
+```
+
+Without D, species richness and biomass drops. The food web also becomes
+simpler, which is capture by a lower mean trophic level and higher trophic
+redundancy. Finally, more of the biomass is at the base of the web, which is
+captured by the decrease of the biomass-trophic level correlation, which goes to
+-1.
+
+### Metrics observed in reconsutructred food webs
+
+We exclude the 28 webs in which a fish size class has no prey, as its trophic
+level would then be that of a basal resource.
+
+```{r webs}
+web <- tar_read(dam_foodweb)
+```
+
+We first plot the distribution of the metrics over the webs of the visits.
+
+```{r web-distribution}
+#| fig-width: 12
+#| fig-height: 5
+
+web |>
+  select(all_of(names(metric_label))) |>
+  tidyr::pivot_longer(everything(), names_to = "metric") |>
+  mutate(metric = factor(metric_label[metric], metric_label)) |>
+  ggplot(aes(value)) +
+  geom_histogram(
+    # One bin per value for the counts (richness), 30 bins otherwise.
+    binwidth = \(x) if (all(x == round(x))) 1 else diff(range(x)) / 30,
+    fill = "#2166AC", color = "white", linewidth = 0.2, na.rm = TRUE
+  ) +
+  facet_wrap(~metric, scales = "free", ncol = 4) +
+  labs(x = NULL, y = "Number of visits")
+```
+
+And the Spearman correlation between the metrics over the webs.
+
+```{r web-correlation}
+#| fig-width: 7
+#| fig-height: 6
+
+web |>
+  select(all_of(names(metric_label))) |>
+  cor(method = "spearman", use = "pairwise.complete.obs") |>
+  as_tibble(rownames = "x") |>
+  tidyr::pivot_longer(-x, names_to = "y", values_to = "rho") |>
+  mutate(across(c(x, y), \(v) factor(metric_label[v], metric_label))) |>
+  ggplot(aes(x, y, fill = rho)) +
+  geom_tile() +
+  geom_text(aes(label = round(rho, 2)), size = 3) +
+  scale_fill_distiller(palette = "RdBu", limits = c(-1, 1), direction = 1) +
+  labs(x = NULL, y = NULL, fill = "Spearman") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+To see how the metrics play together, we also run a principal component analysis
+on the scaled metrics of the visits where all of them are defined.
+
+```{r web-pca}
+#| fig-width: 8
+#| fig-height: 7
+
+web_pca <- tar_read(structure_pca)
+pca_variance <- round(100 * summary(web_pca)$importance["Proportion of Variance", ])
+pca_axis <- paste0(names(pca_variance), " (", pca_variance, "%)")
+# Correlation of each metric with the axes.
+pca_correlation <- as_tibble(t(t(web_pca$rotation) * web_pca$sdev), rownames = "metric") |>
+  mutate(metric = metric_label[metric])
+arrow_length <- 3 # Stretches the correlations to the range of the visits.
+ggplot() +
+  geom_point(
+    data = as_tibble(web_pca$x), aes(PC1 / sd(PC1), PC2 / sd(PC2)),
+    color = "grey75", size = 0.5, alpha = 0.4
+  ) +
+  geom_hline(yintercept = 0, color = "grey70") +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_segment(
+    data = pca_correlation,
+    aes(0, 0, xend = arrow_length * PC1, yend = arrow_length * PC2),
+    color = "#2166AC", linewidth = 0.7, arrow = arrow(length = unit(2, "mm"))
+  ) +
+  ggrepel::geom_text_repel(
+    data = pca_correlation,
+    aes(arrow_length * PC1, arrow_length * PC2, label = metric),
+    size = 3.5, color = "grey20", seed = 1, min.segment.length = Inf,
+    bg.color = "white", bg.r = 0.15
+  ) +
+  coord_equal() +
+  labs(x = pca_axis[1], y = pca_axis[2])
+```
+
+Loading of each metric with the first two axes.
+
+```{r web-pca-table}
+pca_correlation |>
+  select(Metric = metric, PC1, PC2) |>
+  rename_with(\(x) pca_axis[match(x, names(pca_variance))], c(PC1, PC2)) |>
+  knitr::kable(digits = 2)
+```
+
+```{r web-pca-composition}
+species_presence <- tar_read(species_presence)
+pca_score <- scale(predict(web_pca, web)[, c("PC1", "PC2")])
+axis_name <- c(PC1 = "PC1", PC2 = "PC2")
+complete_visit <- complete.cases(pca_score)
+composition_presence <- species_presence[complete_visit, ]
+```
+
+We investigate also how species presence influence PCA axis. For each axis, we
+keep the four species with the highest and the four with the lowest correlation.
+
+```{r web-pca-species}
+#| fig-width: 10
+#| fig-height: 4.5
+
+frequent_presence <- composition_presence[, colSums(composition_presence) >= 100]
+purrr::map_dfr(names(axis_name), \(axis) tibble(
+  label = axis_name[axis],
+  species = colnames(frequent_presence),
+  correlation = apply(frequent_presence, 2, \(x) cor(x, pca_score[complete_visit, axis]))
+)) |>
+  (\(x) bind_rows(
+    slice_max(x, correlation, n = 4, by = label),
+    slice_min(x, correlation, n = 4, by = label)
+  ))() |>
+  mutate(species = reorder(paste(species, label, sep = "___"), correlation)) |>
+  ggplot(aes(correlation, species)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_segment(aes(x = 0, xend = correlation, yend = species), color = "#2166AC", linewidth = 0.7) +
+  geom_point(color = "#2166AC", size = 2.5) +
+  scale_y_discrete(labels = \(x) sub("___.*", "", x)) +
+  facet_wrap(~label, scales = "free_y") +
+  labs(x = "Correlation with the presence of the species", y = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+Map of mean score of each site on the two CPA axes, over its visits.
+
+```{r web-pca-map}
+#| fig-width: 11
+#| fig-height: 5.5
+
+basin_kept <- tar_read(basin) |>
+  filter(district %in% tar_read(params)$district_kept)
+site_axis <- web |>
+  mutate(PC1 = pca_score[, "PC1"], PC2 = pca_score[, "PC2"]) |>
+  filter(complete_visit) |>
+  mutate(PC1 = mean(PC1), PC2 = mean(PC2), .by = sandre_code) |>
+  distinct(sandre_code, .keep_all = TRUE)
+site_location <- visit_coordinates(site_axis) * 1000
+site_axis |>
+  transmute(x = site_location[, 1], y = site_location[, 2], PC1, PC2) |>
+  tidyr::pivot_longer(c(PC1, PC2), names_to = "axis", values_to = "score") |>
+  mutate(axis = axis_name[axis]) |>
+  arrange(abs(score)) |>
+  ggplot() +
+  geom_sf(data = sf::st_transform(basin_kept, 2154), fill = NA, color = "grey40") +
+  geom_point(aes(x, y, color = score), size = 0.8) +
+  facet_wrap(~axis) +
+  scale_color_distiller(
+    palette = "PuOr", direction = 1, limits = c(-2.5, 2.5),
+    oob = scales::squish, name = "Mean score"
+  ) +
+  theme_void() +
+  theme(strip.text = element_text(size = 11))
+```
+
+No single axis sums up all the food web structure. Yet, the first two axes
+explain together more than half of it. 
+
+**PC1.** PC1 is about how simple the web is. Low
+scores are rich webs holding much biomass, high in the web; high scores are webs
+with few species, little biomass, low in the web, and fish that are alike (high
+diet overlap and trophic redundancy). Low scores are found in webs with the eel,
+the pike or the wels catfish; we call it the simplicity axis. 
+
+**PC2.** PC2 opposes species-poor webs where the biomass is concentrated high in
+the web, often with brown trout, to species-rich webs that are less top-heavy,
+with more biomass in species feeding low in the web. We call it the richness to
+top-heaviness gradient. It could indicate polluted water, as it is strongly
+correlated with the presence of *Rutilus rutilus* which is a species known to
+tolerate polluted water, and take strong values in estuaries.
+
+## Model dam impacts on food web structure
+
+We model the impacts of dams on food web descriptors using the model structure
+from [presence models (see notebook D12)](D12-dam-impact-presence.qmd).
+We use Gaussian distribution except for fish richness for which we use a Poisson
+distribution (because it seems *a propos*). In addition of the descriptors
+listed above, we also model the scores of the two PCA axes.
+
+```{r structure-models}
+structure_setting <- tar_read(structure_setting)
+structure_effect <- purrr::map2_dfr(
+  tar_read(structure_model), structure_setting$richness,
+  \(model, richness) model$summary.fixed |>
+    as_tibble(rownames = "term") |>
+    transmute(
+      metric = model$metric, richness, term,
+      mean, lower = `0.045quant`, upper = `0.955quant`
+    )
+) |>
+  filter(metric %in% names(metric_label)) |>
+  left_join(
+    web |>
+      summarise(across(all_of(names(metric_label)), \(x) sd(x, na.rm = TRUE))) |>
+      tidyr::pivot_longer(everything(), names_to = "metric", values_to = "sd"),
+    by = "metric"
+  ) |>
+  # Gaussian metrics on the sd scale, to compare them; richness stays on the
+  # log scale.
+  mutate(
+    across(c(mean, lower, upper), \(x) if_else(metric == "fish_richness", x, x / sd)),
+    control = if_else(richness, "with richness", "without richness")
+  )
+```
+
+```{r structure-dam-plot}
+#| fig-width: 8
+#| fig-height: 6
+
+structure_label <- c(
+  metric_label,
+  PC1 = "PC1", PC2 = "PC2"
+)
+structure_axis_setting <- tar_read(structure_axis_setting)
+axis_effect <- purrr::map_dfr(seq_len(nrow(structure_axis_setting)), \(i) {
+  dam <- tar_read(structure_axis_model)[[i]]$summary.fixed["accumulation", ]
+  tibble(
+    metric = structure_axis_setting$axis[i],
+    control = if_else(structure_axis_setting$richness[i], "with richness", "without richness"),
+    mean = dam$mean, lower = dam$`0.045quant`, upper = dam$`0.955quant`
+  )
+})
+structure_effect |>
+  filter(term == "accumulation") |>
+  bind_rows(axis_effect) |>
+  mutate(metric = factor(structure_label[metric], rev(structure_label))) |>
+  ggplot(aes(mean, metric, color = control)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_pointrange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(0.5), size = 0.3
+  ) +
+  scale_color_manual(values = c(`without richness` = "grey40", `with richness` = "#2166AC")) +
+  labs(x = "Effect of log(1 + dams)", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+```
+
+Dams make food web simpler: less species, less biomass, especially at the top,
+more redundant species. This result is supported by individual descriptors on
+the first PCA axis. However, dams show no credible effect PC2 because this axis
+combine two descriptors on which dams act in opposition: fish richness and mean
+trophic level. This mean that this joint variation are not impacted by dams;
+they may be for example caused by other stressors (nutrients), or unobserved
+environmental driver.
+
+## How species mediate dam effect on food web structure
+
+We now ask which species mediate the dam effect on food web structure. We
+summarise the structure with PC1 for simplicity. We do this in 3 steps.
+
+1. **Species contribution to structure.** Each fish species of each web is
+   removed in turn (all its size classes), and PC1 is computed again on the
+   remaining web (webs with at least 3 fish species). We note $r_s$ the change
+   of PC1 when species $s$ is removed, in standard deviations of PC1, averaged
+   over the visits of each site and then over the sites.
+2. **Dam impact on species presence.** With the presence models of D12, one more
+unit of $\log(1 + \text{dams})$ changes the presence probability of species $s$ by
+   $\beta_s \overline{p_s (1 - p_s)}$, with $\beta_s$ its dam effect on the
+   logit scale and $p_s$ its fitted presence probability, averaged over the
+   visits.
+3. **Combining the two.** The contribution of species $s$ to the dam effect on
+   PC1 is its change of presence times the change of PC1 that its presence
+   brings, and the expected dam effect is the sum over the species:
+$$
+\Delta = \sum_s \beta_s \, \overline{p_s (1 - p_s)} \, (-r_s).
+$$
+
+The uncertainty of $\beta_s$ and $r_s$ is propagated by drawing both. To know
+whether dams affect the species that matter more for the structure, we compare
+$\Delta$ with a null model where the dam effects $\beta_s$ are shuffled among
+the species: the loss is as large, but falls on random species.
+
+```{r species-mediation}
+presence_model <- tar_read(presence_model)
+decomposition <- tar_read(structure_decomposition)
+permutation <- tar_read(structure_permutation)
+species_step <- c(
+  importance = "Contribution to PC1",
+  presence = "Dam impact on presence",
+  contribution = "Dam effect mediated by the species"
+)
+species_mediation <- decomposition$species |>
+  filter(metric == "PC1") |>
+  left_join(select(filter(tar_read(species_removal_effect), metric == "PC1"), species, importance = mean,
+                   importance_lower = lower, importance_upper = upper), by = "species")
+```
+
+We plot the dam effect on PC1 estimated by the model, predicted from the loss of
+species to dam, and predicted using the same loss but randomised among species,
+without and at equal richness. To predict the effect at equal richness, the
+change of PC1 when a species is removed is corrected by the change expected from
+having one species fewer, that is the effect of log richness in the model of PC1
+with richness times the change of log richness when the species is removed.
+
+```{r species-mediation-total}
+#| fig-width: 8
+#| fig-height: 3.8
+
+estimate_level <- c(
+  "Estimated by the model", "Predicted from species loss", "Null (shuffled dam effects)"
+)
+metric_control <- c(PC1 = "without richness", PC1_richness = "with richness")
+bind_rows(
+  axis_effect |>
+    filter(metric == "PC1") |>
+    transmute(estimate = estimate_level[1], control, mean, lower, upper),
+  bind_rows(
+    decomposition$draw |> mutate(estimate = estimate_level[2]),
+    permutation |> mutate(estimate = estimate_level[3])
+  ) |>
+    summarise(
+      mean = mean(change), lower = quantile(change, 0.045), upper = quantile(change, 0.955),
+      .by = c(metric, estimate)
+    ) |>
+    transmute(estimate, control = metric_control[metric], mean, lower, upper)
+) |>
+  mutate(estimate = factor(estimate, rev(estimate_level))) |>
+  ggplot(aes(mean, estimate, color = control)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_pointrange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(0.5), size = 0.3
+  ) +
+  scale_color_manual(values = c(`without richness` = "grey40", `with richness` = "#2166AC")) +
+  labs(x = "Dam effect on PC1 (sd of PC1 per unit of log(1 + dams))", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+```
+
+Next we plot the decomposition of the predicted effect from species loss at the
+species level. We keep the species with the stronger mediated effect.
+
+```{r species-mediation-plot}
+#| fig-width: 12
+#| fig-height: 6
+
+bind_rows(
+  species_mediation |> transmute(species, step = "importance", mean = importance, lower = importance_lower, upper = importance_upper),
+  species_mediation |> transmute(species, step = "presence", mean = presence, lower = presence_lower, upper = presence_upper),
+  species_mediation |> transmute(species, step = "contribution", mean = contribution, lower, upper)
+) |>
+  semi_join(slice_max(species_mediation, abs(contribution), n = 15), by = "species") |>
+  mutate(
+    step = factor(species_step[step], species_step),
+    species = factor(species, arrange(species_mediation, contribution)$species)
+  ) |>
+  ggplot(aes(mean, species)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3, color = "#2166AC") +
+  facet_wrap(~step, scales = "free_x") +
+  labs(x = NULL, y = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+Species have varied influence on food web structure. Piscivorous are the most
+important species. Dam has also varied impact on species. Anadromous species, or
+brackish species are the most affects. Overall this make the eel, which is a
+large piscivorous species and anadromous, the main mediating species of the dam
+impact.
