@@ -559,8 +559,79 @@ bind_rows(
   theme(axis.text.y = element_text(face = "italic"))
 ```
 
-Species have varied influence on food web structure. Piscivorous are the most
-important species. Dam has also varied impact on species. Anadromous species, or
-brackish species are the most affects. Overall this make the eel, which is a
-large piscivorous species and anadromous, the main mediating species of the dam
-impact.
+Species have varied influence on food web structure, and piscivores are the
+most important ones. Dams also affect species unequally, and the eel far more
+than any other species. Overall, this makes the eel, a large catadromous
+piscivore, the main species mediating the dam impact.
+
+To separate the number of species lost from their identity, we split the
+predicted effect. With $a_s = \beta_s \overline{p_s (1 - p_s)}$ the change of
+presence of species $s$, and $\bar{a}$ its mean over the species,
+$$
+\Delta = \bar{a} \sum_s (-r_s) + \sum_s (a_s - \bar{a}) (-r_s).
+$$
+The first term is the effect of the loss if dams hit all species equally (the
+number of species lost), and the second term sums, over the species, the effect
+of dams hitting a species more or less than the average one (which species are
+lost). The top bar is the predicted effect, split into these two parts, in
+percentage of the predicted effect. The bars below split the second part by
+species: starting where the first part ends, a species with a positive part
+moves to the right and one with a negative part to the left, so that the
+species bars end at the total.
+
+```{r species-mediation-split}
+#| fig-width: 8
+#| fig-height: 4
+
+mean_presence <- mean(species_mediation$presence)
+species_identity <- species_mediation |>
+  transmute(item = species, value = (presence - mean_presence) * -importance) |>
+  arrange(desc(abs(value)))
+n_shown <- 6
+species_identity <- bind_rows(
+  head(species_identity, n_shown),
+  tibble(
+    item = paste0("Other species (", nrow(species_identity) - n_shown, ")"),
+    value = sum(species_identity$value[-seq_len(n_shown)])
+  )
+)
+number_part <- mean_presence * sum(-species_mediation$importance)
+total <- number_part + sum(species_identity$value)
+# Parts in percentage of the predicted effect.
+number_part <- 100 * number_part / total
+species_identity <- mutate(species_identity, value = 100 * value / total)
+split_part <- bind_rows(
+  tibble(
+    item = "Predicted effect",
+    part = c("Number of species lost", "Which species are lost"),
+    start = c(0, number_part), end = c(number_part, 100)
+  ),
+  species_identity |>
+    mutate(
+      end = number_part + cumsum(value), start = lag(end, default = number_part),
+      part = "Which species are lost"
+    )
+) |>
+  mutate(
+    position = match(item, unique(item)),
+    value = end - start
+  )
+ggplot(split_part) +
+  geom_rect(
+    aes(xmin = pmin(start, end), xmax = pmax(start, end),
+        ymin = position - 0.4, ymax = position + 0.4, fill = part)
+  ) +
+  geom_text(
+    aes(x = (start + end) / 2, y = position, label = sprintf("%.0f%%", value)),
+    data = filter(split_part, position == 1), color = "white", size = 3.2
+  ) +
+  geom_text(
+    aes(x = pmax(start, end), y = position, label = sprintf("%+.0f%%", value)),
+    data = filter(split_part, position > 1), hjust = -0.15, color = "grey20", size = 3
+  ) +
+  scale_y_reverse(breaks = unique(split_part$position), labels = unique(split_part$item)) +
+  scale_x_continuous(breaks = seq(0, 100, 25), expand = expansion(mult = c(0.02, 0.08))) +
+  scale_fill_manual(values = c(`Number of species lost` = "grey60", `Which species are lost` = "#2166AC")) +
+  labs(x = "Share of the predicted dam effect on PC1 (%)", y = NULL, fill = NULL) +
+  theme(legend.position = "top", panel.grid.major.y = element_blank())
+```
