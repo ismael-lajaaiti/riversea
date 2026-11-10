@@ -48,6 +48,7 @@ list(
   dam_web_targets,
   presence_targets,
   foodweb_dam_targets,
+  nutrient_targets,
   plot_targets,
   report_targets
 )

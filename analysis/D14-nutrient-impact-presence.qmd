@@ -1,0 +1,476 @@
+---
+title: "Impact of nutrients on species presence"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal of this notebook is to quantify the impact of nutrient enrichment on
+the presence of fish species in rivers, as done for large dams in
+[D12](D12-dam-impact-presence.qmd). To do so, we need to
+
+- get the river nutrient measurements from NAIADES
+- match the nutrient measurements to the fish sampling visits (space and time)
+- model the effect of nutrients on the presence of each species
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+## Nutrient data
+
+### Presentation
+
+The chemical measurements of rivers come from the NAIADES database,
+downloaded with the Hub'Eau API (target `naiades_pc`). We focus on 9 parameters:
+
+- **ammonium** (NH₄⁺): reduced nitrogen, mostly from wastewater and
+manure; toxic to fish in its un-ionised form (NH₃) at high pH and temperature
+- **nitrite** (NO₂⁻): intermediate of the oxidation of ammonium into nitrate,
+toxic to fish at low concentrations
+- **nitrate** (NO₃⁻): oxidised nitrogen, mostly from agricultural leaching
+- **Kjeldahl nitrogen** (NKj): organic nitrogen plus ammonium
+- **orthophosphate** (PO₄³⁻): dissolved phosphorus directly available to algae
+- **total phosphorus** (Ptot): dissolved and particulate phosphorus,
+expressed as P
+- **temperature** (°C)
+- **dissolved oxygen** (O₂, mg/L)
+- **oxygen saturation** (%): dissolved oxygen relative to the saturation
+concentration at the water temperature and pressure.
+
+The measurement run from 2000 to 2021. We keep stations from the four watershed
+(districts) retained for the study. Each measurement keeps:
+
+- **fraction analysed:** raw water, filtered water, sediments...
+- **unit:** unit of the measurement value
+- **remark code:** indicating for example if the value is below the
+quantification limit.
+
+```{r naiades}
+naiades <- tar_read(naiades_pc)
+naiades_parameter <- tar_read(naiades_parameter)
+parameter_name <- setNames(names(naiades_parameter), naiades_parameter)
+naiades <- mutate(naiades, parameter = factor(parameter_name[code_parametre], parameter_name))
+```
+
+### Coverage
+
+Here is for each parameter: number of measurements, stations, and years covered.
+
+```{r naiades-overview}
+naiades |>
+  summarise(
+    measurements = n(),
+    stations = n_distinct(code_station),
+    first = min(format(date, "%Y")),
+    last = max(format(date, "%Y")),
+    .by = parameter
+  ) |>
+  arrange(parameter) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+### Fraction analysed
+
+Share of the measurements per fraction analysed. Sediment and other solid
+fractions (suspended matter, sediment particles...) are grouped.
+
+```{r naiades-fraction}
+#| fig-width: 8
+#| fig-height: 4
+
+fraction_name <- c(
+  "23" = "raw water", "3" = "filtered water", "22" = "unspecified water"
+)
+naiades |>
+  mutate(
+    fraction = coalesce(fraction_name[code_fraction], "sediment and other"),
+    fraction = factor(fraction, c(fraction_name, "sediment and other"))
+  ) |>
+  count(parameter, fraction) |>
+  mutate(share = n / sum(n), .by = parameter) |>
+  ggplot(aes(share, forcats::fct_rev(parameter), fill = fraction)) +
+  geom_col(width = 0.7) +
+  scale_x_continuous(labels = scales::percent, expand = c(0, 0)) +
+  scale_fill_manual(values = c("#2166AC", "#92C5DE", "grey70", "#B2182B")) +
+  labs(x = "Share of the measurements", y = NULL, fill = NULL) +
+  theme(legend.position = "top")
+```
+
+Nutrients are mostly measured in filtered water, excepting total phosphorus and
+Kjeldahl nitrogen. The rest is mostly measured in raw water. We'll keep only the
+main fraction analysed (e.g. filtered water for ammonium) so values are
+comparable.
+
+### Units
+
+Units used for each parameter, with their share of the measurements. Units
+below 0.1% of the measurements are grouped as "other".
+
+```{r naiades-unit}
+#| fig-width: 10
+#| fig-height: 6
+
+naiades |>
+  count(parameter, unit) |>
+  mutate(share = n / sum(n), .by = parameter) |>
+  mutate(unit = if_else(share < 0.001, "other", unit)) |>
+  summarise(share = sum(share), .by = c(parameter, unit)) |>
+  mutate(label = reorder(paste(parameter, unit, sep = "__"), share)) |>
+  ggplot(aes(share, label)) +
+  geom_col(fill = "#2166AC", width = 0.7) +
+  geom_text(aes(label = scales::percent(share, accuracy = 0.1)), hjust = -0.1, size = 3) +
+  scale_y_discrete(labels = \(x) sub(".*__", "", x)) +
+  scale_x_continuous(labels = scales::percent, limits = c(0, 1.2), breaks = c(0, 0.5, 1)) +
+  facet_wrap(~parameter, scales = "free_y", ncol = 3) +
+  labs(x = "Share of the measurements", y = NULL)
+```
+
+A main unit always dominate, and mg/L is often the second unit which we assume
+corresponds to the main one (old notation probably). Measurements with other
+units are filtered out.
+
+### Quantification limit
+
+Share of the measurements below the quantification limit (remark code 10). For
+these measurements, the value reported is the limit itself. The median limit is
+given in the main unit. Temperature and oxygen are left out.
+
+```{r naiades-limit}
+main_unit <- naiades |>
+  count(parameter, unit) |>
+  slice_max(n, by = parameter) |>
+  select(parameter, unit)
+naiades_limit <- naiades |>
+  filter(code_remarque %in% c("2", "7", "10"), parameter %in% parameter_name[1:6]) |>
+  semi_join(main_unit, by = c("parameter", "unit")) |>
+  mutate(year = as.integer(format(date, "%Y")))
+naiades |>
+  filter(parameter %in% parameter_name[1:6]) |>
+  summarise(
+    `below quantification (%)` = 100 * mean(code_remarque == "10"),
+    `below detection (%)` = 100 * mean(code_remarque == "2"),
+    `traces (%)` = 100 * mean(code_remarque == "7"),
+    .by = parameter
+  ) |>
+  left_join(
+    naiades_limit |>
+      summarise(
+        unit = unit[1],
+        `median limit` = median(result),
+        `2000-2004` = median(result[year <= 2004]),
+        `2017-2021` = median(result[year >= 2017]),
+        .by = parameter
+      ),
+    by = "parameter"
+  ) |>
+  arrange(parameter) |>
+  knitr::kable(digits = c(0, 1, 1, 2, 0, 3, 3, 3))
+```
+
+When there is a limit, we set the value to half the limit as it is usually done.
+
+### Sampling frequency
+
+Number of measurements per station and year, for the station-years with at
+least one measurement. Station-years with more than 24 measurements are
+grouped in the last bar.
+
+```{r naiades-frequency}
+#| fig-width: 10
+#| fig-height: 6
+
+naiades |>
+  count(parameter, code_station, year = format(date, "%Y")) |>
+  mutate(n = pmin(n, 25)) |>
+  ggplot(aes(n)) +
+  geom_bar(fill = "#2166AC", width = 0.8) +
+  scale_x_continuous(breaks = c(1, 6, 12, 24)) +
+  facet_wrap(~parameter, scales = "free_y", ncol = 3) +
+  labs(x = "Measurements per station and year", y = "Station-years")
+```
+
+We see two peaks at 6 and 12 measurement per year, which means that some
+stations have measure every month or every two months. This could be useful to
+compute statistics (mean, variance, quantiles).
+
+### Joint measurements
+
+Next, we look at whether parameters are measured independently or jointly.
+
+```{r naiades-joint}
+#| fig-width: 8
+#| fig-height: 7
+
+naiades_sample <- naiades |>
+  distinct(code_station, date, parameter) |>
+  mutate(present = 1L) |>
+  tidyr::pivot_wider(names_from = parameter, values_from = present, values_fill = 0L) |>
+  select(all_of(unname(parameter_name)))
+joint <- crossprod(as.matrix(naiades_sample))
+(joint / diag(joint)) |>
+  as_tibble(rownames = "parameter") |>
+  tidyr::pivot_longer(-parameter, names_to = "parameter_also", values_to = "share") |>
+  mutate(across(c(parameter, parameter_also), \(x) factor(x, parameter_name))) |>
+  ggplot(aes(parameter_also, forcats::fct_rev(parameter), fill = share)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(100 * share)), size = 3) +
+  scale_fill_distiller(
+    palette = "Blues", direction = 1, labels = scales::percent,
+    limits = c(0.75, 1), oob = scales::squish
+  ) +
+  labs(x = "Also measured", y = "Measured", fill = NULL) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+We see that most parameters are measured jointly, and here is below precisely
+the share of samples in which all nutrients are measured, and in which all
+parameters are measured.
+
+```{r naiades-joint-all}
+naiades_sample |>
+  mutate(nutrients = rowSums(pick(1:6)), all = rowSums(pick(1:9))) |>
+  summarise(
+    samples = n(),
+    `all nutrients (%)` = 100 * mean(nutrients == 6),
+    `all parameters (%)` = 100 * mean(all == 9)
+  ) |>
+  knitr::kable(digits = 1, format.args = list(big.mark = ","))
+```
+
+### Parameter distributions
+
+Distribution of the quantified measurements after cleaning.
+
+```{r naiades-distribution}
+#| fig-width: 12
+#| fig-height: 7
+
+naiades_clean <- tar_read(naiades_clean) |>
+  mutate(parameter = factor(parameter_name[code_parametre], parameter_name)) |>
+  select(-unit) |>
+  left_join(main_unit, by = "parameter")
+naiades_clean |>
+  filter(!below_limit) |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 50, fill = "#2166AC", color = "white", linewidth = 0.1) +
+  scale_x_log10() +
+  facet_wrap(~ forcats::fct_reorder(paste0(parameter, " (", unit, ")"), as.integer(parameter)), scales = "free") +
+  labs(x = NULL, y = "Number of measurements")
+```
+
+Spatial distributions of parameter values, averaged over the years.
+
+```{r naiades-value-map}
+#| fig-width: 12
+#| fig-height: 13
+
+basin_kept <- tar_read(basin) |>
+  filter(district %in% tar_read(params)$district_kept)
+station_mean <- naiades_clean |>
+  summarise(value = mean(value), n = n(), .by = c(parameter, code_station)) |>
+  filter(n >= 12) |>
+  inner_join(tar_read(naiades_station), by = "code_station") |>
+  sf::st_as_sf()
+lapply(parameter_name, \(p) {
+  station <- arrange(filter(station_mean, parameter == p), value)
+  unit <- main_unit$unit[main_unit$parameter == p]
+  ggplot() +
+    geom_sf(data = basin_kept, fill = NA, color = "grey40") +
+    geom_sf(data = station, aes(color = value), size = 0.4) +
+    scale_color_viridis_c(
+      name = unit, option = "magma", direction = -1,
+      transform = if (p %in% parameter_name[1:6]) "log10" else "identity",
+      limits = quantile(station$value, c(0.01, 0.99)), oob = scales::squish
+    ) +
+    labs(title = p) +
+    theme_void()
+}) |>
+  patchwork::wrap_plots(ncol = 3)
+```
+
+## Preprocessing the data
+
+From here on, the unit is the station-year: the mean of each parameter per
+station and year (log10 for the nutrients). A station-year is kept when each of
+the nine parameters has at least 4 measurements spread over at least 3 seasons
+(winter December-February, spring, summer, autumn), so that the mean is not
+driven by a single season.
+
+### Correlation between parameters
+
+Pearson correlation between the station-year means of the parameters.
+
+```{r naiades-pairs}
+#| fig-width: 8
+#| fig-height: 7
+
+station_year <- tar_read(naiades_station_year)
+cor(station_year[unname(parameter_name)]) |>
+  as_tibble(rownames = "parameter") |>
+  tidyr::pivot_longer(-parameter, names_to = "parameter_with", values_to = "correlation") |>
+  mutate(across(c(parameter, parameter_with), \(x) factor(x, parameter_name))) |>
+  ggplot(aes(parameter_with, forcats::fct_rev(parameter), fill = correlation)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%.2f", correlation)), size = 3) +
+  scale_fill_distiller(palette = "RdBu", direction = 1, limits = c(-1, 1)) +
+  labs(x = NULL, y = NULL, fill = "Pearson\ncorrelation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### PCA
+
+PCA of the same station-year means, standardised.
+
+```{r naiades-pca}
+naiades_pca <- tar_read(water_quality_pca) # PC1 signed to increase with water quality
+```
+
+Correlation of each parameter with the first two axes.
+
+```{r naiades-pca-biplot}
+#| fig-width: 7
+#| fig-height: 7
+
+variance <- 100 * naiades_pca$sdev^2 / sum(naiades_pca$sdev^2)
+loading <- cor(station_year[unname(parameter_name)], naiades_pca$x[, 1:2]) |>
+  as_tibble(rownames = "parameter")
+ggplot(loading, aes(PC1, PC2)) +
+  annotate("path", x = cos(seq(0, 2 * pi, length.out = 200)), y = sin(seq(0, 2 * pi, length.out = 200)), color = "grey70") +
+  geom_hline(yintercept = 0, color = "grey80") +
+  geom_vline(xintercept = 0, color = "grey80") +
+  geom_segment(aes(x = 0, y = 0, xend = PC1, yend = PC2),
+    arrow = arrow(length = unit(0.2, "cm")), color = "#2166AC"
+  ) +
+  ggrepel::geom_text_repel(aes(label = parameter), size = 3.5) +
+  coord_equal(xlim = c(-1, 1), ylim = c(-1, 1)) +
+  labs(
+    x = sprintf("PC1 (%.0f%%)", variance[1]),
+    y = sprintf("PC2 (%.0f%%)", variance[2])
+  )
+```
+
+Station scores on the first two axes, averaged over the years of each station.
+
+```{r naiades-pca-map}
+#| fig-width: 12
+#| fig-height: 6
+
+station_score <- station_year |>
+  bind_cols(as_tibble(naiades_pca$x[, 1:2]))
+station_score |>
+  summarise(across(c(PC1, PC2), mean), .by = code_station) |>
+  inner_join(tar_read(naiades_station), by = "code_station") |>
+  sf::st_as_sf() |>
+  tidyr::pivot_longer(c(PC1, PC2), names_to = "axis", values_to = "score") |>
+  arrange(abs(score)) |>
+  ggplot() +
+  geom_sf(data = basin_kept, fill = NA, color = "grey40") +
+  geom_sf(aes(color = score), size = 0.5) +
+  scale_color_distiller(palette = "RdBu", limits = c(-4, 4), oob = scales::squish) +
+  facet_wrap(~axis) +
+  theme_void()
+```
+
+Distribution of the station-year scores on PC1 per year (median line and
+interquartile band), for all stations and for the stations kept in all 22
+years (2000-2021), which show the trend without the change of the station
+network.
+
+```{r naiades-pca-year}
+#| fig-width: 8
+#| fig-height: 4
+
+station_full <- station_score |>
+  filter(n_distinct(year) == 22, .by = code_station)
+bind_rows(
+  `all stations` = station_score,
+  `stations kept every year` = station_full,
+  .id = "stations"
+) |>
+  summarise(
+    median = median(PC1), lower = quantile(PC1, 0.25), upper = quantile(PC1, 0.75),
+    .by = c(stations, year)
+  ) |>
+  ggplot(aes(year, median, color = stations, fill = stations)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.25, color = NA) +
+  geom_line() +
+  scale_color_manual(values = c("#2166AC", "#B2182B"), aesthetics = c("color", "fill")) +
+  labs(x = NULL, y = "PC1 score", color = NULL, fill = NULL) +
+  theme(legend.position = "top")
+```
+
+The rise of PC1 coincides with the fall of the quantification limits around
+2010-2013. Setting every nutrient value below the median limit of 2000-2004 to
+half this limit, in all years, lowers PC1 after 2012 by only 0.1-0.2, so the
+rise is mostly a real improvement of water quality.
+
+## Space-time model of the water quality index (WIP)
+
+::: {.callout-warning}
+**Work in progress.** Model fitted and cross-validated (targets
+`water_quality_model`, `water_quality_cv`), text and figures to be finished.
+:::
+
+PC1 is interpolated in space and time with an INLA model of the station-year
+scores:
+
+PC1 ~ intercept + spatial field (SPDE) + year (AR1) + station (iid)
+
+The spatial field is constant over time and the year effect is shared by all
+stations. A field changing between years (AR1 on the field) did not fit in
+memory. Mesh: edges up to 40 km, nodes at least 15 km apart.
+
+```{r water-quality-model}
+tar_read(water_quality_model)$summary.hyperpar[, c("mean", "0.045quant", "0.955quant")] |>
+  knitr::kable(digits = 2)
+```
+
+Cross-validation: stations grouped in 50 km blocks, blocks split in 10 folds,
+each fold predicted by the model fitted on the others. Coverage is the share of
+observations within the 91% predictive interval.
+
+```{r water-quality-cv}
+z <- qnorm(0.955)
+tar_read(water_quality_cv) |>
+  summarise(
+    rmse = sqrt(mean((PC1 - mean)^2)),
+    `rmse of a constant` = sd(PC1),
+    r2 = cor(PC1, mean)^2,
+    `coverage 91%` = mean(abs(PC1 - mean) <= z * sd_observation)
+  ) |>
+  knitr::kable(digits = 2)
+```
+
+*Where we left (2026-11-10):*
+
+- Full fit: spatial range about 120 km, field SD 1.8, year SD 0.34 (AR1
+  correlation 0.84), station SD 1.3, residual SD 0.7.
+- Block cross-validation: RMSE 1.57 against 2.14 for a constant, R² 0.47,
+  coverage 93%. Error grows with the distance to the nearest training station
+  (R² 0.55 under 10 km, 0.14 at 30-50 km).
+- 94% of the fish visits (D12) share their Sandre code with a NAIADES station
+  that has PC1, and 81% have PC1 measured at that station in the visit year. The
+  block cross-validation is therefore pessimistic for our use.
+- Next: cross-validation leaving out random station-years (station effect
+  known), decide whether to use observed PC1 when available, then predict PC1
+  at the fish visits.
