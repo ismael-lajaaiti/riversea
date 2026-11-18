@@ -1,0 +1,433 @@
+---
+title: "Joint impact of dams and water quality on food webs"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal of this notebook is to quantify jointly the impact of large dams and
+water quality on food web structure. It follows the structure of
+[D13](D13-dam-impact-foodweb.qmd), which did it for dams only, and adds the
+water quality index of [D14](D14-nutrient-impact-presence.qmd). To do so, we
+
+- keep the food webs of D13 at the visits with a predicted water quality
+- model the impact of dams and water quality on the descriptors of food web
+  structure, together in the same model
+- check whether the dam effects of D13 hold once water quality is accounted for
+- investigate how the impacts of the two stressors are mediated by species.
+
+Following D14, we keep the two stressors additive: their interaction on species
+presence was weak and inconsistent across species.
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+## Food webs and water quality
+
+### Data
+
+We use the observed food webs of D13 and their descriptors, at the visits whose
+site is a NAIADES station, with the water quality index (PC1 of D14) predicted
+in the visit year. Water quality is centred and scaled over these visits, so
+its effects are per standard deviation; higher values mean better water quality
+(less nutrients, more oxygen). The two axes of the PCA of the descriptors of
+D13 are kept: PC1, the simplicity axis, and PC2, the richness to
+top-heaviness gradient. To avoid confusion with the water quality index, we
+call these axes "Structure PC1" and "Structure PC2".
+
+```{r webs}
+metric_label <- c(
+  fish_richness = "Fish richness",
+  mean_trophic_level = "Mean trophic level",
+  fish_diet_overlap = "Fish diet overlap",
+  trophic_redundancy = "Trophic redundancy",
+  log_biomass = "Total biomass (log)",
+  biomass_trophic_level = "Mean trophic level (biomass)",
+  biomass_pyramid = "Biomass-trophic level correlation",
+  PC1 = "Structure PC1 (simplicity)",
+  PC2 = "Structure PC2 (richness to top-heaviness)"
+)
+web <- tar_read(quality_foodweb)
+tibble(
+  webs = c("D13", "with water quality"),
+  visits = c(nrow(tar_read(dam_foodweb)), nrow(web)),
+  sites = c(n_distinct(tar_read(dam_foodweb)$site), n_distinct(web$site))
+) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+### Dams and water quality
+
+If dams and water quality were strongly correlated, their effects could not be
+separated. We plot the water quality of the visits against their dam
+accumulation.
+
+```{r quality-dam}
+#| fig-width: 6
+#| fig-height: 4.5
+
+ggplot(web, aes(accumulation, quality)) +
+  geom_bin_2d(bins = 30) +
+  geom_smooth(method = "lm", color = "#B2182B", linewidth = 0.7) +
+  scale_fill_distiller(palette = "Blues", direction = 1, transform = "log10") +
+  labs(x = "log(1 + dams)", y = "Water quality (scaled)", fill = "Visits")
+```
+
+```{r quality-dam-correlation}
+tibble(
+  `Spearman correlation` = cor(web$accumulation, web$quality, method = "spearman")
+) |>
+  knitr::kable(digits = 2)
+```
+
+Next, the Spearman correlation of water quality with each descriptor, before
+any control.
+
+```{r quality-metric-correlation}
+#| fig-width: 7
+#| fig-height: 4
+
+tibble(
+  metric = names(metric_label),
+  rho = purrr::map_dbl(metric, \(m) cor(web[[m]], web$quality, method = "spearman", use = "complete.obs"))
+) |>
+  mutate(metric = factor(metric_label[metric], rev(metric_label))) |>
+  ggplot(aes(rho, metric)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_segment(aes(x = 0, xend = rho, yend = metric), color = "#2166AC", linewidth = 0.7) +
+  geom_point(color = "#2166AC", size = 2.5) +
+  labs(x = "Spearman correlation with water quality", y = NULL)
+```
+
+## Model dam and water quality impacts on food web structure
+
+Each descriptor is modelled as in D13 (position controls, sampling effort, site
+and year effects, spatial field; Poisson for fish richness, Gaussian otherwise),
+with dam accumulation and water quality in the same model. Each model is fitted
+without and with log richness as a control, to see whether the effects pass
+through the number of species only.
+
+```{r structure-models}
+setting <- tar_read(quality_structure_setting)
+metric_sd <- web |>
+  summarise(across(all_of(names(metric_label)), \(x) sd(x, na.rm = TRUE))) |>
+  tidyr::pivot_longer(everything(), names_to = "metric", values_to = "sd")
+structure_effect <- purrr::map_dfr(seq_len(nrow(setting)), \(i) {
+  tar_read(quality_structure_model)[[i]]$summary.fixed |>
+    as_tibble(rownames = "term") |>
+    filter(term %in% c("accumulation", "quality")) |>
+    transmute(
+      metric = setting$metric[i], model = setting$model[i],
+      control = if_else(setting$richness[i], "with richness", "without richness"),
+      term, mean, lower = `0.045quant`, upper = `0.955quant`
+    )
+}) |>
+  left_join(metric_sd, by = "metric") |>
+  # Gaussian metrics on the sd scale, to compare them; richness stays on the
+  # log scale.
+  mutate(across(c(mean, lower, upper), \(x) if_else(metric == "fish_richness", x, x / sd)))
+stressor_label <- c(accumulation = "Dam accumulation", quality = "Water quality")
+```
+
+Effects of the two stressors in the joint model: dam effect per unit of
+$\log(1 + \text{dams})$, water quality effect per standard deviation; Gaussian
+descriptors in standard deviations, fish richness on the log scale.
+
+```{r structure-effect-plot}
+#| fig-width: 10
+#| fig-height: 6
+
+structure_effect |>
+  filter(model == "additive") |>
+  mutate(
+    metric = factor(metric_label[metric], rev(metric_label)),
+    term = factor(stressor_label[term], stressor_label)
+  ) |>
+  ggplot(aes(mean, metric, color = control)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_pointrange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(0.5), size = 0.3
+  ) +
+  scale_color_manual(values = c(`without richness` = "grey40", `with richness` = "#2166AC")) +
+  facet_wrap(~term, scales = "free_x") +
+  labs(x = "Effect (91% CI)", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+```
+
+**Results:** dams and water quality act on different parts of the web.
+Better water quality shifts the biomass up the web (biomass-weighted trophic
+level +0.15 sd and biomass-trophic level correlation +0.19 sd per sd of water
+quality), with slightly fewer species (about -4% per sd) and less total
+biomass. It moves the webs along Structure PC2, towards species-poor and
+top-heavy webs, but not along Structure PC1. Dams, as in D13, simplify the webs
+(Structure PC1 +0.20): fewer species, less biomass, lower in the web and more
+redundant. The water quality effects hold at equal richness, so they do not
+only come from the number of species.
+
+### Do the dam effects hold with water quality?
+
+Dam effect in the model with dams only (as in D13, on the visits of this
+notebook) and in the joint model, without richness control.
+
+```{r dam-effect-comparison}
+#| fig-width: 7
+#| fig-height: 5
+
+structure_effect |>
+  filter(term == "accumulation", control == "without richness") |>
+  mutate(
+    metric = factor(metric_label[metric], rev(metric_label)),
+    model = factor(model, c("dam", "additive"), c("dams only", "dams + water quality"))
+  ) |>
+  ggplot(aes(mean, metric, color = model)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_pointrange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(0.5), size = 0.3
+  ) +
+  scale_color_manual(values = c(`dams only` = "grey40", `dams + water quality` = "#2166AC")) +
+  labs(x = "Effect of log(1 + dams) (91% CI)", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+```
+
+**Results:** the dam effects barely change when water quality is added, so
+the D13 results are not driven by water quality. The only change is on
+Structure PC2, where the dam effect becomes weakly negative (-0.11, 91% CI
+-0.21 to -0.00).
+
+## How species mediate the impacts on food web structure
+
+As in D13, we ask which species mediate the effects on food web structure,
+summarised by Structure PC1, now for both stressors. The contribution of species
+$s$ to the effect of a stressor on Structure PC1 is
+$$
+\beta_s \, \overline{p_s (1 - p_s)} \, (-r_s),
+$$
+with $\beta_s$ the effect of the stressor on the presence of $s$ (logit scale),
+from the presence model of D14 with dams and water quality (additive, with
+spatial field), $p_s$ its fitted presence probability, and $r_s$ the change of
+Structure PC1 when $s$ is removed from the webs (from D13). The expected effect
+is the sum over the species. The uncertainty of $\beta_s$ and $r_s$ is
+propagated by drawing both, and the null model shuffles the effects $\beta_s$
+among the species.
+
+```{r species-mediation}
+mediation_stressor <- tar_read(mediation_stressor)
+stressor_name <- c(accumulation = "accumulation", PC1 = "quality") # Term in the structure models.
+decomposition <- setNames(tar_read(stressor_decomposition), mediation_stressor)
+permutation <- setNames(tar_read(stressor_permutation), mediation_stressor)
+removal_effect <- tar_read(species_removal_effect) |>
+  filter(metric == "PC1") |>
+  select(species, importance = mean, importance_lower = lower, importance_upper = upper)
+species_mediation <- purrr::imap_dfr(decomposition, \(d, stressor) {
+  d$species |>
+    filter(metric == "PC1") |>
+    left_join(removal_effect, by = "species") |>
+    mutate(stressor = stressor_name[stressor])
+})
+```
+
+Effect of each stressor on Structure PC1 estimated by the joint model, predicted
+from the change of species presence, and predicted from the same changes
+shuffled among species, without and at equal richness (see D13).
+
+```{r species-mediation-total}
+#| fig-width: 10
+#| fig-height: 3.8
+
+estimate_level <- c(
+  "Estimated by the model", "Predicted from species presence", "Null (shuffled effects)"
+)
+metric_control <- c(PC1 = "without richness", PC1_richness = "with richness")
+bind_rows(
+  structure_effect |>
+    filter(metric == "PC1", model == "additive") |>
+    transmute(stressor = term, estimate = estimate_level[1], control, mean, lower, upper),
+  purrr::map_dfr(mediation_stressor, \(stressor) bind_rows(
+    decomposition[[stressor]]$draw |> mutate(estimate = estimate_level[2]),
+    permutation[[stressor]] |> mutate(estimate = estimate_level[3])
+  ) |>
+    summarise(
+      mean = mean(change), lower = quantile(change, 0.045), upper = quantile(change, 0.955),
+      .by = c(metric, estimate)
+    ) |>
+    transmute(stressor = stressor_name[stressor], estimate, control = metric_control[metric], mean, lower, upper))
+) |>
+  mutate(
+    estimate = factor(estimate, rev(estimate_level)),
+    stressor = factor(stressor_label[stressor], stressor_label)
+  ) |>
+  ggplot(aes(mean, estimate, color = control)) +
+  geom_vline(xintercept = 0, color = "grey70") +
+  geom_pointrange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(0.5), size = 0.3
+  ) +
+  scale_color_manual(values = c(`without richness` = "grey40", `with richness` = "#2166AC")) +
+  facet_wrap(~stressor, scales = "free_x") +
+  labs(x = "Effect on Structure PC1 (sd of PC1)", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+```
+
+**Results:** for dams, D13 holds: the effect predicted from the change of
+species presence (0.14) is close to the model estimate (0.20) and larger than
+the null (0.06), so dams hit the species that matter for the structure. For
+water quality, both the model estimate and the predicted effect on Structure
+PC1 are close to zero (predicted -0.01, 91% CI -0.03 to 0.01): water quality
+changes species presence, but these changes cancel out on Structure PC1.
+
+Decomposition of the predicted effect at the species level, for the 15 species
+with the strongest mediated effect of each stressor.
+
+```{r species-mediation-plot}
+#| fig-width: 12
+#| fig-height: 6
+#| layout-ncol: 1
+
+species_step <- c(
+  importance = "Contribution to Structure PC1",
+  presence = "Impact on presence",
+  contribution = "Effect mediated by the species"
+)
+plot_mediation <- function(mediation, title) {
+  bind_rows(
+    mediation |> transmute(species, step = "importance", mean = importance, lower = importance_lower, upper = importance_upper),
+    mediation |> transmute(species, step = "presence", mean = presence, lower = presence_lower, upper = presence_upper),
+    mediation |> transmute(species, step = "contribution", mean = contribution, lower, upper)
+  ) |>
+    semi_join(slice_max(mediation, abs(contribution), n = 15), by = "species") |>
+    mutate(
+      step = factor(species_step[step], species_step),
+      species = factor(species, arrange(mediation, contribution)$species)
+    ) |>
+    ggplot(aes(mean, species)) +
+    geom_vline(xintercept = 0, color = "grey70") +
+    geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.3, color = "#2166AC") +
+    facet_wrap(~step, scales = "free_x") +
+    labs(x = NULL, y = NULL, title = title) +
+    theme(axis.text.y = element_text(face = "italic"))
+}
+species_mediation |>
+  split(~stressor) |>
+  purrr::iwalk(\(mediation, stressor) print(plot_mediation(mediation, stressor_label[stressor])))
+```
+
+**Results:** the eel still mediates most of the dam effect. Better water
+quality favours the brown trout and the sculpin, whose presence makes webs less
+simple, but disfavours piscivores and tolerant species (eel, pike, pikeperch,
+perch, pumpkinseed, black bullhead), whose presence also makes webs less
+simple. The two groups balance out on Structure PC1.
+
+To separate the number of species lost from their identity, we split the
+predicted dam effect as in D13. We do not split the effect of water quality:
+its predicted effect is close to zero, so shares of it are meaningless. With
+$a_s = \beta_s \overline{p_s (1 - p_s)}$ the change of presence of species $s$,
+and $\bar{a}$ its mean over the species,
+$$
+\Delta = \bar{a} \sum_s (-r_s) + \sum_s (a_s - \bar{a}) (-r_s).
+$$
+The first term is the effect if dams hit all species equally (the number of
+species lost), the second the effect of dams hitting some species more than
+others (which species are lost). The bars below the top one split the second
+part by species.
+
+```{r species-mediation-split}
+#| fig-width: 8
+#| fig-height: 4
+#| layout-ncol: 1
+
+plot_split <- function(mediation, title) {
+  mean_presence <- mean(mediation$presence)
+  species_identity <- mediation |>
+    transmute(item = species, value = (presence - mean_presence) * -importance) |>
+    arrange(desc(abs(value)))
+  n_shown <- 6
+  species_identity <- bind_rows(
+    head(species_identity, n_shown),
+    tibble(
+      item = paste0("Other species (", nrow(species_identity) - n_shown, ")"),
+      value = sum(species_identity$value[-seq_len(n_shown)])
+    )
+  )
+  number_part <- mean_presence * sum(-mediation$importance)
+  total <- number_part + sum(species_identity$value)
+  # Parts in percentage of the predicted effect.
+  number_part <- 100 * number_part / total
+  species_identity <- mutate(species_identity, value = 100 * value / total)
+  split_part <- bind_rows(
+    tibble(
+      item = "Predicted effect",
+      part = c("Number of species lost", "Which species are lost"),
+      start = c(0, number_part), end = c(number_part, 100)
+    ),
+    species_identity |>
+      mutate(
+        end = number_part + cumsum(value), start = lag(end, default = number_part),
+        part = "Which species are lost"
+      )
+  ) |>
+    mutate(position = match(item, unique(item)), value = end - start)
+  ggplot(split_part) +
+    geom_rect(
+      aes(xmin = pmin(start, end), xmax = pmax(start, end),
+          ymin = position - 0.4, ymax = position + 0.4, fill = part)
+    ) +
+    geom_text(
+      aes(x = (start + end) / 2, y = position, label = sprintf("%.0f%%", value)),
+      data = filter(split_part, position == 1), color = "white", size = 3.2
+    ) +
+    geom_text(
+      aes(x = pmax(start, end), y = position, label = sprintf("%+.0f%%", value)),
+      data = filter(split_part, position > 1), hjust = -0.15, color = "grey20", size = 3
+    ) +
+    scale_y_reverse(breaks = unique(split_part$position), labels = unique(split_part$item)) +
+    scale_x_continuous(expand = expansion(mult = c(0.02, 0.08))) +
+    scale_fill_manual(values = c(`Number of species lost` = "grey60", `Which species are lost` = "#2166AC")) +
+    labs(x = "Share of the predicted dam effect on Structure PC1 (%)", y = NULL, fill = NULL, title = title) +
+    theme(legend.position = "top", panel.grid.major.y = element_blank())
+}
+plot_split(filter(species_mediation, stressor == "accumulation"), stressor_label["accumulation"])
+```
+
+**Results:** as in D13, about half of the predicted dam effect (56%) comes
+from the number of species lost, and the rest mostly from the eel being hit
+harder than the other species.
+
+## Conclusion
+
+- Dams and water quality are only moderately correlated at the fish visits,
+  and the dam effects of D13 hold once water quality is accounted for.
+- The two stressors act on different dimensions of the webs. Dams simplify
+  them (Structure PC1), mostly through the loss of the eel. Water quality
+  shifts them along Structure PC2: where the water is clean, webs hold fewer
+  species and more of their biomass high in the web.
+- On Structure PC1, the effects of water quality on species presence cancel
+  out: sensitive species (trout, sculpin) and tolerant piscivores replace each
+  other.
+
+*To discuss:* the mediation is done on Structure PC1 only, as in D13; since
+water quality acts on Structure PC2, the same analysis on PC2 would tell which
+species carry its effect. The removal effects $r_s$ come from all the D13 webs,
+not only those with water quality, and the uncertainty of the predicted water
+quality is not propagated.

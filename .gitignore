@@ -10,6 +10,7 @@ data/river/web_in_web.rda
 data/sea/
 data/geo/
 data/env/
+data/traits/
 old_data/
 data/rephy/
 data/*.zip

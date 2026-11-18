@@ -40,6 +40,8 @@ to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 12. [Impact of large dams on species presence](D12-dam-impact-presence.qmd)
 13. [Impact of large dams on food webs](D13-dam-impact-foodweb.qmd)
 14. [Impact of nutrients on species presence](D14-nutrient-impact-presence.qmd)
+15. [Drivers of nutrient concentrations](D15-nutrient-drivers.qmd)
+16. [Joint impact of dams and water quality on food webs](D16-dam-nutrient-impact-foodweb.qmd)
 
 
 ## E. Invasive species and dams

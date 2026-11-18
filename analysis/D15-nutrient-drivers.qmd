@@ -1,0 +1,794 @@
+---
+title: "Drivers of nutrient concentrations"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+This notebook relates nutrient concentrations and water quality (PC1,
+[D14](D14-nutrient-impact-presence.qmd)) to their drivers: land cover, climate
+and the weather of the year. The link between these drivers, nutrients and
+fish (species presence, food web structure) will be the subject of a later
+notebook.
+
+The notebook starts by getting and presenting the driver data, from their
+original sources:
+
+- the **catchment** of each station, i.e. the area draining to the station,
+computed from the [HydroSHEDS](https://www.hydrosheds.org/) flow directions
+- the **land cover** of the catchment, from [CORINE Land
+Cover](https://land.copernicus.eu/en/products/corine-land-cover)
+- the **weather** of the catchment, year by year, from
+[WorldClim](https://worldclim.org/)
+
+and then models the nutrient concentrations on these drivers.
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+library(sf)
+devtools::load_all()
+nice_theme()
+```
+
+We study the NAIADES stations having a water quality index (PC1, D14) and
+fish visits, i.e. the stations whose Sandre code is the site of a fish visit
+of D12 (target `water_quality_visit`).
+
+```{r data}
+station <- tar_read(naiades_station)
+water_quality <- tar_read(water_quality)
+fish_station <- unique(tar_read(water_quality_visit)$code_station)
+district <- tar_read(basin) |>
+  filter(district %in% tar_read(params)$district_kept)
+direction <- terra::rast(tar_read(flow_direction_file))
+station_flow <- tar_read(station_flow) |>
+  mutate(
+    matched = abs(log(area / rht_area)) < log(1.5),
+    studied = code_station %in% water_quality$code_station & code_station %in% fish_station
+  )
+```
+
+## Catchments
+
+### Flow directions
+
+HydroSHEDS [@Lehner-Verdin-Jarvis-2008] describes where water flows, and it
+is computed from the elevation of the land only. It does not observe water:
+it assumes that rain falls everywhere and that water always goes downhill.
+The idea is illustrated below on a synthetic grid.
+
+1. **Elevation.** The land is cut into a grid of cells (15 arc-seconds, about
+   450 m × 310 m in France), each with an elevation measured from space.
+2. **Flow direction.** From each cell, water goes to the lowest of its 8
+   neighbours. This gives one arrow per cell, everywhere, whether there is a
+river or not. This grid of flow direction is the data provided by HydroSHEDS.
+3. **Rivers.** Drainage area can be reconstructed from flow directions. Counting
+   for each cell how many cells drain through it (or rather summing their area)
+gives its upstream area. In other words, a river is simply a cell with a large
+upstream area: in valley bottoms, the water of a large area passes through.
+4. **Catchment.** The catchment of a cell is the set of cells whose arrows
+   eventually lead to it, i.e. the area whose water passes through that cell.
+
+```{r flow-toy}
+#| fig-width: 12
+#| fig-height: 5
+toy <- terra::rast(
+  outer(7:1, c(4, 2, 0, 1, 3), \(r, c) 3 * r + 2 * c) + c(0, 1, 0, 2, 1, 0, 1),
+  extent = terra::ext(0, 5, 0, 7)
+)
+toy_direction <- terra::terrain(toy, "flowdir")
+toy_angle <- c(`1` = 0, `2` = -45, `4` = -90, `8` = -135, `16` = 180, `32` = 135, `64` = 90, `128` = 45)
+toy_df <- as.data.frame(c(toy, toy_direction, terra::flowAccumulation(toy_direction)), xy = TRUE) |>
+  setNames(c("x", "y", "elevation", "direction", "cells")) |>
+  mutate(
+    angle = toy_angle[as.character(direction)] * pi / 180,
+    xend = x + 0.35 * cos(angle), yend = y + 0.35 * sin(angle)
+  )
+patchwork::wrap_plots(
+  ggplot(toy_df, aes(x, y)) +
+    geom_tile(aes(fill = elevation), colour = "white") +
+    geom_text(aes(label = elevation), size = 3.5) +
+    scale_fill_distiller(palette = "YlOrBr", direction = 1, guide = "none") +
+    coord_equal() +
+    theme_void() +
+    labs(title = "1. Elevation (m)"),
+  ggplot(toy_df, aes(x, y)) +
+    geom_tile(fill = "grey95", colour = "white") +
+    geom_segment(aes(xend = xend, yend = yend), arrow = arrow(length = unit(2, "mm")), na.rm = TRUE) +
+    coord_equal() +
+    theme_void() +
+    labs(title = "2. Flow direction"),
+  ggplot(toy_df, aes(x, y)) +
+    geom_tile(aes(fill = cells >= 5), colour = "white") +
+    geom_text(aes(label = cells), size = 3.5) +
+    scale_fill_manual(
+      values = c(`TRUE` = "steelblue", `FALSE` = "grey95"),
+      labels = c(`TRUE` = "river (5 cells or more)", `FALSE` = "no river"), name = NULL
+    ) +
+    coord_equal() +
+    theme_void() +
+    labs(title = "3. Cells draining through"),
+  nrow = 1
+)
+```
+
+In this made-up valley, the water of the slopes flows to the valley bottom
+(middle column) and then down to the outlet (bottom, where the water leaves
+the grid); the cells of the valley bottom collect the water of many cells and
+form the river. The catchment of the outlet is the whole grid.
+
+The measured elevation has errors, and some structures (bridges, dams,
+embankments) look like obstacles across the valleys. HydroSHEDS
+corrects the elevation with existing maps of rivers and lakes, so that the
+computed rivers follow the real ones.
+
+Summing a value over the catchment of every cell at once is called flow
+accumulation (`terra::flowAccumulation()`). It gives the upstream area of each
+cell (left map, only the cells draining more than 50 km²); we will later use the
+same computation later to average land cover and weather over the catchments.
+
+```{r upstream-map}
+#| fig-width: 14
+#| fig-height: 8
+upstream <- terra::flowAccumulation(direction, weight = terra::cellSize(direction, unit = "km"))
+upstream_df <- as.data.frame(upstream, xy = TRUE) |>
+  setNames(c("x", "y", "area")) |>
+  filter(area > 50)
+# flow direction and upstream area of the cells of a window, with arrows
+flow_arrow <- function(window) {
+  window <- terra::align(window, direction, snap = "out")
+  angle <- c(`1` = 0, `2` = -45, `4` = -90, `8` = -135, `16` = 180, `32` = 135, `64` = 90, `128` = 45)
+  step <- 0.35 * terra::res(direction)[1]
+  terra::crop(c(direction, upstream), window) |>
+    as.data.frame(xy = TRUE) |>
+    setNames(c("x", "y", "code", "area")) |>
+    mutate(
+      angle = angle[as.character(code)] * pi / 180,
+      xend = x + step * cos(angle), yend = y + step * sin(angle)
+    )
+}
+zoom <- terra::ext(2.71, 2.86, 43.65, 43.75)
+zoom_df <- flow_arrow(zoom)
+patchwork::wrap_plots(
+  ggplot() +
+    geom_raster(
+      aes(x, y, fill = area),
+      data = as.data.frame(terra::mask(upstream, terra::vect(district)), xy = TRUE) |>
+        setNames(c("x", "y", "area")) |>
+        filter(area > 50)
+    ) +
+    geom_sf(data = district, fill = NA, colour = "grey40") +
+    annotate(
+      "rect", xmin = zoom$xmin, xmax = zoom$xmax, ymin = zoom$ymin, ymax = zoom$ymax,
+      fill = NA, colour = "red", linewidth = 1
+    ) +
+    scale_fill_viridis_c(trans = "log10", option = "mako", direction = -1, end = 0.75, name = "Upstream area (km²)") +
+    labs(x = NULL, y = NULL, title = "1. Upstream area") +
+    theme(legend.position = "bottom", legend.key.width = unit(1.5, "cm")),
+  ggplot(zoom_df) +
+    geom_raster(aes(x, y, fill = area)) +
+    geom_segment(
+      aes(x, y, xend = xend, yend = yend), colour = "grey30", linewidth = 0.3,
+      arrow = arrow(length = unit(1, "mm")), na.rm = TRUE
+    ) +
+    scale_fill_viridis_c(trans = "log10", option = "mako", direction = -1, name = "Upstream area (km²)") +
+    coord_sf(expand = FALSE) +
+    labs(x = NULL, y = NULL, title = "2. Zoom: flow direction and upstream area") +
+    theme(legend.position = "bottom", legend.key.width = unit(1.5, "cm")),
+  nrow = 1
+)
+```
+
+The next step is to snap our stations to this flow lines, so we can get their
+catchment area.
+
+### Snapping stations
+
+The HydroSHEDS grid is relatively coarse. So it happens that the river often
+passes one or two cells away from the station. Then, we move each station to the
+cell, within 1 km, whose upstream area is closest to the drained area of the
+nearest reach of the RHT (@Pella-etal-2012). Stations whose upstream area is
+still more than 1.5 times larger or smaller than the RHT area (outside the
+blue band below) are considered unmatched (target `station_flow`).
+
+```{r snapping}
+#| fig-width: 6
+#| fig-height: 5
+station_flow |>
+  filter(studied) |>
+  ggplot(aes(rht_area, area, colour = matched)) +
+  geom_ribbon(
+    aes(x, ymin = x / 1.5, ymax = x * 1.5),
+    data = tibble(x = 10^seq(0, log10(max(station_flow$rht_area[station_flow$studied])), length.out = 100)),
+    inherit.aes = FALSE, fill = "steelblue", alpha = 0.2
+  ) +
+  geom_abline(linetype = "dashed") +
+  geom_point(size = 0.4, alpha = 0.5) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_colour_manual(values = c(`TRUE` = "grey30", `FALSE` = "firebrick"), name = "Matched") +
+  labs(x = "RHT drained area (km²)", y = "HydroSHEDS upstream area (km²)")
+station_flow |>
+  filter(studied) |>
+  summarise(
+    stations = n(), matched = sum(matched), `matched (%)` = round(100 * sum(matched) / n()),
+    `median area (km²)` = median(area[matched])
+  ) |>
+  knitr::kable()
+```
+
+Most stations are snapped correctly, we only leave out 5% of the stations which
+we consider to be satisfying. 
+
+Now that we have our stations snapped to the HydroSHEDS flow cells we can
+compute their catchment. We illustrate this below.
+
+### Example catchments
+
+The catchment of a station is drawn by following the flow directions upstream
+(`terra::watershed()`). To illustrate, we plot three stations and their
+catchment with different draining area below.
+
+```{r catchment-example}
+#| fig-width: 12
+#| fig-height: 5
+example <- purrr::map_dfr(c(20, 300, 3000), \(size) {
+  station_flow |>
+    filter(matched, studied) |>
+    slice_min(abs(log(area / size)), n = 1, with_ties = FALSE)
+})
+draw_catchment <- function(example) {
+  watershed <- terra::watershed(direction, pourpoint = cbind(example$longitude, example$latitude))
+  terra::as.polygons(terra::ifel(watershed == 1, 1, NA)) |>
+    st_as_sf() |>
+    mutate(code_station = example$code_station, area = example$area)
+}
+catchment <- purrr::map_dfr(seq_len(nrow(example)), \(i) draw_catchment(example[i, ]))
+plot_catchment <- function(i) {
+  frame <- st_bbox(st_buffer(catchment[i, ], 2000))
+  stream <- upstream_df |>
+    filter(between(x, frame["xmin"], frame["xmax"]), between(y, frame["ymin"], frame["ymax"]))
+  plot <- ggplot() +
+    geom_sf(data = catchment[i, ], fill = "lightblue", colour = "steelblue") +
+    geom_raster(aes(x, y, alpha = log10(area)), data = stream, fill = "navy", show.legend = FALSE) +
+    geom_point(aes(longitude, latitude), data = example[i, ], colour = "red", size = 2) +
+    coord_sf(xlim = frame[c("xmin", "xmax")], ylim = frame[c("ymin", "ymax")]) +
+    labs(x = NULL, y = NULL, title = sprintf("%s, %.0f km²", example$code_station[i], example$area[i]))
+}
+patchwork::wrap_plots(lapply(seq_len(nrow(example)), plot_catchment), nrow = 1)
+```
+
+These catchments are useful because from them we can get the land use or climate
+that is affecting any given stations. We derive this environmental information
+in what follows.
+
+## Land cover
+
+### CORINE Land Cover
+
+CORINE Land Cover maps land cover using satellite images (Landsat). A mapping
+unit is a polygon of at least 25 ha. A vintage is one edition of the map, for a
+reference year: we use the 2000, 2006, 2012 and 2018 vintages for mainland
+France. Each vintage also comes with a layer of the changes since the previous
+vintage, mapped with a finer unit of 5 ha.
+
+Next, we dive into the nomenclature of the database which is used to classify
+the different land-uses.
+
+#### Nomenclature
+
+There are 3 different levels of classifications, from finer to coarser
+
+- level 3 has 44 classes;
+- level 2 has 15 classes;
+- level 1 has 5 classes.
+
+For sake of simplicity, we present the data at level 1, which is enough to
+describe the landscape. For the models, we split the agricultural areas into
+**arable land** (level 2 class 21) and **other farmland** (classes 22-24:
+permanent pastures, vineyards and orchards), since they act differently
+on nitrate.
+
+These five groups are used for the catchments:
+
+```{r corine-nomenclature}
+corine_class <- tibble::tribble(
+  ~class, ~name, ~group, ~colour,
+  11, "Urban fabric", "Artificial", "#e6004d",
+  12, "Industrial, commercial and transport units", "Artificial", "#cc4df2",
+  13, "Mine, dump and construction sites", "Artificial", "#a600cc",
+  14, "Artificial, non-agricultural vegetated areas", "Artificial", "#ffa6ff",
+  21, "Arable land", "Agricultural", "#ffffa8",
+  22, "Permanent crops (vineyards, orchards)", "Agricultural", "#e68000",
+  23, "Pastures", "Agricultural", "#e6e64d",
+  24, "Heterogeneous agricultural areas", "Agricultural", "#ffe6a6",
+  31, "Forests", "Forest and semi-natural", "#00a600",
+  32, "Scrub and herbaceous vegetation", "Forest and semi-natural", "#a6f200",
+  33, "Open spaces with little or no vegetation", "Forest and semi-natural", "#e6e6e6",
+  41, "Inland wetlands", "Wetlands", "#a6a6ff",
+  42, "Maritime wetlands", "Wetlands", "#ccccff",
+  51, "Inland waters", "Water bodies", "#80f2e6",
+  52, "Marine waters", "Water bodies", "#e6f2ff"
+) |>
+  mutate(category = case_when(
+    group == "Agricultural" & class == 21 ~ "Arable land",
+    group == "Agricultural" ~ "Other farmland",
+    group %in% c("Wetlands", "Water bodies") ~ "Wetlands and water",
+    .default = group
+  ))
+corine_colour <- setNames(corine_class$colour, corine_class$name)
+group_colour <- c(
+  "Artificial" = "#e6004d", "Agricultural" = "#ffd84d", "Forest and semi-natural" = "#2e8b3a",
+  "Wetlands" = "#a6a6ff", "Water bodies" = "#4da6ff"
+)
+category_colour <- c(
+  "Artificial" = "#e6004d", "Arable land" = "#ffd84d", "Other farmland" = "#b8c95b",
+  "Forest and semi-natural" = "#2e8b3a", "Wetlands and water" = "#4da6ff"
+)
+corine_code <- tibble::tribble(
+  ~code, ~code_name,
+  111, "Continuous urban fabric", 112, "Discontinuous urban fabric",
+  121, "Industrial or commercial units", 122, "Road and rail networks", 123, "Port areas",
+  124, "Airports", 131, "Mineral extraction sites", 132, "Dump sites", 133, "Construction sites",
+  141, "Green urban areas", 142, "Sport and leisure facilities",
+  211, "Non-irrigated arable land", 212, "Permanently irrigated land", 213, "Rice fields",
+  221, "Vineyards", 222, "Fruit trees and berry plantations", 223, "Olive groves",
+  231, "Pastures", 241, "Annual crops associated with permanent crops",
+  242, "Complex cultivation patterns",
+  243, "Agriculture with significant areas of natural vegetation", 244, "Agro-forestry areas",
+  311, "Broad-leaved forest", 312, "Coniferous forest", 313, "Mixed forest",
+  321, "Natural grasslands", 322, "Moors and heathland", 323, "Sclerophyllous vegetation",
+  324, "Transitional woodland-shrub", 331, "Beaches, dunes, sands", 332, "Bare rocks",
+  333, "Sparsely vegetated areas", 334, "Burnt areas", 335, "Glaciers and perpetual snow",
+  411, "Inland marshes", 412, "Peat bogs", 421, "Salt marshes", 422, "Salines",
+  423, "Intertidal flats", 511, "Water courses", 512, "Water bodies", 521, "Coastal lagoons",
+  522, "Estuaries", 523, "Sea and ocean"
+) |>
+  mutate(class = code %/% 10)
+knitr::kable(
+  select(corine_class, group, class, name, category),
+  col.names = c("Level 1", "Code", "Level 2", "Group used for the catchments")
+)
+```
+
+Next, we look at the spatial unit used in the database, that is the polygons.
+
+#### Polygons
+
+Number and size of the polygons of each vintage (sea excluded):
+
+```{r corine-polygon}
+corine_polygon <- tar_read(corine_polygon) |>
+  filter(code != 523)
+corine_polygon |>
+  summarise(
+    polygons = n(), `median area (ha)` = median(area),
+    `polygons < 25 ha (%)` = 100 * mean(area < 24.5),
+    `total area (km²)` = sum(area) / 100,
+    .by = year
+  ) |>
+  knitr::kable(digits = 1, format.args = list(big.mark = ","))
+```
+
+And the distribution of polygon areas.
+
+```{r corine-polygon-size}
+#| fig-width: 7
+#| fig-height: 4
+corine_polygon |>
+  filter(year == 2018) |>
+  ggplot(aes(area)) +
+  geom_histogram(bins = 60, fill = "grey60") +
+  geom_vline(xintercept = 25, linetype = "dashed") +
+  scale_x_log10(breaks = c(1, 25, 100, 1000, 1e4, 1e5, 1e6), labels = scales::label_comma(accuracy = 1)) +
+  labs(x = "Polygon area (ha), CORINE 2018", y = "Polygons")
+```
+
+The few polygons under 25 ha are cut by the national border or the coast. The
+largest ones are forests and mountain areas of thousands of hectares.
+
+Now that we have investigate the polygon we can have a look at the map.
+
+#### Map
+
+Here is the map of land-uses (level 1 classes, for 2018).
+
+```{r corine-map}
+#| fig-width: 10
+#| fig-height: 9
+corine_map <- terra::rast(tar_read(corine_map_file))
+corine_map <- terra::mask(terra::crop(corine_map, terra::vect(district)), terra::vect(district))
+as.data.frame(corine_map, xy = TRUE) |>
+  setNames(c("x", "y", "code")) |>
+  filter(!is.na(code), code > 0, code != 523) |>
+  mutate(class = code %/% 10) |>
+  left_join(corine_class, by = "class") |>
+  mutate(group = factor(group, names(group_colour))) |>
+  ggplot() +
+  geom_raster(aes(x, y, fill = group)) +
+  geom_sf(data = district, fill = NA, colour = "black", linewidth = 0.3) +
+  scale_fill_manual(values = group_colour, name = NULL) +
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "bottom")
+```
+
+Agricultural areas cover most of the four districts. Forests
+and semi-natural areas form large blocks, and artificial areas are small spots
+except Paris.
+
+We can also plot the share of the different classes across the years.
+
+```{r corine-area}
+#| fig-width: 9
+#| fig-height: 6
+corine_area <- corine_polygon |>
+  mutate(class = code %/% 10) |>
+  summarise(area = sum(area), .by = c(year, class)) |>
+  mutate(share = 100 * area / sum(area), .by = year) |>
+  left_join(corine_class, by = "class")
+corine_area |>
+  summarise(share = sum(share), .by = c(year, group)) |>
+  mutate(group = forcats::fct_reorder(group, share, mean)) |>
+  ggplot(aes(share, group, fill = factor(year))) +
+  geom_col(position = position_dodge(reverse = TRUE)) +
+  scale_fill_manual(values = RColorBrewer::brewer.pal(5, "Blues")[-1], name = "Vintage") +
+  labs(x = "Share of mainland France (%)", y = NULL)
+```
+
+Agricultural land dominates land uses. Overall, the share of land-uses doesn't
+change much over the years. We mainly notice an increase of artificial areas.
+
+### Land cover of the catchments
+
+For each vintage, we rasterise the CORINE polygons (level-2 classes) on the
+flow-direction grid, such that for each cell we have the fraction of covered by
+the class. The share of a class in the catchment of a station is the flow
+accumulation of the class area divided by the total flow accumulation.
+
+We illustrate this with an example below.
+
+```{r landcover}
+landcover <- tar_read(station_landcover) |>
+  semi_join(filter(station_flow, matched, studied), by = "code_station") |>
+  left_join(corine_class, by = "class")
+```
+
+We perform the following steps:
+
+1. we keep the polygons intersecting the catchment;
+2. the polygons are rasterised on a grid 5 times finer than the flow-direction
+   grid, and the fraction of each flow cell covered by each land cover class is
+computed;
+3. the share of each class in the catchment is the mean of these fractions over
+   the cells of the catchment, weighted by cell area. Flow accumulation computes
+this mean for all the cells of the grid at once.
+
+```{r landcover-example}
+#| fig-width: 14
+#| fig-height: 5.5
+corine_zip <- tar_read(corine_zip)
+example_station <- example[2, ]
+example_catchment <- catchment[2, ]
+example_window <- terra::align(terra::ext(terra::vect(st_buffer(example_catchment, 2000))), direction, snap = "out")
+example_watershed <- terra::crop(
+  terra::watershed(direction, pourpoint = cbind(example_station$longitude, example_station$latitude)),
+  example_window
+)
+# 1. polygons cut along the catchment
+example_polygon <- read_corine(corine_zip[grepl("2018", corine_zip)], example_catchment) |>
+  st_intersection(st_transform(st_geometry(example_catchment), 2154)) |>
+  mutate(class = code %/% 10) |>
+  left_join(corine_class, by = "class")
+# 2. fraction of arable land in each flow-direction cell
+example_fine <- rasterize_corine(
+  corine_zip[grepl("2018", corine_zip)], as.vector(example_window), terra::res(direction)[1] / 5,
+  tempfile(fileext = ".tif")
+)
+example_cover <- terra::aggregate(terra::rast(example_fine) %/% 10 == 21, 5, mean)
+example_cell <- c(example_cover, example_watershed) |>
+  as.data.frame(xy = TRUE) |>
+  setNames(c("x", "y", "arable", "inside")) |>
+  filter(inside == 1)
+# 3. shares in the catchment
+example_share <- landcover |>
+  filter(code_station == example_station$code_station, year == 2018) |>
+  summarise(share = sum(share), .by = category) |>
+  filter(share > 0)
+patchwork::wrap_plots(
+  ggplot() +
+    geom_sf(aes(fill = category), data = example_polygon, colour = "white", linewidth = 0.1, show.legend = FALSE) +
+    geom_sf(data = example_catchment, fill = NA, colour = "black") +
+    scale_fill_manual(values = category_colour) +
+    labs(title = "1. CORINE polygons"),
+  ggplot() +
+    geom_tile(aes(x, y, fill = 100 * arable), data = example_cell) +
+    geom_sf(data = example_catchment, fill = NA, colour = "black") +
+    scale_fill_gradient(low = "grey95", high = "goldenrod3", name = "Arable\nland (%)") +
+    labs(x = NULL, y = NULL, title = "2. Arable fraction of each cell"),
+  example_share |>
+    mutate(category = forcats::fct_reorder(category, share, max)) |>
+    ggplot(aes(share, category, fill = category)) +
+    geom_col(colour = "grey30", linewidth = 0.2, show.legend = FALSE) +
+    scale_fill_manual(values = category_colour) +
+    labs(x = "Share of the catchment (%)", y = NULL, title = "3. Shares in the catchment"),
+  nrow = 1, widths = c(1, 1, 1.2)
+)
+```
+
+We can do this for all station catchments to have an overview of the data.
+
+```{r landcover-distribution}
+#| fig-width: 9
+#| fig-height: 6
+landcover |>
+  filter(year == 2018) |>
+  summarise(share = sum(share), .by = c(code_station, category)) |>
+  mutate(category = factor(category, rev(names(category_colour)))) |>
+  ggplot(aes(share, category, fill = category)) +
+  geom_boxplot(outlier.size = 0.2, outlier.alpha = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = category_colour) +
+  labs(x = "Share of the catchment (%), 2018", y = NULL)
+```
+
+We retrieve that farmland and arable dominates, followed by natural and
+artificial areas.
+
+Next, we have a look at the weather data from WorldClim.
+
+## Weather
+
+### WorldClim
+
+WorldClim historical monthly weather gives, for each month from 1950 to 2021,
+the precipitation and the means of the daily minimum and maximum temperature,
+on a 2.5 arc-minute grid (about 4.5 km). Each monthly value combines two
+sources:
+
+- a **baseline**, constant in time: the WorldClim 1970-2000 average of the
+  calendar month [@Fick-Hijmans-2017], interpolated at fine resolution from
+  many weather stations, elevation and satellite data. It carries the spatial
+  detail (relief, rain shadows);
+- a **departure** from this baseline: how much the month differs from its
+  1970-2000 average in CRU TS [@Harris-etal-2020], a coarser interpolation
+  of weather stations on a 0.5° grid (about 50 km). It carries the variation
+  between years, and is added to the baseline for temperature and multiplied
+  with it for precipitation.
+
+So the differences between places are well resolved, but the year-to-year
+variation is smooth over about 50 km: nearby catchments get almost the same
+weather anomaly in a given year. We keep 2000-2021 (target `worldclim_file`)
+and summarise each year by the annual precipitation, the annual mean
+temperature and the summer (June-August) mean of the daily maximum
+temperature.
+
+```{r weather-map}
+#| fig-width: 12
+#| fig-height: 5
+yearly <- summarise_worldclim(tar_read(worldclim_file))
+weather_mean <- c(
+  terra::mean(yearly[[grepl("^precipitation", names(yearly))]]),
+  terra::mean(yearly[[grepl("^temperature", names(yearly))]]),
+  terra::mean(yearly[[grepl("^summer_tmax", names(yearly))]])
+)
+names(weather_mean) <- c("Annual precipitation (mm)", "Annual mean temperature (°C)", "Summer maximum temperature (°C)")
+patchwork::wrap_plots(lapply(names(weather_mean), \(v) {
+  ggplot() +
+    geom_raster(aes(x, y, fill = value), data = setNames(as.data.frame(weather_mean[[v]], xy = TRUE), c("x", "y", "value"))) +
+    geom_sf(data = district, fill = NA, colour = "grey20") +
+    scale_fill_viridis_c(option = if (grepl("precipitation", v)) "mako" else "inferno", direction = if (grepl("precipitation", v)) -1 else 1, name = NULL) +
+    labs(x = NULL, y = NULL, title = paste(v, "\n2000-2021"))
+}), nrow = 1)
+```
+
+Next, we compute the climate information for each catchment-year.
+
+### Weather of the catchments
+
+We proceed as for land cover.
+
+The WorldClim cells are split into the cells of the flow-direction grid (10 ×
+10 per WorldClim cell), and the weather of a catchment in a year is the mean
+over the catchment, weighted by cell area (target `station_weather`).
+
+```{r weather-year}
+#| fig-width: 10
+#| fig-height: 7
+weather <- tar_read(station_weather) |>
+  semi_join(filter(station_flow, matched, studied), by = "code_station")
+weather |>
+  tidyr::pivot_longer(c(precipitation, temperature, summer_tmax)) |>
+  summarise(
+    low = quantile(value, 0.1), median = median(value), high = quantile(value, 0.9),
+    .by = c(name, year)
+  ) |>
+  mutate(name = factor(name, c("precipitation", "temperature", "summer_tmax"), c("Annual precipitation (mm)", "Annual mean temperature (°C)", "Summer maximum temperature (°C)"))) |>
+  ggplot(aes(year, median)) +
+  geom_ribbon(aes(ymin = low, ymax = high), fill = "grey85") +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~name, ncol = 1, scales = "free_y") +
+  labs(x = NULL, y = "Median and 10-90% of the station catchments")
+```
+
+We can illustrate this with an example.
+
+```{r weather-example}
+#| fig-width: 14
+#| fig-height: 5
+example_frame <- terra::ext(terra::vect(st_buffer(example_catchment, 5000)))
+example_weather_map <- terra::crop(weather_mean[[1:2]], example_frame, snap = "out") |>
+  as.data.frame(xy = TRUE) |>
+  setNames(c("x", "y", "precipitation", "temperature"))
+example_year <- tar_read(station_weather) |>
+  filter(code_station == example_station$code_station)
+patchwork::wrap_plots(
+  ggplot() +
+    geom_tile(aes(x, y, fill = precipitation), data = example_weather_map, colour = "white", linewidth = 0.2) +
+    geom_sf(data = example_catchment, fill = NA, colour = "black") +
+    scale_fill_viridis_c(option = "mako", direction = -1, name = "mm", n.breaks = 4, guide = guide_colourbar(barwidth = 8)) +
+    labs(x = NULL, y = NULL, title = "Annual precipitation"),
+  ggplot() +
+    geom_tile(aes(x, y, fill = temperature), data = example_weather_map, colour = "white", linewidth = 0.2) +
+    geom_sf(data = example_catchment, fill = NA, colour = "black") +
+    scale_fill_viridis_c(option = "inferno", name = "°C", n.breaks = 4, guide = guide_colourbar(barwidth = 8)) +
+    labs(x = NULL, y = NULL, title = "Annual mean temperature"),
+  ggplot(example_year, aes(year, precipitation)) +
+    geom_col(fill = "steelblue") +
+    geom_hline(yintercept = mean(example_year$precipitation), linetype = "dashed") +
+    labs(x = NULL, y = "Annual precipitation (mm)", title = "Catchment, per year"),
+  ggplot(tidyr::pivot_longer(example_year, c(temperature, summer_tmax)), aes(year, value, colour = name)) +
+    geom_line() +
+    geom_point() +
+    scale_colour_manual(
+      values = c(temperature = "darkorange", summer_tmax = "firebrick"),
+      labels = c(temperature = "Annual mean", summer_tmax = "Summer maximum"), name = NULL
+    ) +
+    labs(x = NULL, y = "Temperature (°C)", title = "Catchment, per year") +
+    theme(legend.position = "bottom"),
+  nrow = 1
+)
+```
+
+We are ready to model the drivers effect on nutrients.
+
+## Drivers of nutrients
+
+Correlation between the catchment drivers across stations (2018 land cover,
+mean weather 2000-2021, catchment area):
+
+```{r driver-correlation}
+#| fig-width: 8
+#| fig-height: 7
+driver <- landcover |>
+  filter(year == 2018) |>
+  filter(category != "Wetlands and water") |>
+  mutate(type = c(
+    "Artificial" = "artificial", "Arable land" = "arable", "Other farmland" = "other_farmland",
+    "Forest and semi-natural" = "forest_semi_natural"
+  )[category]) |>
+  summarise(share = sum(share), .by = c(code_station, type)) |>
+  tidyr::pivot_wider(names_from = type, values_from = share) |>
+  inner_join(
+    weather |> summarise(across(c(precipitation, temperature, summer_tmax), mean), .by = code_station),
+    by = "code_station"
+  ) |>
+  inner_join(transmute(station_flow, code_station, log_area = log10(area)), by = "code_station")
+correlation <- cor(select(driver, -code_station))
+as.data.frame(as.table(correlation)) |>
+  ggplot(aes(Var1, Var2, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = sprintf("%.2f", Freq)), size = 3) +
+  scale_fill_distiller(palette = "RdBu", limits = c(-1, 1), direction = 1, name = "r") +
+  labs(x = NULL, y = NULL) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+We can start to build the model.
+
+### Model
+
+For each nutrient (log10 station-year mean, see
+[D14](D14-nutrient-impact-presence.qmd)) and for the water
+quality index PC1, we build a Gaussian model of the standardised response on the
+following drivers, all standardised:
+
+- land cover
+- climate (mean over 2000-2021)
+- weather of the year (anomaly compared to the mean)
+- catchment area (for control)
+
+We also add a spatial field (SPDE), an AR1 year effect shared by all stations
+(national dry or wet years, trends) and an iid station effect.
+
+```{r driver-data}
+driver_data <- tar_read(driver_data)
+driver_model <- tar_read(driver_model)
+tibble(
+  `station-years` = nrow(driver_data),
+  stations = n_distinct(driver_data$code_station),
+  years = paste(range(driver_data$year), collapse = "-")
+) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+Next, we run the model and plot the results as a coefplot.
+
+```{r driver-effect}
+#| fig-width: 13
+#| fig-height: 7
+driver_label <- c(
+  arable = "Arable land", other_farmland = "Other farmland", artificial = "Artificial areas", precipitation = "Precipitation", air_temperature = "Air temperature",
+  area = "Catchment area",
+  precipitation_anomaly = "Precipitation of the year", precipitation_previous = "Precipitation of the previous year",
+  temperature_anomaly = "Air temperature of the year"
+)
+driver_group <- c(
+  arable = "Land cover", other_farmland = "Land cover", artificial = "Land cover",
+  precipitation = "Climate", air_temperature = "Climate", area = "Catchment",
+  precipitation_anomaly = "Weather of the year", precipitation_previous = "Weather of the year",
+  temperature_anomaly = "Weather of the year"
+)
+driver_colour <- c(
+  "Land cover" = "#D55E00", "Climate" = "#0072B2", "Weather of the year" = "#009E73", "Catchment" = "grey40"
+)
+driver_effect <- purrr::map_dfr(driver_model, \(m) {
+  tibble::as_tibble(m$summary.fixed, rownames = "term") |>
+    filter(term != "Intercept") |>
+    transmute(response = m$response, term, mean, low = `0.045quant`, high = `0.955quant`)
+}) |>
+  mutate(
+    credible = sign(low) == sign(high),
+    group = factor(driver_group[term], c("Land cover", "Climate", "Weather of the year", "Catchment")),
+    term = factor(driver_label[term], rev(driver_label)),
+    response = factor(response, c("nitrate", "ammonium", "orthophosphate", "total_phosphorus", "PC1"))
+  )
+ggplot(driver_effect, aes(mean, term, colour = group, alpha = credible)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_pointrange(aes(xmin = low, xmax = high), size = 0.3, linewidth = 0.8) +
+  scale_colour_manual(values = driver_colour, guide = "none") +
+  scale_alpha_manual(values = c(`TRUE` = 1, `FALSE` = 0.3), guide = "none") +
+  facet_grid(group ~ response, scales = "free_y", space = "free_y") +
+  labs(x = "Effect (SD of the response per SD of the driver, 91% credible interval)", y = NULL) +
+  theme(strip.text.y = element_text(angle = 0, hjust = 0))
+```
+
+**Results:**
+
+- **Land cover** is by far the strongest driver. Arable land is the main
+source of nitrate, raising it much more than other farmland. Phosphorus
+rises as much with other farmland as with arable land, and also with
+artificial areas, which are the main source of ammonium. Water quality
+(PC1) decreases with all three.
+- **Climate:** drier catchments have more nutrients, especially phosphorus,
+and warmer catchments too; both have a lower water quality.
+- **Weather of the year** has small effects compared with land cover and
+climate. Nutrients are slightly higher after a dry year (the flush of what
+accumulated during the dry year), and ammonium is lower in warm years.
+- **Catchment area** has almost no effect.
+
+## Next steps
+
+- The link with fish (species presence, food web structure) will be studied
+in a separate notebook, with a model of the paths from the drivers to fish,
+direct or through nutrients.
+- Add the presence of dams in the catchment (upstream of the station) as a
+driver of the nutrient concentrations and of the water quality: reservoirs
+can retain phosphorus and remove nitrogen, or release nutrients and
+ammonium when their water is low in oxygen.

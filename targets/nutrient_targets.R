@@ -58,23 +58,81 @@ nutrient_targets <- list(
     garbage_collection = TRUE
   ),
   tar_target(
-    water_quality_fold, # Spatial-block folds (50 km blocks) of the cross-validation.
+    water_quality_fold, # Random folds of stations and of station-years.
     {
       set.seed(1)
-      assign_block_fold(water_quality, 10)
+      assign_water_quality_fold(water_quality, 10)
     }
   ),
   tar_target(
+    water_quality_cv_setting, # Cross-validation runs: fold type and held-out fold.
+    tidyr::expand_grid(type = c("station", "station_year"), fold = 1:10)
+  ),
+  tar_target(
     water_quality_cv, # Predictions of each fold by the model fitted on the other folds.
-    fit_water_quality_model(water_quality, water_quality_mesh, water_quality_fold == water_quality_fold_index)$prediction |>
-      dplyr::filter(held_out) |>
-      dplyr::mutate(fold = water_quality_fold_index),
-    pattern = map(water_quality_fold_index),
+    {
+      held_out <- water_quality_fold[[water_quality_cv_setting$type]] == water_quality_cv_setting$fold
+      fit_water_quality_model(water_quality, water_quality_mesh, held_out)$prediction |>
+        dplyr::filter(held_out) |>
+        dplyr::mutate(type = water_quality_cv_setting$type, fold = water_quality_cv_setting$fold)
+    },
+    pattern = map(water_quality_cv_setting),
     memory = "transient",
     garbage_collection = TRUE
   ),
   tar_target(
-    water_quality_fold_index, # Folds of the cross-validation.
-    1:10
+    water_quality_visit, # PC1 predicted at the dam visits (D12) whose site is a NAIADES station.
+    predict_water_quality_visit(water_quality, water_quality_mesh, dam_visit),
+    memory = "transient",
+    garbage_collection = TRUE
+  ),
+  tar_target(
+    quality_visit, # Dam visits (D12) with a predicted PC1, centred and scaled.
+    prepare_quality_visit(dam_visit, water_quality_visit)
+  ),
+  tar_target(
+    stressor_setting, # Presence models of dams and water quality, with and without spatial field.
+    tidyr::expand_grid(
+      tibble::tibble(
+        model = c("dam", "quality", "additive", "interaction"),
+        stressor = c("accumulation", "PC1", "accumulation + PC1", "accumulation * PC1")
+      ),
+      field = c(TRUE, FALSE),
+      species = "Salmo trutta"
+    ) |>
+      dplyr::mutate(term = paste0(stressor, sub("accumulation", "", presence_term, fixed = TRUE)))
+  ),
+  tar_target(
+    stressor_model,
+    fit_stressor_presence_model(
+      quality_visit, river_presence, if (stressor_setting$field) presence_mesh else NULL,
+      stressor_setting$species, stressor_setting$term
+    ),
+    pattern = map(stressor_setting),
+    iteration = "list",
+    memory = "transient",
+    garbage_collection = TRUE
+  ),
+  tar_target(
+    species_stressor_model, # Interaction model (dams x PC1, with field), best for the trout, for all species.
+    fit_stressor_presence_model(
+      quality_visit, river_presence, presence_mesh, dam_presence_species,
+      paste0("accumulation * PC1", sub("accumulation", "", presence_term, fixed = TRUE))
+    ),
+    pattern = map(dam_presence_species),
+    iteration = "list",
+    memory = "transient",
+    garbage_collection = TRUE
+  ),
+  tar_target(
+    fish_trait_file, # Fish traits of freshwaterecology.info (expert-based tolerance classes), via the aspe package.
+    "data/traits/freshwaterecology_fish_traits.csv",
+    format = "file"
+  ),
+  tar_target(
+    fish_trait, # One row per species (the file has one row per ASPE code, e.g. for carp varieties).
+    readr::read_csv(fish_trait_file, comment = "#", show_col_types = FALSE) |>
+      dplyr::select(-esp_code_alternatif, -esp_nom_commun) |>
+      dplyr::distinct(esp_nom_latin, .keep_all = TRUE)
   )
 )

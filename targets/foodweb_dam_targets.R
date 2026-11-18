@@ -93,14 +93,14 @@ foodweb_dam_targets <- list(
     structure_decomposition, # Structure change expected from the species lost to dams.
     {
       set.seed(1)
-      decompose_dam_structure(presence_model, species_removal_effect, n_draws = 2000)
+      decompose_dam_structure(presence_model, species_removal_effect, "accumulation", n_draws = 2000)
     }
   ),
   tar_target(
     structure_permutation, # Same with the dam effects shuffled among species.
     {
       set.seed(1)
-      permute_dam_structure(presence_model, species_removal_effect, n_permutations = 2000)
+      permute_dam_structure(presence_model, species_removal_effect, "accumulation", n_permutations = 2000)
     }
   )
 )

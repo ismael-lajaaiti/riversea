@@ -356,16 +356,18 @@ compute_species_presence <- function(web, resource) {
 #'   `presence_model` target.
 #' @param removal_effect tibble with `species`, `metric`, `mean`, `lower`,
 #'   `upper`, e.g. `summarise_species_removal()`'s output.
+#' @param term character, stressor term of the presence models, e.g.
+#'   "accumulation" for the dams.
 #' @param n_draws integer, number of draws.
 #' @return list with `species`, the contribution of each species to each
 #'   metric (mean over draws), and `draw`, the expected change of each
 #'   metric at each draw.
 #' @export
-decompose_dam_structure <- function(presence_model, removal_effect, n_draws) {
+decompose_dam_structure <- function(presence_model, removal_effect, term, n_draws) {
   presence <- purrr::map_dfr(presence_model, \(model) tibble::tibble(
     species = model$species,
-    beta = model$summary.fixed["accumulation", "mean"],
-    beta_sd = model$summary.fixed["accumulation", "sd"],
+    beta = model$summary.fixed[term, "mean"],
+    beta_sd = model$summary.fixed[term, "sd"],
     slope = mean(stats::dlogis(model$summary.linear.predictor$mean))
   ))
   effect <- removal_effect |>
@@ -406,10 +408,10 @@ decompose_dam_structure <- function(presence_model, removal_effect, n_draws) {
 #' @return tibble with `metric`, `permutation` and the expected `change`
 #'   (posterior means of the dam and removal effects).
 #' @export
-permute_dam_structure <- function(presence_model, removal_effect, n_permutations) {
+permute_dam_structure <- function(presence_model, removal_effect, term, n_permutations) {
   presence <- purrr::map_dfr(presence_model, \(model) tibble::tibble(
     species = model$species,
-    beta = model$summary.fixed["accumulation", "mean"],
+    beta = model$summary.fixed[term, "mean"],
     slope = mean(stats::dlogis(model$summary.linear.predictor$mean))
   ))
   purrr::map_dfr(seq_len(n_permutations), function(k) {

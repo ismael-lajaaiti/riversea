@@ -82,20 +82,24 @@ build_water_quality_mesh <- function(water_quality) {
   )
 }
 
-#' Spatial-block folds of the cross-validation.
+#' Folds of the cross-validation.
 #'
-#' Stations are grouped in square blocks of 50 km, and blocks are randomly
-#' assigned to `k` folds, so that held-out stations have no close neighbour
-#' in the training data.
+#' Random folds of stations (all the years of a station are held out
+#' together) or of station-years (a held-out station keeps its other years,
+#' as for a fish visit in a year without measurement).
 #'
-#' @param water_quality tibble with `X`, `Y` (km).
+#' @param water_quality tibble with `code_station`.
 #' @param k integer, number of folds.
-#' @return integer vector, fold of each row of `water_quality`.
+#' @return tibble with the fold of each row of `water_quality` by `station`
+#'   and by `station_year`.
 #' @export
-assign_block_fold <- function(water_quality, k) {
-  block <- paste(water_quality$X %/% 50, water_quality$Y %/% 50)
-  block_fold <- sample(rep_len(seq_len(k), dplyr::n_distinct(block)))
-  block_fold[match(block, unique(block))]
+assign_water_quality_fold <- function(water_quality, k) {
+  station <- unique(water_quality$code_station)
+  station_fold <- sample(rep_len(seq_len(k), length(station)))
+  tibble::tibble(
+    station = station_fold[match(water_quality$code_station, station)],
+    station_year = sample(rep_len(seq_len(k), nrow(water_quality)))
+  )
 }
 
 #' Fit the space-time model of the water quality index.
@@ -127,6 +131,7 @@ fit_water_quality_model <- function(water_quality, mesh, held_out) {
     PC1 ~ -1 + Intercept + f(field, model = spde) + f(year, model = "ar1") +
       f(station, model = "iid"),
     family = "gaussian", data = INLA::inla.stack.data(stack), num.threads = 4,
+    quantiles = c(0.045, 0.5, 0.955),
     control.predictor = list(A = INLA::inla.stack.A(stack)),
     control.inla = list(int.strategy = "eb")
   )
@@ -146,4 +151,36 @@ fit_water_quality_model <- function(water_quality, mesh, held_out) {
   rm(model)
   gc()
   out
+}
+
+#' Water quality index predicted at the fish visits.
+#'
+#' The model of [fit_water_quality_model()] is fitted on all station-years
+#' and predicts PC1 at the visits whose site is a NAIADES station with PC1
+#' (same Sandre code), in the visit year, with the station effect of that
+#' station. Visits without such station are dropped.
+#'
+#' @param water_quality tibble, e.g. `compute_water_quality()`'s output.
+#' @param mesh INLA mesh, e.g. `build_water_quality_mesh()`'s output.
+#' @param visit tibble with `operation_id`, `sandre_code`, `year`.
+#' @return tibble with `operation_id`, `code_station`, `year`, the observed
+#'   `PC1` of the station-year (NA when not measured) and the posterior
+#'   `mean` and `sd` of PC1 (without observation noise).
+#' @export
+predict_water_quality_visit <- function(water_quality, mesh, visit) {
+  station <- dplyr::distinct(water_quality, code_station, X, Y)
+  target <- visit |>
+    dplyr::transmute(operation_id, code_station = sandre_code, year) |>
+    dplyr::inner_join(station, by = "code_station") |>
+    dplyr::left_join(
+      dplyr::select(water_quality, code_station, year, PC1),
+      by = c("code_station", "year")
+    )
+  fit_water_quality_model(
+    dplyr::bind_rows(water_quality, dplyr::mutate(target, PC1 = NA)),
+    mesh,
+    rep(c(FALSE, TRUE), c(nrow(water_quality), nrow(target)))
+  )$prediction |>
+    dplyr::filter(held_out) |>
+    dplyr::transmute(operation_id = target$operation_id, code_station, year, PC1 = target$PC1, mean, sd)
 }

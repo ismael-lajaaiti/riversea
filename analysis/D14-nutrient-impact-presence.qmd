@@ -17,7 +17,7 @@ the presence of fish species in rivers, as done for large dams in
 [D12](D12-dam-impact-presence.qmd). To do so, we need to
 
 - get the river nutrient measurements from NAIADES
-- match the nutrient measurements to the fish sampling visits (space and time)
+- match the nutrient measurements to the fishing operations (space and time)
 - model the effect of nutrients on the presence of each species
 
 ## Setup
@@ -57,8 +57,8 @@ expressed as P
 - **oxygen saturation** (%): dissolved oxygen relative to the saturation
 concentration at the water temperature and pressure.
 
-The measurement run from 2000 to 2021. We keep stations from the four watershed
-(districts) retained for the study. Each measurement keeps:
+The measurements run from 2000 to 2021. We keep the stations of the four watersheds
+(districts) retained for the study. Each measurement comes with:
 
 - **fraction analysed:** raw water, filtered water, sediments...
 - **unit:** unit of the measurement value
@@ -116,8 +116,8 @@ naiades |>
   theme(legend.position = "top")
 ```
 
-Nutrients are mostly measured in filtered water, excepting total phosphorus and
-Kjeldahl nitrogen. The rest is mostly measured in raw water. We'll keep only the
+Nutrients are mostly measured in filtered water, except total phosphorus and
+Kjeldahl nitrogen. The other parameters are mostly measured in raw water. We'll keep only the
 main fraction analysed (e.g. filtered water for ammonium) so values are
 comparable.
 
@@ -145,8 +145,8 @@ naiades |>
   labs(x = "Share of the measurements", y = NULL)
 ```
 
-A main unit always dominate, and mg/L is often the second unit which we assume
-corresponds to the main one (old notation probably). Measurements with other
+A main unit always dominates, and mg/L is often the second unit, which we assume
+is an older notation of the main one. Measurements with other
 units are filtered out.
 
 ### Quantification limit
@@ -187,7 +187,7 @@ naiades |>
   knitr::kable(digits = c(0, 1, 1, 2, 0, 3, 3, 3))
 ```
 
-When there is a limit, we set the value to half the limit as it is usually done.
+When there is a limit, we set the value to half the limit, as is usually done.
 
 ### Sampling frequency
 
@@ -209,8 +209,8 @@ naiades |>
   labs(x = "Measurements per station and year", y = "Station-years")
 ```
 
-We see two peaks at 6 and 12 measurement per year, which means that some
-stations have measure every month or every two months. This could be useful to
+We see two peaks at 6 and 12 measurements per year: many
+stations are sampled every month or every two months. This could be useful to
 compute statistics (mean, variance, quantiles).
 
 ### Joint measurements
@@ -242,7 +242,7 @@ joint <- crossprod(as.matrix(naiades_sample))
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-We see that most parameters are measured jointly, and here is below precisely
+Most parameters are measured jointly. The table below gives
 the share of samples in which all nutrients are measured, and in which all
 parameters are measured.
 
@@ -318,7 +318,8 @@ driven by a single season.
 
 ### Correlation between parameters
 
-Pearson correlation between the station-year means of the parameters.
+Pearson correlation between the station-year means of the parameters. This
+information may be useful to understand the link between the input variables.
 
 ```{r naiades-pairs}
 #| fig-width: 8
@@ -337,15 +338,16 @@ cor(station_year[unname(parameter_name)]) |>
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-### PCA
+We have many parameters, some of them strongly correlated, so
+a PCA is a natural way to build a synthetic indicator of water quality.
+
+### Using a PCA to build a water quality index
 
 PCA of the same station-year means, standardised.
 
 ```{r naiades-pca}
 naiades_pca <- tar_read(water_quality_pca) # PC1 signed to increase with water quality
 ```
-
-Correlation of each parameter with the first two axes.
 
 ```{r naiades-pca-biplot}
 #| fig-width: 7
@@ -369,7 +371,21 @@ ggplot(loading, aes(PC1, PC2)) +
   )
 ```
 
-Station scores on the first two axes, averaged over the years of each station.
+We see that all nutrients go in the same direction, opposite to oxygen.
+In sum, PC1 represents a synthetic index of water quality: higher values mean
+fewer nutrients (nitrate, phosphate, etc.) and higher oxygen concentration.
+In what follows, we will use this axis as an indicator of water quality.
+
+::: {.callout-note}
+## Reading PC1
+Throughout the notebook, a higher PC1 means a better water quality. A positive
+effect of PC1 on a species therefore means that the species is more present
+where the water is clean, and a negative effect that it is more present where
+the water is polluted.
+:::
+
+Below are the values of PC1 and PC2 at each station (averaged over the
+years).
 
 ```{r naiades-pca-map}
 #| fig-width: 12
@@ -386,15 +402,15 @@ station_score |>
   ggplot() +
   geom_sf(data = basin_kept, fill = NA, color = "grey40") +
   geom_sf(aes(color = score), size = 0.5) +
-  scale_color_distiller(palette = "RdBu", limits = c(-4, 4), oob = scales::squish) +
+  scale_color_distiller(palette = "RdBu", direction = 1, limits = c(-4, 4), oob = scales::squish) +
   facet_wrap(~axis) +
   theme_void()
 ```
 
-Distribution of the station-year scores on PC1 per year (median line and
-interquartile band), for all stations and for the stations kept in all 22
-years (2000-2021), which show the trend without the change of the station
-network.
+Next, we have a look at the temporal trend of this water quality index. We plot
+two trends, one keeping all stations available, the other keeping only stations
+for which we have a measurement each year so we can check that the trend is not
+influenced by changing the station set.
 
 ```{r naiades-pca-year}
 #| fig-width: 8
@@ -420,57 +436,360 @@ bind_rows(
 ```
 
 The rise of PC1 coincides with the fall of the quantification limits around
-2010-2013. Setting every nutrient value below the median limit of 2000-2004 to
-half this limit, in all years, lowers PC1 after 2012 by only 0.1-0.2, so the
-rise is mostly a real improvement of water quality.
+2010. But the rise remains when all limits are set to a common value over the
+years, so it reflects a real improvement of water quality.
 
-## Space-time model of the water quality index (WIP)
+## Matching water quality to the fishing operations
 
-::: {.callout-warning}
-**Work in progress.** Model fitted and cross-validated (targets
-`water_quality_model`, `water_quality_cv`), text and figures to be finished.
-:::
+### Fishing operations match NAIADES stations
 
-PC1 is interpolated in space and time with an INLA model of the station-year
-scores:
+For each fishing operation (station-year) we need a water quality value. This
+means predicting water quality (PC1) at unobserved station-years. Luckily most
+fish sites are also NAIADES stations (that is, they share the Sandre code), but
+water quality is not always measured in the year of the operation.
 
-PC1 ~ intercept + spatial field (SPDE) + year (AR1) + station (iid)
+We plot below each fish site coloured by whether water quality is available at
+all visits, in some of them, only in other years, or not at all.
 
-The spatial field is constant over time and the year effect is shared by all
-stations. A field changing between years (AR1 on the field) did not fit in
-memory. Mesh: edges up to 40 km, nodes at least 15 km apart.
+```{r fish-site-naiades}
+#| fig-width: 8
+#| fig-height: 8
 
-```{r water-quality-model}
-tar_read(water_quality_model)$summary.hyperpar[, c("mean", "0.045quant", "0.955quant")] |>
-  knitr::kable(digits = 2)
+water_quality <- tar_read(water_quality)
+tar_read(dam_visit) |>
+  mutate(
+    station = sandre_code %in% water_quality$code_station,
+    same_year = paste(sandre_code, year) %in% paste(water_quality$code_station, water_quality$year)
+  ) |>
+  summarise(
+    longitude = longitude[1], latitude = latitude[1],
+    naiades = case_when(
+      all(same_year) ~ "PC1 in all visit years",
+      any(same_year) ~ "PC1 in some visit years",
+      any(station) ~ "PC1 in other years only",
+      .default = "no station with PC1"
+    ),
+    .by = site
+  ) |>
+  mutate(naiades = factor(naiades, c(
+    "PC1 in all visit years", "PC1 in some visit years", "PC1 in other years only",
+    "no station with PC1"
+  ))) |>
+  arrange(naiades) |>
+  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
+  ggplot() +
+  geom_sf(data = basin_kept, fill = NA, color = "grey40") +
+  geom_sf(aes(color = naiades), size = 0.8) +
+  scale_color_manual(values = c("#2166AC", "#92C5DE", "#F4A582", "#B2182B")) +
+  labs(color = NULL) +
+  theme_void() +
+  theme(legend.position = "bottom")
 ```
 
-Cross-validation: stations grouped in 50 km blocks, blocks split in 10 folds,
-each fold predicted by the model fitted on the others. Coverage is the share of
-observations within the 91% predictive interval.
+Only a minority of operations have no information on water quality (in any
+year), represented by the red dots above. We choose to remove these
+operations, keeping only stations for which we have water quality data and so
+where we can easily infer water quality in the missing years.
+
+### Inferring missing water quality values
+
+#### The model
+
+PC1 is modelled with INLA from the station-year scores. For station $s$ in
+year $t$,
+$$
+\text{PC1}_{s,t} = \beta_0 + \omega(x_s) + \gamma_t + u_s + \varepsilon_{s,t},
+$$
+with
+
+- $\beta_0$ the intercept;
+- $\omega(x_s)$ a Matérn spatial field (SPDE) at the location $x_s$ of the
+station, constant over time, which captures that nearby stations have similar
+water quality;
+- $\gamma_t$ a year effect following an AR1 process, shared by all stations,
+  which captures the overall trend;
+- $u_s$ an iid station effect, which captures what is specific to each station;
+- $\varepsilon_{s,t}$ the Gaussian residual.
+
+#### Cross-validation
+
+We check the predictions with two cross-validations, each with 10 random folds,
+each fold predicted by the model fitted on the others. The model is the same in
+both; what differs is what is held out, and therefore which terms can inform the
+prediction:
+
+- **station-years:** single station-years are held out, and the station keeps
+  its other years. Its station effect $u_s$ is estimated from these other
+  years, so the prediction is
+  $\hat\beta_0 + \hat\omega(x_s) + \hat\gamma_t + \hat u_s$. This is the case
+  of a fishing operation at a NAIADES station, in a year without measurement.
+- **stations:** all the years of the held-out stations are left out. Their
+  station effect is unknown, so it is set to its prior mean of 0 and the
+  prediction is $\hat\beta_0 + \hat\omega(x_s) + \hat\gamma_t$: it relies on
+  the neighbouring stations only, through the spatial field. This is the case
+  of a fish site without a NAIADES station.
 
 ```{r water-quality-cv}
-z <- qnorm(0.955)
 tar_read(water_quality_cv) |>
   summarise(
     rmse = sqrt(mean((PC1 - mean)^2)),
-    `rmse of a constant` = sd(PC1),
     r2 = cor(PC1, mean)^2,
-    `coverage 91%` = mean(abs(PC1 - mean) <= z * sd_observation)
+    .by = type
   ) |>
   knitr::kable(digits = 2)
 ```
 
-*Where we left (2026-11-10):*
+Observed against predicted PC1 of the held-out station-years (number of
+station-years per cell, log scale); the dashed line is the 1:1 line.
 
-- Full fit: spatial range about 120 km, field SD 1.8, year SD 0.34 (AR1
-  correlation 0.84), station SD 1.3, residual SD 0.7.
-- Block cross-validation: RMSE 1.57 against 2.14 for a constant, R² 0.47,
-  coverage 93%. Error grows with the distance to the nearest training station
-  (R² 0.55 under 10 km, 0.14 at 30-50 km).
-- 94% of the fish visits (D12) share their Sandre code with a NAIADES station
-  that has PC1, and 81% have PC1 measured at that station in the visit year. The
-  block cross-validation is therefore pessimistic for our use.
-- Next: cross-validation leaving out random station-years (station effect
-  known), decide whether to use observed PC1 when available, then predict PC1
-  at the fish visits.
+```{r water-quality-cv-plot}
+#| fig-width: 10
+#| fig-height: 5
+
+tar_read(water_quality_cv) |>
+  ggplot(aes(mean, PC1)) +
+  geom_bin_2d(bins = 80) +
+  geom_abline(linetype = "dashed") +
+  scale_fill_distiller(palette = "Blues", direction = 1, transform = "log10") +
+  facet_wrap(~type, labeller = as_labeller(c(station = "stations", station_year = "station-years"))) +
+  coord_equal() +
+  labs(x = "Predicted PC1", y = "Observed PC1", fill = "Station-years")
+```
+
+The model is quite good at predicting missing values when the station effect is
+known, which is our case (R² 0.86), but much weaker without it (R² 0.55).
+
+### Water quality at the fishing operations
+
+We now fit the model on all the station-years and use it to give a water
+quality value to each fishing operation (target `water_quality_visit`). An
+operation gets the value predicted by the model at its station, in the year of
+the operation.
+
+Some operations fall in a year where PC1 was measured at the station. We could
+use the measured value for these and the predicted value for the others, but we
+use the predicted value for all operations, for two reasons:
+
+- a measured value is the mean of only 4 to 12 samples, so it is a noisy
+  estimate of the water quality of that year, and noise in a covariate weakens
+  its estimated effect; the predicted value is smoothed by the model;
+- mixing measured and predicted values would give some operations a noisier
+  value than others, depending on where and when stations were monitored.
+
+The predicted value also leans on the station effect, which reflects the
+water quality of the station over several years, the time scale to which fish
+presence most likely responds. The price is that a real deviation of a given
+year (e.g. an unusually polluted year) is partly smoothed out. In practice the
+choice matters little: where PC1 was measured, measured and predicted values
+are highly correlated (0.95).
+
+Operations at the 203 sites without a NAIADES station are dropped, which leaves
+5,550 of the 5,929 operations.
+
+PC1 at the fishing operations of three years covering the period (posterior
+mean).
+
+```{r water-quality-visit-map}
+#| fig-width: 12
+#| fig-height: 5
+
+tar_read(water_quality_visit) |>
+  filter(year %in% c(2005, 2013, 2020)) |>
+  inner_join(distinct(water_quality, code_station, X, Y), by = "code_station") |>
+  mutate(X = 1000 * X, Y = 1000 * Y) |>
+  arrange(abs(mean)) |>
+  sf::st_as_sf(coords = c("X", "Y"), crs = 2154) |>
+  ggplot() +
+  geom_sf(data = basin_kept, fill = NA, color = "grey40") +
+  geom_sf(aes(color = mean), size = 1.3) +
+  scale_color_distiller(palette = "RdBu", direction = 1, limits = c(-4, 4), oob = scales::squish) +
+  facet_wrap(~year) +
+  labs(color = "PC1") +
+  theme_void()
+```
+
+## Presence models with dams and water quality
+
+We use the presence models of D12 (continuum position, sampling effort, site and
+year effects, spatial field), fitted on the operations with a predicted PC1. PC1
+is centred and scaled over these operations, so its effect is per standard deviation.
+We compare four ways to include the two stressors:
+
+- **dam:** dam accumulation only (D12 model)
+- **quality:** PC1 instead of dam accumulation
+- **additive:** dam accumulation + PC1
+- **interaction:** dam accumulation × PC1
+
+### Model comparison on the trout
+
+The four models are first compared on the brown trout, a species known to be
+sensitive to water quality. Each model is fitted with and without spatial
+field.
+
+```{r stressor-model}
+#| fig-width: 10
+#| fig-height: 4
+
+setting <- tar_read(stressor_setting)
+fits <- tar_read(stressor_model)
+purrr::map_dfr(seq_along(fits), \(i) {
+  fits[[i]]$summary.fixed |>
+    as_tibble(rownames = "term") |>
+    filter(term %in% c("accumulation", "PC1", "accumulation:PC1")) |>
+    transmute(
+      model = setting$model[i],
+      field = if_else(setting$field[i], "with field", "without field"),
+      term, mean, lower = `0.045quant`, upper = `0.955quant`
+    )
+}) |>
+  mutate(
+    model = factor(model, rev(unique(setting$model))),
+    term = factor(term, c("accumulation", "PC1", "accumulation:PC1"),
+      c("Dam accumulation", "Water quality (PC1)", "Dam accumulation × water quality"))
+  ) |>
+  ggplot(aes(mean, model, color = field)) +
+  geom_vline(xintercept = 0, color = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), position = position_dodge(width = 0.5)) +
+  scale_color_manual(values = c("#2166AC", "#92C5DE")) +
+  facet_wrap(~term) +
+  labs(x = "Effect on presence (logit scale, 91% CI)", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+```
+
+WAIC of the models (lower is better).
+
+```{r stressor-model-waic}
+tibble(
+  model = setting$model,
+  field = if_else(setting$field, "with field", "without field"),
+  waic = purrr::map_dbl(fits, \(fit) fit$waic$waic)
+) |>
+  tidyr::pivot_wider(names_from = field, values_from = waic) |>
+  knitr::kable(digits = 1)
+```
+
+Unsurprisingly, trout presence rises strongly with water quality, while dam
+accumulation has no effect. The interaction between dams and water quality is
+positive: dams are more harmful where water quality is poor. All models with PC1
+have a much lower WAIC than the dam model, and the interaction model is slightly
+better than the others. The estimates barely change without the spatial field. In a side check,
+adding the station-year mean temperature left the PC1 effect unchanged and did
+not improve WAIC.
+
+::: {.callout-note}
+## Reading the interaction
+With the interaction, the dam effect depends on water quality: it is the dam
+effect plus the interaction times PC1. For the trout, the dam effect is close
+to zero at average water quality and the interaction is positive: dams lower
+trout presence where the water is polluted (low PC1), but not where it is
+clean.
+:::
+
+### All species
+
+The interaction model with spatial field, the best for the trout, is fitted for
+all the species (target `species_stressor_model`). Species are ordered by their
+water quality effect.
+
+```{r species-stressor-model}
+#| fig-width: 10
+#| fig-height: 11
+
+species_effect <- tar_read(species_stressor_model) |>
+  purrr::map_dfr(\(fit) {
+    fit$summary.fixed |>
+      as_tibble(rownames = "term") |>
+      filter(term %in% c("accumulation", "PC1", "accumulation:PC1")) |>
+      transmute(species = fit$species, term, mean, lower = `0.045quant`, upper = `0.955quant`)
+  })
+species_order <- species_effect |>
+  filter(term == "PC1") |>
+  arrange(mean) |>
+  pull(species)
+species_effect |>
+  mutate(
+    species = factor(species, species_order),
+    term = factor(term, c("accumulation", "PC1", "accumulation:PC1"),
+      c("Dam accumulation", "Water quality (PC1)", "Dam accumulation × water quality")),
+    credible = lower > 0 | upper < 0
+  ) |>
+  ggplot(aes(mean, species, color = credible)) +
+  geom_vline(xintercept = 0, color = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.2) +
+  scale_color_manual(values = c(`TRUE` = "#2166AC", `FALSE` = "grey60"), guide = "none") +
+  facet_wrap(~term, scales = "free_x") +
+  labs(x = "Effect on presence (logit scale, 91% CI)", y = NULL) +
+  theme(axis.text.y = element_text(face = "italic"))
+```
+
+We see that water quality is the main stressor as it is much more often credible
+than dam accumulation. Water quality can have a positive or negative effect,
+meaning that some species are more present where water quality is poor. We expect these
+species to be tolerant to toxicity/low oxygen. To check this, we next compare
+the estimated effect of water quality on species with their known tolerance.
+
+### Comparison with the known tolerance of the species
+
+To check the water quality effects independently of our models, we compare them
+with the tolerance classes of the species from the freshwaterecology.info
+database [@Schmidt-Kloiber-Hering-2015]. We take them from the `aspe` R package
+of the OFB (table `data_traits_bio`, <https://github.com/PascalIrz/aspe>),
+which ships an export of the database made in July 2023 (target `fish_trait`).
+The classes are based on expert knowledge, not on measurements. Each species
+is classed as intolerant, intermediate or tolerant to the degradation of the
+general water quality, to low oxygen and to toxic substances.
+
+```{r species-tolerance}
+#| fig-width: 10
+#| fig-height: 4.5
+
+tolerance_label <- c(
+  `water quality tolerance` = "Water quality", `oxygen tolerance` = "Oxygen",
+  `toxicity tolerance` = "Toxicity"
+)
+species_effect |>
+  filter(term == "PC1") |>
+  inner_join(tar_read(fish_trait), by = c(species = "esp_nom_latin")) |>
+  tidyr::pivot_longer(all_of(names(tolerance_label)), names_to = "trait", values_to = "class") |>
+  filter(!is.na(class)) |>
+  mutate(
+    trait = factor(tolerance_label[trait], tolerance_label),
+    class = factor(class, c("intol", "im", "tol"), c("intolerant", "intermediate", "tolerant")),
+    credible = lower > 0 | upper < 0
+  ) |>
+  ggplot(aes(class, mean)) +
+  geom_hline(yintercept = 0, color = "grey60") +
+  geom_boxplot(outlier.shape = NA, fill = NA, color = "grey50", width = 0.5) +
+  geom_point(aes(color = credible), position = position_jitter(width = 0.15, seed = 1), size = 1.8) +
+  scale_color_manual(values = c(`TRUE` = "#2166AC", `FALSE` = "grey60"), labels = c(`TRUE` = "credible", `FALSE` = "not credible")) +
+  facet_wrap(~trait) +
+  labs(x = "Tolerance class", y = "Water quality effect on presence\n(logit scale)", color = NULL) +
+  theme(legend.position = "top")
+```
+
+The estimated water quality effects mostly agree with the known tolerance, which
+is reassuring: it suggests that our model captures a real effect of water
+quality rather than an unobserved confounding variable.
+
+The main exception, *Pachychilon pictum*, is classed tolerant but is more
+present where water quality is good. It is a rare species introduced from the
+Balkans and found mostly in a few rivers of the Adour-Garonne basin, so its
+effect likely reflects where it was introduced rather than a preference for
+clean water.
+
+## Conclusion
+
+- PC1 of the NAIADES parameters is a good water quality index: it opposes
+  nutrients to oxygen and explains about half of the variance.
+- The space-time model predicts PC1 well at the fishing operations that are
+  NAIADES stations, including in years without measurement.
+- Water quality shapes species presence more than dams do, with sensitive
+  species favoured by good water quality and tolerant lowland species by poor
+  water quality.
+- The interaction between dams and water quality is weak and inconsistent
+  across species, so we keep the additive model (dams + water quality) for the
+  food web structure.
+
+**To go further.** The uncertainty of the predicted PC1 is not propagated to the
+presence models (but it is small at the fishing operations); the annual mean
+temperature is a poor measure of thermal stress, we could test summer maxima.
