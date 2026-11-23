@@ -4,6 +4,9 @@ library(ggplot2)
 set_theme(theme_minimal())
 
 tar_option_set(
+  controller = crew::crew_controller_local(workers = 3, seconds_idle = 60), # 3 parallel workers (INLA uses 4 threads each).
+  storage = "worker",
+  retrieval = "worker",
   packages = c(
     "zen4R",
     "here",
@@ -51,6 +54,9 @@ list(
   nutrient_targets,
   nutrient_driver_targets,
   foodweb_nutrient_targets,
+  community_quality_targets,
+  functional_diversity_targets,
+  sea_community_targets,
   plot_targets,
   report_targets
 )

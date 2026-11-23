@@ -75,3 +75,29 @@ fit_stressor_structure_model <- function(web, mesh, metric, family, term) {
   gc()
   out
 }
+
+#' Change of a PCA axis when one species is removed.
+#'
+#' Same as [compute_removal_pc1()] for any axis, without the richness
+#' correction.
+#'
+#' @inheritParams compute_removal_pc1
+#' @param axis character, PCA axis, e.g. "PC2".
+#' @return tibble with `metric` (the axis), `species`, `operation_id`,
+#'   `sandre_code`, and the score of the web in `full` and without the
+#'   species in `removed`, as input of [summarise_species_removal()].
+#' @export
+compute_removal_axis <- function(removal, pca, axis) {
+  pca_metric <- rownames(pca$rotation)
+  removal |>
+    dplyr::filter(metric %in% pca_metric) |>
+    tidyr::pivot_longer(c(full, removed), names_to = "web", values_to = "value") |>
+    tidyr::pivot_wider(names_from = metric, values_from = value) |>
+    dplyr::mutate(
+      score = stats::predict(pca, dplyr::pick(dplyr::all_of(pca_metric)))[, axis] /
+        pca$sdev[as.integer(sub("PC", "", axis))]
+    ) |>
+    dplyr::select(species, operation_id, sandre_code, web, score) |>
+    tidyr::pivot_wider(names_from = web, values_from = score) |>
+    dplyr::mutate(metric = axis)
+}

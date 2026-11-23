@@ -1,0 +1,591 @@
+---
+title: "Pressures and the traits of fish species"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+We have seen that poor water quality brought slightly more fish species,
+favoring tolerant lowland cyprinids, while sensitive species (brown trout, brook
+lamprey) were lost (see [D16](D16-dam-nutrient-impact-foodweb.qmd)). Such a
+turnover can hide a loss of functions if the species gained are functionally
+similar and those lost are specialists [@Clavel-Julliard-Devictor-2011;
+@Mouillot-etal-2013b]. 
+
+Before measuring functional diversity, here we ask which (response) traits make
+a species sensitive to which pressure [@Lavorel-Garnier-2002]: each pressure (nutrients, oxygen,
+temperature, dams) is expected to filter species through its own traits
+[@Poff-1997].
+
+We (1) present the trait table and the pressures, (2) state the expected
+trait-pressure links, (3) test them with yearly averages of the pressures,
+and (4) ask whether summer conditions matter more than yearly averages.
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+```{r palette}
+# Colours shared by all figures.
+colour_outcome <- c(`As expected` = "#2166AC", `Not credible` = "grey65", Opposite = "#B2182B")
+colour_effect <- c(Positive = "#2166AC", `Not credible` = "grey70", Negative = "#B2182B")
+pressure_label <- c(
+  ammonium = "Ammonium", orthophosphate = "Orthophosphate",
+  oxygen_saturation = "Oxygen saturation", temperature = "Water temperature",
+  accumulation = "Dams to the sea", dam_below = "Dam just downstream",
+  dam_above = "Dam just upstream"
+)
+trait_hypothesis_label <- c(
+  intolerant = "Intolerant to poor water quality",
+  omnivore = "Omnivore",
+  lithophilic = "Spawns on gravel",
+  oxygen_intolerant = "Intolerant to low oxygen",
+  stenothermal = "Cold-water (stenothermal)",
+  rheophilic = "Flowing water (rheophilic)",
+  habitat_intolerant = "Intolerant to habitat degradation",
+  diadromous = "Migrates to or from the sea",
+  crossing = "Obstacle height crossed",
+  non_native = "Non-native in France"
+)
+outcome <- function(mean, lower, upper, expected) {
+  case_when(
+    sign(lower) != sign(upper) ~ "Not credible",
+    sign(mean) == expected ~ "As expected",
+    .default = "Opposite"
+  ) |>
+    factor(names(colour_outcome))
+}
+```
+
+## Data
+
+### Fish traits
+
+We use the fish trait table compiled for French rivers by Dézerald et al.
+[REF: Dézerald et al., year and doi to check]
+(`data/traits/dezerald_trait.csv`, trait descriptions in
+`data/traits/dezerald_metadata.xlsx`, their Table S2). It gathers traits
+from the French fish atlas [REF: Keith et al. 2011, book], FishBase
+[REF: Froese & Pauly, FishBase], the guilds of the European fish index EFI+
+[REF: EFI+ Consortium 2009, report], freshwaterecology.info
+[REF: Schmidt-Kloiber & Hering 2015, doi:10.1016/j.ecolind.2015.02.007],
+morphological ratios measured on pictures
+[REF: Toussaint et al. 2016, doi:10.1038/srep22125] and the ability to cross
+obstacles of the ICE protocol [REF: Baudoin et al. 2014, Onema guide].
+
+Preprocessing (targets `dezerald_trait` and `dezerald_metadata`): species
+names are validated against FishBase as ours, so that synonyms match (e.g.
+*Salmo trutta fario* is *Salmo trutta*, *Aspius aspius* is *Leuciscus
+aspius*); ordinal traits coded with a prefix (e.g. `ls3` for a longevity
+above 15 years) are converted to integers; taxonomy, conservation status and
+commercial interest are dropped.
+
+```{r dezerald}
+dezerald <- tar_read(dezerald_trait)
+dezerald_metadata <- tar_read(dezerald_metadata)
+river_species <- unique(tar_read(river_presence)$species_valid)
+modelled_species <- tar_read(dam_presence_species)
+trait_group <- c(
+  mig = "Movement", food = "Diet", hab = "Habitat", life = "Life history",
+  morp = "Size, growth and shape", tol = "Tolerance", rep = "Reproduction",
+  ice = "Obstacle crossing (ICE)"
+)
+dezerald_river <- filter(dezerald, species %in% river_species)
+dezerald_long <- dezerald_river |>
+  select(-code, -abundance) |>
+  mutate(across(-species, as.character)) |>
+  tidyr::pivot_longer(-species, names_to = "trait") |>
+  mutate(group = factor(trait_group[sub("\\..*", "", trait)], trait_group))
+tibble(
+  `Species in the table` = nrow(dezerald),
+  `River species (ours)` = length(river_species),
+  `River species covered` = nrow(dezerald_river),
+  `Modelled species covered` = sum(modelled_species %in% dezerald$species)
+) |>
+  knitr::kable()
+```
+
+```{r dezerald-trait-table}
+dezerald_metadata |>
+  filter(trait %in% dezerald_long$trait, !grepl("^food\\.(DET|PLANT|ANI)", trait)) |>
+  summarise(
+    name = first(name),
+    categories = paste(category, collapse = ", "),
+    .by = trait
+  ) |>
+  bind_rows(tibble(
+    trait = "food.DET1 to food.ANI9", name = "Size classes of resource items (fuzzy)",
+    categories = "affinity 0-5 to detritus, plants, animals of <1, 1-10, >10 mm"
+  )) |>
+  mutate(group = trait_group[sub("\\..*", "", trait)], .before = 1) |>
+  arrange(factor(group, trait_group)) |>
+  knitr::kable(col.names = c("Group", "Trait", "Description", "Categories"))
+```
+
+```{r dezerald-completeness}
+#| fig-width: 8
+#| fig-height: 9
+#| fig-cap: "Share of our river species with a value for each trait."
+
+dezerald_long |>
+  summarise(complete = mean(!is.na(value)), .by = c(group, trait)) |>
+  mutate(trait = forcats::fct_reorder(trait, complete)) |>
+  ggplot(aes(complete, trait)) +
+  geom_col(fill = "#2166AC", width = 0.7) +
+  facet_grid(group ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0, 0.02))) +
+  labs(x = "Species with a value", y = NULL) +
+  theme(
+    strip.text.y.left = element_text(angle = 0, hjust = 1),
+    strip.placement = "outside",
+    panel.grid.major.y = element_blank()
+  )
+```
+
+```{r dezerald-category}
+#| fig-width: 11
+#| fig-height: 8
+#| fig-cap: "Number of species per category, for the traits used in the hypotheses below and a few others."
+
+key_trait <- c(
+  "tol.GEN", "tol.OXY", "tol.THERM", "tol.HAB", "hab.RHEO", "hab.TROPH",
+  "food.FFG", "rep.REPMODE", "rep.REPHAB", "rep.CARE", "mig.MIGRATION",
+  "life.LONG", "life.MAT", "morp.LMAX", "ice.CLASS0"
+)
+dezerald_long |>
+  filter(trait %in% key_trait, !is.na(value)) |>
+  count(trait, value) |>
+  mutate(trait = factor(trait, key_trait)) |>
+  ggplot(aes(n, value)) +
+  geom_col(fill = "#2166AC", width = 0.7) +
+  facet_wrap(~trait, scales = "free_y", ncol = 4) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +
+  labs(x = "Number of species", y = NULL) +
+  theme(panel.grid.major.y = element_blank())
+```
+
+**Results:**
+
+- The table covers all the modelled species and almost all our river
+  species (two rare ones missing).
+- Tolerance, habitat, diet, morphology and the main reproductive traits are
+  almost complete.
+- Growth, body sizes other than the maximum, migration distances, some
+  reproductive traits and the obstacle crossing classes are incomplete,
+  mostly for rare species.
+
+### Pressures
+
+Four water quality pressures, each expected to act on different traits
+(hypotheses below):
+
+- **Ammonium**, as the nitrogen pressure. Nitrate is the main form of
+  nitrogen in rivers, but it is little toxic to fish at the concentrations
+  found there; the toxic forms are un-ionised ammonia (in equilibrium with
+  ammonium) and nitrite [REF: Camargo & Alonso 2006,
+  doi:10.1016/j.envint.2006.05.002]. Nitrate mostly traces the diffuse
+  inputs of farmland (D15), while ammonium comes mainly from sewage and
+  organic effluents [REF: Durand et al. 2011, European Nitrogen Assessment,
+  ch. 7].
+- **Orthophosphate**, the bioavailable form of phosphorus, which drives
+  eutrophication.
+- **Oxygen saturation**, low with organic pollution; used rather than the
+  concentration, which mostly follows temperature.
+- **Water temperature.**
+
+Each pressure is predicted at the fish visits with the space-time model of
+the water quality index in D14 (station-year means of NAIADES, log10 for the
+nutrients; target `pressure_visit`), then centred and scaled.
+
+Three dam metrics:
+
+- **dams to the sea**: number of large dams and weirs between the site and
+  the sea (accumulation, D12-D16), the access from the sea;
+- **dam just downstream**: proximity of the nearest large dam downstream,
+  the site may lie in or above its reservoir;
+- **dam just upstream**: proximity of the nearest large dam upstream, which
+  alters flow, temperature and sediment below it
+  [REF: Poff et al. 1997, doi:10.2307/1313099].
+
+Proximity is $-\log_{10}(d / 100\text{ km})$ with $d$ the distance along the
+river, set to 0 beyond 100 km: 1 at 10 km, 2 at 1 km.
+
+```{r pressure}
+#| fig-width: 6
+#| fig-height: 5
+#| fig-cap: "Correlation between the pressures at the fish visits."
+
+pressure_visit <- tar_read(pressure_visit_wide)
+pressure_cor <- cor(select(pressure_visit, all_of(names(pressure_label))))
+pressure_cor |>
+  as.data.frame() |>
+  tibble::rownames_to_column("x") |>
+  tidyr::pivot_longer(-x, names_to = "y", values_to = "r") |>
+  mutate(
+    x = factor(pressure_label[x], pressure_label),
+    y = factor(pressure_label[y], rev(pressure_label))
+  ) |>
+  filter(as.integer(x) < length(pressure_label) + 1 - as.integer(y)) |>
+  ggplot(aes(x, y, fill = r)) +
+  geom_tile(color = "white", linewidth = 1) +
+  geom_text(aes(label = sprintf("%.2f", r)), size = 3.2, color = "grey15") +
+  scale_fill_gradient2(low = "#B2182B", mid = "grey97", high = "#2166AC", limits = c(-1, 1), name = "r") +
+  labs(x = NULL, y = NULL) +
+  coord_equal() +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1),
+    axis.line = element_blank(), axis.ticks = element_blank(),
+    panel.grid.major.y = element_blank(), legend.position = "right"
+  )
+```
+
+**Results:**
+
+- The pressures are only moderately correlated; the strongest pair is
+  ammonium and orthophosphate (`r round(pressure_cor["ammonium", "orthophosphate"], 2)`),
+  which share the sewage source.
+- The dam just downstream is correlated with the dams to the sea, since such
+  a dam is also on the way to the sea.
+- Variance inflation factors stay below
+  `r ceiling(max(diag(solve(pressure_cor))))`, so all seven terms can be
+  estimated together.
+- Few visits are very close to a large dam (electrofishing is done in
+  wadeable reaches, rarely in reservoirs).
+
+## Hypotheses
+
+For each pressure, we set in advance which traits should make a species more
+or less sensitive, and in which direction. "Expected effect" is the sign of
+the difference of response between species with and without the trait.
+
+```{r hypothesis}
+hypothesis_rationale <- tibble::tribble(
+  ~term, ~trait, ~rationale, ~reference,
+  "ammonium", "intolerant", "Ammonia is toxic, sensitive species decline first", "Camargo & Alonso 2006, doi:10.1016/j.envint.2006.05.002",
+  "ammonium", "omnivore", "Enrichment shifts the food base to algae, plankton and detritus", "Pont et al. 2006, doi:10.1111/j.1365-2664.2005.01126.x",
+  "orthophosphate", "intolerant", "Eutrophication degrades habitat and oxygen", "Pont et al. 2006, doi:10.1111/j.1365-2664.2005.01126.x",
+  "orthophosphate", "omnivore", "Enrichment shifts the food base to algae, plankton and detritus", "Pont et al. 2006, doi:10.1111/j.1365-2664.2005.01126.x",
+  "orthophosphate", "lithophilic", "Phosphorus comes with fine sediment, which clogs spawning gravel", "Kemp et al. 2011, doi:10.1002/hyp.7940",
+  "oxygen_saturation", "intolerant", "Sensitive species need well-oxygenated water", "Kramer 1987, doi:10.1007/BF00002597",
+  "oxygen_saturation", "oxygen_intolerant", "Species with high oxygen demand", "Kramer 1987, doi:10.1007/BF00002597",
+  "temperature", "stenothermal", "Cold-water species decline in warm rivers", "Buisson et al. 2008, doi:10.1111/j.1365-2486.2008.01657.x",
+  "temperature", "rheophilic", "Flowing-water species live in cool upstream reaches", "Buisson et al. 2008, doi:10.1111/j.1365-2486.2008.01657.x",
+  "accumulation", "diadromous", "Dams block the access from the sea", "Baudoin et al. 2014, Onema guide",
+  "accumulation", "crossing", "Species crossing higher obstacles are less blocked", "Baudoin et al. 2014, Onema guide",
+  "accumulation", "rheophilic", "Impoundments replace flowing water by still water", "Poff et al. 1997, doi:10.2307/1313099",
+  "accumulation", "habitat_intolerant", "Dams degrade the habitat", "Poff et al. 1997, doi:10.2307/1313099",
+  "dam_below", "rheophilic", "The reservoir turns flowing into still water", "Poff et al. 1997, doi:10.2307/1313099",
+  "dam_below", "lithophilic", "Fine sediment settles in the reservoir", "Kemp et al. 2011, doi:10.1002/hyp.7940",
+  "dam_below", "crossing", "Recolonisation from downstream needs to cross the dam", "Baudoin et al. 2014, Onema guide",
+  "dam_above", "rheophilic", "Altered flow regime below the dam", "Poff et al. 1997, doi:10.2307/1313099",
+  "dam_above", "lithophilic", "Altered sediment regime below the dam", "Poff et al. 1997, doi:10.2307/1313099",
+  "accumulation", "non_native", "Reservoirs are stocked and suit introduced species", "Johnson et al. 2008, doi:10.1890/070156",
+  "dam_below", "non_native", "Reservoirs are stocked and suit introduced species", "Johnson et al. 2008, doi:10.1890/070156",
+  "dam_above", "non_native", "Introduced species spread downstream from reservoirs", "Johnson et al. 2008, doi:10.1890/070156"
+)
+hypothesis <- tar_read(trait_hypothesis) |>
+  left_join(hypothesis_rationale, by = c("term", "trait"))
+hypothesis |>
+  transmute(
+    Pressure = pressure_label[term], Trait = trait_hypothesis_label[trait],
+    `Expected effect` = if_else(expected > 0, "+", "-"),
+    Why = rationale, Reference = paste0("[REF: ", reference, "]")
+  ) |>
+  knitr::kable()
+```
+
+Traits are binary (with or without), except the obstacle height crossed,
+an ICE class (1: below 0.5 m, 2: below 1 m, 3: below 3 m). The non-native
+status in France is taken from FishBase (target `native_status`).
+
+## Yearly averages
+
+### Responses of the species
+
+The presence of each of the `r length(modelled_species)` species is modelled
+as in D16 (river position controls, sampling, site, year and spatial
+effects), with the three dam metrics and the four yearly pressures (target
+`species_pressure_model`).
+
+```{r pressure-species}
+#| fig-width: 12
+#| fig-height: 10
+#| fig-cap: "Effect of each pressure on the presence of each species (logit scale, per standard deviation of the pressure, 91% credible interval). Species are ordered by their response to temperature."
+
+pressure_response <- tar_read(species_pressure_response)
+species_order <- pressure_response |>
+  filter(term == "temperature") |>
+  arrange(mean) |>
+  pull(species)
+pressure_response |>
+  mutate(
+    term = factor(pressure_label[term], pressure_label),
+    species = factor(species, species_order),
+    effect = case_when(
+      sign(lower) != sign(upper) ~ "Not credible",
+      mean > 0 ~ "Positive",
+      .default = "Negative"
+    )
+  ) |>
+  ggplot(aes(mean, species, color = effect)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.4) +
+  geom_point(size = 1.2) +
+  scale_color_manual(values = colour_effect) +
+  coord_cartesian(xlim = c(-2, 2)) +
+  facet_wrap(~term, nrow = 1, labeller = label_wrap_gen(12)) +
+  labs(x = "Effect on presence", y = NULL, color = NULL) +
+  theme(
+    axis.text.y = element_text(face = "italic", size = 7),
+    panel.spacing.x = unit(0.8, "lines"),
+    legend.position = "top"
+  )
+```
+
+**Results:**
+
+- Temperature sorts the most species: lowland species are more frequent in
+  warmer rivers, cold-water species (grayling, sculpin, trout, brook
+  lamprey) less frequent.
+- Ammonium disfavours sensitive species (spined loach, minnow, brook
+  lamprey, trout, sculpin) and favours tolerant or stocked ones (pikeperch,
+  bream, carp, black bullhead).
+- Well-oxygenated water favours trout, barbel and chub, and disfavours
+  still-water species (tench, pike, perch, roach, rudd).
+- Phosphorus has mixed effects, with no clear group of species.
+- Dams to the sea lower the presence of a few species, the eel first; the
+  two local dam metrics affect few species.
+
+### Traits explaining the responses
+
+For each hypothesis, the effect of the pressure on each species is regressed
+on its trait, weighting each species by the precision of its effect, with a
+species random effect for the variation not explained by the trait
+(random-effects meta-regression; target `trait_response`). Testing the
+trait-pressure link across species avoids the inflated false positives of
+community trait means [REF: Peres-Neto et al. 2017, doi:10.1111/ecog.02302].
+
+```{r trait-response}
+#| fig-width: 8
+#| fig-height: 7
+#| fig-cap: "Difference of response to each pressure between species with and without the trait (logit per standard deviation of the pressure, per ICE class for the obstacle height; 91% credible interval). The sign expected a priori is in brackets."
+
+trait_response <- tar_read(trait_response) |>
+  left_join(tar_read(trait_hypothesis), by = c("term", "trait")) |>
+  mutate(
+    pressure = factor(pressure_label[term], pressure_label),
+    trait_label = paste0(trait_hypothesis_label[trait], " (", if_else(expected > 0, "+", "-"), ")"),
+    outcome = outcome(mean, lower, upper, expected)
+  )
+trait_response |>
+  ggplot(aes(mean, forcats::fct_rev(trait_label), color = outcome)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.6) +
+  geom_point(size = 2.2) +
+  scale_color_manual(values = colour_outcome) +
+  facet_grid(pressure ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  labs(x = "Difference of response (with minus without the trait)", y = NULL, color = NULL) +
+  theme(
+    strip.text.y.left = element_text(angle = 0, hjust = 1, face = "bold"),
+    strip.placement = "outside",
+    panel.spacing.y = unit(0.6, "lines"),
+    legend.position = "top"
+  )
+```
+
+**Results:**
+
+- Temperature has the strongest trait signature: cold-water and
+  flowing-water species are much more sensitive to warm water.
+- Ammonium: intolerant species are more sensitive.
+- Oxygen: intolerant species are more favoured by well-oxygenated water.
+- Phosphorus: only omnivores differ (favoured); the sensitivity of gravel
+  spawners is not supported.
+- Dams to the sea matter for migratory species only.
+- Below a dam (dam just upstream), flowing-water species and gravel
+  spawners are slightly less frequent; a dam just downstream acts through
+  no trait.
+- Non-native species do not respond to dams as a group.
+
+To see where these differences come from, three examples: the response of
+each species, split by the trait, with the precision-weighted mean of each
+group (dashed lines).
+
+```{r trait-example}
+#| fig-width: 11
+#| fig-height: 8
+#| fig-cap: "Effect of a pressure on the presence of each species (91% credible interval), with the trait (red) and without (grey)."
+
+example <- tibble::tribble(
+  ~term, ~trait,
+  "temperature", "stenothermal",
+  "ammonium", "intolerant",
+  "dam_above", "rheophilic"
+)
+example_data <- purrr::pmap_dfr(example, \(term, trait) {
+  pressure_response |>
+    filter(.data$term == !!term) |>
+    inner_join(select(tar_read(trait_predictor), species, value = all_of(trait)), by = "species") |>
+    filter(!is.na(value)) |>
+    mutate(
+      panel = paste0(pressure_label[term], "\nby ", tolower(trait_hypothesis_label[trait])),
+      group = if_else(value == 1, "With the trait", "Without")
+    )
+}) |>
+  mutate(panel = factor(panel, unique(panel)))
+example_data |>
+  arrange(panel, mean) |>
+  mutate(row = factor(paste(panel, species, sep = "___"), unique(paste(panel, species, sep = "___")))) |>
+  ggplot(aes(mean, row, color = group)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.4) +
+  geom_point(size = 1.2) +
+  scale_color_manual(values = c(`With the trait` = "#B2182B", Without = "grey55"), guide = "none") +
+  scale_y_discrete(labels = \(x) sub(".*___", "", x)) +
+  facet_wrap(~panel, scales = "free", labeller = label_wrap_gen(30)) +
+  labs(x = "Effect on presence (logit per sd of the pressure)", y = NULL) +
+  theme(axis.text.y = element_text(face = "italic", size = 6))
+```
+
+**Results:**
+
+- The trait effects are differences between groups of species, not a
+  property of every species.
+- Warm water: almost all cold-water species decline, most others gain.
+- Ammonium: intolerant species mostly decline and others gain, with overlap.
+- Below a dam: the difference between flowing-water and other species is
+  small compared with the spread among species.
+
+*To discuss:*
+
+- Each test uses at most 48 species, so only strong trait effects can be
+  detected.
+- Traits are correlated (intolerant species are often rheophilic and
+  cold-water), so one trait may carry the effect of another.
+- Nitrate was tried first instead of ammonium and showed no trait
+  signature; the switch is supported by toxicity, but was made after
+  seeing that result.
+- The pressures are predicted, not measured, at most visits.
+
+## Summer or yearly averages?
+
+Fish may respond to summer conditions rather than to the yearly average:
+temperature peaks and oxygen is lowest in summer
+[REF: Kramer 1987, doi:10.1007/BF00002597], and summer is the growing and,
+for many species, the spawning season. Each pressure is therefore also
+averaged over the summer of the visit year (June to September, station-years
+with at least 3 summer samples; target `naiades_station_year_summer`) and
+predicted at the visits as above. For each pressure, the presence models are
+refitted with that pressure averaged over the summer and the others yearly
+(target `timing_model`), on the same visits, and the trait hypotheses are
+tested again (target `timing_trait_response`). The fit is compared with the
+yearly model by WAIC, species by species, for the species caught at 5% of the
+visits or more; we report the median difference and the number of species
+fitting better or worse, since WAIC is unstable for a few species (e.g.
+flounder, salmon) and would dominate a sum.
+
+Longer averages (2, 3 and 5 years) were considered but not fitted: once
+predicted at the visits, they are almost identical to the yearly average
+(correlation ≥ 0.98), because the pressures differ much more between sites
+than between years. The summer averages differ more (correlation 0.85 to
+0.97 with the yearly ones).
+
+```{r timing}
+#| fig-width: 8
+#| fig-height: 5.5
+#| fig-cap: "Difference of response between species with and without the trait (91% credible interval), with the pressure averaged over the year (grey) or over the summer (coloured by the median WAIC difference of the summer model with the yearly one over the common species; blue: summer fits better). The sign expected a priori is in brackets."
+
+occupancy <- tar_read(river_presence) |>
+  filter(operation_id %in% pressure_visit$operation_id) |>
+  distinct(species = species_valid, operation_id) |>
+  count(species) |>
+  mutate(occupancy = n / nrow(pressure_visit))
+common_species <- filter(occupancy, occupancy >= 0.05)$species
+timing_waic <- tar_read(timing_waic) |>
+  filter(species %in% common_species) |>
+  mutate(difference = waic - waic[duration == "1y"], .by = c(pressure, species)) |>
+  filter(duration == "summer") |>
+  summarise(
+    waic = median(difference),
+    better = sum(difference < -2),
+    worse = sum(difference > 2),
+    .by = pressure
+  )
+period_label <- c(`1y` = "Year", summer = "Summer")
+tar_read(timing_trait_response) |>
+  left_join(tar_read(trait_hypothesis), by = c("term", "trait")) |>
+  left_join(select(timing_waic, term = pressure, waic), by = "term") |>
+  mutate(
+    pressure = factor(pressure_label[term], pressure_label),
+    waic = if_else(duration == "summer", waic, NA),
+    trait_label = paste0(trait_hypothesis_label[trait], " (", if_else(expected > 0, "+", "-"), ")"),
+    period = factor(period_label[duration], period_label)
+  ) |>
+  ggplot(aes(mean, forcats::fct_rev(trait_label), color = waic, shape = period)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.6, position = position_dodge(width = -0.6)) +
+  geom_point(size = 2.4, fill = "white", stroke = 0.8, position = position_dodge(width = -0.6)) +
+  scale_color_gradient2(
+    low = "#2166AC", mid = "grey75", high = "#B2182B", midpoint = 0, na.value = "grey35",
+    name = "Median ΔWAIC\n(summer − year)"
+  ) +
+  scale_shape_manual(values = c(Year = 16, Summer = 21)) +
+  facet_grid(pressure ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  labs(x = "Difference of response (with minus without the trait)", y = NULL, shape = NULL) +
+  theme(
+    strip.text.y.left = element_text(angle = 0, hjust = 1, face = "plain"),
+    strip.placement = "outside",
+    panel.spacing.y = unit(0.6, "lines"),
+    legend.position = "top", legend.box = "horizontal"
+  )
+```
+
+**Results:**
+
+- Temperature: the summer average fits better for most common species and
+  strengthens the trait signature of cold-water and flowing-water species.
+- Ammonium, phosphorus and oxygen: the summer average fits no better than
+  the yearly one and gives the same trait signatures (slightly weaker for
+  ammonium and phosphorus).
+- So the season matters for temperature only; the yearly averages are kept
+  for the other pressures.
+
+*To discuss:*
+
+- The summer averages rest on 3 to 4 daytime samples per year, so the night
+  oxygen minimum and the temperature peaks are missed.
+- Choosing summer for some pressures and the year for others after this
+  comparison would be fitting to the data unless justified in advance.
+
+## Next steps
+
+- **Functional diversity.** Measure the functional diversity of each
+  community, e.g. functional richness and dispersion
+  [REF: Villéger et al. 2008, doi:10.1890/07-1206.1]
+  [REF: Laliberté & Legendre 2010, doi:10.1890/08-2244.1], against a null
+  model shuffling species at fixed richness, to test whether poor water
+  quality brings more species but less functional diversity.
+- **Similarity between sites.** Test homogenisation directly: are sites with
+  poor water quality more similar to each other than sites with clean water,
+  at equal distance and river position? Splitting dissimilarity into turnover
+  and nestedness separates the replacement of species from their simple loss
+  or gain [REF: Baselga 2010, doi:10.1111/j.1466-8238.2009.00490.x].

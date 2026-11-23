@@ -4,23 +4,15 @@ foodweb_nutrient_targets <- list(
     prepare_quality_foodweb(dam_foodweb, water_quality_visit, structure_pca)
   ),
   tar_target(
-    quality_structure_setting, # Metrics modelled with dams only or dams + water quality, without and with richness.
-    tidyr::expand_grid(
-      tibble::tibble(
-        metric = c(
-          "fish_richness", "mean_trophic_level", "fish_diet_overlap", "trophic_redundancy",
-          "log_biomass", "biomass_trophic_level", "biomass_pyramid", "PC1", "PC2"
-        ),
-        family = c("poisson", rep("gaussian", 8))
+    quality_structure_setting, # Metrics modelled with dams + water quality.
+    tibble::tibble(
+      metric = c(
+        "fish_richness", "mean_trophic_level", "fish_diet_overlap", "trophic_redundancy",
+        "log_biomass", "biomass_trophic_level", "biomass_pyramid", "PC1", "PC2"
       ),
-      model = c("dam", "additive"),
-      richness = c(FALSE, TRUE)
-    ) |>
-      dplyr::filter(!(metric == "fish_richness" & richness)) |>
-      dplyr::mutate(term = paste0(
-        presence_term, ifelse(model == "additive", " + quality", ""),
-        ifelse(richness, " + log_richness", "")
-      ))
+      family = c("poisson", rep("gaussian", 8)),
+      term = paste(presence_term, "+ quality")
+    )
   ),
   tar_target(
     quality_structure_model,
@@ -45,18 +37,29 @@ foodweb_nutrient_targets <- list(
     garbage_collection = TRUE
   ),
   tar_target(
-    mediation_stressor, # Stressor terms of the presence models: dams and water quality.
-    c("accumulation", "PC1")
+    quality_removal_effect, # Standardised change of Structure PC1 and PC2 per removed species.
+    {
+      set.seed(1)
+      dplyr::bind_rows(
+        dplyr::filter(species_removal_effect, metric == "PC1"),
+        summarise_species_removal(compute_removal_axis(species_removal, structure_pca, "PC2"), min_sites = 30)
+      )
+    }
+  ),
+  tar_target(
+    mediation_setting, # Stressor term of the presence models and the structure axis it acts on.
+    tibble::tibble(stressor = c("accumulation", "PC1"), axis = c("PC1", "PC2"))
   ),
   tar_target(
     stressor_decomposition, # Structure change expected from the change of species presence, per stressor.
     {
       set.seed(1)
       decompose_dam_structure(
-        species_additive_model, species_removal_effect, mediation_stressor, n_draws = 2000
+        species_additive_model, dplyr::filter(quality_removal_effect, metric == mediation_setting$axis),
+        mediation_setting$stressor, n_draws = 2000
       )
     },
-    pattern = map(mediation_stressor),
+    pattern = map(mediation_setting),
     iteration = "list"
   ),
   tar_target(
@@ -64,10 +67,11 @@ foodweb_nutrient_targets <- list(
     {
       set.seed(1)
       permute_dam_structure(
-        species_additive_model, species_removal_effect, mediation_stressor, n_permutations = 2000
+        species_additive_model, dplyr::filter(quality_removal_effect, metric == mediation_setting$axis),
+        mediation_setting$stressor, n_permutations = 2000
       )
     },
-    pattern = map(mediation_stressor),
+    pattern = map(mediation_setting),
     iteration = "list"
   )
 )

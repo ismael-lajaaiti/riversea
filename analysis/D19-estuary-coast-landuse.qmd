@@ -1,0 +1,301 @@
+---
+title: "Catchment land use and estuary and coastal fish communities"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+Ecosystems are connected by flows of matter and organisms: what one ecosystem
+exports shapes the recipient one. This is idea of @Loreau-Mouquet-Holt-2003,
+@Gounand-etal-2018a]. Rivers deliver to estuaries and coastal waters the
+nutrients, sediment and freshwater released by their catchment. Here, we ask how
+the land use and climate of the catchment shape the fish communities of
+estuaries and coastal bays, in the four districts of interest.
+
+Here are our hypotheses of driver impacts on estuarine and coastal ecosystems.
+
+**Hypotheses.** Fish are grouped by their use of estuaries (guilds, see
+below).
+
+| Driver | Expected change | Expected effect on the communities |
+|:--|:--|:--|
+| Farmland (arable) | More nitrate and phosphate exported; more fine sediment and turbidity | Moderate enrichment raises the productivity of nurseries: more marine juveniles (flatfish, sea bass); strong enrichment brings algal blooms and hypoxia: fewer sensitive estuarine residents and marine juveniles |
+| Urban areas | More ammonium, organic matter and contaminants | Fewer marine juveniles and sensitive residents, more tolerant species |
+| Rainfall of the year, catchment size | More freshwater: lower salinity, more nutrients delivered | More freshwater and diadromous species, fewer marine stragglers; higher nursery production of sole in wet years |
+| Temperature (catchment and year) | Warmer water; with nutrients, more hypoxia | More warm-water marine species and residents, fewer cold-water species (plaice, whiting, smelt, flounder) |
+
+Steps: (1) data and guilds, (2) the catchment of the estuary of each
+operation, (3) models of the communities (to come).
+
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+```{r palette}
+guild_label <- c(
+  MS = "Marine straggler", MM = "Marine migrant (juveniles)", ER = "Estuarine resident",
+  CA = "Diadromous", FW = "Freshwater"
+)
+colour_guild <- c(
+  `Marine straggler` = "#56B4E9", `Marine migrant (juveniles)` = "#0072B2",
+  `Estuarine resident` = "#009E73", Diadromous = "#E69F00", Freshwater = "#CC79A7"
+)
+colour_effect <- c(Positive = "#2166AC", `Not credible` = "grey70", Negative = "#B2182B")
+survey_label <- c(pomet = "POMET (estuaries)", nurse = "Nursery survey (coastal bays)")
+colour_survey <- c(`POMET (estuaries)` = "#D55E00", `Nursery survey (coastal bays)` = "#0072B2")
+```
+
+## Data
+
+Two trawling survey surveys: POMET and nursery survey (NURSE).
+
+We keep the operations of the four districts, at sea and inland (upper
+estuaries), with their distance to the river mouth (D8; target
+`sea_operation`). Each operation is then linked to a river mouth (see
+[Catchment of each estuary](#catchment-of-each-estuary)).
+
+Salinity is measured at most POMET operations; for the nursery survey and
+the other POMET operations, it is taken from the yearly modeled environment
+of the Bay of Biscay coast.
+
+```{r data}
+operation <- tar_read(sea_operation)
+catch <- tar_read(sea_catch)
+operation |>
+  summarise(
+    Operations = n(),
+    Years = paste(min(year), max(year), sep = "-"),
+    Months = paste(sort(unique(month)), collapse = ", "),
+    `Salinity measured` = scales::percent(mean(salinity_source == "measured", na.rm = TRUE), 1),
+    `Salinity from the grid` = scales::percent(mean(salinity_source == "grid", na.rm = TRUE), 1),
+    `No salinity` = sum(is.na(salinity)),
+    .by = c(survey, gear)
+  ) |>
+  mutate(survey = survey_label[survey]) |>
+  rename(Survey = survey, Gear = gear) |>
+  knitr::kable()
+```
+
+```{r map}
+#| fig-width: 9
+#| fig-height: 8
+#| fig-cap: "Operations of the two surveys in the four districts."
+
+france <- rnaturalearth::ne_countries(scale = "medium", country = "France", returnclass = "sf")
+ggplot() +
+  geom_sf(data = france, fill = "grey95", color = "grey70", linewidth = 0.2) +
+  geom_point(
+    aes(longitude, latitude, color = survey_label[survey]),
+    data = operation, size = 0.6, alpha = 0.5
+  ) +
+  coord_sf(xlim = range(operation$longitude) + c(-0.3, 0.3), ylim = range(operation$latitude) + c(-0.3, 0.3)) +
+  scale_color_manual(values = colour_survey) +
+  labs(x = NULL, y = NULL, color = NULL) +
+  guides(color = guide_legend(override.aes = list(size = 2, alpha = 1))) +
+  theme(legend.position = "top", axis.line = element_blank())
+```
+
+### Species and guilds
+
+Each species is classed by its use of estuaries, from the guilds of the
+POMET reference (target `estuary_guild`), matched on the names validated
+against FishBase (the reference uses older names, e.g. *Liza ramada* for
+*Chelon ramada*), completed by hand for the species missing from it and
+corrected by hand for a few (target `species_guild`, notes in the table
+below).
+
+The five guilds are the estuarine-use functional groups of
+@Elliott-Quintino-2007.
+
+| Guild | Description | Examples |
+|:--|:--|:--|
+| Marine straggler | Marine species spawning at sea that enter estuaries occasionally and in low numbers, mostly near the mouth; they do not depend on estuaries. | dragonet, solenette, red mullet, weevers |
+| Marine migrant (juveniles) | Marine species spawning at sea whose juveniles enter estuaries and shallow bays in large numbers to grow (nurseries), before returning to sea; adults may also feed there seasonally. | sole, sea bass, plaice, whiting, sprat, thick-lipped and golden grey mullets |
+| Estuarine resident | Species completing their whole life cycle in the estuary (and shallow coastal waters). | gobies, pipefishes, sea horses |
+| Diadromous | Species migrating between the sea and fresh water to complete their life cycle, through the estuary: anadromous ones spawn in rivers (shads, smelt), catadromous ones spawn at sea (eel, flounder, thin-lipped grey mullet). | eel, flounder, smelt, shads |
+| Freshwater | Freshwater species entering the upper, low-salinity part of the estuary. | roach, bream, pikeperch |
+
+```{r guild}
+#| fig-width: 8
+#| fig-height: 4
+#| fig-cap: "Number of species of each guild and share of the occurrences (species x operation), per survey."
+
+catch |>
+  inner_join(select(operation, operation_id, survey), by = "operation_id") |>
+  mutate(guild = coalesce(guild_label[guild], "Unclassified")) |>
+  summarise(species = n_distinct(species), occurrences = n(), .by = c(survey, guild)) |>
+  mutate(share = occurrences / sum(occurrences), .by = survey) |>
+  mutate(
+    survey = survey_label[survey],
+    guild = factor(guild, c(names(colour_guild), "Unclassified"))
+  ) |>
+  ggplot(aes(share, survey, fill = guild)) +
+  geom_col(width = 0.6, color = "white", linewidth = 0.3) +
+  geom_text(
+    aes(label = species), position = position_stack(vjust = 0.5), size = 3, color = "white"
+  ) +
+  scale_fill_manual(values = c(colour_guild, Unclassified = "grey70")) +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0, 0.02))) +
+  labs(x = "Share of the occurrences (numbers: species)", y = NULL, fill = NULL) +
+  theme(legend.position = "top", panel.grid.major.y = element_blank())
+```
+
+```{r guild-table}
+species_guild <- tar_read(species_guild)
+catch |>
+  inner_join(select(operation, operation_id, survey), by = "operation_id") |>
+  count(species, survey) |>
+  tidyr::pivot_wider(names_from = survey, values_from = n, values_fill = 0) |>
+  inner_join(species_guild, by = "species") |>
+  mutate(guild = factor(guild_label[guild], guild_label)) |>
+  arrange(guild, desc(pomet + nurse)) |>
+  transmute(
+    Species = paste0("*", species, "*"), Guild = guild,
+    `POMET operations` = pomet, `Nursery survey operations` = nurse,
+    `Guild source` = source, Note = coalesce(note, "")
+  ) |>
+  knitr::kable()
+```
+
+
+## Catchment of each estuary
+
+Each operation is linked to the main river flowing into its estuary or
+bay, and related to the land use of that river's catchment. Small streams
+entering the same estuary (e.g. the marsh channels along the Gironde) are
+merged with its main river: the water of the estuary comes mostly from
+it.
+
+- **Main rivers:** the AMOBIO river mouths (as in D8) draining 1,000 km²
+  or more; mouths closer than 3 km are pooled (e.g. the Orne and the Dan
+  at Caen).
+- **Catchments:** computed on the HydroSHEDS flow directions (~400 m, as
+  in D15). Each grid outlet takes the main river its stream reaches along
+  the AMOBIO network: e.g. the Garonne and the Dordogne, which end at the
+  head of the Gironde on the grid. Land cover and weather are read from
+  the cached catchment rasters of D15.
+- **Operations:** inland (upper estuaries), the main river reached along
+  the network; at sea, the nearest main river mouth along the sea (D8),
+  if within 15 km. The other operations are dropped. By hand: the
+  operations of the Gironde estuary belong to the Gironde (the AMOBIO
+  Gironde ends at its head, 20 to 70 km from them).
+
+Targets: `main_mouth`, `network_mouth`, `mouth_outlet`,
+`sea_operation_mouth`, `mouth_catchment`.
+
+```{r mouth}
+mouth <- tar_read(sea_mouth_area)
+basin <- tar_read(mouth_basin)
+operation_mouth <- operation |>
+  select(operation_id, survey, district, longitude, latitude) |>
+  left_join(tar_read(sea_operation_mouth), by = "operation_id")
+mouth_used <- mouth |>
+  filter(mouth_id %in% operation_mouth$mouth_id) |>
+  arrange(district, desc(latitude))
+palette_mouth <- c("#E69F00", "#56B4E9", "#009E73", "#D55E00", "#0072B2", "#CC79A7", "#8C6D31")
+colour_mouth <- setNames(rep_len(palette_mouth, nrow(mouth_used)), mouth_used$mouth_id)
+```
+
+```{r mouth-catchment}
+#| fig-width: 8
+#| fig-height: 8
+#| fig-cap: "Catchments of the main rivers with operations (one colour per river), and the operations kept (black) or dropped (grey, more than 15 km from a main river mouth at sea)."
+
+ggplot() +
+  geom_sf(data = france, fill = "grey95", color = "grey70", linewidth = 0.2) +
+  geom_sf(aes(fill = factor(mouth_id)), data = filter(basin, mouth_id %in% mouth_used$mouth_id), color = "white", linewidth = 0.1, alpha = 0.6) +
+  geom_point(aes(longitude, latitude), data = filter(operation_mouth, is.na(mouth_id)), size = 0.2, color = "grey55") +
+  geom_point(aes(longitude, latitude), data = filter(operation_mouth, !is.na(mouth_id)), size = 0.2) +
+  ggrepel::geom_label_repel(
+    aes(longitude, latitude, label = river), data = mouth_used,
+    size = 2.6, label.size = 0.1, label.padding = 0.15, min.segment.length = 0, segment.size = 0.2, seed = 1
+  ) +
+  coord_sf(xlim = c(-5.2, 6), ylim = c(43, 51.2)) +
+  scale_fill_manual(values = colour_mouth, guide = "none") +
+  labs(x = NULL, y = NULL) +
+  theme(axis.line = element_blank(), axis.text = element_text(size = 7))
+```
+
+```{r mouth-operation}
+#| fig-width: 10
+#| fig-height: 13
+#| fig-cap: "Operations coloured by their main river (triangle: mouth), per district; grey: dropped."
+
+map_district <- \(d) {
+  op <- filter(operation_mouth, district == d)
+  m <- filter(mouth_used, mouth_id %in% op$mouth_id)
+  ggplot() +
+    geom_sf(data = france, fill = "grey95", color = "grey70", linewidth = 0.2) +
+    geom_point(aes(longitude, latitude), data = filter(op, is.na(mouth_id)), size = 0.4, color = "grey70") +
+    geom_point(aes(longitude, latitude, color = factor(mouth_id)), data = filter(op, !is.na(mouth_id)), size = 0.5, alpha = 0.6) +
+    geom_point(aes(longitude, latitude, color = factor(mouth_id)), data = m, shape = 17, size = 2.4) +
+    ggrepel::geom_text_repel(
+      aes(longitude, latitude, label = river, color = factor(mouth_id)), data = m,
+      size = 2.8, fontface = "bold", bg.color = "white", bg.r = 0.15,
+      min.segment.length = 0, segment.size = 0.2, max.overlaps = Inf, seed = 1
+    ) +
+    coord_sf(xlim = range(op$longitude) + c(-0.1, 0.1), ylim = range(op$latitude) + c(-0.1, 0.1)) +
+    scale_color_manual(values = colour_mouth, guide = "none") +
+    labs(x = NULL, y = NULL, title = d) +
+    theme(axis.line = element_blank(), axis.text = element_text(size = 7))
+}
+row_north <- patchwork::wrap_plots(map_district("Escaut-Somme"), map_district("Seine"), widths = c(1, 2.5))
+row_south <- patchwork::wrap_plots(map_district("Loire"), map_district("Ardour-Garonne"), widths = c(2, 1))
+patchwork::wrap_plots(row_north, row_south, ncol = 1, heights = c(1, 2))
+```
+
+```{r mouth-table}
+operation_mouth |>
+  filter(!is.na(mouth_id)) |>
+  count(mouth_id, survey) |>
+  tidyr::pivot_wider(names_from = survey, values_from = n, values_fill = 0) |>
+  inner_join(mouth, by = "mouth_id") |>
+  arrange(desc(area)) |>
+  transmute(
+    River = river, District = district, `POMET operations` = pomet,
+    `Nursery survey operations` = nurse, `Catchment (km²)` = round(area)
+  ) |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+**Results:**
+
+- `r nrow(mouth_used)` main rivers, from about 1,000 km² (Laïta, Rance)
+  to 118,000 km² (Loire), with the large rivers at their known size
+  (Gironde 82,000 km², Seine 76,000, Vilaine 10,500).
+- `r format(sum(!is.na(operation_mouth$mouth_id)), big.mark = ",")` of
+  `r format(nrow(operation_mouth), big.mark = ",")` operations are kept:
+  most POMET operations (estuaries) but few nursery survey operations
+  (bays away from the main mouths).
+
+*To discuss:*
+
+- Land use varies only between the `r nrow(mouth_used)` rivers, so its
+  effects rest on few units.
+- The bays dropped here could be added back with a land use exposure
+  summing the main rivers nearby, weighted by distance at sea.
+
+## Next steps
+
+- Models of the communities against the catchment of their mouth: to
+  start from scratch.

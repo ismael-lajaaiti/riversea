@@ -26,6 +26,17 @@ continuum in France.
 - [ ] Filter large dams in ROE database
 - [ ] Try interpolate nutrient concentration in AMOBIO dataset (pandora box)
 
+**Functional diversity (D18)**
+
+- [x] Redundant species along water temperature (as done for ammonium)
+- [ ] Project functional loss under climate scenarios: future air temperature
+  (WorldClim CMIP6 scenarios) → water temperature (air-water model on NAIADES)
+  → presence models (D17) → communities (as in D13) → functional diversity
+  (D18); compare dispersal with and without dams
+- [ ] Redo habitat specialisation (Clavel et al. 2011) in D18: habitat classes on
+  equal steps weighted by river network length, and separate structural,
+  thermal and chemical specialisation (first version dropped, see D18 next steps)
+
 **Writing**
 
 - [x] Draft formal hypotheses

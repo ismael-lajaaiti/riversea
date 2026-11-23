@@ -41,11 +41,18 @@ nutrient_driver_targets <- list(
     format = "file"
   ),
   tar_target(
-    station_landcover, # Share of each CORINE level-2 class in the upstream catchment of the stations.
-    compute_station_landcover(corine_zip, flow_direction_file, station_flow),
+    corine_catchment_file, # Catchment share of each CORINE level-2 class at every flow cell, per vintage (written once, read for any outlet).
+    build_catchment_landcover(corine_zip, flow_direction_file, here("data", "geo", "catchment")),
     pattern = map(corine_zip),
+    format = "file",
+    deployment = "main", # One vintage at a time: each rasterisation takes 5-7 GB.
     memory = "transient",
     garbage_collection = TRUE
+  ),
+  tar_target(
+    station_landcover, # Share of each CORINE level-2 class in the upstream catchment of the stations.
+    compute_station_landcover(corine_catchment_file, station_flow),
+    pattern = map(corine_catchment_file)
   ),
   tar_target(
     worldclim_variable, # WorldClim monthly weather variables: precipitation, minimum and maximum temperature.
@@ -58,10 +65,16 @@ nutrient_driver_targets <- list(
     format = "file"
   ),
   tar_target(
-    station_weather, # Yearly weather of the upstream catchment of the stations.
-    compute_station_weather(worldclim_file, flow_direction_file, station_flow),
+    worldclim_catchment_file, # Catchment yearly weather at every flow cell (written once, read for any outlet).
+    build_catchment_weather(worldclim_file, flow_direction_file, here("data", "geo", "catchment")),
+    format = "file",
+    deployment = "main",
     memory = "transient",
     garbage_collection = TRUE
+  ),
+  tar_target(
+    station_weather, # Yearly weather of the upstream catchment of the stations.
+    compute_station_weather(worldclim_catchment_file, station_flow)
   ),
   tar_target(
     driver_data, # Station-years of the stations with fish visits, with standardised drivers (land cover, climate, weather anomalies, catchment area).

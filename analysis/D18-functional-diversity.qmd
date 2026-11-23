@@ -1,0 +1,861 @@
+---
+title: "Functional diversity of fish communities"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+In [D16](D16-dam-nutrient-impact-foodweb.qmd), poor water quality brought
+slightly more species, and in [D17](D17-pressure-traits.qmd)
+the species lost with each pressure shared traits (cold-water,
+flowing-water, intolerant species). A gain of species can thus hide a loss
+of functions, if the species gained are functionally similar and those lost
+are specialists [REF: Mouillot et al. 2013, doi:10.1016/j.tree.2012.10.004]
+[REF: Villéger et al. 2010, doi:10.1890/09-1310.1]. Here we measure the
+functional diversity of each community and ask whether it decreases with the
+pressures at equal species richness.
+
+Steps: (1) choose the traits, (2) build a functional space, (3) measure the
+functional richness and dispersion of each community and compare them with a
+null model at equal richness, (4) relate them to dams and water quality.
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+```{r palette}
+colour_group <- c(
+  Diet = "#009E73", Habitat = "#0072B2", `Size and life history` = "#E69F00",
+  Reproduction = "#CC79A7", Morphology = "#56B4E9"
+)
+colour_effect <- c(Positive = "#2166AC", `Not credible` = "grey70", Negative = "#B2182B")
+pressure_label <- c(
+  ammonium = "Ammonium", orthophosphate = "Orthophosphate",
+  oxygen_saturation = "Oxygen saturation", temperature = "Water temperature",
+  accumulation = "Dams to the sea", dam_below = "Dam just downstream",
+  dam_above = "Dam just upstream"
+)
+# Terms of the D18 models: phosphorus and oxygen are left out, as part of the
+# same pollution syndrome as ammonium.
+model_label <- pressure_label[c("ammonium", "temperature", "accumulation", "dam_below", "dam_above")]
+```
+
+## Traits
+
+Functional diversity should describe what species do in the ecosystem
+("effect traits": diet, habitat use, size, reproduction, morphology) rather
+than how they respond to pressures ("response traits", e.g. tolerances)
+[REF: Lavorel & Garnier 2002, doi:10.1046/j.1365-2435.2002.00664.x]
+[REF: Villéger et al. 2017, Hydrobiologia, doi to check]. We select the
+traits of the Dézerald et al. table (D17) with four rules:
+
+1. **Effect traits only.** The tolerances (to water quality, oxygen,
+   temperature, habitat degradation) and the obstacle crossing classes are
+   excluded: they define how species respond to the pressures tested below,
+   so including them would make the test partly circular.
+2. **Complete:** known for at least 90% of the species. This drops growth
+   rates, body sizes other than the maximum, migration distances, egg size,
+   upper thermal tolerance, number of reproductive cycles, relative fecundity
+   and respiration.
+3. **Not redundant:** maximum length rather than maximum weight; the fuzzy
+   diet rather than the feeding guild summarising it; the morphological
+   ratios rather than body shape and swimming mode. Migration is left out as
+   the trait of the dam hypotheses in D17.
+4. **Equal weight per group of traits:** the distance between species is the
+   mean of the distances of five groups, so that the nine morphological
+   ratios do not outweigh the rest
+   [REF: de Bello et al. 2021, doi:10.1111/2041-210X.13537].
+
+```{r trait}
+variable <- tar_read(functional_variable)
+metadata <- tar_read(dezerald_metadata) |>
+  distinct(trait, name)
+variable |>
+  mutate(
+    Description = case_when(
+      variable == "diet" ~ "Diet: affinity to detritus, plants and animals of three sizes (proportions)",
+      variable == "living" ~ "Vertical position: bottom, near bottom, open water (fuzzy)",
+      variable == "hab.RHEO" ~ "Rheophily, from still to flowing water (5 classes)",
+      variable == "hab.TROPH" ~ "Feeding position: bottom or water column",
+      variable == "life.LONG" ~ "Longevity",
+      .default = metadata$name[match(variable, metadata$trait)]
+    ),
+    type = c(fuzzy = "Fuzzy", ordinal = "Ordered classes", nominal = "Categories")[type]
+  ) |>
+  select(Group = group, Trait = variable, Description, Type = type) |>
+  knitr::kable()
+```
+
+Each trait gives a distance in [0, 1] between two species (categories: 0 if
+same, 1 otherwise; ordered classes: difference over the range; fuzzy: half
+the sum of the absolute differences of affinities), averaged within groups
+then across groups. Missing values are ignored pair by pair (target
+`functional_distance`).
+
+```{r trait-group}
+#| fig-width: 6
+#| fig-height: 3
+#| fig-cap: "Correlation between the distance of each trait group and the overall distance between species."
+
+distance <- tar_read(functional_distance)
+lower <- lower.tri(distance$distance)
+tibble(
+  group = dimnames(distance$group)[[3]],
+  r = apply(distance$group, 3, \(g) cor(g[lower], distance$distance[lower]))
+) |>
+  mutate(group = factor(group, rev(names(colour_group)))) |>
+  ggplot(aes(r, group, fill = group)) +
+  geom_col(width = 0.6, show.legend = FALSE) +
+  scale_fill_manual(values = colour_group) +
+  scale_x_continuous(limits = c(0, 1), expand = expansion(mult = c(0, 0.02))) +
+  labs(x = "Correlation with the overall distance", y = NULL) +
+  theme(panel.grid.major.y = element_blank())
+```
+
+**Results:**
+
+- All five groups contribute to the overall distance, reproduction the most
+  and morphology the least.
+
+## Functional space
+
+The species are placed in a space whose axes are those of a principal
+coordinate analysis of the distance. The number of axes is chosen by how
+well the distances in the space match the original distances (mean absolute
+deviation) [REF: Maire et al. 2015, doi:10.1111/geb.12299], using mFD
+[REF: Magneville et al. 2022, doi:10.1111/ecog.05904].
+
+```{r space-quality}
+#| fig-width: 5
+#| fig-height: 3.5
+#| fig-cap: "Quality of the functional space: mean absolute deviation between the distances in the space and the trait distances (lower is better)."
+
+space <- tar_read(functional_space)
+axis_number <- tar_read(functional_axis_number)
+space$quality_fspaces |>
+  tibble::rownames_to_column("space") |>
+  mutate(axes = as.integer(sub("pcoa_(\\d+)d", "\\1", space))) |>
+  ggplot(aes(axes, mad)) +
+  geom_line(color = "grey60", linewidth = 0.4) +
+  geom_point(aes(color = axes == axis_number), size = 2.5, show.legend = FALSE) +
+  scale_color_manual(values = c(`TRUE` = "#B2182B", `FALSE` = "grey30")) +
+  scale_x_continuous(breaks = 1:8) +
+  labs(x = "Number of axes", y = "Mean absolute deviation")
+```
+
+```{r space}
+#| fig-width: 11
+#| fig-height: 5.5
+#| fig-cap: "Species in the functional space (first four axes). Arrows: correlation of selected traits with the axes."
+
+coord <- tar_read(functional_coord)
+trait <- tar_read(functional_trait)
+species_coord <- as_tibble(coord, rownames = "species")
+loading_trait <- c(
+  "Rheophily" = "hab.RHEO", "Maximum length" = "morp.LMAX", "Longevity" = "life.LONG",
+  "Large prey" = "diet.ANI9", "Plants" = "diet.PLANT4", "Detritus" = "diet.DET1",
+  "Bottom-dwelling" = "living.BENT", "Open water" = "living.PEL", "Elongated body" = "morp.BLBD"
+)
+loading <- cor(coord, trait[match(rownames(coord), trait$species), loading_trait], use = "pairwise") |>
+  t() |>
+  as_tibble() |>
+  mutate(trait = names(loading_trait))
+plot_plane <- function(x, y) {
+  scale <- 0.8 * max(abs(coord[, c(x, y)]))
+  ggplot(species_coord, aes(.data[[x]], .data[[y]])) +
+    geom_hline(yintercept = 0, color = "grey85", linewidth = 0.3) +
+    geom_vline(xintercept = 0, color = "grey85", linewidth = 0.3) +
+    geom_segment(
+      aes(x = 0, y = 0, xend = scale * .data[[x]], yend = scale * .data[[y]]),
+      data = loading, color = "#B2182B", linewidth = 0.4,
+      arrow = arrow(length = unit(0.15, "cm"))
+    ) +
+    geom_point(color = "grey30", size = 1.3) +
+    ggrepel::geom_text_repel(
+      aes(label = species), size = 2.1, fontface = "italic", color = "grey45",
+      max.overlaps = 6, segment.size = 0.2, seed = 1
+    ) +
+    ggrepel::geom_label_repel(
+      aes(scale * .data[[x]], scale * .data[[y]], label = trait),
+      data = loading, color = "#B2182B", size = 2.8, fontface = "bold",
+      label.size = NA, fill = alpha("white", 0.8), min.segment.length = Inf, seed = 1
+    ) +
+    coord_equal() +
+    labs(x = sub("PC", "Axis ", x), y = sub("PC", "Axis ", y)) +
+    theme(panel.grid.major.y = element_blank())
+}
+patchwork::wrap_plots(plot_plane("PC1", "PC2"), plot_plane("PC3", "PC4"))
+```
+
+**Results:**
+
+- Four axes represent the distances well (mean absolute deviation 0.06,
+  below the usual threshold of 0.1).
+- Axis 1 runs from small still-water species (mosquitofish, stickleback,
+  bitterling) to large, long-lived, flowing-water and migratory species
+  (salmon, barbel, lampreys).
+- Axis 2 runs from bottom-dwellers (sculpin, brook lamprey, stone loach) to
+  open-water predators (pike, largemouth bass, rudd).
+- Axes 3 and 4 separate large-prey eaters from plant and detritus eaters.
+
+## Functional diversity of the communities
+
+Two indices are computed at each visit (target `functional_diversity`), on
+presence (each species counts once):
+
+- **functional richness**: the volume of the space filled by the species of
+  the community, relative to the volume of all species
+  [REF: Villéger et al. 2008, doi:10.1890/07-1206.1]; it needs more species
+  than axes, so visits with `r axis_number` species or fewer are left out;
+- **functional dispersion**: the mean distance of the species to the centre
+  of the community [REF: Laliberté & Legendre 2010, doi:10.1890/08-2244.1],
+  defined for any number of species.
+
+Both increase with the number of species. To compare communities at equal
+richness, the observed index is compared with 199 communities with the same
+species but with the traits shuffled among species (target `functional_null`),
+which keeps the richness of each community and the frequency of each
+species. The standardised effect size (SES) is the observed value minus the
+mean of the null values, divided by their standard deviation: negative when
+the species are functionally more similar than expected by chance
+[REF: Mouchet et al. 2010, doi:10.1111/j.1365-2435.2010.01695.x].
+
+```{r diversity}
+#| fig-width: 10
+#| fig-height: 7
+#| fig-cap: "Functional richness and dispersion against species richness (top), and their standardised effect sizes (bottom). Lines: median per number of species."
+
+ses <- tar_read(functional_ses)
+index_label <- c(
+  fric = "Functional richness", fdis = "Functional dispersion",
+  fric_ses = "Functional richness (SES)", fdis_ses = "Functional dispersion (SES)"
+)
+ses |>
+  tidyr::pivot_longer(all_of(names(index_label)), names_to = "index") |>
+  filter(is.finite(value)) |>
+  mutate(index = factor(index_label[index], index_label)) |>
+  ggplot(aes(richness, value)) +
+  geom_hline(
+    aes(yintercept = y), data = tibble(index = factor(index_label[3:4], index_label), y = 0),
+    color = "grey60", linewidth = 0.3
+  ) +
+  geom_jitter(width = 0.25, height = 0, size = 0.4, alpha = 0.25, color = "#2166AC") +
+  stat_summary(fun = median, geom = "line", color = "grey15", linewidth = 0.6) +
+  facet_wrap(~index, scales = "free_y") +
+  labs(x = "Number of species", y = NULL)
+```
+
+```{r diversity-summary}
+ses |>
+  summarise(
+    across(c(fric_ses, fdis_ses), list(
+      visits = \(x) sum(is.finite(x)),
+      median = \(x) median(x, na.rm = TRUE),
+      below = \(x) mean(x < -1.96, na.rm = TRUE),
+      above = \(x) mean(x > 1.96, na.rm = TRUE)
+    ))
+  ) |>
+  tidyr::pivot_longer(everything(), names_to = c("index", ".value"), names_pattern = "(.*_ses)_(.*)") |>
+  transmute(
+    Index = index_label[index], Visits = visits, `Median SES` = round(median, 2),
+    `Lower than chance` = scales::percent(below, 1), `Higher than chance` = scales::percent(above, 1)
+  ) |>
+  knitr::kable()
+```
+
+**Results:**
+
+- Functional richness rises almost linearly with the number of species;
+  functional dispersion saturates above about 8 species.
+- At equal richness, most communities are slightly less diverse than
+  expected by chance (median SES about −0.6): species that co-occur tend to
+  share traits, as expected from environmental filtering.
+- Few communities depart strongly from chance (SES beyond ±1.96).
+
+## Dams, water quality and functional diversity
+
+The SES of each index is modelled as the presence of species in D17
+(Gaussian, same river position, sampling, site, year and spatial effects),
+with the three dam metrics, yearly ammonium and water temperature (target
+`functional_model`). Phosphorus and oxygen are left out of all the models
+of this notebook: they belong to the same pollution syndrome as ammonium
+(correlations 0.73 and −0.49), so controlling for them would remove part of
+the effect of pollution. Temperature is kept as a natural gradient along
+the river with its own effect on the fauna (D17). The ammonium effect is
+thus the effect of the pollution syndrome it marks. The raw indices are
+fitted too, for comparison.
+
+```{r model}
+#| fig-width: 10
+#| fig-height: 6
+#| fig-cap: "Effect of dams and pressures on functional diversity (per standard deviation of the pressure, 91% credible interval). Left: raw indices, which include the effect through species richness; right: standardised effect sizes, at equal richness."
+
+model <- tar_read(functional_model)
+purrr::map_dfr(model, \(m) {
+  m$summary.fixed[names(model_label), ] |>
+    as_tibble(rownames = "term") |>
+    transmute(response = m$response, term, mean, lower = `0.045quant`, upper = `0.955quant`)
+}) |>
+  mutate(
+    index = factor(
+      if_else(grepl("fric", response), "Functional richness", "Functional dispersion"),
+      c("Functional richness", "Functional dispersion")
+    ),
+    scale = factor(if_else(grepl("ses", response), "at equal richness (SES)", "raw"), c("raw", "at equal richness (SES)")),
+    term = factor(model_label[term], rev(model_label)),
+    effect = case_when(sign(lower) != sign(upper) ~ "Not credible", mean > 0 ~ "Positive", .default = "Negative")
+  ) |>
+  ggplot(aes(mean, term, color = effect)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.6) +
+  geom_point(size = 2.2) +
+  scale_color_manual(values = colour_effect) +
+  facet_wrap(index ~ scale, scales = "free_x", labeller = \(x) label_value(x, multi_line = FALSE) |> lapply(\(l) sub(",", ":", l))) +
+  labs(x = "Effect", y = NULL, color = NULL) +
+  theme(legend.position = "top", panel.spacing = unit(1, "lines"))
+```
+
+**Results:**
+
+- **Ammonium** does not change the raw functional richness, but lowers
+  both indices at equal richness: species gained with ammonium are
+  functionally redundant, those lost are distinct. A loss of functions
+  hidden by a stable number of species.
+- **Water temperature:** warmer rivers have more species and a higher raw
+  functional diversity, but a lower functional diversity at equal
+  richness.
+- **Dams to the sea** lower the raw functional richness (fewer species, the
+  migratory ones), and tend to lower the dispersion at equal richness.
+- **Dam just upstream** slightly raises the functional richness at equal
+  richness; the dam just downstream has no effect.
+
+*To discuss:*
+
+- Presence only: abundance-weighted indices (ASPE counts) would weight the
+  dominant species, closer to the functions of the community.
+- The null model keeps the frequency of each species; a null model drawing
+  species from the regional pool would also test the filtering of which
+  species reach a site.
+- The trait choice matters; a sensitivity analysis dropping one group at a
+  time would show which groups drive the results.
+
+## Which functions become redundant?
+
+Functional diversity falls with ammonium at equal richness: the species
+gained are functionally similar to those already present, and those lost are
+distinct. Three ways to look at this more finely.
+
+### Winners and losers in the functional space
+
+If ammonium favours "the same kind of species", the species it favours
+should cluster in one region of the functional space, and those it
+disfavours should lie at its edges. The distinctiveness of a species is its
+mean functional distance to all other species, its uniqueness the distance to
+its nearest neighbour [REF: Violle et al. 2017, doi:10.1016/j.tree.2017.02.002].
+
+```{r winner-space}
+#| fig-width: 11
+#| fig-height: 5.5
+#| fig-cap: "Species in the functional space (first two axes, left; axes 3 and 4, right), coloured by the effect of ammonium on their presence (D17, yearly model). Larger points: credible effects."
+
+ammonium <- tar_read(species_pressure_response) |>
+  filter(term == "ammonium") |>
+  mutate(credible = sign(lower) == sign(upper))
+winner <- species_coord |>
+  inner_join(ammonium, by = "species")
+effect_limit <- max(abs(winner$mean))
+plot_winner <- function(x, y) {
+  ggplot(winner, aes(.data[[x]], .data[[y]])) +
+    geom_hline(yintercept = 0, color = "grey85", linewidth = 0.3) +
+    geom_vline(xintercept = 0, color = "grey85", linewidth = 0.3) +
+    geom_point(data = anti_join(species_coord, winner, by = "species"), color = "grey80", size = 1.2) +
+    geom_point(aes(fill = mean, size = credible), shape = 21, color = "grey30", stroke = 0.3) +
+    ggrepel::geom_text_repel(
+      aes(label = species), data = filter(winner, credible), size = 2.3, fontface = "italic",
+      color = "grey25", max.overlaps = 20, segment.size = 0.2, seed = 1
+    ) +
+    scale_fill_gradient2(
+      low = "#B2182B", mid = "grey95", high = "#2166AC", limits = c(-effect_limit, effect_limit),
+      name = "Effect of ammonium\non presence"
+    ) +
+    scale_size_manual(values = c(`TRUE` = 3, `FALSE` = 1.6), guide = "none") +
+    coord_equal() +
+    labs(x = sub("PC", "Axis ", x), y = sub("PC", "Axis ", y)) +
+    theme(panel.grid.major.y = element_blank(), legend.position = "right")
+}
+patchwork::wrap_plots(plot_winner("PC1", "PC2"), plot_winner("PC3", "PC4"), guides = "collect") &
+  theme(legend.position = "right")
+```
+
+```{r distinctiveness}
+#| fig-width: 8
+#| fig-height: 4.5
+#| fig-cap: "Difference of response to each pressure per standard deviation of distinctiveness or uniqueness of the species (random-effects meta-regression as in D17, 91% credible interval). Negative: the more distinct species are more disfavoured."
+
+tar_read(distinctiveness_response) |>
+  mutate(
+    term = factor(pressure_label[term], rev(pressure_label)),
+    trait = c(distinctiveness_scaled = "Distinctiveness", uniqueness_scaled = "Uniqueness")[trait],
+    effect = case_when(sign(lower) != sign(upper) ~ "Not credible", mean > 0 ~ "Positive", .default = "Negative")
+  ) |>
+  ggplot(aes(mean, term, color = effect)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.6) +
+  geom_point(size = 2.2) +
+  scale_color_manual(values = colour_effect) +
+  facet_wrap(~trait) +
+  labs(x = "Difference of response per sd of the trait", y = NULL, color = NULL) +
+  theme(legend.position = "top", panel.spacing.x = unit(1, "lines"))
+```
+
+**Results:**
+
+- Ammonium splits the functional space along axis 2: the species it
+  favours are open-water and still-water species (pikeperch, pike, rudd,
+  carp, roach, perch, stickleback, mosquitofish), those it disfavours are
+  bottom-dwellers (sculpin, brook lamprey, spined loach, minnow).
+- The species favoured by ammonium are not functionally ordinary in the
+  regional pool: their distinctiveness does not differ, and they are even
+  slightly more unique. The loss of diversity is thus not a replacement of
+  distinct species by ordinary ones, but a shift of the whole community
+  towards one region of the functional space, where the species gained
+  resemble each other.
+- Warm water favours more unique species (e.g. catfish), as the lowland
+  fauna is richer in distinct species.
+
+### Which traits become redundant?
+
+The functional diversity of each community is recomputed from the distance
+of each trait group alone, with two indices on the distances between species
+(target `pairwise_diversity`):
+
+- **mean pairwise distance** (MPD): how different the species are on
+  average;
+- **mean nearest-neighbour distance** (MNND): how different each species is
+  from its most similar neighbour in the community; it falls when the
+  community holds near-copies of the same kind of species
+  [REF: Swenson 2014, Functional and phylogenetic ecology in R, Springer].
+
+Both are compared with the same null model (199 shuffles of species
+traits) and modelled as above (targets `pairwise_ses`, `pairwise_model`).
+
+```{r pairwise}
+#| fig-width: 11
+#| fig-height: 5.5
+#| fig-cap: "Effect of dams and pressures on the functional diversity of each trait group at equal richness (standardised effect sizes; per standard deviation of the pressure, 91% credible interval)."
+
+group_label <- c(
+  All.traits = "All traits", Diet = "Diet", Habitat = "Habitat",
+  Size.and.life.history = "Size and life history", Reproduction = "Reproduction", Morphology = "Morphology"
+)
+purrr::map_dfr(tar_read(pairwise_model), \(m) {
+  m$summary.fixed[names(model_label), ] |>
+    as_tibble(rownames = "term") |>
+    transmute(response = m$response, term, mean, lower = `0.045quant`, upper = `0.955quant`)
+}) |>
+  tidyr::separate_wider_delim(response, ".", names = c("index", "group"), too_many = "merge") |>
+  mutate(
+    index = factor(
+      c(mpd_ses = "Mean pairwise distance", mnnd_ses = "Mean nearest-neighbour distance")[index],
+      c("Mean pairwise distance", "Mean nearest-neighbour distance")
+    ),
+    group = factor(group_label[group], rev(group_label)),
+    term = factor(model_label[term], model_label),
+    effect = case_when(sign(lower) != sign(upper) ~ "Not credible", mean > 0 ~ "Positive", .default = "Negative")
+  ) |>
+  ggplot(aes(mean, group, color = effect)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.5) +
+  geom_point(size = 1.8) +
+  scale_color_manual(values = colour_effect) +
+  facet_grid(index ~ term, labeller = labeller(term = label_wrap_gen(12), index = label_wrap_gen(18))) +
+  scale_x_continuous(breaks = c(-0.1, 0.1)) +
+  labs(x = "Effect at equal richness", y = NULL, color = NULL) +
+  theme(legend.position = "top", panel.spacing.x = unit(0.6, "lines"))
+```
+
+**Results:**
+
+- **Ammonium** lowers the diversity of **size and life history** and of
+  **diet** (and of morphology for the mean pairwise distance): communities
+  at high ammonium hold species of similar size, longevity and fecundity,
+  eating similar food. The nearest-neighbour distance in size and life
+  history falls most: near-copies of the same kind of species.
+- In contrast, ammonium raises the diversity of **reproduction** (and the
+  habitat nearest-neighbour distance): the species gained spawn in more
+  varied ways.
+- **Water temperature** acts on other groups: warm communities are less
+  diverse in habitat and morphology (fewer bottom-dwelling, elongated
+  species), more diverse in diet and reproduction.
+- **Dams to the sea** lower the diet diversity, probably through the loss
+  of migratory species with distinct diets (eel, lampreys).
+
+### In which direction?
+
+Lower diversity at equal richness says that species become similar, not
+towards which traits. The mean trait of the species present at each visit
+(community mean, scaled) is modelled as the indices above (target
+`community_trait_model`), for size, life history and diet. Diet breadth is
+the Shannon diversity of the diet affinities of a species (high:
+generalist). Temperature is shown for contrast.
+
+```{r direction}
+#| fig-width: 8
+#| fig-height: 5
+#| fig-cap: "Change of the community mean trait (in standard deviations) per standard deviation of ammonium and of water temperature, 91% credible intervals."
+
+trait_direction_label <- c(
+  max_length = "Maximum length", longevity = "Longevity", age_maturity = "Age at maturity",
+  fecundity = "Fecundity", diet_breadth = "Diet breadth", detritus = "Detritus",
+  plants = "Plants", small_prey = "Small prey (< 1 mm)", medium_prey = "Medium prey (1-10 mm)",
+  large_prey = "Large prey (> 10 mm)"
+)
+purrr::map_dfr(tar_read(community_trait_model), \(m) {
+  m$summary.fixed[c("ammonium", "temperature"), ] |>
+    as_tibble(rownames = "term") |>
+    transmute(term, trait = m$response, mean, lower = `0.045quant`, upper = `0.955quant`)
+}) |>
+  mutate(
+    term = factor(pressure_label[term], pressure_label[c("ammonium", "temperature")]),
+    trait = factor(trait_direction_label[trait], rev(trait_direction_label)),
+    group = factor(
+      if_else(trait %in% trait_direction_label[1:4], "Size and life history", "Diet"),
+      c("Size and life history", "Diet")
+    ),
+    effect = case_when(sign(lower) != sign(upper) ~ "Not credible", mean > 0 ~ "Positive", .default = "Negative")
+  ) |>
+  ggplot(aes(mean, trait, color = effect)) +
+  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
+  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.6) +
+  geom_point(size = 2) +
+  scale_color_manual(values = colour_effect) +
+  facet_grid(group ~ term, scales = "free_y", space = "free_y") +
+  labs(x = "Change of the community mean trait", y = NULL, color = NULL) +
+  theme(legend.position = "top", panel.spacing.x = unit(1, "lines"), strip.text.y = element_text(angle = 0, hjust = 0))
+```
+
+**Results:**
+
+- **Ammonium** shifts communities towards more fecund species with broader
+  diets, eating more small prey and fewer large prey; size and longevity
+  barely change on average.
+- **Water temperature** shifts communities more strongly: towards larger,
+  longer-lived, later-maturing and more fecund species with broader diets,
+  eating more plants and fewer medium-sized invertebrates.
+
+### Redundant species
+
+A species is counted as redundant in a community if another species present
+is a near-copy of it: their functional distance is among the 5% smallest
+distances between the species of the pool (target `functional_redundancy`).
+The number of redundant species, out of the number of species, is modelled
+as the presence of species (binomial, same river position, sampling, site,
+year and spatial effects), with the local dams, the logarithm of richness
+(a near-copy is more likely in a richer community) and the pressure in
+thirds of the visits: ammonium, with temperature controlled, and water
+temperature, with ammonium controlled (target `redundancy_model`).
+Phosphorus and oxygen are left out: they are part of the same pollution
+syndrome as ammonium (correlations 0.73 and −0.49), so controlling for them
+would remove part of the effect we look for.
+
+```{r redundancy}
+#| fig-width: 8
+#| fig-height: 4
+#| fig-cap: "Share of the species of a community that have a near-copy in it, per third of ammonium and of water temperature. Open circles: raw mean share. Filled: share adjusted for richness, river position, sampling, dams and the other pressure (91% credible interval), centred on the raw average of the thirds. Blue: credibly above the average of the thirds; red: below."
+
+class_name <- c("Low", "Medium", "High")
+redundancy_model <- tar_read(redundancy_model)
+redundancy_raw <- purrr::map_dfr(redundancy_model, \(m) {
+  add_pressure_class(tar_read(pressure_visit_wide), m$pressure, 3) |>
+    select(operation_id, pressure_class) |>
+    inner_join(
+      tar_read(pressure_visit) |> filter(pressure == m$pressure) |> select(operation_id, raw = mean),
+      by = "operation_id"
+    ) |>
+    inner_join(tar_read(functional_redundancy), by = "operation_id") |>
+    summarise(
+      range = if (m$pressure == "ammonium") {
+        sprintf("%.2f to %.2f mg/L", 10^min(raw), 10^max(raw))
+      } else {
+        sprintf("%.1f to %.1f °C", min(raw), max(raw))
+      },
+      visits = n(),
+      richness = mean(trials),
+      share = mean(redundant / trials),
+      .by = pressure_class
+    ) |>
+    arrange(pressure_class) |>
+    mutate(pressure = m$pressure, class = factor(class_name, class_name))
+})
+redundancy_adjusted <- purrr::map_dfr(redundancy_model, \(m) {
+  baseline <- mean(qlogis(redundancy_raw$share[redundancy_raw$pressure == m$pressure]))
+  m$summary.lincomb.derived |>
+    as_tibble(rownames = "class") |>
+    transmute(
+      pressure = m$pressure,
+      class = factor(stringr::str_to_title(class), class_name),
+      effect = case_when(`0.045quant` > 0 ~ "Positive", `0.955quant` < 0 ~ "Negative", .default = "Not credible"),
+      mean = plogis(baseline + mean),
+      lower = plogis(baseline + `0.045quant`),
+      upper = plogis(baseline + `0.955quant`)
+    )
+})
+redundancy_label <- bind_rows(
+  filter(redundancy_raw, pressure == "ammonium", class == "High") |> transmute(pressure, class, y = share, label = "raw"),
+  filter(redundancy_adjusted, pressure == "ammonium", class == "High") |> transmute(pressure, class, y = mean, label = "adjusted")
+)
+pressure_facet <- \(x) factor(pressure_label[x], pressure_label[c("ammonium", "temperature")])
+ggplot(mutate(redundancy_adjusted, pressure = pressure_facet(pressure)), aes(class, mean)) +
+  geom_point(
+    aes(y = share), data = mutate(redundancy_raw, pressure = pressure_facet(pressure)),
+    shape = 21, size = 3, color = "grey40", fill = "white", stroke = 0.7
+  ) +
+  geom_linerange(aes(ymin = lower, ymax = upper, color = effect), linewidth = 0.8) +
+  geom_point(aes(color = effect), size = 3) +
+  geom_text(
+    aes(y = y, label = label), data = mutate(redundancy_label, pressure = pressure_facet(pressure)),
+    nudge_x = 0.15, hjust = 0, size = 3.2, color = "grey35"
+  ) +
+  scale_color_manual(values = colour_effect, guide = "none") +
+  scale_x_discrete(expand = expansion(add = c(0.6, 0.9))) +
+  scale_y_continuous(labels = scales::percent_format(1), expand = expansion(mult = 0.1)) +
+  facet_wrap(~pressure) +
+  labs(x = "Third of the pressure", y = "Species with a near-copy in the community") +
+  theme(panel.spacing.x = unit(1.5, "lines"))
+```
+
+```{r redundancy-class}
+redundancy_raw |>
+  transmute(
+    Pressure = pressure_label[pressure], Third = class, Range = range, Visits = visits,
+    `Mean number of species` = round(richness, 1),
+    `Species with a near-copy (raw)` = scales::percent(share, 1)
+  ) |>
+  knitr::kable()
+```
+
+Which are the near-copies? For each pair of near-identical species, the
+share of visits where both occur, in the low and in the high third of
+ammonium (pairs occurring together in at least 2% of the visits of either
+third).
+
+```{r near-copy}
+#| fig-width: 8
+#| fig-height: 7
+#| fig-cap: "Near-identical species pairs: share of visits where both species occur, in the low (open) and high (filled) third of ammonium. Blue: more frequent at high ammonium; red: less frequent. Raw shares, not adjusted."
+
+distance <- tar_read(functional_distance)$distance
+threshold <- quantile(distance[upper.tri(distance)], 0.05)
+pair_index <- which(upper.tri(distance) & distance <= threshold, arr.ind = TRUE)
+ammonium_third <- add_pressure_class(tar_read(pressure_visit_wide), "ammonium", 3) |>
+  select(operation_id, pressure_class) |>
+  filter(pressure_class %in% c(1, 3))
+third_visits <- count(ammonium_third, pressure_class, name = "visits")
+third_presence <- tar_read(functional_presence) |>
+  inner_join(ammonium_third, by = "operation_id")
+near_copy <- tibble(
+  species_1 = rownames(distance)[pair_index[, 1]],
+  species_2 = rownames(distance)[pair_index[, 2]]
+) |>
+  purrr::pmap_dfr(\(species_1, species_2) {
+    inner_join(
+      filter(third_presence, species == species_1),
+      filter(third_presence, species == species_2),
+      by = c("operation_id", "pressure_class")
+    ) |>
+      count(pressure_class) |>
+      right_join(third_visits, by = "pressure_class") |>
+      transmute(pair = paste(species_1, "&", species_2), pressure_class, share = coalesce(n, 0L) / visits)
+  }) |>
+  tidyr::pivot_wider(names_from = pressure_class, values_from = share, names_prefix = "third_") |>
+  filter(pmax(third_1, third_3) >= 0.02) |>
+  mutate(
+    direction = if_else(third_3 > third_1, "More frequent at high ammonium", "Less frequent at high ammonium"),
+    pair = forcats::fct_reorder(pair, third_3 - third_1)
+  )
+ggplot(near_copy, aes(y = pair, color = direction)) +
+  geom_segment(aes(x = third_1, xend = third_3, yend = pair), linewidth = 0.6) +
+  geom_point(aes(x = third_1), shape = 21, fill = "white", size = 2.3, stroke = 0.8) +
+  geom_point(aes(x = third_3), size = 2.3) +
+  scale_color_manual(values = c(`More frequent at high ammonium` = "#2166AC", `Less frequent at high ammonium` = "#B2182B")) +
+  scale_x_continuous(labels = scales::percent_format(1)) +
+  labs(x = "Visits with both species", y = NULL, color = NULL) +
+  theme(axis.text.y = element_text(face = "italic", size = 8), legend.position = "top")
+```
+
+Each third is compared with the average of the three thirds (sum-to-zero
+coding), so that each gets its own credible interval; the adjusted shares
+translate these differences, estimated on the logit scale, into
+percentages around the raw average share.
+
+**Results:**
+
+- **Ammonium:** raw, the share of species with a near-copy rises from about
+  a third in the low third to almost half in the medium and high thirds. At
+  equal richness, river position, dams and temperature, part of this rise
+  remains: the low third has credibly fewer redundant species than the
+  average, the high third credibly more (about 39% against 41.5%).
+- **The near-copies gained with ammonium** are pairs of still-water and
+  tolerant species: perch and roach (together at 24% of the low-ammonium
+  visits, 59% of the high ones), rudd and chub, stone loach and gudgeon,
+  ruffe and perch, bleak and pumpkinseed, white bream and tench, crucian
+  carp and tench. The pairs lost are flowing-water species: salmon and
+  trout, minnow and spirlin, barbel and nase, trout and grayling.
+- **Water temperature:** the raw rise is even steeper (28% to 50%), but it
+  comes almost entirely from the higher richness of warm sites (14 species
+  on average against 8 in cold sites): at equal richness, the share of
+  redundant species barely differs between thirds (only the medium third is
+  slightly above the average).
+- So warm rivers hold more species and more near-copies, but no more than
+  expected from their richness, whereas ammonium adds near-copies beyond
+  richness.
+- When phosphorus and oxygen are also controlled, the ammonium effect
+  becomes smaller and not credible: redundancy follows the pollution
+  syndrome as a whole rather than ammonium alone.
+
+## Similarity between sites
+
+Biotic homogenisation means that communities under a pressure become more
+similar to each other across space
+[REF: Olden et al. 2004, doi:10.1016/j.tree.2003.09.010]; it often shows as
+a flatter distance-decay of dissimilarity: distant sites are less different
+than they would be without the pressure
+[REF: Olden & Rooney 2006, doi:10.1111/j.1466-822X.2006.00238.x]. We ask
+whether sites under high ammonium are more similar to each other than sites
+under low ammonium, and do the same for water temperature.
+
+- **Classes.** One visit per site (the most recent); sites are split into
+  thirds of the pressure (target `site_class`).
+- **Pairs.** Only pairs of sites in the same third and less than 200 km
+  apart. For each pair, the Sørensen dissimilarity is split into
+  **turnover** (replacement of species) and **nestedness** (one community a
+  subset of the other) [REF: Baselga 2010,
+  doi:10.1111/j.1466-8238.2009.00490.x] (target `class_dissimilarity`).
+- **Model.** Each dissimilarity is regressed on the class, the log distance
+  between sites and their interaction (a distance-decay per class), with
+  the mean and the difference of the two sites in river position (distance
+  to the source, width, altitude, slope), dams to the sea and the other
+  pressures (for ammonium, temperature only; for temperature, ammonium,
+  phosphorus and oxygen), and whether they share a catchment. The second figure shows
+  the predicted dissimilarity for each class at 100 km, with all these at
+  their average, i.e. for pairs at the same position along the river and
+  under the same other pressures. Pairs are not independent: the intervals come from 199
+  bootstrap resamples of sites (target `class_dissimilarity_model`).
+- **Dispersion.** The spread of the communities of each class
+  around their centroid (multivariate dispersion,
+  [REF: Anderson et al. 2006, doi:10.1111/j.1461-0248.2006.00926.x]), after
+  removing the effect of river position and the other pressures (target
+  `class_dispersion`). Homogenisation: lower dispersion.
+
+```{r dispersion}
+#| fig-width: 7
+#| fig-height: 3.5
+#| fig-cap: "Spread of the communities of each third of the pressure around their centroid, at the same river position and other pressures (91% bootstrap interval). Lower: more homogeneous."
+
+class_label <- c(`1` = "Low", `2` = "Medium", `3` = "High")
+colour_class <- c(Low = "#2166AC", Medium = "grey55", High = "#B2182B")
+tar_read(class_dispersion) |>
+  mutate(
+    pressure = factor(pressure_label[pressure], pressure_label[c("ammonium", "temperature")]),
+    class = factor(class_label[as.character(class)], class_label)
+  ) |>
+  ggplot(aes(class, dispersion, color = class)) +
+  geom_linerange(aes(ymin = lower, ymax = upper), linewidth = 0.7) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = colour_class, guide = "none") +
+  facet_wrap(~pressure) +
+  labs(x = "Third of the pressure", y = "Distance to class centroid")
+```
+
+```{r similarity}
+#| fig-width: 8
+#| fig-height: 5
+#| fig-cap: "Dissimilarity between sites of the same third of the pressure, and its two components, for sites 100 km apart at the same river position and other pressures (91% bootstrap interval)."
+
+response_label <- c(sorensen = "Dissimilarity (Sørensen)", turnover = "Turnover", nestedness = "Nestedness")
+tar_read(class_dissimilarity_model) |>
+  filter(distance == 100) |>
+  summarise(
+    lower = quantile(predicted[replicate > 0], 0.045),
+    upper = quantile(predicted[replicate > 0], 0.955),
+    predicted = predicted[replicate == 0],
+    .by = c(pressure, response, class)
+  ) |>
+  mutate(
+    pressure = factor(pressure_label[pressure], pressure_label[c("ammonium", "temperature")]),
+    response = factor(response_label[response], response_label),
+    class = factor(class_label[as.character(class)], class_label)
+  ) |>
+  ggplot(aes(class, predicted, color = class)) +
+  geom_linerange(aes(ymin = lower, ymax = upper), linewidth = 0.7) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = colour_class, guide = "none") +
+  facet_grid(response ~ pressure, scales = "free_y") +
+  labs(x = "Third of the pressure", y = "Predicted dissimilarity") +
+  theme(strip.text.y = element_text(angle = 0, hjust = 0))
+```
+
+At equal environment, dissimilarity barely increases with distance
+within 200 km (the river position, the pressures and the catchment
+explain most of the differences between distant sites), so the
+distance-decay curves are not shown.
+
+**Results:**
+
+- **Ammonium does not homogenise communities.** At the same river position,
+  dams and temperature, sites of the high third are not more similar to
+  each other than sites of the low third; they are slightly more different.
+  Their differences come more from the replacement of species (higher
+  turnover) and less from species-poor subsets (lower nestedness). The
+  dispersion around the class centroid does not differ between low and
+  high ammonium.
+- **Water temperature homogenises communities.** Warm sites (medium and
+  high thirds) are more similar to each other than cold sites, mostly
+  through lower nestedness, and the dispersion around the centroid falls
+  steadily from cold to warm sites, at the same river position.
+- So ammonium reduces functional diversity within communities (more
+  near-copies, previous sections) without making communities more alike
+  across sites; warm water does make them more alike.
+
+*To discuss:*
+
+- One visit per site; using all visits would add the change of communities
+  in time.
+- The classes are thirds of the predicted pressure; within a class, sites
+  still differ in pressure, especially in the highest third (long tail of
+  ammonium).
+- Taxonomic dissimilarity only; functional dissimilarity between sites
+  would test functional homogenisation.
+
+## Next steps
+
+- Habitat specialisation (community specialisation index,
+  [REF: Clavel et al. 2011, doi:10.1890/080216]): a first version
+  (width x slope classes) ranked large-river species as specialists and
+  trout as a generalist, because large rivers are rare and lumped in the
+  ASPE sample and the thermal niche was left out; to redo with habitat
+  classes on equal steps weighted by river network length, and separate
+  structural, thermal and chemical specialisation.
+- Abundance-weighted indices (ASPE counts), closer to the functions of the
+  communities.
+- Functional dissimilarity between sites, to test functional rather than
+  taxonomic homogenisation.

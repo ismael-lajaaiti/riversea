@@ -42,6 +42,9 @@ to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 14. [Impact of nutrients on species presence](D14-nutrient-impact-presence.qmd)
 15. [Drivers of nutrient concentrations](D15-nutrient-drivers.qmd)
 16. [Joint impact of dams and water quality on food webs](D16-dam-nutrient-impact-foodweb.qmd)
+17. [Pressures and the traits of fish species](D17-pressure-traits.qmd)
+18. [Functional diversity of fish communities](D18-functional-diversity.qmd)
+19. [Catchment land use and estuary and coastal fish communities](D19-estuary-coast-landuse.qmd)
 
 
 ## E. Invasive species and dams

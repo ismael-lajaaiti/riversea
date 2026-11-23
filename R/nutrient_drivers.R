@@ -33,32 +33,51 @@ crop_flow_direction <- function(zip_file, extent, dir) {
   path
 }
 
-#' Catchment mean of rasters, at given cells.
+#' Write the catchment mean of rasters at every cell.
 #'
 #' Flow accumulation sums a value over all the cells upstream of each cell
 #' (the cell itself included). The catchment mean of a variable is the
 #' accumulation of value x cell area divided by the accumulation of the cell
-#' area, both over the cells where the variable is known.
+#' area, both over the cells where the variable is known. All layers must
+#' have the same unknown cells (checked), so the known area is accumulated
+#' once. The means are written to disk, so that the catchment mean at any
+#' cell is then read directly (see `read_catchment_mean()`).
 #'
 #' @param direction SpatRaster of flow directions.
 #' @param value SpatRaster on the grid of `direction`, one layer per
 #'   variable.
-#' @param cell integer, cells where the means are returned.
-#' @return matrix, one row per cell, one column per layer of `value`, with
-#'   the attribute `coverage`: the fraction of the catchment area where each
-#'   layer is known.
+#' @param path path of the GeoTIFF written.
+#' @return `path`, with one layer per layer of `value` (same names) and a
+#'   last layer `coverage`: the fraction of the catchment area where the
+#'   layers are known.
 #' @noRd
-accumulate_mean <- function(direction, value, cell) {
+write_catchment_mean <- function(direction, value, path) {
+  unknown <- terra::global(is.na(value), "sum")[, 1]
+  stopifnot("all layers must have the same unknown cells" = length(unique(unknown)) == 1)
   area <- terra::cellSize(direction, unit = "km")
-  upstream <- terra::flowAccumulation(direction, weight = area)[cell][, 1]
-  mean <- vapply(seq_len(terra::nlyr(value)), \(k) {
-    known <- terra::ifel(is.na(value[[k]]), 0, area)
-    total <- terra::flowAccumulation(direction, weight = terra::ifel(is.na(value[[k]]), 0, value[[k]] * area))
-    total[cell][, 1] / terra::flowAccumulation(direction, weight = known)[cell][, 1]
-  }, numeric(length(cell)))
-  mean <- matrix(mean, nrow = length(cell), dimnames = list(NULL, names(value)))
-  known <- terra::ifel(is.na(value[[1]]), 0, area)
-  attr(mean, "coverage") <- terra::flowAccumulation(direction, weight = known)[cell][, 1] / upstream
+  known <- terra::flowAccumulation(direction, weight = terra::ifel(is.na(value[[1]]), 0, area))
+  mean <- terra::rast(lapply(seq_len(terra::nlyr(value)), \(k) {
+    terra::flowAccumulation(direction, weight = terra::ifel(is.na(value[[k]]), 0, value[[k]] * area)) / known
+  }))
+  coverage <- known / terra::flowAccumulation(direction, weight = area)
+  out <- c(mean, coverage)
+  names(out) <- c(names(value), "coverage")
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  terra::writeRaster(out, path, overwrite = TRUE, datatype = "FLT4S", gdal = c("COMPRESS=DEFLATE", "PREDICTOR=3"))
+  path
+}
+
+#' Catchment mean of rasters at given cells, read from disk.
+#'
+#' @param path path, `write_catchment_mean()`'s output.
+#' @param cell integer, cells of the flow-direction grid.
+#' @return matrix, one row per cell, one column per variable, with the
+#'   attribute `coverage`.
+#' @noRd
+read_catchment_mean <- function(path, cell) {
+  value <- as.matrix(terra::rast(path)[cell])
+  mean <- value[, colnames(value) != "coverage", drop = FALSE]
+  attr(mean, "coverage") <- value[, "coverage"]
   mean
 }
 
@@ -216,7 +235,7 @@ rasterize_corine <- function(zip_file, extent, resolution, path) {
   path
 }
 
-#' Land cover of the upstream catchment of the stations.
+#' Catchment land cover at every cell of the flow-direction grid.
 #'
 #' The CORINE polygons are reprojected and rasterised with GDAL (streaming
 #' from disk, without loading them into R) on a grid 5 times finer than the
@@ -224,16 +243,16 @@ rasterize_corine <- function(zip_file, extent, resolution, path) {
 #' flow-direction cell covered by each level-2 class (e.g. 21 arable land,
 #' 23 pastures) is then the mean over its 5 x 5 fine cells; cells outside the
 #' CORINE map (outside France, sea) are unknown. The share of each class in
-#' the catchment is its catchment mean (see `accumulate_mean()`).
+#' the catchment of every cell is its catchment mean, written to disk (see
+#' `write_catchment_mean()`).
 #'
 #' @param zip_file path, e.g. `download_corine()`'s output.
 #' @param direction_file path, e.g. `crop_flow_direction()`'s output.
-#' @param station_flow tibble, e.g. `snap_station_flow()`'s output.
-#' @return tibble with `code_station`, `year` (CORINE vintage), `class`
-#'   (level-2 code), `share` (% of the mapped catchment area) and `coverage`
-#'   (% of the catchment area mapped by CORINE).
+#' @param dir directory where to write the raster.
+#' @return path of the raster `catchment_corine_<year>.tif`, one layer per
+#'   level-2 class (share 0-1) and `coverage`.
 #' @export
-compute_station_landcover <- function(zip_file, direction_file, station_flow) {
+build_catchment_landcover <- function(zip_file, direction_file, dir) {
   option <- terra::terraOptions(print = FALSE)
   terra::terraOptions(memmax = 1, progress = 0) # process the fine grid by blocks
   on.exit(terra::terraOptions(memmax = option$memmax, progress = option$progress))
@@ -248,11 +267,24 @@ compute_station_landcover <- function(zip_file, direction_file, station_flow) {
   mapped <- sum(cover)
   cover <- terra::ifel(mapped > 0, cover / mapped, NA)
   names(cover) <- class
-  share <- accumulate_mean(direction, cover, station_flow$cell)
+  write_catchment_mean(direction, cover, file.path(dir, sprintf("catchment_corine_%d.tif", year)))
+}
+
+#' Land cover of the upstream catchment of the stations.
+#'
+#' @param catchment_file path, `build_catchment_landcover()`'s output.
+#' @param station_flow tibble with `code_station` and `cell`, e.g.
+#'   `snap_station_flow()`'s output.
+#' @return tibble with `code_station`, `year` (CORINE vintage), `class`
+#'   (level-2 code), `share` (% of the mapped catchment area) and `coverage`
+#'   (% of the catchment area mapped by CORINE).
+#' @export
+compute_station_landcover <- function(catchment_file, station_flow) {
+  share <- read_catchment_mean(catchment_file, station_flow$cell)
   tibble::as_tibble(share) |>
     dplyr::mutate(
       code_station = station_flow$code_station,
-      year = year,
+      year = as.integer(gsub("\\D", "", basename(catchment_file))),
       coverage = 100 * attr(share, "coverage")
     ) |>
     tidyr::pivot_longer(-c(code_station, year, coverage), names_to = "class", values_to = "share") |>
@@ -317,22 +349,36 @@ summarise_worldclim <- function(worldclim_file) {
   yearly
 }
 
-#' Yearly weather of the upstream catchment of the stations.
+#' Catchment weather at every cell of the flow-direction grid.
 #'
-#' The WorldClim cells are split into the flow-direction cells (10 x 10 per
-#' WorldClim cell), and the weather of the catchment is the catchment mean
-#' (see `accumulate_mean()`).
+#' The yearly WorldClim weather (see `summarise_worldclim()`) is split into
+#' the flow-direction cells (10 x 10 per WorldClim cell), and the weather of
+#' the catchment of every cell is its catchment mean, written to disk (see
+#' `write_catchment_mean()`).
 #'
 #' @param worldclim_file paths, e.g. `download_worldclim()`'s outputs.
 #' @param direction_file path, e.g. `crop_flow_direction()`'s output.
-#' @param station_flow tibble, e.g. `snap_station_flow()`'s output.
+#' @param dir directory where to write the raster.
+#' @return path of the raster `catchment_worldclim.tif`, with
+#'   `precipitation_<year>`, `temperature_<year>`, `summer_tmax_<year>` and
+#'   `coverage`.
+#' @export
+build_catchment_weather <- function(worldclim_file, direction_file, dir) {
+  direction <- terra::rast(direction_file)
+  weather <- terra::resample(summarise_worldclim(worldclim_file), direction, method = "near")
+  write_catchment_mean(direction, weather, file.path(dir, "catchment_worldclim.tif"))
+}
+
+#' Yearly weather of the upstream catchment of the stations.
+#'
+#' @param catchment_file path, `build_catchment_weather()`'s output.
+#' @param station_flow tibble with `code_station` and `cell`, e.g.
+#'   `snap_station_flow()`'s output.
 #' @return tibble with `code_station`, `year`, `precipitation`,
 #'   `temperature` and `summer_tmax` (see `summarise_worldclim()`).
 #' @export
-compute_station_weather <- function(worldclim_file, direction_file, station_flow) {
-  direction <- terra::rast(direction_file)
-  weather <- terra::resample(summarise_worldclim(worldclim_file), direction, method = "near")
-  mean <- accumulate_mean(direction, weather, station_flow$cell)
+compute_station_weather <- function(catchment_file, station_flow) {
+  mean <- read_catchment_mean(catchment_file, station_flow$cell)
   tibble::as_tibble(mean) |>
     dplyr::mutate(code_station = station_flow$code_station) |>
     tidyr::pivot_longer(-code_station, names_to = c(".value", "year"), names_pattern = "(.*)_(\\d{4})") |>
