@@ -105,16 +105,19 @@ variable |>
   knitr::kable()
 ```
 
-Each trait gives a distance in [0, 1] between two species (categories: 0 if
-same, 1 otherwise; ordered classes: difference over the range; fuzzy: half
-the sum of the absolute differences of affinities), averaged within groups
-then across groups. Missing values are ignored pair by pair (target
-`functional_distance`).
+Each trait gives a distance between 0 (same value) and 1 (most different)
+for each pair of species: for categories, 0 if the species share the
+category and 1 otherwise; for ordered classes, the gap between the two
+classes divided by the full range; for fuzzy traits (affinities summing to
+1, e.g. diet), half the sum of the absolute differences of the affinities.
+The distances are averaged within each group, then across the five groups,
+so that each group weighs one fifth. A trait unknown for one of the two
+species is skipped for that pair (target `functional_distance`).
 
 ```{r trait-group}
 #| fig-width: 6
 #| fig-height: 3
-#| fig-cap: "Correlation between the distance of each trait group and the overall distance between species."
+#| fig-cap: "Correlation, across all pairs of species, between the distance computed from each trait group alone and the overall distance. High: the group's differences follow the overall ranking of pairs; low: the group carries independent information."
 
 distance <- tar_read(functional_distance)
 lower <- lower.tri(distance$distance)
@@ -133,8 +136,9 @@ tibble(
 
 **Results:**
 
-- All five groups contribute to the overall distance, reproduction the most
-  and morphology the least.
+- Reproduction is the group most aligned with the overall distance;
+  morphology the least, so it adds information that the other groups do
+  not carry.
 
 ## Functional space
 
@@ -368,9 +372,7 @@ distinct. Three ways to look at this more finely.
 
 If ammonium favours "the same kind of species", the species it favours
 should cluster in one region of the functional space, and those it
-disfavours should lie at its edges. The distinctiveness of a species is its
-mean functional distance to all other species, its uniqueness the distance to
-its nearest neighbour [REF: Violle et al. 2017, doi:10.1016/j.tree.2017.02.002].
+disfavours should lie elsewhere.
 
 ```{r winner-space}
 #| fig-width: 11
@@ -406,114 +408,19 @@ patchwork::wrap_plots(plot_winner("PC1", "PC2"), plot_winner("PC3", "PC4"), guid
   theme(legend.position = "right")
 ```
 
-```{r distinctiveness}
-#| fig-width: 8
-#| fig-height: 4.5
-#| fig-cap: "Difference of response to each pressure per standard deviation of distinctiveness or uniqueness of the species (random-effects meta-regression as in D17, 91% credible interval). Negative: the more distinct species are more disfavoured."
-
-tar_read(distinctiveness_response) |>
-  mutate(
-    term = factor(pressure_label[term], rev(pressure_label)),
-    trait = c(distinctiveness_scaled = "Distinctiveness", uniqueness_scaled = "Uniqueness")[trait],
-    effect = case_when(sign(lower) != sign(upper) ~ "Not credible", mean > 0 ~ "Positive", .default = "Negative")
-  ) |>
-  ggplot(aes(mean, term, color = effect)) +
-  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
-  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.6) +
-  geom_point(size = 2.2) +
-  scale_color_manual(values = colour_effect) +
-  facet_wrap(~trait) +
-  labs(x = "Difference of response per sd of the trait", y = NULL, color = NULL) +
-  theme(legend.position = "top", panel.spacing.x = unit(1, "lines"))
-```
-
 **Results:**
 
 - Ammonium splits the functional space along axis 2: the species it
   favours are open-water and still-water species (pikeperch, pike, rudd,
   carp, roach, perch, stickleback, mosquitofish), those it disfavours are
   bottom-dwellers (sculpin, brook lamprey, spined loach, minnow).
-- The species favoured by ammonium are not functionally ordinary in the
-  regional pool: their distinctiveness does not differ, and they are even
-  slightly more unique. The loss of diversity is thus not a replacement of
-  distinct species by ordinary ones, but a shift of the whole community
-  towards one region of the functional space, where the species gained
-  resemble each other.
-- Warm water favours more unique species (e.g. catfish), as the lowland
-  fauna is richer in distinct species.
-
-### Which traits become redundant?
-
-The functional diversity of each community is recomputed from the distance
-of each trait group alone, with two indices on the distances between species
-(target `pairwise_diversity`):
-
-- **mean pairwise distance** (MPD): how different the species are on
-  average;
-- **mean nearest-neighbour distance** (MNND): how different each species is
-  from its most similar neighbour in the community; it falls when the
-  community holds near-copies of the same kind of species
-  [REF: Swenson 2014, Functional and phylogenetic ecology in R, Springer].
-
-Both are compared with the same null model (199 shuffles of species
-traits) and modelled as above (targets `pairwise_ses`, `pairwise_model`).
-
-```{r pairwise}
-#| fig-width: 11
-#| fig-height: 5.5
-#| fig-cap: "Effect of dams and pressures on the functional diversity of each trait group at equal richness (standardised effect sizes; per standard deviation of the pressure, 91% credible interval)."
-
-group_label <- c(
-  All.traits = "All traits", Diet = "Diet", Habitat = "Habitat",
-  Size.and.life.history = "Size and life history", Reproduction = "Reproduction", Morphology = "Morphology"
-)
-purrr::map_dfr(tar_read(pairwise_model), \(m) {
-  m$summary.fixed[names(model_label), ] |>
-    as_tibble(rownames = "term") |>
-    transmute(response = m$response, term, mean, lower = `0.045quant`, upper = `0.955quant`)
-}) |>
-  tidyr::separate_wider_delim(response, ".", names = c("index", "group"), too_many = "merge") |>
-  mutate(
-    index = factor(
-      c(mpd_ses = "Mean pairwise distance", mnnd_ses = "Mean nearest-neighbour distance")[index],
-      c("Mean pairwise distance", "Mean nearest-neighbour distance")
-    ),
-    group = factor(group_label[group], rev(group_label)),
-    term = factor(model_label[term], model_label),
-    effect = case_when(sign(lower) != sign(upper) ~ "Not credible", mean > 0 ~ "Positive", .default = "Negative")
-  ) |>
-  ggplot(aes(mean, group, color = effect)) +
-  geom_vline(xintercept = 0, color = "grey60", linewidth = 0.3) +
-  geom_linerange(aes(xmin = lower, xmax = upper), linewidth = 0.5) +
-  geom_point(size = 1.8) +
-  scale_color_manual(values = colour_effect) +
-  facet_grid(index ~ term, labeller = labeller(term = label_wrap_gen(12), index = label_wrap_gen(18))) +
-  scale_x_continuous(breaks = c(-0.1, 0.1)) +
-  labs(x = "Effect at equal richness", y = NULL, color = NULL) +
-  theme(legend.position = "top", panel.spacing.x = unit(0.6, "lines"))
-```
-
-**Results:**
-
-- **Ammonium** lowers the diversity of **size and life history** and of
-  **diet** (and of morphology for the mean pairwise distance): communities
-  at high ammonium hold species of similar size, longevity and fecundity,
-  eating similar food. The nearest-neighbour distance in size and life
-  history falls most: near-copies of the same kind of species.
-- In contrast, ammonium raises the diversity of **reproduction** (and the
-  habitat nearest-neighbour distance): the species gained spawn in more
-  varied ways.
-- **Water temperature** acts on other groups: warm communities are less
-  diverse in habitat and morphology (fewer bottom-dwelling, elongated
-  species), more diverse in diet and reproduction.
-- **Dams to the sea** lower the diet diversity, probably through the loss
-  of migratory species with distinct diets (eel, lampreys).
 
 ### In which direction?
 
 Lower diversity at equal richness says that species become similar, not
 towards which traits. The mean trait of the species present at each visit
-(community mean, scaled) is modelled as the indices above (target
+(community mean, scaled) is modelled as the functional diversity indices
+above (target
 `community_trait_model`), for size, life history and diet. Diet breadth is
 the Shannon diversity of the diet affinities of a species (high:
 generalist). Temperature is shown for contrast.

@@ -85,52 +85,6 @@ functional_diversity_targets <- list(
     garbage_collection = TRUE
   ),
   tar_target(
-    functional_distinctiveness, # Distinctiveness (mean distance to the others) and uniqueness of each species.
-    compute_functional_distinctiveness(functional_distance)
-  ),
-  tar_target(
-    distinctiveness_response, # Meta-regression of the response of species to each pressure on their distinctiveness.
-    fit_trait_response(
-      species_pressure_response, functional_distinctiveness, distinctiveness_setting$term, distinctiveness_setting$trait
-    ),
-    pattern = map(distinctiveness_setting)
-  ),
-  tar_target(
-    distinctiveness_setting,
-    tidyr::expand_grid(
-      term = c("ammonium", "orthophosphate", "oxygen_saturation", "temperature", "accumulation", "dam_below", "dam_above"),
-      trait = c("distinctiveness_scaled", "uniqueness_scaled")
-    )
-  ),
-  tar_target(
-    pairwise_diversity, # Mean pairwise and nearest-neighbour distances, overall and per trait group.
-    compute_pairwise_diversity(functional_distance, functional_presence)
-  ),
-  tar_target(
-    pairwise_null, # Pairwise diversity with species shuffled.
-    simulate_pairwise_diversity(functional_distance, functional_presence, functional_replicate),
-    pattern = map(functional_replicate)
-  ),
-  tar_target(
-    pairwise_ses,
-    compute_pairwise_ses(pairwise_diversity, pairwise_null)
-  ),
-  tar_target(
-    pairwise_response, # Indices and groups modelled.
-    setdiff(names(pairwise_ses), "operation_id")
-  ),
-  tar_target(
-    pairwise_model, # Pairwise diversity SES ~ dams + ammonium + temperature.
-    fit_functional_model(
-      pressure_visit_wide, pairwise_ses, presence_mesh, pairwise_response,
-      paste(presence_term, "+ dam_below + dam_above + ammonium + temperature")
-    ),
-    pattern = map(pairwise_response),
-    iteration = "list",
-    memory = "transient",
-    garbage_collection = TRUE
-  ),
-  tar_target(
     community_trait, # Size, life history and diet traits of the species.
     define_community_trait(functional_trait)
   ),
