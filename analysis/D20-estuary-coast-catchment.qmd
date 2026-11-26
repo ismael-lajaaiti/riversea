@@ -12,17 +12,14 @@ execute:
     warning: false
 ---
 
-Ecosystems are connected by flows of matter and organisms: what one ecosystem
-exports shapes the recipient one. This is idea of @Loreau-Mouquet-Holt-2003,
-@Gounand-etal-2018a]. Rivers deliver to estuaries and coastal waters the
-nutrients, sediment and freshwater released by their catchment. Here, we ask how
-the land use and climate of the catchment shape the fish communities of
-estuaries and coastal bays, in the four districts of interest.
+Rivers deliver to estuaries and coastal waters the nutrients, sediment and
+freshwater released by their catchment. Here, we ask how the land use and
+climate of the catchment shape the fish communities of estuaries and coastal
+bays, in the four districts of interest. It builds on the environmental
+gradient of D19: stressors are added on top of the continuum variables
+selected there.
 
-Here are our hypotheses of driver impacts on estuarine and coastal ecosystems.
-
-**Hypotheses.** Fish are grouped by their use of estuaries (guilds, see
-below).
+**Hypotheses.** Fish are grouped by their use of estuaries (guilds, see D19).
 
 | Driver | Expected change | Expected effect on the communities |
 |:--|:--|:--|
@@ -30,10 +27,6 @@ below).
 | Urban areas | More ammonium, organic matter and contaminants | Fewer marine juveniles and sensitive residents, more tolerant species |
 | Rainfall of the year, catchment size | More freshwater: lower salinity, more nutrients delivered | More freshwater and diadromous species, fewer marine stragglers; higher nursery production of sole in wet years |
 | Temperature (catchment and year) | Warmer water; with nutrients, more hypoxia | More warm-water marine species and residents, fewer cold-water species (plaice, whiting, smelt, flounder) |
-
-Steps: (1) data and guilds, (2) the catchment of the estuary of each
-operation, (3) models of the communities (to come).
-
 
 ## Setup
 
@@ -51,132 +44,10 @@ devtools::load_all()
 nice_theme()
 ```
 
-```{r palette}
-guild_label <- c(
-  MS = "Marine straggler", MM = "Marine migrant (juveniles)", ER = "Estuarine resident",
-  CA = "Diadromous", FW = "Freshwater"
-)
-colour_guild <- c(
-  `Marine straggler` = "#56B4E9", `Marine migrant (juveniles)` = "#0072B2",
-  `Estuarine resident` = "#009E73", Diadromous = "#E69F00", Freshwater = "#CC79A7"
-)
-colour_effect <- c(Positive = "#2166AC", `Not credible` = "grey70", Negative = "#B2182B")
-survey_label <- c(pomet = "POMET (estuaries)", nurse = "Nursery survey (coastal bays)")
-colour_survey <- c(`POMET (estuaries)` = "#D55E00", `Nursery survey (coastal bays)` = "#0072B2")
-```
-
-## Data
-
-Two trawling survey surveys: POMET and nursery survey (NURSE).
-
-We keep the operations of the four districts, at sea and inland (upper
-estuaries), with their distance to the river mouth (D8; target
-`sea_operation`). Each operation is then linked to a river mouth (see
-[Catchment of each estuary](#catchment-of-each-estuary)).
-
-Salinity is measured at most POMET operations; for the nursery survey and
-the other POMET operations, it is taken from the yearly modeled environment
-of the Bay of Biscay coast.
-
 ```{r data}
 operation <- tar_read(sea_operation)
-catch <- tar_read(sea_catch)
-operation |>
-  summarise(
-    Operations = n(),
-    Years = paste(min(year), max(year), sep = "-"),
-    Months = paste(sort(unique(month)), collapse = ", "),
-    `Salinity measured` = scales::percent(mean(salinity_source == "measured", na.rm = TRUE), 1),
-    `Salinity from the grid` = scales::percent(mean(salinity_source == "grid", na.rm = TRUE), 1),
-    `No salinity` = sum(is.na(salinity)),
-    .by = c(survey, gear)
-  ) |>
-  mutate(survey = survey_label[survey]) |>
-  rename(Survey = survey, Gear = gear) |>
-  knitr::kable()
-```
-
-```{r map}
-#| fig-width: 9
-#| fig-height: 8
-#| fig-cap: "Operations of the two surveys in the four districts."
-
 france <- rnaturalearth::ne_countries(scale = "medium", country = "France", returnclass = "sf")
-ggplot() +
-  geom_sf(data = france, fill = "grey95", color = "grey70", linewidth = 0.2) +
-  geom_point(
-    aes(longitude, latitude, color = survey_label[survey]),
-    data = operation, size = 0.6, alpha = 0.5
-  ) +
-  coord_sf(xlim = range(operation$longitude) + c(-0.3, 0.3), ylim = range(operation$latitude) + c(-0.3, 0.3)) +
-  scale_color_manual(values = colour_survey) +
-  labs(x = NULL, y = NULL, color = NULL) +
-  guides(color = guide_legend(override.aes = list(size = 2, alpha = 1))) +
-  theme(legend.position = "top", axis.line = element_blank())
 ```
-
-### Species and guilds
-
-Each species is classed by its use of estuaries, from the guilds of the
-POMET reference (target `estuary_guild`), matched on the names validated
-against FishBase (the reference uses older names, e.g. *Liza ramada* for
-*Chelon ramada*), completed by hand for the species missing from it and
-corrected by hand for a few (target `species_guild`, notes in the table
-below).
-
-The five guilds are the estuarine-use functional groups of
-@Elliott-Quintino-2007.
-
-| Guild | Description | Examples |
-|:--|:--|:--|
-| Marine straggler | Marine species spawning at sea that enter estuaries occasionally and in low numbers, mostly near the mouth; they do not depend on estuaries. | dragonet, solenette, red mullet, weevers |
-| Marine migrant (juveniles) | Marine species spawning at sea whose juveniles enter estuaries and shallow bays in large numbers to grow (nurseries), before returning to sea; adults may also feed there seasonally. | sole, sea bass, plaice, whiting, sprat, thick-lipped and golden grey mullets |
-| Estuarine resident | Species completing their whole life cycle in the estuary (and shallow coastal waters). | gobies, pipefishes, sea horses |
-| Diadromous | Species migrating between the sea and fresh water to complete their life cycle, through the estuary: anadromous ones spawn in rivers (shads, smelt), catadromous ones spawn at sea (eel, flounder, thin-lipped grey mullet). | eel, flounder, smelt, shads |
-| Freshwater | Freshwater species entering the upper, low-salinity part of the estuary. | roach, bream, pikeperch |
-
-```{r guild}
-#| fig-width: 8
-#| fig-height: 4
-#| fig-cap: "Number of species of each guild and share of the occurrences (species x operation), per survey."
-
-catch |>
-  inner_join(select(operation, operation_id, survey), by = "operation_id") |>
-  mutate(guild = coalesce(guild_label[guild], "Unclassified")) |>
-  summarise(species = n_distinct(species), occurrences = n(), .by = c(survey, guild)) |>
-  mutate(share = occurrences / sum(occurrences), .by = survey) |>
-  mutate(
-    survey = survey_label[survey],
-    guild = factor(guild, c(names(colour_guild), "Unclassified"))
-  ) |>
-  ggplot(aes(share, survey, fill = guild)) +
-  geom_col(width = 0.6, color = "white", linewidth = 0.3) +
-  geom_text(
-    aes(label = species), position = position_stack(vjust = 0.5), size = 3, color = "white"
-  ) +
-  scale_fill_manual(values = c(colour_guild, Unclassified = "grey70")) +
-  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0, 0.02))) +
-  labs(x = "Share of the occurrences (numbers: species)", y = NULL, fill = NULL) +
-  theme(legend.position = "top", panel.grid.major.y = element_blank())
-```
-
-```{r guild-table}
-species_guild <- tar_read(species_guild)
-catch |>
-  inner_join(select(operation, operation_id, survey), by = "operation_id") |>
-  count(species, survey) |>
-  tidyr::pivot_wider(names_from = survey, values_from = n, values_fill = 0) |>
-  inner_join(species_guild, by = "species") |>
-  mutate(guild = factor(guild_label[guild], guild_label)) |>
-  arrange(guild, desc(pomet + nurse)) |>
-  transmute(
-    Species = paste0("*", species, "*"), Guild = guild,
-    `POMET operations` = pomet, `Nursery survey operations` = nurse,
-    `Guild source` = source, Note = coalesce(note, "")
-  ) |>
-  knitr::kable()
-```
-
 
 ## Catchment of each estuary
 
@@ -297,5 +168,5 @@ operation_mouth |>
 
 ## Next steps
 
-- Models of the communities against the catchment of their mouth: to
-  start from scratch.
+- Models of the communities against the catchment of their mouth, on top
+  of the continuum variables of D19.

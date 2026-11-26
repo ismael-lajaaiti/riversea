@@ -44,7 +44,8 @@ to be shared publicly (see the [Output](../output/manuscript.qmd) section).
 16. [Joint impact of dams and water quality on food webs](D16-dam-nutrient-impact-foodweb.qmd)
 17. [Pressures and the traits of fish species](D17-pressure-traits.qmd)
 18. [Functional diversity of fish communities](D18-functional-diversity.qmd)
-19. [Catchment land use and estuary and coastal fish communities](D19-estuary-coast-landuse.qmd)
+19. [Species presence along the estuary-sea continuum](D19-estuary-coast-continuum.qmd)
+20. [Catchment land use and estuary and coastal fish communities](D20-estuary-coast-catchment.qmd)
 
 
 ## E. Invasive species and dams

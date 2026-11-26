@@ -1,0 +1,1392 @@
+---
+title: "Species presence along the estuary-sea continuum"
+bibliography: ../references.bib
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+    message: false
+    warning: false
+---
+
+The goal of this notebook is to find the set of environmental variables that
+describe the continuum from the estuary to the sea and capture the variations
+of species presence along it, as D11 did for the river. This continuum is the
+baseline on which stressors (nutrients, land use, upstream dams) are added
+later (catchment of each estuary: D20).
+
+This notebook uses the POMET survey only (estuaries), where salinity,
+temperature and depth are measured at each haul. The next notebook
+(D21) extends the model to the nursery survey of the coastal bays.
+
+Steps: (1) the data: fishing operations and species; (2) the environmental
+variables of the continuum; (3) presence models of the species and their
+diagnostics, as in D12; (4) the river nutrient inputs of each estuary,
+the first stressor added on top of this baseline, and their effect on
+presence.
+
+**Candidate variables.**
+
+| Variable | Source | Gradient it describes |
+|:--|:--|:--|
+| Salinity | Measured at the operation | Freshwater to marine |
+| Distance to the river mouth | D8, along the river network (inland) or along the sea (at sea) | Position along the continuum |
+| Depth | Measured at the operation | Shallow flats and channels to open water |
+| Water temperature | Measured at the operation | Season, north-south, along the estuary |
+| Oxygen | Measured at the operation (% saturation) | Water quality |
+| Substrate | EMODnet Geology, seabed substrate 1:250,000 (Folk classes) | Mud to sand, gravel and rock |
+
+## Setup
+
+```{r setup}
+library(renv)
+renv::load()
+library(targets)
+library(here)
+tar_config_set(
+  store = here::here("_targets")
+)
+library(ggplot2)
+library(dplyr)
+devtools::load_all()
+nice_theme()
+```
+
+```{r palette}
+guild_label <- c(
+  MS = "Marine straggler", MM = "Marine migrant (juveniles)", ER = "Estuarine resident",
+  CA = "Diadromous", FW = "Freshwater"
+)
+colour_guild <- c(
+  `Marine straggler` = "#56B4E9", `Marine migrant (juveniles)` = "#0072B2",
+  `Estuarine resident` = "#009E73", Diadromous = "#E69F00", Freshwater = "#CC79A7"
+)
+colour_district <- c(Seine = "#0072B2", `Escaut-Somme` = "#56B4E9", Loire = "#009E73", `Ardour-Garonne` = "#E69F00")
+```
+
+## Data
+
+POMET is the beam trawl survey of the estuaries for the Water Framework
+Directive. We keep all its operations in the four districts, from the
+mouth to the upper estuaries, with their distance to the river mouth (D8;
+target `sea_operation`, POMET operations).
+
+```{r data}
+operation <- filter(tar_read(sea_operation), survey == "pomet")
+catch <- tar_read(sea_catch)
+operation |>
+  summarise(
+    Operations = n(),
+    Years = paste(min(year), max(year), sep = "-"),
+    Months = paste(sort(unique(month)), collapse = ", "),
+    `Salinity measured` = scales::percent(mean(salinity_source == "measured", na.rm = TRUE), 1),
+    `Salinity from the grid` = scales::percent(mean(salinity_source == "grid", na.rm = TRUE), 1),
+    `No salinity` = sum(is.na(salinity)),
+    .by = gear
+  ) |>
+  rename(Gear = gear) |>
+  knitr::kable()
+```
+
+```{r map}
+#| fig-width: 9
+#| fig-height: 8
+#| fig-cap: "POMET operations in the four districts."
+
+coast <- coastline()
+ggplot() +
+  geom_sf(data = coast, color = "grey40", linewidth = 0.2) +
+  geom_point(
+    aes(longitude, latitude, color = district),
+    data = operation, size = 0.6, alpha = 0.5
+  ) +
+  coord_sf(xlim = range(operation$longitude) + c(-0.3, 0.3), ylim = range(operation$latitude) + c(-0.3, 0.3)) +
+  scale_color_manual(values = colour_district) +
+  labs(x = NULL, y = NULL, color = NULL) +
+  guides(color = guide_legend(override.aes = list(size = 2, alpha = 1))) +
+  theme(legend.position = "top", axis.line = element_blank())
+```
+
+### Species and guilds
+
+Each species is classed by its use of estuaries, from the guilds of the
+POMET reference (target `estuary_guild`), matched on the names validated
+against FishBase (the reference uses older names, e.g. *Liza ramada* for
+*Chelon ramada*), completed by hand for the species missing from it and
+corrected by hand for a few (target `species_guild`, notes in the table
+below).
+
+The five guilds are the estuarine-use functional groups of
+@Elliott-Quintino-2007.
+
+| Guild | Description | Examples |
+|:--|:--|:--|
+| Marine straggler | Marine species spawning at sea that enter estuaries occasionally and in low numbers, mostly near the mouth; they do not depend on estuaries. | dragonet, solenette, red mullet, weevers |
+| Marine migrant (juveniles) | Marine species spawning at sea whose juveniles enter estuaries and shallow bays in large numbers to grow (nurseries), before returning to sea; adults may also feed there seasonally. | sole, sea bass, plaice, whiting, sprat, thick-lipped and golden grey mullets |
+| Estuarine resident | Species completing their whole life cycle in the estuary (and shallow coastal waters). | gobies, pipefishes, sea horses |
+| Diadromous | Species migrating between the sea and fresh water to complete their life cycle, through the estuary: anadromous ones spawn in rivers (shads, smelt), catadromous ones spawn at sea (eel, flounder, thin-lipped grey mullet). | eel, flounder, smelt, shads |
+| Freshwater | Freshwater species entering the upper, low-salinity part of the estuary. | roach, bream, pikeperch |
+
+```{r guild}
+#| fig-width: 8
+#| fig-height: 4
+#| fig-cap: "Share of the occurrences (species x operation) of each guild, and number of species."
+
+catch |>
+  semi_join(operation, by = "operation_id") |>
+  mutate(guild = factor(coalesce(guild_label[guild], "Unclassified"), rev(c(guild_label, "Unclassified")))) |>
+  summarise(species = n_distinct(species), occurrences = n(), .by = guild) |>
+  mutate(share = occurrences / sum(occurrences)) |>
+  ggplot(aes(share, guild, fill = guild)) +
+  geom_col(width = 0.6, show.legend = FALSE) +
+  geom_text(aes(label = paste(species, "species")), hjust = -0.1, size = 3) +
+  scale_fill_manual(values = c(colour_guild, Unclassified = "grey70")) +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0, 0.15))) +
+  labs(x = "Share of the occurrences", y = NULL) +
+  theme(panel.grid.major.y = element_blank())
+```
+
+```{r guild-table}
+species_guild <- tar_read(species_guild)
+catch |>
+  semi_join(operation, by = "operation_id") |>
+  count(species) |>
+  inner_join(species_guild, by = "species") |>
+  mutate(guild = factor(guild_label[guild], guild_label)) |>
+  arrange(guild, desc(n)) |>
+  transmute(
+    Species = paste0("*", species, "*"), Guild = guild, Operations = n,
+    `Guild source` = source, Note = coalesce(note, "")
+  ) |>
+  knitr::kable()
+```
+
+
+## Environmental variables
+
+```{r seabed}
+seabed <- tar_read(sea_operation_seabed)
+operation_env <- operation |>
+  left_join(seabed, by = "operation_id") |>
+  mutate(
+    position = if_else(inland, "Inland (upper estuary)", "At sea"),
+    distance_km = dist_mouth_m / 1000
+  )
+colour_substrate <- c(mud = "#8C510A", sand = "#DFC27D", coarse = "#35978F", rock = "#525252", unmapped = "grey80")
+```
+
+Substrate and depth are taken from EMODnet, the European Marine Observation
+and Data Network, which compiles the national marine data (SHOM, Ifremer,
+BRGM for France). Target `sea_operation_seabed`.
+
+- **Substrate:** EMODnet Geology seabed substrate at 1:250,000, the
+  substrate class of the polygon containing the operation. We use the
+  five Folk classes of EMODnet (mud to muddy sand, sand, coarse-grained,
+  mixed, rock and boulders), with coarse and mixed sediment merged: mud,
+  sand, coarse, rock. Operations outside the polygons are "unmapped". The
+  EUSeaMap habitat map gives the same classes where both exist (it is
+  built from them), and the SHOM 1:50,000 seabed map covers the same
+  areas, so neither is used.
+- **Depth:** measured at the hauls (water depth, tide included). EMODnet
+  Bathymetry (2022, ~115 m, depth below the
+  lowest astronomical tide) is not used: its cells miss the narrow
+  estuary channels, so
+  `r scales::percent(mean(operation_env$depth_emodnet < 0, na.rm = TRUE), 1)`
+  of the operations fall on cells above the lowest tide, and its rank
+  correlation with the measured depth is only
+  `r round(cor(operation_env$depth, operation_env$depth_emodnet, method = "spearman", use = "complete.obs"), 2)`
+  (it is also shallower by about the tidal range). The depth of the
+  yearly modelled grid follows EMODnet and hardly covers the estuaries.
+
+Maps of the study coast (`map_coast()` below): the operations over the
+substrate polygons, then coloured by salinity and by distance to the
+mouth.
+
+```{r map-coast}
+substrate_polygon <- purrr::map(tar_read(emodnet_substrate_file), sf::st_read, quiet = TRUE) |>
+  dplyr::bind_rows() |>
+  mutate(substrate = folk_substrate(folk_5cl_txt))
+map_coast <- \(layer, scale) {
+  ggplot() +
+    layer +
+    geom_sf(data = coast, color = "grey30", linewidth = 0.2) +
+    geom_point(aes(longitude, latitude, color = .data$value), data = operation_env, size = 0.5) +
+    coord_sf(
+      xlim = range(operation_env$longitude) + c(-0.2, 0.2),
+      ylim = range(operation_env$latitude) + c(-0.2, 0.2)
+    ) +
+    scale +
+    labs(x = NULL, y = NULL) +
+    theme(legend.position = "top", axis.line = element_blank())
+}
+```
+
+### Substrate
+
+```{r map-substrate}
+#| fig-width: 10
+#| fig-height: 13
+#| fig-cap: "EMODnet substrate (polygons) and the operations (black: inside a polygon, red: unmapped)."
+
+operation_env <- mutate(operation_env, value = if_else(substrate == "unmapped", "Unmapped", "Mapped"))
+map_coast(
+  geom_sf(aes(fill = substrate), data = substrate_polygon, color = NA),
+  scale_color_manual(values = c(Mapped = "black", Unmapped = "red"), name = "Operations")
+) +
+  scale_fill_manual(values = colour_substrate[1:4], name = "Substrate")
+```
+
+**Results:**
+
+- At sea (downstream of the river mouth),
+  `r scales::percent(mean(operation_env$substrate[!operation_env$inland] != "unmapped"), 1)`
+  of the operations have a substrate.
+- `r scales::percent(mean(operation_env$substrate[operation_env$inland] == "unmapped"), 1)`
+  of the inland operations are unmapped: the marine maps stop where the
+  estuary narrows into the river channel.
+- Unmapped operations are the low-salinity end of the continuum:
+  `r scales::percent(mean(operation_env$substrate[operation_env$salinity < 5] == "unmapped", na.rm = TRUE), 1)`
+  of the operations below salinity 5 are unmapped.
+
+*To discuss:*
+
+- The "unmapped" level overlaps with low salinity and the upstream
+  distances, so its coefficient will partly carry their effect; it has no
+  meaning about substrate.
+
+### Salinity
+
+```{r map-salinity}
+#| fig-width: 10
+#| fig-height: 13
+#| fig-cap: "Salinity measured at the operations (a few from the yearly grid); grey: missing."
+
+operation_env <- mutate(operation_env, value = salinity)
+map_coast(
+  NULL,
+  scale_color_viridis_c(
+    name = "Salinity", limits = range(operation_env$value, na.rm = TRUE),
+    na.value = "grey60", guide = guide_colorbar(barwidth = 12)
+  )
+)
+```
+
+**Results:**
+
+- Salinity falls from about 33 at sea to fresh water upstream in the
+  large estuaries (Seine, Loire, Gironde); the short Breton estuaries
+  stay mostly brackish to marine.
+
+
+### Distance to the mouth
+
+```{r map-distance}
+#| fig-width: 10
+#| fig-height: 13
+#| fig-cap: "Distance of the operations to the river mouth (km; negative upstream, along the river; positive at sea; pseudo-log colour scale)."
+
+operation_env <- mutate(operation_env, value = distance_km)
+pseudo_log <- scales::transform_pseudo_log(sigma = 2) # spreads the many operations near the mouth
+distance_range <- range(operation_env$value, na.rm = TRUE)
+map_coast(
+  NULL,
+  scale_color_gradientn(
+    colours = c("#8C510A", "grey85", "#01665E"),
+    values = scales::rescale(pseudo_log$transform(c(distance_range[1], 0, distance_range[2]))),
+    limits = distance_range, transform = pseudo_log, breaks = c(-100, -10, 0, 10, 50),
+    name = "Distance to the mouth (km)", na.value = "grey60", guide = guide_colorbar(barwidth = 14)
+  )
+)
+```
+
+**Results:**
+
+- Half of the operations lie within
+  `r round(median(abs(operation_env$distance_km), na.rm = TRUE))` km of
+  the mouth; the longest upstream distances are in the Seine, Loire and
+  Garonne-Dordogne.
+
+- In the Gironde, the estuary counts as "at sea" (positive distances,
+  0 to 10 km): AMOBIO's Gironde ends at the head of the estuary (Bec
+  d'Ambès). Kept: the Gironde estuary is much larger than the Loire and
+  Seine ones, so sea conditions reach further inside.
+
+## Presence models (POMET)
+
+Every variable is measured at the haul, from a single source (salinity,
+water temperature, oxygen and depth), plus the distance to the mouth and
+the EMODnet substrate.
+
+We test two common species living at the two ends of the continuum:
+
+- the **common sole** (*Solea solea*, marine migrant), whose juveniles
+  grow in shallow coastal and estuarine nurseries;
+- the **European flounder** (*Platichthys flesus*, diadromous), whose
+  juveniles use the low-salinity upper estuaries.
+
+```{r pomet-data}
+presence_visit <- tar_read(sea_presence_visit)
+pomet_visit <- tar_read(pomet_presence_visit)
+pomet_model <- tar_read(pomet_presence_model)
+pomet_water <- tar_read(pomet_water)
+pomet_oxygen <- unlist(tar_read(pomet_oxygen_model), recursive = FALSE)
+test_species <- c("Solea solea", "Platichthys flesus")
+pomet_of <- \(species, variant) pomet_model[[which(purrr::map_lgl(
+  pomet_model, \(m) m$species == species && m$variant == variant
+))]]
+# WAIC difference of a variant to the reference model.
+dwaic <- \(species, variant) pomet_of(species, variant)$waic - pomet_of(species, "reference")$waic
+auc <- \(score, present) {
+  r <- rank(score)
+  n1 <- sum(present)
+  (sum(r[present == 1]) - n1 * (n1 + 1) / 2) / (n1 * (length(present) - n1))
+}
+pomet_label <- c(
+  log_salinity = "Salinity (log)", log_salinity2 = "Salinity (log)²",
+  distance = "Distance to the mouth", depth_pomet = "Depth", temperature = "Temperature",
+  oxygen = "Oxygen", substratesand = "Sand (vs mud)", substratecoarse = "Coarse (vs mud)",
+  substraterock = "Rock (vs mud)", substrateunmapped = "Unmapped (vs mud)"
+)
+pomet_all <- presence_visit |>
+  filter(survey == "pomet") |>
+  inner_join(pomet_water, by = "operation_id") |>
+  left_join(transmute(operation, operation_id = as.character(operation_id), district), by = "operation_id")
+```
+
+### Temperature and oxygen
+
+Temperature and oxygen are read from the POMET size file
+(`read_pomet_water()`, target `pomet_water`):
+
+- **Temperature:** one impossible value (47.4 °C) set to missing.
+- **Oxygen:** set to missing in the campaigns (zone, year and month)
+  where every haul is below 20% saturation: about 240 hauls of Brittany
+  and Normandy bays and estuaries in 2010–2012 (Mont-Saint-Michel, Caen,
+  Veys, Vilaine, Elorn, Aber Wrac'h), at near-marine salinity, with
+  values around 3 or 6–12, while campaigns of the same zones in other
+  months read around 100%. These look like another unit or a recording
+  error rather than hypoxia. Isolated low values in campaigns with normal
+  values (e.g. the Loire in July 2006) are kept as possible low-oxygen
+  events.
+
+```{r pomet-correlation}
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Pairwise Spearman correlations of the continuous variables at the POMET operations."
+
+pomet_variable <- pomet_all |>
+  transmute(
+    `Salinity (log)` = log_salinity, `Distance (asinh km)` = distance, Depth = depth_pomet,
+    Temperature = temperature, Oxygen = oxygen, Month = month
+  )
+pomet_correlation <- cor(pomet_variable, method = "spearman", use = "pairwise.complete.obs")
+as_tibble(pomet_correlation, rownames = "x") |>
+  tidyr::pivot_longer(-x, names_to = "y", values_to = "rho") |>
+  mutate(x = factor(x, colnames(pomet_correlation)), y = factor(y, rev(colnames(pomet_correlation)))) |>
+  filter(as.integer(x) < ncol(pomet_correlation) + 1 - as.integer(y)) |>
+  ggplot(aes(x, y, fill = rho)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%.2f", rho)), size = 3.2) +
+  scale_fill_gradient2(low = "#2166AC", high = "#B2182B", limits = c(-1, 1)) +
+  labs(x = NULL, y = NULL, fill = "Spearman\ncorrelation") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1), panel.grid = element_blank())
+```
+
+**Results:**
+
+- Of the `r nrow(pomet_all)` POMET operations with salinity and depth,
+  `r scales::percent(mean(!is.na(pomet_all$temperature)), 1)` have a
+  temperature and `r scales::percent(mean(!is.na(pomet_all$oxygen)), 1)`
+  an oxygen value (oxygen is missing more often in Ardour-Garonne and
+  Escaut-Somme, and in 2005).
+- Salinity and distance are the most correlated pair. Temperature follows
+  the season (month explains
+  `r scales::percent(summary(lm(temperature ~ factor(month), pomet_all))$r.squared, 1)`
+  of its variance) but varies enough within months to enter the model
+  with the month effect. Oxygen correlates weakly with every variable.
+
+### Model design
+
+Bernoulli model with logit link of the presence of a species at an
+operation (`fit_sea_presence_model()`, INLA):
+
+- **Continuum effects:** log(1 + salinity) and its square, distance to
+  the mouth (signed, `asinh(km)`), depth and temperature, all
+  standardised. Linear terms; a square is kept only where it clearly
+  improves the fit.
+- **Sampling effects:** gear (1.46 m and 3 m beam trawls) and month
+  (reference: September).
+- **Random effects:** year (iid) and a Matérn spatial field (SPDE, mesh
+  edges up to 10 km; prior: range below 20 km with probability 0.5).
+  No zone effect: the field takes the differences between zones.
+- Fitted without INLA's variational Bayes correction: with it, the
+  correction diverged for the sole and its WAIC varied by about 100
+  points between identical refits; without it, refits agree.
+- Effects shown with 91% credible intervals.
+
+Variants change one term of the reference at a time (target
+`pomet_presence_model`, `r nrow(pomet_visit)` operations with a
+temperature). They are compared with the WAIC (lower is better).
+
+### Variable selection
+
+```{r pomet-variant}
+purrr::map_dfr(pomet_model, \(m) tibble(species = m$species, variant = m$variant, waic = m$waic)) |>
+  mutate(waic = waic - waic[variant == "reference"], .by = species) |>
+  tidyr::pivot_wider(names_from = species, values_from = waic, names_glue = "ΔWAIC, {species}") |>
+  rename(Variant = variant) |>
+  knitr::kable(digits = 1, caption = "Difference to the reference model of each species (negative: better than the reference; differences below ~10 are small).")
+```
+
+Oxygen is tested on the `r pomet_oxygen[[1]]$n` operations with oxygen
+(target `pomet_oxygen_model`).
+
+```{r pomet-oxygen}
+purrr::map_dfr(pomet_oxygen, \(m) {
+  effect <- if ("oxygen" %in% rownames(m$summary.fixed)) m$summary.fixed["oxygen", ] else NULL
+  tibble(
+    species = m$species, variant = m$variant, waic = m$waic,
+    effect = if (is.null(effect)) NA else sprintf("%.2f [%.2f, %.2f]", effect$mean, effect$`0.045quant`, effect$`0.955quant`)
+  )
+}) |>
+  mutate(waic = waic - waic[variant == "without oxygen"], .by = species) |>
+  mutate(species = paste0("*", species, "*")) |>
+  rename(Species = species, Variant = variant, `ΔWAIC` = waic, `Oxygen effect (linear term)` = effect) |>
+  knitr::kable(digits = 1, caption = "Oxygen test: difference to the reference model without oxygen (negative: better), and oxygen effect (logit, standardised, 91% credible interval).")
+```
+
+**Results:**
+
+- **Temperature** improves both models (without it:
+  `r sprintf("%+.1f", dwaic("Solea solea", "no temperature"))` WAIC points for
+  the sole, `r sprintf("%+.1f", dwaic("Platichthys flesus", "no temperature"))`
+  for the flounder); its square adds nothing.
+- **The square of log salinity** is needed for the sole
+  (`r sprintf("%+.1f", dwaic("Solea solea", "linear log salinity"))` without
+  it), less for the flounder
+  (`r sprintf("%+.1f", dwaic("Platichthys flesus", "linear log salinity"))`).
+- **Depth** matters for the flounder
+  (`r sprintf("%+.1f", dwaic("Platichthys flesus", "no depth"))` without it),
+  hardly for the sole (`r sprintf("%+.1f", dwaic("Solea solea", "no depth"))`).
+- **Distance** changes the fit by a few points only
+  (`r sprintf("%+.1f", dwaic("Solea solea", "no distance"))` and
+  `r sprintf("%+.1f", dwaic("Platichthys flesus", "no distance"))`); kept, as
+  it is credible for the flounder.
+- **Substrate and oxygen do not improve the models** (substrate:
+  `r sprintf("%+.1f", dwaic("Solea solea", "with substrate"))` and
+  `r sprintf("%+.1f", dwaic("Platichthys flesus", "with substrate"))` WAIC
+  points; oxygen: 2–4 points, in both directions, with an effect close to
+  0): both are left out of the reference model. Leaving oxygen out also
+  brings back the operations without oxygen.
+
+*To discuss:*
+
+- Substrate may still matter for other species; the upper estuaries are
+  unmapped, so it can only act at the mouth and at sea.
+- Oxygen is mostly between 77% and 100% saturation (quartiles) in these
+  survey; the rare low values (upper Loire, Gironde) are too few to
+  estimate an effect of low oxygen. It is a candidate stressor for later
+  rather than a continuum variable.
+
+### Effects
+
+```{r pomet-effect}
+#| fig-width: 10
+#| fig-height: 4
+#| fig-cap: "Effects of the continuum variables on presence (logit scale, standardised variables, 91% credible intervals), with and without the spatial field."
+
+purrr::map_dfr(test_species, \(s) {
+  purrr::map_dfr(c("reference", "no field"), \(v) {
+    as_tibble(pomet_of(s, v)$summary.fixed, rownames = "term") |>
+      transmute(species = s, model = if_else(v == "no field", "Without spatial field", "With spatial field"),
+                term, mean, lower = `0.045quant`, upper = `0.955quant`)
+  })
+}) |>
+  filter(term %in% names(pomet_label)) |>
+  mutate(term = factor(pomet_label[term], rev(pomet_label)), species = factor(species, test_species)) |>
+  ggplot(aes(mean, term, color = model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.25, position = position_dodge(width = 0.5)) +
+  facet_wrap(~species) +
+  scale_color_manual(values = c(`With spatial field` = "black", `Without spatial field` = "#E69F00")) +
+  labs(x = "Effect on the logit scale (standardised variables)", y = NULL, color = NULL) +
+  theme(strip.text = element_text(face = "italic"), legend.position = "top")
+```
+
+Response curves: probability of presence along each variable, the others
+at their mean, at the reference sampling (1.46 m trawl, September) and
+at the average of the year and field effects over the operations.
+
+```{r pomet-curve}
+#| fig-width: 12
+#| fig-height: 4.5
+#| fig-cap: "Probability of presence along each variable (reference model, 91% credible intervals)."
+
+pomet_curve <- purrr::map_dfr(test_species, \(s) {
+  m <- pomet_of(s, "reference")
+  random_mean <- mean(m$prediction$eta - m$prediction$eta_fixed)
+  mutate(m$curve, species = s, across(c(mean, lower, upper), \(x) plogis(x + random_mean)))
+}) |>
+  filter(variable != "substrate") |>
+  mutate(
+    species = factor(species, test_species),
+    value = case_when(variable == "log_salinity" ~ expm1(value), variable == "distance" ~ sinh(value), .default = value)
+  )
+pomet_curve_plot <- \(v, label, scale_x = NULL) {
+  ggplot(filter(pomet_curve, variable == v), aes(value, mean, color = species, fill = species)) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
+    geom_line() +
+    scale_x +
+    scale_color_manual(values = c("#0072B2", "#E69F00"), aesthetics = c("color", "fill")) +
+    labs(x = label, y = "Probability of presence", color = NULL, fill = NULL)
+}
+patchwork::wrap_plots(
+  pomet_curve_plot("log_salinity", "Salinity", scale_x_continuous(transform = "log1p", breaks = c(0, 1, 5, 10, 20, 35))),
+  pomet_curve_plot(
+    "distance", "Distance to the mouth (km)",
+    scale_x_continuous(transform = scales::transform_pseudo_log(sigma = 2), breaks = c(-100, -10, 0, 10))
+  ),
+  pomet_curve_plot("depth_pomet", "Depth (m)"),
+  pomet_curve_plot("temperature", "Temperature (°C)"),
+  nrow = 1, guides = "collect"
+) & theme(legend.position = "top", legend.text = element_text(face = "italic"))
+```
+
+**Results:**
+
+- **Sole:** presence peaks in brackish water (around salinity
+  `r round(with(filter(pomet_curve, variable == "log_salinity", species == "Solea solea"), value[which.max(mean)]))`)
+  and is lowest in fresh water, increases with temperature and decreases
+  with depth; distance adds nothing.
+- **Flounder:** presence is highest at low salinity (around
+  `r round(with(filter(pomet_curve, variable == "log_salinity", species == "Platichthys flesus"), value[which.max(mean)]))`),
+  increases upstream at a given salinity, decreases with depth and
+  increases with temperature.
+- These patterns agree with what is known: juvenile sole presence
+  decreases with depth and is highest on very shallow grounds [REF: Le
+  Pape et al. 2007, doi:10.1016/j.seares.2006.08.011; REF: Le Pape et al.
+  2003, doi:10.1016/S1385-1101(03)00059-5]; juvenile flounder prefer the
+  freshwater and low-salinity upper estuary [REF: Souza et al. 2013,
+  doi:10.1016/j.seares.2013.01.005; REF: Mendes et al. 2020,
+  doi:10.1017/S0025315420000600].
+
+*To discuss:*
+
+- **Spatial confounding.** With the field, the effects are smaller and
+  less certain than without it: the field and the continuum variables
+  share the differences between estuaries.
+- **The flounder temperature effect changes sign with the field:**
+  positive with it
+  (`r round(pomet_of("Platichthys flesus", "reference")$summary.fixed["temperature", "mean"], 2)`),
+  negative without
+  (`r round(pomet_of("Platichthys flesus", "no field")$summary.fixed["temperature", "mean"], 2)`).
+  Temperature differs between estuaries: Ardour-Garonne is the warmest
+  district (median
+  `r round(median(pomet_all$temperature[pomet_all$district == "Ardour-Garonne"], na.rm = TRUE), 1)` °C,
+  against
+  `r round(median(pomet_all$temperature[pomet_all$district == "Loire"], na.rm = TRUE), 1)` °C
+  in the Loire) and has few flounder. Without the field, this
+  between-estuary difference goes into the temperature effect; with it,
+  the effect rests mostly on the variation within estuaries (season,
+  year, along the estuary).
+- The temperature measured at the haul is a snapshot; part of its effect
+  may be seasonal timing (juveniles arriving in late spring), not
+  captured by the month effect alone.
+- The models pool all sizes caught, while the literature describes
+  juveniles; most sole and flounder caught by these beam trawls are
+  likely juveniles, but this is not checked here.
+
+### Diagnostics
+
+```{r pomet-diagnostic}
+purrr::map_dfr(test_species, \(s) {
+  m <- pomet_of(s, "reference")
+  f <- pomet_of(s, "no field")
+  continuum <- intersect(names(pomet_label), rownames(m$correlation))
+  correlation <- m$correlation[continuum, continuum]
+  tibble(
+    Species = paste0("*", s, "*"),
+    Operations = m$n,
+    Prevalence = m$prevalence,
+    `AUC, full model` = auc(m$prediction$eta, m$prediction$present),
+    `AUC, fixed effects only` = auc(m$prediction$eta_fixed, m$prediction$present),
+    `AUC, model without field` = auc(f$prediction$eta, f$prediction$present),
+    `Field sd (logit)` = m$summary.hyperpar["Stdev for spatial", "mean"],
+    `Field range (km)` = m$summary.hyperpar["Range for spatial", "mean"],
+    `Max posterior correlation` = max(abs(correlation[upper.tri(correlation)]))
+  )
+}) |>
+  knitr::kable(digits = 2, caption = "Diagnostics of the reference model (in-sample AUC; posterior correlation: largest between two continuum effects).")
+```
+
+Observed share of presences against the prediction, in cells of
+0.05° (about 4–5 km), for two predictions: the continuum and sampling
+effects alone (fixed effects, at the average of the year and field
+effects), which shows what the continuum variables explain, and the full
+model with the field.
+
+```{r pomet-residual}
+#| fig-width: 12
+#| fig-height: 13
+#| fig-cap: "Observed share of presences minus predicted probability in cells of 0.05° (size: operations; red: more presences than predicted, blue: fewer). Top: continuum and sampling effects only; bottom: full model with the spatial field."
+
+pomet_cell <- purrr::map_dfr(test_species, \(s) {
+  m <- pomet_of(s, "reference")
+  random_mean <- mean(m$prediction$eta - m$prediction$eta_fixed)
+  m$prediction |>
+    inner_join(select(pomet_visit, operation_id, longitude, latitude), by = "operation_id") |>
+    mutate(longitude = round(longitude / 0.05) * 0.05, latitude = round(latitude / 0.05) * 0.05) |>
+    summarise(
+      n = n(), observed = mean(present),
+      `Continuum and sampling effects` = mean(plogis(eta_fixed + random_mean)), `Full model` = mean(plogis(eta)),
+      .by = c(longitude, latitude)
+    ) |>
+    mutate(species = factor(s, test_species))
+}) |>
+  tidyr::pivot_longer(c(`Continuum and sampling effects`, `Full model`), names_to = "prediction", values_to = "predicted") |>
+  mutate(residual = observed - predicted)
+ggplot(arrange(pomet_cell, abs(residual))) +
+  geom_sf(data = coast, color = "grey30", linewidth = 0.2) +
+  geom_point(aes(longitude, latitude, color = residual, size = n), alpha = 0.9) +
+  facet_grid(prediction ~ species) +
+  coord_sf(xlim = range(pomet_visit$longitude) + c(-0.2, 0.2), ylim = range(pomet_visit$latitude) + c(-0.2, 0.2)) +
+  scale_color_distiller(palette = "RdBu", limits = c(-1, 1), name = "Observed - predicted") +
+  scale_size_area(max_size = 4, name = "Operations") +
+  labs(x = NULL, y = NULL) +
+  theme(strip.text.x = element_text(face = "italic"), axis.line = element_blank(), legend.position = "top")
+```
+
+```{r pomet-residual-scatter}
+#| fig-width: 10
+#| fig-height: 5
+#| fig-cap: "Observed share of presences against the mean predicted probability in cells of 0.05° (continuum and sampling effects only; size: operations; line: 1:1)."
+
+pomet_cell |>
+  filter(prediction == "Continuum and sampling effects") |>
+  ggplot(aes(predicted, observed)) +
+  geom_abline(linetype = "dashed") +
+  geom_point(aes(size = n), alpha = 0.5) +
+  facet_wrap(~species) +
+  coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
+  scale_size_area(max_size = 5, name = "Operations") +
+  labs(x = "Mean predicted probability (continuum and sampling effects)", y = "Observed share of presences") +
+  theme(strip.text = element_text(face = "italic"))
+```
+
+**Results:**
+
+- **With the continuum and sampling effects alone,** the share of
+  presences in a cell is off by
+  `r round(with(filter(pomet_cell, species == "Solea solea", prediction == "Continuum and sampling effects"), weighted.mean(abs(residual), n)), 2)`
+  on average for the sole and
+  `r round(with(filter(pomet_cell, species == "Platichthys flesus", prediction == "Continuum and sampling effects"), weighted.mean(abs(residual), n)), 2)`
+  for the flounder (weighted by operations), and the errors are grouped
+  by estuary rather than scattered: the gaps are between estuaries.
+- **Under-predicted** (more presences than predicted) for both species:
+  the small estuaries of southern Brittany (Blavet, Scorff, Laïta, Belon,
+  Vilaine) and the Bay of Mont-Saint-Michel; for the flounder, also the
+  Baie de Caen.
+- **Over-predicted:** for the sole, the Somme bays (La Warenne à Ault:
+  4% observed, about 40% predicted), the freshwater Seine and the Baie de
+  Caen; for the flounder, the upper Garonne, Isle and freshwater Seine,
+  and the lower Gironde.
+- **With the field,** the residuals are close to 0 everywhere (mean
+  absolute error
+  `r round(with(filter(pomet_cell, species == "Solea solea", prediction == "Full model"), weighted.mean(abs(residual), n)), 2)`
+  and
+  `r round(with(filter(pomet_cell, species == "Platichthys flesus", prediction == "Full model"), weighted.mean(abs(residual), n)), 2)`):
+  the field takes these between-estuary differences. This is an in-sample
+  fit; it does not say how a new estuary would be predicted.
+
+*To discuss:*
+
+- The between-estuary differences could come from estuary-level
+  descriptors. Tested (targets `pomet_estuary_descriptor`,
+  `pomet_estuary_model`): the POMET zones grouped into 29 estuaries, with
+  their catchment area, the area of their WFD transitional water bodies
+  and their type (estuary or bay). With the field, they do not improve
+  the model (ΔWAIC within ±1, wide intervals); without the field they do
+  (by about 270 and 320 WAIC points) but the model with the field stays
+  much better. The baseline is the reference model with the field,
+  without estuary descriptors.
+
+## River inputs
+
+Nutrients are the first stressor to add to the baseline. A presence
+model needs a value at each haul; this section builds it from the
+rivers flowing into each estuary: their yearly nutrient concentrations
+and oxygen saturation (NAIADES water quality stations), and their yearly
+discharge (HYDRO gauging stations).
+
+**Why river inputs, and not the coastal nutrients of D7.** The REPHY
+model of D7 predicts nutrients at sea from coastal samples. Predicted at
+the POMET hauls, about 90% of its variation was already carried by the
+baseline (salinity, zone, year and month): the D7 model is a fixed
+spatial pattern plus a salinity effect and year and month effects shared
+by all places, which are all terms of the presence model. It is also
+least certain in the upper estuaries, where REPHY has few samples. It is
+not used here.
+
+### Water quality: NAIADES river stations
+
+NAIADES is the French national database of surface water quality (river
+monitoring of the water agencies), read through the Hub'Eau API (D14;
+targets `naiades_pc`, `naiades_clean`, `naiades_station_year`). We use
+three nutrients, in mg/l of the ion, and oxygen:
+
+- **nitrate (NO3)**, mostly from farmland, by leaching;
+- **ammonium (NH4)**, mostly from wastewater and manure;
+- **orthophosphate (PO4)**, mostly from wastewater, and from soil
+  erosion;
+- **oxygen saturation (%)**.
+
+The stations are sampled about once a month. From the raw samples to a
+yearly value per station (D14):
+
+1. **Cleaning:** samples flagged incorrect or uncertain are dropped,
+   units are converted to the ion, values below the quantification limit
+   are set at half the limit, and outliers (more than 5 median absolute
+   deviations from the station median, log scale) are dropped.
+2. **Yearly mean:** mean of the samples of a year, kept when there are at
+   least 4 samples over at least 3 seasons (so that a year is not one
+   season only); nutrients are then log10-transformed. A station-year is
+   kept only when all the D14 parameters have a yearly mean.
+
+```{r river-data}
+river_label <- c(nitrate = "Nitrate (NO3)", ammonium = "Ammonium (NH4)", orthophosphate = "Orthophosphate (PO4)")
+input_label <- c(river_label, river_oxygen = "Oxygen saturation (%)", log_discharge = "Discharge (m³/s)")
+river_code <- c(nitrate = "1340", ammonium = "1335", orthophosphate = "1433", river_oxygen = "1312")
+river_mix <- tar_read(estuary_nutrient_mix)
+estuary_discharge <- tar_read(estuary_discharge)
+# Every NAIADES station draining to a mouth of an estuary, and why it is kept or not.
+river_station <- tar_read(naiades_station) |>
+  select(code_station, libelle_station) |>
+  inner_join(tar_read(estuary_nutrient)$station, by = "code_station") |>
+  left_join(
+    transmute(river_mix$station, estuary, mouth_id, code_station, kept = TRUE, gauge, estuary_share = share),
+    by = c("estuary", "mouth_id", "code_station")
+  ) |>
+  mutate(status = case_when(
+    coalesce(kept, FALSE) ~ "kept",
+    status %in% c("chosen", "upstream") ~ "upstream of a kept station",
+    .default = status
+  ))
+river_kept <- filter(river_station, status == "kept")
+gauge <- tar_read(hydrometry_station) |>
+  select(code_station, libelle_station) |>
+  inner_join(tar_read(hydrometry_station_mouth), by = "code_station") |>
+  inner_join(tar_read(pomet_estuary_mouth), by = "mouth_id")
+estuary_year <- river_mix$estuary_year |>
+  inner_join(transmute(estuary_discharge$estuary_year, estuary, year, discharge), by = c("estuary", "year"))
+estuary_visit <- tar_read(pomet_estuary_visit) |>
+  left_join(estuary_year, by = c("estuary", "year"))
+naiades_clean <- tar_read(naiades_clean)
+river_sample <- naiades_clean |>
+  filter(code_station %in% river_kept$code_station, code_parametre %in% river_code) |>
+  mutate(nutrient = names(river_code)[match(code_parametre, river_code)], year = as.integer(format(date, "%Y"))) |>
+  filter(between(year, 2005, 2019)) |>
+  select(code_station, date, year, nutrient, value, below_limit)
+rm(naiades_clean)
+invisible(gc())
+```
+
+```{r river-sample-table}
+river_sample |>
+  mutate(n_year = n(), .by = c(nutrient, code_station, year)) |>
+  summarise(
+    Stations = n_distinct(code_station), Samples = n(), `Samples per station and year (median)` = median(n_year),
+    `Below the quantification limit` = scales::percent(mean(below_limit), 1),
+    Median = median(value), .by = nutrient
+  ) |>
+  mutate(nutrient = input_label[nutrient]) |>
+  rename(Parameter = nutrient, `Median (mg/l or %)` = Median) |>
+  knitr::kable(digits = 2, caption = "Samples of the stations used (below), 2005–2019.")
+```
+
+An example, the Loire at Montjean-sur-Loire, the most downstream
+station of the Loire outside its estuary: the samples of each year
+(points) and the yearly mean kept (line).
+
+```{r river-sample}
+#| fig-width: 10
+#| fig-height: 8
+#| fig-cap: "Samples (points; open: below the quantification limit, at half the limit) and yearly means (red lines) of the Loire at Montjean-sur-Loire, 2005–2019 (nutrients on a log scale)."
+
+example <- river_kept$code_station[river_kept$libelle_station == "LOIRE à MONTJEAN-SUR-LOIRE"]
+example_year <- tar_read(naiades_station_year) |>
+  filter(code_station == example, between(year, 2005, 2019)) |>
+  transmute(year, nitrate = 10^nitrate, ammonium = 10^ammonium, orthophosphate = 10^orthophosphate, river_oxygen = oxygen_saturation) |>
+  tidyr::pivot_longer(-year, names_to = "nutrient", values_to = "value") |>
+  mutate(start = as.Date(paste0(year, "-01-01")), end = as.Date(paste0(year, "-12-31")))
+example_plot <- \(k, scale_y) {
+  ggplot(filter(river_sample, code_station == example, nutrient == k), aes(date, value)) +
+    geom_point(aes(shape = below_limit), size = 1.2, alpha = 0.7) +
+    geom_segment(aes(x = start, xend = end, y = value, yend = value), data = filter(example_year, nutrient == k), color = "#D55E00", linewidth = 0.9) +
+    scale_y +
+    scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 1), guide = "none") +
+    labs(x = NULL, y = NULL, title = input_label[[k]])
+}
+patchwork::wrap_plots(
+  example_plot("nitrate", scale_y_log10()), example_plot("ammonium", scale_y_log10()),
+  example_plot("orthophosphate", scale_y_log10()), example_plot("river_oxygen", scale_y_continuous()),
+  ncol = 1
+)
+```
+
+### Discharge: HYDRO gauging stations
+
+HYDRO is the French national database of river discharge (gauging
+stations of the State services and their partners), read through the
+Hub'Eau hydrometry API (targets `hydrometry_station`,
+`hydrometry_discharge`): monthly mean discharge (m³/s) of the
+`r n_distinct(gauge$code_station)` gauging stations draining to the
+estuaries, 2005–2019.
+
+- **Yearly discharge:** mean of the 12 monthly means of a year (years
+  with a missing month dropped).
+- **Runoff:** discharge divided by the area drained at the gauge
+  (l/s/km²). It lets a gauge upstream stand for the whole river: the
+  discharge at the mouth is the runoff at the gauge times the catchment
+  area of the mouth.
+
+The same example, the Loire at Montjean-sur-Loire (drained area
+`r format(round(gauge$area[gauge$code_station == "M530001010"]), big.mark = ",")` km²):
+
+```{r discharge-example}
+#| fig-width: 10
+#| fig-height: 3
+#| fig-cap: "Monthly mean discharge (points) and yearly mean (red lines) of the Loire at Montjean-sur-Loire, 2005–2019 (log scale)."
+
+discharge_month <- tar_read(hydrometry_discharge) |>
+  filter(code_station == "M530001010")
+discharge_year <- estuary_discharge$station_year |>
+  filter(code_station == "M530001010") |>
+  mutate(start = as.Date(paste0(year, "-01-01")), end = as.Date(paste0(year, "-12-31")))
+ggplot(discharge_month, aes(date, discharge)) +
+  geom_point(size = 1, alpha = 0.7) +
+  geom_segment(aes(x = start, xend = end, y = discharge, yend = discharge), data = discharge_year, color = "#D55E00", linewidth = 0.9) +
+  scale_y_log10() +
+  labs(x = NULL, y = "Discharge (m³/s)")
+```
+
+### From the stations to the estuaries
+
+Each estuary gets the yearly values of the rivers flowing into it
+(targets `estuary_nutrient_mix`, `mix_estuary_nutrient()`, and
+`estuary_discharge`, `summarise_estuary_discharge()`):
+
+1. **Estuaries and their rivers:** the POMET zones are grouped into
+   `r n_distinct(estuary_visit$estuary)` estuaries (Gironde, Seine, Loire,
+   the Breton estuaries, the bays...), and each estuary is given the
+   mouths of the rivers flowing into it (one, or two for Morlaix, the
+   Veys, Mont-Saint-Michel and the Pertuis Charentais; tables
+   `pomet_estuary`, `pomet_estuary_mouth`, set by hand).
+2. **Which stations drain to each mouth:** every NAIADES and gauging
+   station follows the flow directions (HydroSHEDS grid, ~400 m, as in
+   D15) downstream to the sea; the outlet it reaches gives its river
+   mouth (`link_station_mouth()`). This also gives the area drained at
+   the station.
+3. **Eligible water quality stations:** outside the transitional and
+   coastal water bodies of the WFD (200 m buffer), as a station there
+   samples the estuary itself, with sea water mixed in, not what the
+   rivers bring; and at least 10 yearly means in 2005–2019, the POMET
+   years.
+4. **One station per branch:** the eligible stations are taken from the
+   largest drained area down, skipping those upstream of a station
+   already taken (found along the flow directions). The stations kept
+   are not nested: each samples a different branch reaching the estuary,
+   the main river at its most downstream station and the tributaries and
+   streams joining it below that station or entering the estuary
+   directly.
+5. **Weights:** the discharge of each branch, estimated as the area
+   drained at the station times the yearly runoff of the gauging station
+   on the same branch (upstream or downstream of it, closest drained
+   area). Without a gauge on the branch, the runoff of the gauging
+   stations of the estuary that year; without any gauge, the drained area
+   alone.
+6. **Mixing:** the yearly value of the estuary is the mean of its
+   branches weighted by their discharge, computed on the concentrations
+   (then log10): the concentration of the water of all the branches
+   mixed together. A year is kept when the stations measured that year
+   drain at least 80% of the area of all the stations kept (otherwise
+   the value would jump with the stations present).
+7. **Discharge of the estuary:** each year, each mouth takes the runoff
+   of its most downstream gauging station measured that year (among those
+   with at least 10 complete years), and the discharge of the estuary is
+   their mean runoff (weighted by the catchment of the mouths) times the
+   catchment area of the estuary.
+
+Two examples. In the Gironde, the Garonne station is completed by the
+Dordogne and its tributaries (Isle, Dronne) and by smaller rivers
+joining the estuary; in the Seine, by the Eure, the Risle and the small
+rivers joining below the tidal limit (Poses dam). The stations inside the
+estuaries are left out.
+
+```{r river-example-map}
+#| fig-width: 12
+#| fig-height: 6
+#| fig-cap: "Water quality stations draining to the Gironde and Seine mouths, by why they are kept or not, gauging stations (squares; filled: giving the runoff of a kept station), and POMET operations (grey); blue: WFD transitional and coastal water bodies."
+
+as_water <- \(x) sf::st_sf(geometry = sf::st_geometry(sf::st_transform(x, 4326)))
+water <- rbind(as_water(sf::st_read(tar_read(transitional_water_file), quiet = TRUE)), as_water(tar_read(coastal_water)))
+colour_status <- c(kept = "#D55E00", `upstream of a kept station` = "grey20", `in the estuary` = "#0072B2", `too few years` = "grey70")
+status_label <- c(
+  kept = "Kept (one per branch)", `upstream of a kept station` = "Upstream of a kept station",
+  `in the estuary` = "In the estuary (water bodies)", `too few years` = "Fewer than 10 years"
+)
+example_map <- \(e, xlim, ylim) {
+  station <- filter(river_station, estuary == e) |>
+    mutate(status = factor(status, rev(names(colour_status)))) |>
+    arrange(status)
+  gauge_e <- filter(gauge, estuary == e) |>
+    mutate(used = code_station %in% river_mix$station$gauge)
+  ggplot() +
+    geom_sf(data = water, fill = "#9ECAE1", color = NA, alpha = 0.6) +
+    geom_sf(data = coast, color = "grey30", linewidth = 0.2) +
+    geom_point(aes(longitude, latitude), data = filter(estuary_visit, estuary == e), color = "grey60", size = 0.4) +
+    geom_sf(aes(color = status, size = status == "kept"), data = station) +
+    geom_sf(aes(fill = used), data = gauge_e, shape = 22, size = 2, color = "#009E73") +
+    coord_sf(xlim = xlim, ylim = ylim) +
+    scale_color_manual(values = colour_status, labels = status_label, breaks = names(colour_status), name = NULL) +
+    scale_fill_manual(values = c(`TRUE` = "#009E73", `FALSE` = "white"), guide = "none") +
+    scale_size_manual(values = c(`FALSE` = 0.8, `TRUE` = 2.5), guide = "none") +
+    labs(x = NULL, y = NULL, title = e) +
+    theme(axis.line = element_blank(), legend.position = "top")
+}
+patchwork::wrap_plots(
+  example_map("Gironde", c(-1.4, 0.9), c(44.2, 45.8)),
+  example_map("Seine", c(-0.3, 1.6), c(48.95, 49.75)),
+  nrow = 1, guides = "collect"
+) & theme(legend.position = "top")
+```
+
+All the estuaries, with the stations kept (triangles) linked to the
+operations of their estuary (centre of the operations):
+
+```{r river-link}
+#| fig-width: 10
+#| fig-height: 13
+#| fig-cap: "Water quality stations kept for each estuary (triangles, size: drained area), linked to the centre of the POMET operations of their estuary (circles); grey: operations."
+
+estuary_centre <- estuary_visit |>
+  summarise(x_visit = mean(longitude), y_visit = mean(latitude), .by = estuary)
+kept_xy <- river_kept |>
+  mutate(x_station = sf::st_coordinates(geometry)[, 1], y_station = sf::st_coordinates(geometry)[, 2]) |>
+  sf::st_drop_geometry() |>
+  inner_join(estuary_centre, by = "estuary")
+river_extent <- list(
+  x = range(c(estuary_visit$longitude, kept_xy$x_station)) + c(-0.2, 0.2),
+  y = range(c(estuary_visit$latitude, kept_xy$y_station)) + c(-0.2, 0.2)
+)
+ggplot() +
+  geom_sf(data = coast, color = "grey30", linewidth = 0.2) +
+  geom_point(aes(longitude, latitude), data = estuary_visit, color = "grey75", size = 0.4) +
+  geom_segment(aes(x_station, y_station, xend = x_visit, yend = y_visit), data = kept_xy, color = "#D55E00", linewidth = 0.3, alpha = 0.6) +
+  geom_point(aes(x_visit, y_visit), data = estuary_centre, size = 1.8) +
+  geom_point(aes(x_station, y_station, size = area), data = kept_xy, shape = 17, color = "#D55E00") +
+  ggrepel::geom_text_repel(aes(x_visit, y_visit, label = estuary), data = estuary_centre, size = 3, max.overlaps = Inf) +
+  coord_sf(xlim = river_extent$x, ylim = river_extent$y) +
+  scale_size_area(max_size = 4, breaks = c(100, 1000, 10000, 100000), labels = scales::label_comma(), name = "Drained area (km²)") +
+  labs(x = NULL, y = NULL) +
+  theme(axis.line = element_blank(), legend.position = "top")
+```
+
+```{r river-station}
+river_kept |>
+  sf::st_drop_geometry() |>
+  summarise(
+    Stations = n(), `Share of the catchment` = sum(estuary_share),
+    `Largest station` = libelle_station[which.max(area)],
+    `Weight with a gauge on the branch` = sum(area[!is.na(gauge)]) / sum(area), .by = estuary
+  ) |>
+  left_join(
+    summarise(estuary_discharge$station, `Discharge gauge share` = max(share), .by = estuary),
+    by = "estuary"
+  ) |>
+  left_join(summarise(estuary_discharge$estuary_year, `Discharge (m³/s)` = mean(discharge), .by = estuary), by = "estuary") |>
+  right_join(
+    summarise(estuary_visit, Operations = n(), `With river inputs` = mean(!is.na(nitrate) & !is.na(discharge)), .by = estuary),
+    by = "estuary"
+  ) |>
+  arrange(desc(Operations)) |>
+  rename(Estuary = estuary) |>
+  knitr::kable(digits = 2, caption = "River inputs of each estuary: water quality stations kept (one per branch), share of the catchment of the estuary they drain, their most downstream station, share of their drained area with a gauging station on the same branch; largest share of a mouth catchment drained at the discharge gauges, mean discharge 2005–2019; POMET operations and share with all the river inputs.")
+```
+
+### Values at the hauls
+
+There is no extrapolation in space: each haul takes the values of its
+estuary in its year, and all the hauls of an estuary in a year share
+them, whatever their position or salinity. The dilution of river water
+along the estuary is left to salinity, already in the model.
+
+The map shows the mean over 2005–2019 at each station kept (triangles)
+and the value the operations get after mixing (circles).
+
+```{r river-map}
+#| fig-width: 12
+#| fig-height: 12
+#| fig-cap: "Mean 2005–2019 (geometric mean of the yearly means for nutrients) at the stations kept (triangles) and at the POMET operations of their estuary after mixing (circles, black outline; log colour scale for nutrients; the colour scale spans the estuary values, stations beyond it take its end colours)."
+
+station_mean <- tar_read(naiades_station_year) |>
+  filter(code_station %in% river_kept$code_station, between(year, 2005, 2019)) |>
+  summarise(across(names(river_label), \(x) 10^mean(x)), river_oxygen = mean(oxygen_saturation), .by = code_station)
+estuary_mean <- estuary_year |>
+  summarise(across(names(river_label), \(x) 10^mean(x)), river_oxygen = mean(river_oxygen), discharge = mean(discharge), .by = estuary)
+river_mean <- bind_rows(
+  inner_join(select(estuary_visit, estuary, x = longitude, y = latitude), estuary_mean, by = "estuary") |> mutate(where = "operation"),
+  inner_join(select(kept_xy, code_station, x = x_station, y = y_station), station_mean, by = "code_station") |> mutate(where = "station")
+)
+purrr::map(c(names(river_label), "river_oxygen"), \(k) {
+  ggplot() +
+    geom_sf(data = coast, color = "grey30", linewidth = 0.2) +
+    geom_point(aes(x, y, color = .data[[k]]), data = filter(river_mean, where == "station"), shape = 17, size = 1.5) +
+    geom_point(aes(x, y, fill = .data[[k]]), data = filter(river_mean, where == "operation"), shape = 21, size = 1.6, stroke = 0.2) +
+    coord_sf(xlim = river_extent$x, ylim = river_extent$y) +
+    scale_color_viridis_c(
+      transform = if (k == "river_oxygen") "identity" else "log10", limits = range(estuary_mean[[k]]), oob = scales::squish,
+      labels = scales::label_number(drop0trailing = TRUE), name = if (k == "river_oxygen") "%" else "mg/l",
+      guide = guide_colorbar(barwidth = 10), aesthetics = c("color", "fill")
+    ) +
+    labs(x = NULL, y = NULL, title = input_label[[k]]) +
+    theme(axis.line = element_blank(), legend.position = "bottom")
+}) |>
+  patchwork::wrap_plots(nrow = 2)
+```
+
+```{r river-series}
+#| fig-width: 12
+#| fig-height: 11
+#| fig-cap: "Yearly river inputs of each estuary (one line per estuary; log scale)."
+
+estuary_year |>
+  transmute(estuary, year, nitrate = 10^nitrate, ammonium = 10^ammonium, orthophosphate = 10^orthophosphate, river_oxygen, log_discharge = discharge) |>
+  tidyr::pivot_longer(-c(estuary, year), names_to = "input", values_to = "value") |>
+  mutate(input = factor(input_label[input], input_label)) |>
+  ggplot(aes(year, value, group = estuary)) +
+  geom_line(alpha = 0.6) +
+  facet_wrap(~input, scales = "free_y", ncol = 1) +
+  scale_y_continuous(transform = scales::transform_log10()) +
+  labs(x = NULL, y = "Yearly mean (mg/l, %, m³/s)")
+```
+
+What a presence model with the spatial field can use is the variation of
+the inputs from year to year within an estuary, beyond the years shared
+by all estuaries (the year effect). The table splits the variance of the
+yearly values (estuary-years) into the differences between estuaries,
+the years shared by all estuaries, and what is left.
+
+```{r river-variance}
+river_variance <- purrr::map_dfr(names(input_label), \(k) {
+  d <- mutate(estuary_year, log_discharge = log10(discharge))
+  r2 <- \(f) summary(lm(f, d))$r.squared
+  between <- r2(reformulate("estuary", k))
+  shared <- r2(reformulate(c("estuary", "factor(year)"), k))
+  tibble(
+    Input = input_label[[k]], `Between estuaries` = between, `+ years shared by all estuaries` = shared,
+    `Left: estuary-specific years` = 1 - shared,
+    `Within-estuary sd` = sd(stats::resid(stats::lm(reformulate("estuary", k), d)))
+  )
+})
+knitr::kable(river_variance, digits = 2, caption = "Share of the variance of the yearly values (estuary-years; log10 for nutrients and discharge) explained by the estuary, then by the year (cumulative R²), and standard deviation within estuaries (log10 units, or % for oxygen).")
+```
+
+**Results:**
+
+- `r nrow(river_kept)` water quality stations are kept, from 1 to
+  `r max(table(river_kept$estuary))` per estuary; they drain a median
+  `r scales::percent(median(summarise(sf::st_drop_geometry(river_kept), s = sum(estuary_share), .by = estuary)$s), 1)`
+  of the catchment of their estuary (the Gironde includes the Dordogne). Small Breton estuaries keep a single station when no other
+  branch has one (Aber Benoit, Pont-l'Abbé, Etel: under a third of the
+  catchment).
+- `r scales::percent(mean(!is.na(estuary_visit$nitrate) & !is.na(estuary_visit$discharge)), 0.1)`
+  of the operations have all the river inputs of their estuary and year;
+  the Etel has no gauging station.
+- Nitrate is highest in the small rivers of northern Finistère and
+  Normandy and lowest in the Loire
+  (`r round(estuary_mean$nitrate[estuary_mean$estuary == "Loire"])` mg/l) and
+  the Gironde (`r round(estuary_mean$nitrate[estuary_mean$estuary == "Gironde"])` mg/l).
+  Ammonium and phosphate are highest in the Seine
+  (`r round(estuary_mean$ammonium[estuary_mean$estuary == "Seine"], 2)` and
+  `r round(estuary_mean$orthophosphate[estuary_mean$estuary == "Seine"], 2)` mg/l).
+- **The inputs differ mostly between estuaries.** The estuary explains
+  `r scales::percent(river_variance[["Between estuaries"]][1], 1)` of the
+  variance of yearly nitrate,
+  `r scales::percent(river_variance[["Between estuaries"]][2], 1)` of
+  ammonium,
+  `r scales::percent(river_variance[["Between estuaries"]][3], 1)` of
+  phosphate and
+  `r scales::percent(river_variance[["Between estuaries"]][5], 1)` of
+  discharge (their size). Within an estuary, discharge changes from year
+  to year by a factor of
+  `r round(10^river_variance[["Within-estuary sd"]][5], 2)` (one sd), but
+  in the same years everywhere (wet and dry years); nitrate by
+  `r scales::percent(10^river_variance[["Within-estuary sd"]][1] - 1, 1)`.
+  River oxygen is the exception: most of its variance is in
+  estuary-specific years.
+
+*To discuss:*
+
+- Yearly mean concentrations, not loads: discharge enters the model as
+  its own variable, and as the weight of the branches within an
+  estuary.
+- Runoff from a gauge stands for the whole branch or catchment: right
+  where rainfall and soils are similar along the river, less so for
+  large basins (the Garonne gauge for the Gironde catchment) or where the
+  gauge drains a small part of the catchment (Aber Benoit, Rance: about
+  10%).
+- The Dives nitrate doubles from 2017 on (about 20–30 mg/l before, about
+  50 after, at its main station) and stays there: more likely a change of
+  laboratory or of sampling point than a real change. Kept for now.
+
+### Presence models with river inputs
+
+Each nutrient is added, alone, to the reference model of the sole and the
+flounder (target `pomet_nutrient_model`), on the
+`r nrow(tar_read(pomet_nutrient_visit))` operations with river inputs;
+the reference model is refitted on the same operations for the WAIC
+comparison. The nutrient enters as a linear term of its log10 yearly
+value, standardised like the other variables (1 sd: a factor of
+`r round(10^sd(tar_read(pomet_nutrient_visit)$nitrate), 1)` for nitrate,
+`r round(10^sd(tar_read(pomet_nutrient_visit)$ammonium), 1)` for ammonium and
+`r round(10^sd(tar_read(pomet_nutrient_visit)$orthophosphate), 1)` for
+phosphate across the operations). Two versions:
+
+- **with the spatial field:** the field takes the differences between
+  estuaries, so the effect rests on the estuary-specific years (a
+  wetter or more polluted year in one estuary than its own average);
+- **without the field:** the effect also rests on the differences
+  between estuaries.
+
+```{r nutrient-model}
+#| fig-width: 10
+#| fig-height: 4
+#| fig-cap: "Effect of each river nutrient added alone to the reference model (logit scale, standardised, 91% credible intervals), with and without the spatial field. Labels: WAIC difference to the reference refitted on the same operations (negative: better)."
+nutrient_model <- tar_read(pomet_nutrient_model)
+nutrient_fit <- purrr::map_dfr(nutrient_model, \(m) {
+  f <- m$summary.fixed
+  tibble(
+    species = m$species, nutrient = m$nutrient, field = !grepl("no field", m$variant), waic = m$waic,
+    mean = if (m$nutrient == "none") NA else f[m$nutrient, "mean"],
+    lower = if (m$nutrient == "none") NA else f[m$nutrient, "0.045quant"],
+    upper = if (m$nutrient == "none") NA else f[m$nutrient, "0.955quant"]
+  )
+}) |>
+  mutate(dwaic = waic - waic[nutrient == "none"], .by = c(species, field))
+nutrient_fit |>
+  filter(nutrient != "none") |>
+  mutate(
+    species = factor(species, test_species), nutrient = factor(river_label[nutrient], rev(river_label)),
+    model = if_else(field, "With spatial field", "Without spatial field")
+  ) |>
+  ggplot(aes(mean, nutrient, color = model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.25, position = position_dodge(width = 0.6)) +
+  geom_text(
+    aes(x = upper, label = sprintf("%+.0f", dwaic)), position = position_dodge(width = 0.6),
+    hjust = -0.3, size = 3, show.legend = FALSE
+  ) +
+  facet_wrap(~species) +
+  scale_x_continuous(expand = expansion(mult = c(0.05, 0.2))) +
+  scale_color_manual(values = c(`With spatial field` = "black", `Without spatial field` = "#E69F00")) +
+  labs(x = "Effect on the logit scale (per sd of the log10 input)", y = NULL, color = NULL) +
+  theme(strip.text = element_text(face = "italic"), legend.position = "top")
+```
+
+```{r nutrient-curve}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-cap: "Probability of presence along the river input of the estuary (each nutrient alone in the reference model; 91% credible intervals), with and without the spatial field. Ticks: values at the operations."
+
+nutrient_curve <- purrr::map_dfr(nutrient_model, \(m) {
+  if (m$nutrient == "none") return(NULL)
+  random_mean <- mean(m$prediction$eta - m$prediction$eta_fixed)
+  filter(m$curve, variable == m$nutrient) |>
+    mutate(
+      species = factor(m$species, test_species), model = if_else(grepl("no field", m$variant), "Without spatial field", "With spatial field"),
+      across(c(mean, lower, upper), \(x) plogis(x + random_mean)), value = 10^value
+    )
+})
+nutrient_rug <- tar_read(pomet_nutrient_visit) |>
+  distinct(estuary, year, nitrate, ammonium, orthophosphate) |>
+  tidyr::pivot_longer(names(river_label), names_to = "variable", values_to = "value") |>
+  mutate(value = 10^value)
+ggplot(nutrient_curve, aes(value, mean, color = model, fill = model)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
+  geom_line() +
+  geom_rug(aes(value), data = nutrient_rug, inherit.aes = FALSE, alpha = 0.3, length = unit(0.02, "npc")) +
+  facet_grid(species ~ factor(river_label[variable], river_label), scales = "free_x") +
+  scale_x_log10(labels = scales::label_number(drop0trailing = TRUE)) +
+  scale_color_manual(values = c(`With spatial field` = "black", `Without spatial field` = "#E69F00"), aesthetics = c("color", "fill")) +
+  labs(x = "Yearly river input (mg/l, log scale)", y = "Probability of presence", color = NULL, fill = NULL) +
+  theme(strip.text.y = element_text(face = "italic"), legend.position = "top")
+```
+
+**Results:**
+
+- **With the field (the baseline), the river inputs add little.** Only
+  ammonium for the flounder improves the model by a few points
+  (`r sprintf("%+.1f", with(nutrient_fit, dwaic[species == "Platichthys flesus" & nutrient == "ammonium" & field]))`
+  WAIC points); the other nutrients change the WAIC by about 2 points.
+  Several effects are credible without improving the fit: more sole and
+  flounder with more nitrate, fewer with more phosphate.
+- **Without the field, the differences between estuaries carry strong
+  effects:** fewer sole in the estuaries receiving more phosphate
+  (`r sprintf("%+.0f", with(nutrient_fit, dwaic[species == "Solea solea" & nutrient == "orthophosphate" & !field]))`
+  WAIC points) or ammonium, and more flounder in the estuaries receiving
+  more nitrate
+  (`r sprintf("%+.0f", with(nutrient_fit, dwaic[species == "Platichthys flesus" & nutrient == "nitrate" & !field]))`).
+  These models remain far worse than those with the field (by
+  `r round(min(with(filter(nutrient_fit, nutrient == "none"), waic[!field] - waic[field])))`
+  WAIC points or more).
+- The two versions disagree for several nutrients (e.g. the flounder and
+  phosphate: opposite signs): the next section separates the two
+  contrasts.
+
+### Between and within estuaries
+
+The two versions above mix two contrasts. Here each river input is split
+in two (target `pomet_split_model`):
+
+- **between:** the mean of the estuary over 2005–2019, the same for all
+  its operations;
+- **within:** the deviation of the year from that mean.
+
+Both enter the model together, with an iid **estuary effect**, so that
+the between effect is estimated from the estuaries with an uncertainty
+that accounts for their number (in the model without field above, it
+rested on the operations as if they were independent). Each input is
+fitted alone, then with discharge (also split), since a wet year
+changes both the concentrations and the volume of river water; and each
+with and without the spatial field.
+
+To compare the two parts, the effects are given per doubling of the
+nutrient input or of discharge, and per 10 points of oxygen saturation
+(log odds).
+
+```{r split-model}
+#| fig-width: 11
+#| fig-height: 9
+#| fig-cap: "Effect of the between-estuary (estuary mean) and within-estuary (yearly deviation) parts of each river input, fitted together with an iid estuary effect, alone (circles) or with discharge (triangles), with and without the spatial field (log odds per doubling of the nutrient or discharge, per 10 points of oxygen saturation; 91% credible intervals)."
+
+split_model <- tar_read(pomet_split_model)
+split_visit <- tar_read(pomet_nutrient_visit)
+input_unit <- c(nitrate = log10(2), ammonium = log10(2), orthophosphate = log10(2), river_oxygen = 10, log_discharge = log10(2))
+split_fit <- purrr::map_dfr(split_model, \(m) {
+  term <- grep("_(between|within)$", rownames(m$summary.fixed), value = TRUE)
+  variable <- sub("_(between|within)$", "", term)
+  tibble(
+    species = m$species, input = m$input, field = m$field, waic = m$waic,
+    variable = variable, part = sub(".*_", "", term),
+    scale = input_unit[variable] / purrr::map_dbl(term, \(v) sd(split_visit[[v]])),
+    mean = m$summary.fixed[term, "mean"], lower = m$summary.fixed[term, "0.045quant"], upper = m$summary.fixed[term, "0.955quant"]
+  ) |>
+    bind_rows(if (length(term) == 0) tibble(species = m$species, input = m$input, field = m$field, waic = m$waic) else NULL)
+}) |>
+  mutate(dwaic = waic - waic[input == "none"][1], .by = c(species, field)) |>
+  mutate(
+    across(c(mean, lower, upper), \(x) x * scale),
+    adjusted = if_else(grepl("\\+ log_discharge", input), "With discharge", "Alone"),
+    model = if_else(field, "With spatial field", "Without spatial field")
+  )
+split_effect <- split_fit |>
+  filter(input != "none", !(adjusted == "With discharge" & variable == "log_discharge")) |>
+  mutate(
+    species = factor(species, test_species), variable = factor(input_label[variable], input_label),
+    part = factor(if_else(part == "between", "Between estuaries", "Within estuary (years)"), c("Within estuary (years)", "Between estuaries")),
+    group = paste(model, adjusted)
+  )
+ggplot(split_effect, aes(mean, part, color = model, shape = adjusted, group = group)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), size = 0.25, position = position_dodge(width = 0.7)) +
+  facet_grid(variable ~ species, scales = "free_x") +
+  scale_color_manual(values = c(`With spatial field` = "black", `Without spatial field` = "#E69F00")) +
+  scale_shape_manual(values = c(Alone = 16, `With discharge` = 17)) +
+  labs(x = "Effect (log odds per doubling, or per 10 points of oxygen saturation)", y = NULL, color = NULL, shape = NULL) +
+  theme(strip.text.x = element_text(face = "italic"), strip.text.y = element_text(angle = 0), legend.position = "top")
+```
+
+```{r split-waic}
+split_fit |>
+  filter(input != "none") |>
+  distinct(species, input, model, dwaic) |>
+  mutate(
+    Input = sub(" \\+ .*", "", input),
+    Input = paste0(input_label[Input], if_else(grepl("\\+ log_discharge", input), " + discharge", ""))
+  ) |>
+  mutate(column = paste0(model, ", ", sub("(\\w)\\w+ (\\w+)", "\\1. \\2", species))) |>
+  select(Input, column, dwaic) |>
+  tidyr::pivot_wider(names_from = column, values_from = dwaic) |>
+  knitr::kable(digits = 1, caption = "WAIC difference to the model with the estuary effect and no river input, on the same operations (negative: better).")
+split_waic <- purrr::map_dfr(split_model, \(m) tibble(species = m$species, input = m$input, field = m$field, waic = m$waic)) |>
+  filter(input == "none") |>
+  summarise(gain = waic[!field] - waic[field], .by = species)
+```
+
+**Results:**
+
+- **The WAIC differences are small** (a few points at most): no river
+  input clearly improves the models. The largest gains are for the
+  flounder: ammonium with the field, phosphate and oxygen without it.
+- **Within estuaries (years),** the flounder is less frequent in the
+  years when its estuary receives more phosphate than its average and
+  more frequent in years of more oxygenated river water (credible with
+  and without the field), and more frequent in years of more ammonium
+  (credible with the field, at the limit without it). These effects stay
+  the same with discharge in the model. For the sole, phosphate (fewer
+  sole; at the limit with the field) and oxygen (more sole; without the
+  field only).
+- **Between estuaries,** with the uncertainty of the estuaries, most
+  effects include 0. Credible: fewer sole in the estuaries receiving more
+  phosphate (with and without the field), more sole in those with more
+  oxygenated rivers (without the field), and more flounder in those
+  receiving more nitrate (with the field, and without it once discharge
+  is in the model).
+- **Discharge** has no credible effect on the sole. Without the field,
+  the flounder is more frequent in larger rivers and in wetter years.
+  **Adding discharge does not improve the models:** alone or on top of a
+  nutrient or oxygen, it changes the WAIC by about 2 points at most
+  (slightly worse for the sole, slightly better for the flounder). Its
+  use is elsewhere: the within-estuary effects of the nutrients and
+  oxygen keep the same size with it, so they are not wet-year effects,
+  and it weights the branches when the stations are mixed.
+- The spatial field still improves the model by
+  `r round(split_waic$gain[split_waic$species == "Solea solea"])` (sole) and
+  `r round(split_waic$gain[split_waic$species == "Platichthys flesus"])`
+  (flounder) WAIC points over the estuary effect alone: the differences
+  within estuaries (along the estuary, between its zones) matter beyond
+  the estuary level.
+
+*To discuss:*
+
+- The between effects are comparisons of
+  `r n_distinct(split_visit$estuary)` estuaries; the estuary
+  effect gives them a fair uncertainty but does not remove the other
+  differences between estuaries. The phosphate effect on the sole follows
+  a north-south split: the Normandy and northern Breton estuaries receive
+  more phosphate and have fewer sole than predicted, the southern Breton
+  and Biscay ones (Vilaine, Lay, Loire, Blavet-Scorff) less phosphate and
+  more sole. Any other difference between these two groups would give
+  the same pattern.
+- The within effects rest on small yearly changes: doubling an input is
+  far outside what happens from year to year in an estuary (within-estuary
+  sd of about
+  `r scales::percent(10^sd(split_visit$nitrate_within) - 1, 1)` for nitrate);
+  the effects are expressed per doubling only to compare the two parts.
+- River oxygen is high everywhere (yearly means above
+  `r floor(min(split_visit$river_oxygen))`%) and varies more from year to
+  year (sd `r round(sd(split_visit$river_oxygen_within), 1)` points) than
+  between estuaries (`r round(sd(split_visit$river_oxygen_between), 1)`).
+
+## Next steps
+
+- One contrasting species per guild, then all the frequent species, with
+  the baseline and the river inputs.
+- D21: extend the model to the nursery survey of the coastal bays
+  (salinity and temperature from the yearly grid or REPHY, no measured
+  depth).
+- Spatial cross-validation (one estuary left out at a time), the only
+  way to test the between-estuary effects that the field hides.
